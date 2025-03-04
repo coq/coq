@@ -43,6 +43,8 @@ val inductive_paramdecls : mutual_inductive_body puniverses -> Constr.rel_contex
     uniform and recursively non-uniform parameters *)
 val inductive_nonrec_rec_paramdecls : mutual_inductive_body puniverses -> Constr.rel_context * Constr.rel_context
 
+val inductive_nnonrecparams : mutual_inductive_body -> int
+
 val instantiate_inductive_constraints :
   mutual_inductive_body -> Instance.t -> Constraints.t
 
@@ -60,7 +62,7 @@ val instantiate_template_constraints
   -> Declarations.template_universes
   -> Univ.Constraints.t
 
-val instantiate_template_universes : mind_specif -> param_univs ->
+val instantiate_template_universes : mutual_inductive_body -> param_univs ->
   Constraints.t * rel_context * template_subst
 
 val constrained_type_of_inductive : mind_specif puniverses -> types constrained

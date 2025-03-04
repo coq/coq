@@ -123,7 +123,7 @@ let get_type_of_with_metas ~metas env sigma c =
   Retyping.get_type_of ~metas env sigma c
 
 let refresh_template_constraints ~metas env sigma ind c =
-  let (mib, _) as spec = Inductive.lookup_mind_specif env ind in
+  let mib = Environ.lookup_mind (fst ind) env in
   let ctx = (Option.get mib.mind_template).template_context in
   let cstrs0 = UVars.UContext.constraints @@ UVars.AbstractContext.repr ctx in
   if Univ.Constraints.is_empty cstrs0 then sigma
@@ -132,7 +132,7 @@ let refresh_template_constraints ~metas env sigma ind c =
     let map c = { uj_val = c; uj_type = get_type_of_with_metas ~metas env sigma c } in
     let allargs = Array.map map allargs in
     let sigma, univs = Typing.get_template_parameters env sigma ind allargs in
-    let cstrs, _, _ = Inductive.instantiate_template_universes spec univs in
+    let cstrs, _, _ = Inductive.instantiate_template_universes mib univs in
     Evd.add_constraints sigma cstrs
 
 let clenv_refresh env sigma ctx clenv =
