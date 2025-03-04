@@ -114,26 +114,19 @@ let new_type_evar env sigma ~src =
   let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
   new_evar env sigma ~src (EConstr.mkSort s) ~relevance:ERelevance.relevant
 
-let hide_variable env expansion id =
+let hide_variable env id =
   let lvar = env.lvar in
   if Id.Map.mem id lvar.ltac_genargs then
-    let lvar = match expansion with
-    | Name id' ->
-       (* We are typically in a situation [match id return P with ... end]
-          which we interpret as [match id' as id' return P with ... end],
-          with [P] interpreted in an environment where [id] is bound to [id'].
-          The variable is already bound to [id'], so nothing to do *)
-       lvar
-    | _ ->
-       (* We are typically in a situation [match id return P with ... end]
-          with [id] bound to a non-variable term [c]. We interpret as
+    let lvar =
+      (* We are typically in a situation [match id return P with ... end]
+         with [id] bound to a non-variable term [c]. We interpret as
          [match c as id return P with ... end], and hides [id] while
          interpreting [P], since it has become a binder and cannot be anymore be
          substituted by a variable coming from the Ltac substitution. *)
-       { lvar with
-         ltac_uconstrs = Id.Map.remove id lvar.ltac_uconstrs;
-         ltac_constrs = Id.Map.remove id lvar.ltac_constrs;
-         ltac_genargs = Id.Map.remove id lvar.ltac_genargs } in
+      { lvar with
+        ltac_uconstrs = Id.Map.remove id lvar.ltac_uconstrs;
+        ltac_constrs = Id.Map.remove id lvar.ltac_constrs;
+        ltac_genargs = Id.Map.remove id lvar.ltac_genargs } in
     { env with lvar }
   else
     env

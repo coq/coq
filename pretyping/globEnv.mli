@@ -65,9 +65,8 @@ val new_evar : t -> evar_map -> ?src:Evar_kinds.t Loc.located ->
 
 val new_type_evar : t -> evar_map -> src:Evar_kinds.t Loc.located -> evar_map * constr
 
-(** [hide_variable env na id] tells to hide the binding of [id] in
-    the ltac environment part of [env] and to additionally rebind
-    it to [id'] in case [na] is some [Name id']. It is useful e.g.
+(** [hide_variable env id] tells to hide the binding of [id] in
+    the ltac environment part of [env]. It is useful e.g.
     for the dual status of [y] as term and binder. This is the case
     of [match y return p with ... end] which implicitly denotes
     [match z as z return p with ... end] when [y] is bound to a
@@ -75,7 +74,7 @@ val new_type_evar : t -> evar_map -> src:Evar_kinds.t Loc.located -> evar_map * 
     is bound to a non-variable term [t]. In the latter case, the
     binding of [y] to [t] should be hidden in [p]. *)
 
-val hide_variable : t -> Name.t -> Id.t -> t
+val hide_variable : t -> Id.t -> t
 
 (** In case a variable is not bound by a term binder, look if it has
     an interpretation as a term in the ltac_var_map *)
