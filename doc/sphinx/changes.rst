@@ -43,7 +43,7 @@ We highlight some of the most impactful changes here:
 
     - A `Corelib` library (the `rocq-core` opam package). This is an
       extended prelude, which is
-      enough to run `rocq` tactics and contains the `Ltac2` library and bindings
+      enough to run Rocq tactics and contains the `Ltac2` library and bindings
       for primitive types (integers, floats, arrays and strings).
     - An `Stdlib` library (the `rocq-stdlib` opam package). The `Stdlib` is
       now maintained out of the main `rocq` repository. We welcome maintainers and
@@ -64,7 +64,7 @@ documentation of the 9.0 `core <https://rocq-prover.org/doc/v9.0/corelib>`_ and
 and `developer documentation of the 9.0 ML API <https://rocq-prover.org/doc/v9.0/api>`_
 are also available.
 
-Théo Zimmermann with help from Jason Gross maintained
+Théo Zimmermann, with help from Jason Gross and Gaëtan Gilbert, maintained
 `coqbot <https://github.com/coq/bot>`_ used to run Coq's CI and other
 pull request management tasks.
 
@@ -73,11 +73,11 @@ and its `automatic use through coqbot <https://github.com/coq/coq/wiki/Coqbot-mi
 
 Ali Caglayan, Emilio Jesús Gallego Arias, Rudi Grinberg and Rodolphe Lepigre maintained the
 `Dune build system for OCaml and Coq/Rocq <https://github.com/ocaml/dune/>`_
-used to build Rocq itself and many Rocq projects.
+used to build the Rocq Prover itself and many Rocq projects.
 
 The `opam repository <https://github.com/coq/opam>`_ for Rocq packages has been maintained by
 Guillaume Claret, Guillaume Melquiond, Karl Palmskog, Matthieu Sozeau
-and Enrico Tassi with contributions from many users. The up-to-data list
+and Enrico Tassi with contributions from many users. The up-to-date list
 of packages is `available on the Rocq website <https://rocq-prover.org/packages>`_.
 
 Erik Martin-Dorel and Jaime Arias maintained the
@@ -101,7 +101,7 @@ Karl Palmskog, Pierre-Marie Pédrot, Pierre Rousselin, Pierre Roux,
 Marcello Seri, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi,
 Romain Tetley, Oliver Turner and Théo Zimmermann.
 
-See the `Rocq Team <https://rocq-prover.org/governance>`_ page for
+See the `Rocq Team <https://rocq-prover.org/rocq-team>`_ page for
 more details on Rocq's development teams.
 
 The 48 contributors to the 9.0 version are:
@@ -135,7 +135,7 @@ to invoke it through legacy Coq commands: `coq-tex`, `coq_makefile`, `coqchk`, `
 `coqwc`, `coqc`, `coqdep`, `coqnative`, `coqtimelog2html`, `coqtop.byte`, `coqworkmgr`.
 When using `opam`, this compatibility layer is provided by the packages `coq-core`,
 `coq-stdlib` and `coq`. In this setting, nothing needs to be changed to the build systems
-of existing projects to compile with `Rocq 9.0` (aliased as `Coq 9.0`).
+of existing projects to compile with Rocq 9.0 (aliased as "Coq 9.0").
 
 You should expect warnings that the standard library previously under namespace
 `Coq` has been renamed to `Stdlib`. See `this entry
@@ -197,9 +197,9 @@ and customized 3rd-party fonts are released under open-source `licences <https:/
 
 The website is deployed automatically using a
 custom `deployer <https://deploy.rocq-prover.org>`_ developed by Matthieu
-Sozeau. The deployer keeps the website up-to-date with the github repositories
+Sozeau. The deployer keeps the website up-to-date with the GitHub repositories
 of the `website <https://github.com/coq/rocq-prover.org>`__ and `documentation
-<https://github.com/coq/doc>`_. Its code is accessible on `github
+<https://github.com/coq/doc>`_. Its code is accessible on `GitHub
 <https://github.com/coq/deploy-rocq-prover.org>`_.
 
 
@@ -392,11 +392,15 @@ Tactics
 Ltac2 language
 ^^^^^^^^^^^^^^
 
+- **Deprecated:**
+  `Ltac2.Constr.occur_between` and `occurn` whose return values are the opposite of that implied by their names
+  (`#19614 <https://github.com/coq/coq/pull/19614>`_,
+  by Gaëtan Gilbert).
 - **Added:**
   Added Ltac2 bindings for congruence and simpl congruence, it fixes #14289 not entirely but provides Ltac2 bindings for one of the tactics listed there
   (`#19032 <https://github.com/coq/coq/pull/19032>`_,
   fixes `#14289 <https://github.com/coq/coq/issues/14289>`_,
-  by Benny Smit, reviewed by Jason Gross, reviewed by Pierre-Marie Pédrot, reviewed by Gaëtan Gilbert).
+  by Benny Smit, reviewed by Jason Gross, Pierre-Marie Pédrot, Gaëtan Gilbert).
 - **Added:**
   APIs `compare` `of_int` and `print` in `Ltac2.Uint63`
   (`#19197 <https://github.com/coq/coq/pull/19197>`_,
@@ -407,10 +411,6 @@ Ltac2 language
   by Gaëtan Gilbert).
 - **Added:**
   `Ltac2.Constr.noccur_between` and `noccurn` to test for non-occurrence of local variables in terms
-  (`#19614 <https://github.com/coq/coq/pull/19614>`_,
-  by Gaëtan Gilbert).
-- **Deprecated:**
-  `Ltac2.Constr.occur_between` and `occurn` whose return values are the opposite of that implied by their names
   (`#19614 <https://github.com/coq/coq/pull/19614>`_,
   by Gaëtan Gilbert).
 - **Added:**
@@ -425,7 +425,7 @@ Ltac2 language
   fixes `#19590 <https://github.com/coq/coq/issues/19590>`_,
   by Pierre Roux).
 - **Fixed:**
-  `Ltac2 Eval` does not require to be focussed in a goal
+  `Ltac2 Eval` does not require to be focused in a goal
   anymore (`#19961 <https://github.com/coq/coq/pull/19961>`_, by
   Daniil Iaitskov).
 
@@ -451,7 +451,7 @@ Commands and options
 ^^^^^^^^^^^^^^^^^^^^
 
 - **Changed:**
-  :cmd:`Variables` and its aliases does not share the type of combined binders anymore.
+  :cmd:`Variables` and its aliases do not share the type of combined binders anymore.
   This makes for instance `Variables a b : T` strictly equivalent to `Variables (a: T) (b : T).`
   (when `a` is not bound in `T`).
   The difference matters when interpreting `T` generates fresh universes or existential variables:
