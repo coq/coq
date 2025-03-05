@@ -19,7 +19,6 @@ open Geninterp
 open Stdarg
 open Tactypes
 open Locus
-open Genredexpr
 open Ppconstr
 open Pputils
 open Printer

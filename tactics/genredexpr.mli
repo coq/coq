@@ -59,12 +59,6 @@ type ('a, 'b, 'c, 'occvar, 'flags) red_expr_gen0 =
 type ('a, 'b, 'c, 'occvar) red_expr_gen =
   ('a, 'b, 'c, 'occvar, 'b glob_red_flag) red_expr_gen0
 
-type ('a,'b,'c,'occvar) may_eval =
-  | ConstrTerm of 'a
-  | ConstrEval of ('a,'b,'c,'occvar) red_expr_gen * 'a
-  | ConstrContext of Names.lident * 'a
-  | ConstrTypeOf of 'a
-
 open Constrexpr
 
 type r_trm = constr_expr

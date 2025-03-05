@@ -351,7 +351,7 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: constr_eval;
   constr_eval: TOP [
-    [ IDENT "type"; "of"; c = Constr.constr -> { Genredexpr.ConstrTypeOf c }]
+    [ IDENT "type"; "of"; c = Constr.constr -> { Tacexpr.ConstrTypeOf c }]
   ];
 END
 
