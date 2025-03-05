@@ -493,12 +493,20 @@ let create_tab ?profiling () = {
       | Some StepsAndTime -> Some (ref (None, gettime())));
 }
 
+let sample_rate = ref (1,1)
+
 let update_time ?(force=false) tab ctx =
   match tab.last_time with
   | None -> ()
   | Some last_time ->
     let ctx0, t0 = !last_time in
-    if not force && (ctx0 == ctx || RedContext.equal ctx0 ctx) then ()
+    let should_update = if force then true
+      else
+        let num, denum = !sample_rate in
+        (num = denum || Random.int denum < num)
+        && not (ctx0 == ctx || RedContext.equal ctx0 ctx)
+    in
+    if not should_update then ()
     else begin
       let records = Option.get tab.recorded_steps in
       let record = match RedContextTbl.find_opt records ctx0 with
@@ -564,7 +572,7 @@ module RecordedSteps = struct
     | None -> []
     | Some record -> RedContextTbl.to_seq record |> Seq.map (on_snd copy) |> List.of_seq
 
-  let sample_rate = ref (1,1)
+  let sample_rate = sample_rate
 
 end
 
