@@ -606,21 +606,22 @@ let chg_flag n = int_flag_ref := n; opt_flag_ref := flag_of_int n
 
 let optims () = !opt_flag_ref
 
-let () = declare_bool_option
-          {optstage = Summary.Stage.Interp;
-           optdepr = None;
-           optkey = ["Extraction"; "Optimize"];
-           optread = (fun () -> not (Int.equal !int_flag_ref 0));
-           optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
+let () = declare_option ~kind:BoolKind
+    ~no_summary:true (* synchronization handled by Extraction Flag *)
+    {optstage = Summary.Stage.Interp;
+     optdepr = None;
+     optkey = ["Extraction"; "Optimize"];
+     optread = (fun () -> not (Int.equal !int_flag_ref 0));
+     optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let () = declare_int_option
-          { optstage = Summary.Stage.Interp;
-            optdepr = None;
-            optkey = ["Extraction";"Flag"];
-            optread = (fun _ -> Some !int_flag_ref);
-            optwrite = (function
-                          | None -> chg_flag 0
-                          | Some i -> chg_flag (max i 0))}
+    { optstage = Summary.Stage.Interp;
+      optdepr = None;
+      optkey = ["Extraction";"Flag"];
+      optread = (fun _ -> Some !int_flag_ref);
+      optwrite = (function
+        | None -> chg_flag 0
+        | Some i -> chg_flag (max i 0))}
 
 (* This option controls whether "dummy lambda" are removed when a
    toplevel constant is defined. *)
