@@ -30,11 +30,11 @@ let make ~args ~(dir_info : _ Dir_info.t) =
   (* We are sane w.r.t. path separators *)
   let make_separator_hack = false in
   let st = CD.Common.init ~make_separator_hack args in
-  let vAccu =
-    Dir_info.fold dir_info ~init:CD.Common.empty_vAccu ~f:(fun ~prefix:_ vAccu files ->
+  let st =
+    Dir_info.fold dir_info ~init:st ~f:(fun ~prefix:_ vAccu files ->
         let files = List.map Coq_module.source files in
         List.fold_left coqdep_register_file vAccu files) in
-  CD.Common.compute_deps vAccu st |> from_list
+  CD.Common.compute_deps st |> from_list
 
 let lookup ~dep_info file =
   if debug then Format.eprintf "lookup: %a@\n%!" Path.pp file;

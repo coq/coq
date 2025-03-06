@@ -10,10 +10,6 @@
 
 module StrSet : Set.S with type elt = string
 
-type vAccu
-
-val empty_vAccu : vAccu
-
 module State : sig
   type t
   val loadpath : t -> Loadpath.State.t
@@ -23,8 +19,8 @@ end
 val init : make_separator_hack:bool -> Args.t -> State.t
 
 (** [treat_file_command_line file] Add an input file to be considered  *)
-val treat_file_command_line : vAccu -> string -> vAccu
+val treat_file_command_line : State.t -> string -> State.t
 
-val sort : vAccu -> State.t -> unit
+val sort : State.t -> unit
 
-val compute_deps : vAccu -> State.t -> Dep_info.t list
+val compute_deps : State.t -> Dep_info.t list

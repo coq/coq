@@ -16,8 +16,6 @@ module StrSet = Set.Make(String)
 *)
 type vAccu = (string * string) list
 
-let empty_vAccu : vAccu = []
-
 let separator_hack = ref true
 let filename_concat dir name =
   if !separator_hack
@@ -140,12 +138,15 @@ let with_in_channel ~fname f =
   Util.try_finally f chan close_in chan
 
 module State = struct
-  type t = Loadpath.State.t
-  let loadpath x = x
+  type t = {
+    loadpath : Loadpath.State.t;
+    vAccu : vAccu;
+  }
+  let loadpath x = x.loadpath
 end
 
 (* recursive because of Load *)
-let rec find_dependencies vAccu st basename =
+let rec find_dependencies ({State.vAccu; loadpath} as st) basename =
   (* Visited marks *)
   let visited_ml = ref StrSet.empty in
   let visited_v = ref VCache.empty in
@@ -162,7 +163,7 @@ let rec find_dependencies vAccu st basename =
   let add_dep_other s = add_dep (Dep_info.Dep.Other s) in
 
   (* worker dep *)
-  let () = add_dep_other (Loadpath.get_worker_path st) in
+  let () = add_dep_other (Loadpath.get_worker_path loadpath) in
 
   (* Reading file contents *)
   let f = basename ^ ".v" in
@@ -180,17 +181,17 @@ let rec find_dependencies vAccu st basename =
         let from, strl = coq_to_stdlib from strl in
         let decl str =
           if should_visit_v_and_mark from str then begin
-            let files = safe_assoc st from f str in
+            let files = safe_assoc loadpath from f str in
             let files = match from, files with
               | Some _, _ | None, Some _ -> files
-              | None, None -> safe_assoc st (Some ["Stdlib"]) f str in
+              | None, None -> safe_assoc loadpath (Some ["Stdlib"]) f str in
             match files with
             | Some files ->
               List.iter (fun file_str ->
                   let file_str = canonize vAccu file_str in
                   add_dep (Dep_info.Dep.Require file_str)) files
             | None ->
-              if not (Loadpath.is_in_coqlib st ?from str) then
+              if not (Loadpath.is_in_coqlib loadpath ?from str) then
                 warning_module_notfound (Library, from, f, str)
           end
         in
@@ -214,11 +215,11 @@ let rec find_dependencies vAccu st basename =
         let canon =
           match file with
           | Logical str ->
-            if should_visit_v_and_mark None [str] then safe_assoc st None f [str]
+            if should_visit_v_and_mark None [str] then safe_assoc loadpath None f [str]
             else None
           | Physical str ->
             if String.equal (Filename.basename str) str then
-              if should_visit_v_and_mark None [str] then safe_assoc st None f [str]
+              if should_visit_v_and_mark None [str] then safe_assoc loadpath None f [str]
               else None
             else
               Some [canonize vAccu str]
@@ -228,13 +229,13 @@ let rec find_dependencies vAccu st basename =
          | Some l ->
            let decl canon =
              add_dep_other (Format.sprintf "%s.v" canon);
-             let deps = find_dependencies vAccu st canon in
+             let deps = find_dependencies st canon in
              List.iter add_dep deps
            in
            List.iter decl l);
         loop ()
       | External(from,str) ->
-        begin match safe_assoc st ~what:External (Some from) f [str] with
+        begin match safe_assoc loadpath ~what:External (Some from) f [str] with
         | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize vAccu file))
         | Some [] -> assert false
         | None -> warning_module_notfound (External, Some from, f, [str])
@@ -243,9 +244,9 @@ let rec find_dependencies vAccu st basename =
   in
   loop ()
 
-let compute_deps vAccu st =
-  let mk_dep (name, _orig_path) = Dep_info.make ~name ~deps:(find_dependencies vAccu st name) in
-  vAccu |> CList.rev_map mk_dep
+let compute_deps st =
+  let mk_dep (name, _orig_path) = Dep_info.make ~name ~deps:(find_dependencies st name) in
+  st.vAccu |> CList.rev_map mk_dep
 
 let rec treat_file vAccu old_dirname old_name =
   let name = Filename.basename old_name
@@ -283,11 +284,12 @@ let rec treat_file vAccu old_dirname old_name =
      | _ -> vAccu)
   | _ -> vAccu
 
-let treat_file_command_line vAccu old_name =
-  treat_file vAccu None old_name
+let treat_file_command_line st old_name =
+  let vAccu = treat_file st.State.vAccu None old_name in
+  { st with State.vAccu }
 
 (* "[sort]" outputs `.v` files required by others *)
-let sort vAccu st =
+let sort {State.vAccu; loadpath} =
   let seen = Hashtbl.create 97 in
   let rec loop file =
     let file = canonize vAccu file in
@@ -301,7 +303,7 @@ let sort vAccu st =
           | Lexer.Require (from, sl) ->
                 List.iter
                   (fun s ->
-                    match safe_assoc st from ~warn_clashes:false file s with
+                    match safe_assoc loadpath from ~warn_clashes:false file s with
                     | None -> ()
                     | Some l -> List.iter loop l)
                 sl
@@ -333,7 +335,7 @@ let findlib_init dirs =
 let init ~make_separator_hack args =
   separator_hack := make_separator_hack;
   if not Coq_config.has_natdynlink then Makefile.set_dyndep "no";
-  let st = Loadpath.State.make ~worker:args.Args.worker ~boot:args.Args.boot in
+  let loadpath = Loadpath.State.make ~worker:args.Args.worker ~boot:args.Args.boot in
   Makefile.set_write_vos args.Args.vos;
   Makefile.set_noglob args.Args.noglob;
   (* Add to the findlib search path, common with sysinit/coqinit *)
@@ -345,6 +347,6 @@ let init ~make_separator_hack args =
       Boot.Env.Path.(to_string @@ relative (Boot.Env.corelib env) "..") :: ml_path
   in
   findlib_init ml_path;
-  List.iter (add_include st) args.Args.vo_path;
+  List.iter (add_include loadpath) args.Args.vo_path;
   Makefile.set_dyndep args.Args.dyndep;
-  st
+  { State.vAccu = []; loadpath }
