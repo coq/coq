@@ -49,8 +49,8 @@ let rec iter ~(f : prefix:string list -> 'a -> unit) di : unit =
   f ~prefix:di.prefix di.modules;
   List.iter (iter ~f) di.children
 
-let rec fold ~(f : prefix:string list -> 'b list -> 'a list -> 'b) ~init di =
-  let res = List.map (fold ~f ~init) di.children in
+let rec fold ~(f : prefix:string list -> 'b -> 'a list -> 'b) ~init di =
+  let res = List.fold_left (fun init x -> fold ~f ~init x) init di.children in
   f ~prefix:di.prefix res di.modules
 
 let rec coq_modules { modules; children; _ } =

@@ -237,7 +237,7 @@ let gen_rules ~dir_info ~cctx ~f =
   let f ~prefix sub_acc mods =
     let subdir = Coq_module.prefix_to_dir prefix in
     let payload = List.map (f ~cctx) mods in
-    Dune_file.Subdir.{ subdir; payload } :: List.concat sub_acc
+    Dune_file.Subdir.{ subdir; payload } :: sub_acc
   in
   Dir_info.fold ~f ~init:[] dir_info
 
