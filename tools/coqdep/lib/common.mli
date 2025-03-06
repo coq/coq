@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module StrSet : Set.S with type elt = string
-
 module State : sig
   type t
   val loadpath : t -> Loadpath.State.t

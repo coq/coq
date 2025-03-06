@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module StrSet = Set.Make(String)
-
 (** Rocq files specifies on the command line:
     - first string is the full filename, with only its extension removed
     - second string is the absolute version of the previous (via getcwd)
@@ -151,7 +149,7 @@ end
 (* recursive because of Load *)
 let rec find_dependencies ({State.vAccu; separator_hack; loadpath} as st) basename =
   (* Visited marks *)
-  let visited_ml = ref StrSet.empty in
+  let visited_ml = ref CString.Set.empty in
   let visited_v = ref VCache.empty in
   let should_visit_v_and_mark from str =
     if not (VCache.mem (from, str) !visited_v) then begin
@@ -207,8 +205,8 @@ let rec find_dependencies ({State.vAccu; separator_hack; loadpath} as st) basena
           List.iter add_dep_other meta_file;
           str |> List.iter (fun str ->
           let plugin_file = Filename.chop_extension str in
-          if not (StrSet.mem plugin_file !visited_ml) then begin
-            visited_ml := StrSet.add plugin_file !visited_ml;
+          if not (CString.Set.mem plugin_file !visited_ml) then begin
+            visited_ml := CString.Set.add plugin_file !visited_ml;
             add_dep (Dep_info.Dep.Ml plugin_file)
           end)
         in
