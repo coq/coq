@@ -892,6 +892,76 @@ However elimination to `Type` or to a polymorphic sort with `s := Prop` is allow
         : Type@{s|max(u,v)}
         := pair { pr1 : A; pr2 : B pr1 }.
 
+Explicit Sorts
+---------------
+
+Similar to universes, fresh global sorts can be declared with the :cmd:`Sort`.
+
+.. cmd:: Sort {+ @ident }
+         Sorts {+ @ident }
+
+   In the monomorphic case, declares new global sort qualities
+   with the given names.  Global quality names live in their own namespace.
+   Inside sections, the command respects the `Universe Polymorphism` flag,
+   either set globally or locally through the :attr:`universes(polymorphic)` attribute (or
+   the ``Polymorphic`` legacy attribute), meaning the sort
+   quantification will be discharged for each section definition
+   independently. Polymorphic sort qualities are forbidden outside sections.
+
+  .. exn:: Polymorphic sorts can only be declared inside sections, use #[universe(polymorphic=no)] Sort in order to declare a global sort.
+
+    Generated when a :cmd:`Sort` command is issued outside a section with universe polymorphism set.
+    Either scope the :cmd:`Sort` with an enclosing :cmd:`Section` or be explicit about creating a global sort
+    by turning universe polymorphism off.
+
+  .. exn:: Cannot declare global sort qualities inside module types.
+
+    The :cmd:`Sort` command is not supported inside module types.
+
+.. cmd:: Print Sorts
+
+   Print the list of global named sorts in the current global environment. Use :cmd:`Show Universes` to print sort variables local to a proof context.
+
+  .. rocqtop:: all
+
+    Set Universe Polymorphism.
+
+    (* A global sort named g. *)
+    #[universes(polymorphic=no)]
+    Sort g.
+
+    Print Sorts.
+
+    (* Universe of g-sorted type. *)
+    Definition G@{l|} : Type@{l+1} := Type@{g|l}.
+
+    Section LocalSorts.
+      Sort u v w.
+
+      Definition arr2@{l|} (A : Type@{u|l}) (B : Type@{v|l}) (C : Type@{w|l}) : Type@{w|l} :=
+        A -> B -> C.
+
+      Print Sorts.
+
+      Sort x y.
+
+      Definition arr1@{l|} (X : Type@{x|l}) (Y : Type@{y|l}) : Type@{y|l} :=
+        X -> Y.
+
+      Print Sorts.
+
+    End LocalSorts.
+
+    (* The sorts u, v, w, x and y are no longer present. *)
+    Print Sorts.
+
+    (* Equivalent definition of arr2 outside the section LocalSorts. *)
+    Definition arr2'@{u v w | l |} (A : Type@{u|l}) (B : Type@{v|l}) (C : Type@{w|l}) : Type@{w|l} :=
+        A -> B -> C.
+
+    (* All sort declarations of the section are bound, even the unused one. *)
+    About arr1.
+
 .. _universe-polymorphism-in-sections:
 
 Universe polymorphism and sections

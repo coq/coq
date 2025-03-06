@@ -296,6 +296,8 @@ GRAMMAR EXTEND Gram
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
+      | IDENT "Sort"; l = LIST1 identref -> { VernacSort l }
+      | IDENT "Sorts"; l = LIST1 identref -> { VernacSort l }
       | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }
       | IDENT "Rewrite"; IDENT "Rule"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->
           { VernacAddRewRule (id, rules) }
@@ -1176,6 +1178,7 @@ GRAMMAR EXTEND Gram
           IDENT "Constraint"; IDENT "Sources" -> { b } ];
         fopt = OPT ne_string ->
         { PrintUniverses {sort=b; subgraph=g; with_sources; file=fopt;} }
+      | IDENT "Sorts" -> { PrintSorts }
       | IDENT "Assumptions"; qid = smart_global -> { PrintAssumptions (false, false, qid) }
       | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (true, false, qid) }
       | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (false, true, qid) }

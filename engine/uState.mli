@@ -32,10 +32,10 @@ type t
 
 val empty : t
 
-val make : UGraph.t -> t
+val make : qualities:QVar.Set.t -> UGraph.t -> t
 [@@ocaml.deprecated "(8.13) Use from_env"]
 
-val make_with_initial_binders : UGraph.t -> lident list -> t
+val make_with_initial_binders : qualities:QVar.Set.t -> UGraph.t -> lident list -> t
 [@@ocaml.deprecated "(8.13) Use from_env"]
 
 val from_env : ?binders:lident list -> Environ.env -> t
