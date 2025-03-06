@@ -11,8 +11,197 @@ Recent changes
 Version 9.0
 -----------
 
+.. contents::
+   :local:
+   :depth: 1
+
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
+
+The Rocq Prover version 9.0 is the first Rocq Prover release after the renaming
+from The Coq Proof Assistant. The Rocq Prover 9.0 command line interface is
+backwards compatible with Coq 8.20, providing compatibility shims so that
+developments depending on Coq can be easily ported, see `Porting to The Rocq
+Prover`_  for details. The 9.0 version is based on a new single binary `rocq`
+that dispatches commands to previously separate binaries, a split and renaming
+of the standard library to `Stdlib` and improvements to the handling of
+template-polymorphism, bringing it closer to a complete subsumption by sort
+polymorphism.
+
+We highlight some of the most impactful changes here:
+
+  - "The Rocq Prover" is the new official name of the project. We leave to users the
+    choice of renaming their projects to reflect this change, see `Renaming Advice`_.
+    The Rocq Prover comes with a new visual identity and website, see `The Rocq Prover Website`_.
+
+  - A single `rocq` binary dispatches commands for compilation, read-eval-print-loop,
+    documentation building, dependency computation, etc. See :ref:`therocqcommands`.
+    It corresponds to the `rocq-runtime` `opam package <https://ocaml.org/p/rocq-runtime>`_.
+    This is a bare-bones package that does not provide any Gallina code.
+
+  - The `Coq` standard library has been :ref:`split <90stdlib>` into two libraries:
+
+    - A `Corelib` library (the `rocq-core` opam package). This is an
+      extended prelude, which is
+      enough to run `rocq` tactics and contains the `Ltac2` library and bindings
+      for primitive types (integers, floats, arrays and strings).
+    - An `Stdlib` library (the `rocq-stdlib` opam package). The `Stdlib` is
+      now maintained out of the main `rocq` repository. We welcome maintainers and
+      contributors to the `new repository <https://github.com/rocq-prover/stdlib>`_.
+      A specific call for contributions will be
+      sent soon.
+
+Notable breaking changes:
+
+  - The legacy loading mode for plugins has been :ref:`removed <LegacyLoadingRemoval>`.
+
+See the `Changes in 9.0.0`_ section below for the detailed list of changes,
+including potentially breaking changes marked with **Changed**.
+Rocq's `reference manual for 9.0 <https://rocq-prover.org/doc/v9.0/refman>`_,
+documentation of the 9.0 `core <https://rocq-prover.org/doc/v9.0/corelib>`_ and
+`standard <https://rocq-prover.org/doc/v9.0/stdlib>`_ libraries,
+`reference manual of the 9.0 standard library <https://rocq-prover.org/doc/v9.0/refman-stdlib>`_
+and `developer documentation of the 9.0 ML API <https://rocq-prover.org/doc/v9.0/api>`_
+are also available.
+
+Théo Zimmermann with help from Jason Gross maintained
+`coqbot <https://github.com/coq/bot>`_ used to run Coq's CI and other
+pull request management tasks.
+
+Jason Gross maintained the `bug minimizer <https://github.com/JasonGross/coq-tools>`_
+and its `automatic use through coqbot <https://github.com/coq/coq/wiki/Coqbot-minimize-feature>`_.
+
+Ali Caglayan, Emilio Jesús Gallego Arias, Rudi Grinberg and Rodolphe Lepigre maintained the
+`Dune build system for OCaml and Coq/Rocq <https://github.com/ocaml/dune/>`_
+used to build Rocq itself and many Rocq projects.
+
+The `opam repository <https://github.com/coq/opam>`_ for Rocq packages has been maintained by
+Guillaume Claret, Guillaume Melquiond, Karl Palmskog, Matthieu Sozeau
+and Enrico Tassi with contributions from many users. The up-to-data list
+of packages is `available on the Rocq website <https://rocq-prover.org/packages>`_.
+
+Erik Martin-Dorel and Jaime Arias maintained the
+`Rocq Docker images <https://hub.docker.com/r/rocq/rocq-prover>`_.
+Erik Martin-Dorel maintained the `docker-keeper <https://gitlab.com/erikmd/docker-keeper>`_ compiler
+used to build and keep those images up to date (note that the tool is not Rocq specific).
+Erik Martin-Dorel and Théo Zimmermann maintained the
+`docker-coq-action <https://github.com/coq-community/docker-coq-action>`_
+container action (which is applicable to any opam project hosted on GitHub).
+
+Cyril Cohen, Vincent Laporte, Pierre Roux and Théo Zimmermann
+maintained the `Nix toolbox <https://github.com/coq-community/coq-nix-toolbox>`_.
+The docker-coq-action and the Nix toolbox are used by many Rocq projects for continuous integration.
+
+Rocq 9.0 was made possible thanks to the following 27 reviewers:
+Yves Bertot, Ali Caglayan, Tej Chajed, Andres Erbsen, Jim Fehrle,
+Emilio Jesús Gallego Arias, Gaëtan Gilbert, Jason Gross, Samuel Gruetter,
+Hugo Herbelin, Thomas Lamiaux, Olivier Laurent, Rodolphe Lepigre,
+Erik Martin-Dorel, Guillaume Melquiond, Guillaume Munch-Maccagnoni,
+Karl Palmskog, Pierre-Marie Pédrot, Pierre Rousselin, Pierre Roux,
+Marcello Seri, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi,
+Romain Tetley, Oliver Turner and Théo Zimmermann.
+
+See the `Rocq Team <https://rocq-prover.org/governance>`_ page for
+more details on Rocq's development teams.
+
+The 48 contributors to the 9.0 version are:
+Jean Abou Samra, Tanaka Akira, David Allsopp, Frédéric Besson, Mathis Bouverot, Sylvain Chiron,
+Cyril Cohen, Lucas Donati, Andrej Dudenhefner, Arya Elfren, Andres Erbsen, Siegmentation Fault,
+Jim Fehrle, Gaëtan Gilbert, Tomaz Gomes Mascarenhas, Jason Gross, Hugo Herbelin, Florent Hivert,
+Daniil Iaitskov, Emilio Jesús Gallego Arias, Jan-Oliver Kaiser, Rodolphe Lepigre, Yann Leray,
+Felix Loyau-Kahn, Erik Martin-Dorel, Guillaume Melquiond, Guillaume Munch-Maccagnoni,
+Aleksandar Nanevski, Charles Norton, Karl Palmskog, Pierre-Marie Pédrot, Pierre Rousselin,
+Pierre Roux, Kazuhiko Sakaguchi, Gabriel Scherer, Marcello Seri, Benny Smit, Michael Soegtrop,
+Matthieu Sozeau, Nicolas Tabareau, Enrico Tassi, Oliver Turner, Quentin Vermande, Daneel Yaitskov,
+Remzi Yang, Tan Yee Jian and Théo Zimmermann.
+
+The Coq/Rocq community at large helped improve this new version via
+the GitHub issue and pull request system, the coq-club@inria.fr mailing list,
+the `Discourse forum <https://coq.discourse.group/>`_ and the
+`Coq Zulip chat <https://coq.zulipchat.com>`_.
+
+Version 9.0's development spanned 7 months from the release of Coq 8.20.0.
+Pierre-Marie Pédrot and Matthieu Sozeau are the release managers of Rocq 9.0.
+This release is the result of 491 merged PRs, closing 68 issues.
+
+| Nantes, March 2025
+| Pierre-Marie Pédrot and Matthieu Sozeau for the Rocq development team
+
+Porting to The Rocq Prover
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Rocq Prover version 9.0 includes compatibility shims that make it possible
+to invoke it through legacy Coq commands: `coq-tex`, `coq_makefile`, `coqchk`, `coqdoc`, `coqpp`, `coqtop`,
+`coqwc`, `coqc`, `coqdep`, `coqnative`, `coqtimelog2html`, `coqtop.byte`, `coqworkmgr`.
+When using `opam`, this compatibility layer is provided by the packages `coq-core`,
+`coq-stdlib` and `coq`. In this setting, nothing needs to be changed to the build systems
+of existing projects to compile with `Rocq 9.0` (aliased as `Coq 9.0`).
+
+You should expect warnings that the standard library previously under namespace
+`Coq` has been renamed to `Stdlib`. See `this entry
+<https://rocq-prover.org/doc/v9.0/refman-stdlib/changes.html#changed>`_ from
+the Standard Library's changelog for the suggested workflow to port theories.
+
+There are important changes to consider for building plugins and libraries:
+
+- To be future-proof, projects based on `coq_makefile` can be ported to not rely
+  on the compatibility layer anymore. To do so, one must replace uses of
+  `coq_makefile` with :ref:`rocq makefile <rocq_makefile>`, which will directly
+  call the new `rocq` binary without relying on the compatibility shims.
+
+- If using `dune` to :ref:`build <building_dune>` a Rocq project, you will still
+  need the compatibility shim for `coq-core` so that `dune`'s Coq language extension
+  functions correctly.
+
+Regarding packaging:
+
+- Opam packages that depend on the compatibility shims should remain named as `coq-*`, whereas
+  ported packages should be named `rocq-*`, with the `coq` dependency being replaced by
+  a `rocq-core` and `rocq-stdlib` dependency (unless your package does not depend on the stdlib),
+  but **not** `rocq-prover` which is only a user-oriented metapackage.
+- Similarly, Nix packages that use the compatibility shims can be kept in
+  `coqPackages` (and can keep depending on `coq`), whereas ported packages can
+  be added in `rocqPackages`, depending on `rocq-core`.
+
+In both cases, when a `rocq` port is done, a `coq` metapackage can be kept,
+simply depending on the new `rocq` package and `coq`.
+
+Renaming Advice
+~~~~~~~~~~~~~~~
+
+We have applied the `renaming <https://rocq-prover.org/about#Name>`_ from the
+Coq Proof Assistant to The Rocq Prover in this version, and officialy supported
+projects in the `Rocq organization <https://github.com/rocq-prover>`_ will be
+renamed in the future. The Rocq Development Team's official position on renaming of
+projects *it does not officially maintain* is to let their authors do as they wish.
+We just note that the new identity is quite compatible with existing
+Rooster references. However, we encourage existing and forthcoming projects to
+adopt the new logo, its colors and fonts, see the `ìdentity guidelines
+<https://rocq-prover.org/logo>`_ for more information.
+
+The Rocq Prover Website
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The Rocq Prover comes with a new `website <https://rocq-prover.org>`_ which was
+developped by Matthieu Sozeau, Nicolas Tabareau and Théo Zimmermann in
+collaboration with Bastien Sozeau of the `Noir Blanc Rouge
+<https://noirblancrouge.com/>`_ type foundry. The new website is a fork of the
+`OCaml.org <https://ocaml.org>`_ website developed by `Tarides
+<https://tarides.com/>`_. The Rocq development team is thankful for their help
+and for open-sourcing their website. It includes full support for the `Rocq
+package archive <https://github.com/coq/opam>`_, a responsive design and easy
+contributions through markdown files. The new identity, customized fonts and
+logo were designed by Bastien Sozeau, consulting for the Rocq development team.
+The logo is released under the UNLICENSE open-source `license <https://github.com/coq/rocq-prover.org/LICENSE>`_
+and customized 3rd-party fonts are released under open-source `licences <https://github.com/coq/rocq-prover.org/LICENSE-3RD-PARTY>`_.
+
+The website is deployed automatically using a
+custom `deployer <https://deploy.rocq-prover.org>`_ developed by Matthieu
+Sozeau. The deployer keeps the website up-to-date with the github repositories
+of the `website <https://github.com/coq/rocq-prover.org>`__ and `documentation
+<https://github.com/coq/doc>`_. Its code is accessible on `github
+<https://github.com/coq/deploy-rocq-prover.org>`_.
+
 
 Changes in 9.0.0
 ~~~~~~~~~~~~~~~~
@@ -297,6 +486,9 @@ Commands and options
   :cmd:`Create HintDb` no longer erases pre-existing hint databases
   (`#19808 <https://github.com/coq/coq/pull/19808>`_,
   by Gaëtan Gilbert).
+
+.. _LegacyLoadingRemoval:
+
 - **Removed:**
   "legacy" (non-findlib) loading mode for plugins in :cmd:`Declare ML Module`
   (`#18385 <https://github.com/coq/coq/pull/18385>`_,
@@ -442,6 +634,8 @@ RocqIDE
 
 Standard library
 ^^^^^^^^^^^^^^^^
+
+.. _90stdlib:
 
 - **Changed:**
   Stdlib moved to its own repository, look for
