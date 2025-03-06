@@ -27,7 +27,7 @@ let coqdep args =
   let make_separator_hack = true in
   let st = init ~make_separator_hack args in
   let lst = Common.State.loadpath st in
-  List.iter treat_file_command_line v_files;
+  let vAccu = List.fold_left treat_file_command_line Common.empty_vAccu v_files in
 
   (* XXX: All the code below is just setting loadpaths, refactor to
      Common coq.boot library *)
@@ -49,9 +49,9 @@ let coqdep args =
     List.iter add_dir (Envars.coqpath())
   end;
   if args.Args.sort then
-    sort st
+    sort vAccu st
   else
-    compute_deps st |> List.iter (Makefile.print_dep Format.std_formatter)
+    compute_deps vAccu st |> List.iter (Makefile.print_dep Format.std_formatter)
 
 let main args =
   try
