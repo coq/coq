@@ -16,9 +16,8 @@ module StrSet = Set.Make(String)
 *)
 type vAccu = (string * string) list
 
-let separator_hack = ref true
-let filename_concat dir name =
-  if !separator_hack
+let filename_concat ~separator_hack dir name =
+  if separator_hack
   then System.(dir // name)
   else Filename.concat dir name
 
@@ -26,8 +25,11 @@ let filename_concat dir name =
    (bar/../foo is not the same than ./foo for make) but it is a crude
    hack and we should remove it, and instead require users to follow
    the same naming convention *)
-let canonize vAccu f =
-  let f' = filename_concat (Loadpath.absolute_dir (Filename.dirname f)) (Filename.basename f) in
+let canonize ~separator_hack vAccu f =
+  let f' = filename_concat ~separator_hack
+      (Loadpath.absolute_dir (Filename.dirname f))
+      (Filename.basename f)
+  in
   match List.filter (fun (_,full) -> f' = full) vAccu with
     | (f,_) :: _ -> f
     | _ -> f
@@ -92,9 +94,9 @@ let safe_assoc ?(warn_clashes=true) st ?(what=Library) from file k =
     Some all)
   | Some (Loadpath.ExactMatches []) -> assert false
 
-let file_name s = function
+let file_name ~separator_hack s = function
   | None     -> s
-  | Some d   -> filename_concat d s
+  | Some d   -> filename_concat ~separator_hack d s
 
 module VData = struct
   type t = string list option * string list
@@ -140,13 +142,14 @@ let with_in_channel ~fname f =
 module State = struct
   type t = {
     loadpath : Loadpath.State.t;
+    separator_hack : bool;
     vAccu : vAccu;
   }
   let loadpath x = x.loadpath
 end
 
 (* recursive because of Load *)
-let rec find_dependencies ({State.vAccu; loadpath} as st) basename =
+let rec find_dependencies ({State.vAccu; separator_hack; loadpath} as st) basename =
   (* Visited marks *)
   let visited_ml = ref StrSet.empty in
   let visited_v = ref VCache.empty in
@@ -188,7 +191,7 @@ let rec find_dependencies ({State.vAccu; loadpath} as st) basename =
             match files with
             | Some files ->
               List.iter (fun file_str ->
-                  let file_str = canonize vAccu file_str in
+                  let file_str = canonize ~separator_hack vAccu file_str in
                   add_dep (Dep_info.Dep.Require file_str)) files
             | None ->
               if not (Loadpath.is_in_coqlib loadpath ?from str) then
@@ -222,7 +225,7 @@ let rec find_dependencies ({State.vAccu; loadpath} as st) basename =
               if should_visit_v_and_mark None [str] then safe_assoc loadpath None f [str]
               else None
             else
-              Some [canonize vAccu str]
+              Some [canonize ~separator_hack vAccu str]
         in
         (match canon with
          | None -> ()
@@ -236,7 +239,7 @@ let rec find_dependencies ({State.vAccu; loadpath} as st) basename =
         loop ()
       | External(from,str) ->
         begin match safe_assoc loadpath ~what:External (Some from) f [str] with
-        | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize vAccu file))
+        | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize ~separator_hack vAccu file))
         | Some [] -> assert false
         | None -> warning_module_notfound (External, Some from, f, [str])
         end;
@@ -248,7 +251,7 @@ let compute_deps st =
   let mk_dep (name, _orig_path) = Dep_info.make ~name ~deps:(find_dependencies st name) in
   st.vAccu |> CList.rev_map mk_dep
 
-let rec treat_file vAccu old_dirname old_name =
+let rec treat_file ~separator_hack vAccu old_dirname old_name =
   let name = Filename.basename old_name
   and new_dirname = Filename.dirname old_name in
   let dirname =
@@ -257,9 +260,9 @@ let rec treat_file vAccu old_dirname old_name =
     (* EGJA: We should disable this buggy normalization stuff for
        "./foo -> foo" but it breaks dune coq.theory! *)
     | (None,d) -> Some d
-    | (Some d1,d2) -> Some (filename_concat d1 d2)
+    | (Some d1,d2) -> Some (filename_concat ~separator_hack d1 d2)
   in
-  let complete_name = file_name name dirname in
+  let complete_name = file_name ~separator_hack name dirname in
   let stat_res =
     try Unix.stat complete_name
     with Unix.Unix_error(error, _, _) ->
@@ -271,28 +274,29 @@ let rec treat_file vAccu old_dirname old_name =
        let newdirname =
          match dirname with
          | None -> name
-         | Some d -> filename_concat d name
+         | Some d -> filename_concat ~separator_hack d name
        in
-       Array.fold_left (fun vAccu x -> treat_file vAccu (Some newdirname) x) vAccu
+       Array.fold_left (fun vAccu x -> treat_file ~separator_hack vAccu (Some newdirname) x) vAccu
          (Sys.readdir complete_name))
   | Unix.S_REG ->
     (match Loadpath.get_extension name [".v"] with
      | base,".v" ->
-       let name = file_name base dirname in
+       let name = file_name ~separator_hack base dirname in
+       let filename_concat = filename_concat ~separator_hack in
        let absname = Loadpath.absolute_file_name ~filename_concat base dirname in
        (name, absname) :: vAccu
      | _ -> vAccu)
   | _ -> vAccu
 
-let treat_file_command_line st old_name =
-  let vAccu = treat_file st.State.vAccu None old_name in
+let treat_file_command_line ({State.vAccu; separator_hack} as st) old_name =
+  let vAccu = treat_file ~separator_hack vAccu None old_name in
   { st with State.vAccu }
 
 (* "[sort]" outputs `.v` files required by others *)
-let sort {State.vAccu; loadpath} =
+let sort {State.vAccu; separator_hack; loadpath} =
   let seen = Hashtbl.create 97 in
   let rec loop file =
-    let file = canonize vAccu file in
+    let file = canonize ~separator_hack vAccu file in
     if not (Hashtbl.mem seen file) then begin
       Hashtbl.add seen file ();
       let cin = open_in (file ^ ".v") in
@@ -333,7 +337,6 @@ let findlib_init dirs =
   Findlib.init ~env_ocamlpath ()
 
 let init ~make_separator_hack args =
-  separator_hack := make_separator_hack;
   if not Coq_config.has_natdynlink then Makefile.set_dyndep "no";
   let loadpath = Loadpath.State.make ~worker:args.Args.worker ~boot:args.Args.boot in
   Makefile.set_write_vos args.Args.vos;
@@ -349,4 +352,4 @@ let init ~make_separator_hack args =
   findlib_init ml_path;
   List.iter (add_include loadpath) args.Args.vo_path;
   Makefile.set_dyndep args.Args.dyndep;
-  { State.vAccu = []; loadpath }
+  { State.vAccu = []; loadpath; separator_hack = make_separator_hack }
