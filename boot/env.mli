@@ -117,3 +117,5 @@ val query_needs_env : Usage.query -> bool
 (** Internal, should be set automatically by passing cmdline args to
    init; note that this will set both [coqlib] and [corelib] for now. *)
 val set_coqlib : string -> unit
+
+val relocate : Coq_config.relocatable_path -> string

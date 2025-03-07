@@ -36,4 +36,4 @@
    %{project_root}/dev/header.c
    ; Needed to generate include lists for coq_makefile
    plugin_list)
- (action (chdir %{project_root} (run %{project_root}/tools/configure/configure.exe -quiet -prefix %{workspace_root}/../install/default))))
+ (action (chdir %{project_root} (run %{project_root}/tools/configure/configure.exe -quiet -relocatable))))
