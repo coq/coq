@@ -43,7 +43,7 @@ type module_signature = (module_type_body,structure_body) functorize
 type module_implementation =
   | Abstract (** no accessible implementation *)
   | Algebraic of module_expression (** non-interactive algebraic expression *)
-  | Struct of structure_body (** interactive body living in the parameter context of [mod_type] *)
+  | Struct of delta_resolver * structure_body (** interactive body living in the parameter context of [mod_type] *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 (** Extra invariants :
