@@ -33,7 +33,7 @@ Module R.
   Goal forall (A : Type) (φ : A -> Prop), (bi_forall (fun a : A => P)).
   Proof.
     intros A φ.
-    Succeed (progress unfold bi_forall); (progress simpl).
+    Fail (progress unfold bi_forall); (progress simpl). (* simpl never and no folded/unfolded difference *)
     progress rewrite /bi_forall.
   Abort.
 End R.
