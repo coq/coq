@@ -1,0 +1,7 @@
+(executable
+ (name scoqc)
+ (modules util scoqc)
+ (public_name coqc)
+ (package coq-core)
+ (libraries vernac sysinit)
+ (link_flags -linkall))
