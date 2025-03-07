@@ -72,10 +72,18 @@ module Stack : sig
 
   val mkCaseStk : case_info * EInstance.t * EConstr.t array * EConstr.case_return * EConstr.t pcase_invert * EConstr.case_branch array -> case_stk
 
+  type proj_node
+
+  val mk_proj_node : Environ.env -> Evd.evar_map -> Projection.t -> EConstr.t array -> ERelevance.t -> proj_node
+
+  val projection : proj_node -> Projection.t
+
+  val projection_params : proj_node -> EConstr.t array
+
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t * ERelevance.t
+  | Proj of proj_node
   | Fix of EConstr.fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
   and t = member list
@@ -182,6 +190,8 @@ val whd_zeta_stack : ?metas:meta_handler -> stack_reduction_function
 val whd_zeta : reduction_function
 
 val shrink_eta : evar_map -> constr -> constr
+
+type projection_handler = env -> evar_map -> Projection.t -> constr -> constr array
 
 val whd_stack_gen : RedFlags.reds -> ?metas:meta_handler -> stack_reduction_function
 
@@ -305,7 +315,7 @@ val pr_state : env -> evar_map -> state -> Pp.t
 val whd_nored_state : ?metas:meta_handler -> state_reduction_function
 
 val whd_betaiota_deltazeta_for_iota_state :
-  TransparentState.t -> ?metas:meta_handler -> state_reduction_function
+  ?get_params:projection_handler -> TransparentState.t -> ?metas:meta_handler -> state_reduction_function
 
 exception PatternFailure
 val apply_rules : (state -> state) -> env -> evar_map -> EInstance.t ->
