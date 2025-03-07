@@ -878,7 +878,18 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     in
     match Stack.list_of_app_stack skF with
     | None ->
-        ise_try evd [consume_stack l2r apprF apprR; eta]
+       begin match skF with
+       | Stack.Proj (pr, r) :: _ ->
+          let () = debug_unification (fun () ->
+                       Pp.(str "expanding" ++
+                             Termops.Internal.print_constr_env env evd termF)) in
+          let evd, tm = define_evar_as_record env evd ev in
+          let tmL = Stack.zip evd (tm, skF) in
+          let tmR = Stack.zip evd apprR in
+          evar_conv_x flags env evd CONV tmL tmR
+       | _ ->
+          ise_try evd [consume_stack l2r apprF apprR; eta]
+       end
     | Some lF ->
         let tR = Stack.zip evd apprR in
           miller_pfenning l2r
