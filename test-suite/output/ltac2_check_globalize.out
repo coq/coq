@@ -8,7 +8,10 @@ File "./output/ltac2_check_globalize.v", line 22, characters 32-33:
 The command has indeed failed with message:
 This expression has type unit. It is not a function and cannot be applied.
 let x := fun x => x in let _ := x 1 in let _ := x "" in ()
-let x := fun x => x in let _ := x 1 in let _ := x "" in () : unit
+let x := fun x => x in
+let _ := x 1 in
+let _ := x "" in
+() : unit
 let accu := { contents := []} in
 (let x := fun x => accu.(contents) := (x :: accu.(contents)) in
  let _ := x 1 in let _ := x "" in ());

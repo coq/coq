@@ -171,8 +171,10 @@ let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
     let g = intern_constr_expr ist sigma body in
     match DAst.get g with
     | Glob_term.GGenarg x
-      when Genarg.has_type x (Genarg.glbwit Tacarg.wit_tactic)
-        -> tclUNIT (`Tac (Genarg.out_gen (Genarg.glbwit Tacarg.wit_tactic) x))
+      when Genarg.has_type x (Genarg.glbwit Tacarg.wit_ltac_in_term)
+      ->
+      let _, tac = Genarg.out_gen (Genarg.glbwit Tacarg.wit_ltac_in_term) x in
+      tclUNIT (`Tac tac)
     | _ -> tclUNIT (`Term (annotation, interp_env, g))
 end)
 

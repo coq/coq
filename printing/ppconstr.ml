@@ -636,12 +636,12 @@ let pr_genarg return arg =
   let name =
     (* cheat the name system
        there should be a better way to handle this *)
-    if String.equal name "tactic" then "ltac"
+    if String.equal name "ltac_in_term" then "ltac"
     else if String.equal name "ltac2:in-constr" then "ltac2"
     else if String.equal name "ltac2:quotation" then ""
     else name
   in
-  let pp = if String.is_empty name then parg else str name ++ str ":" ++ surround parg in
+  let pp = if String.is_empty name then parg else hov 2 (str name ++ str ":(" ++ parg ++ str ")") in
   return (fun _ -> pp) latom
 
 let pr pr sep lev_after inherited a =

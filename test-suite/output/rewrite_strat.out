@@ -3,39 +3,19 @@ Ltac k2 := rewrite_strat subterms id; choice (subterm fail) fail; fail
 Ltac k3 := rewrite_strat subterms id; (choice (subterm fail) fail; fail)
 Ltac k4 := rewrite_strat subterms (id; choice (subterm fail) fail; fail)
 Ltac k5 :=
-  rewrite_strat
-  subterms subterms fail;
-  subterms subterms fail;
-  choice (subterms try fail; subterms repeat fail)
+  rewrite_strat subterms subterms fail; subterms subterms fail;
+    choice (subterms try fail; subterms repeat fail)
 Ltac mytry rewstrategy1 := rewrite_strat choice (rewstrategy1) id
 Ltac myany rewstrategy1 :=
-  rewrite_strat
-  fix
-  fixident
-  :=
-  try (rewstrategy1; fixident)
+  rewrite_strat fix fixident := try (rewstrategy1; fixident)
 Ltac myrepeat rewstrategy1 := rewrite_strat rewstrategy1; any rewstrategy1
 Ltac mybottomup rewstrategy1 :=
-  rewrite_strat
-  fix
-  fixident
-  :=
-  (choice (progress subterms fixident) (rewstrategy1); try fixident)
+  rewrite_strat fix fixident :=
+    (choice (progress subterms fixident) (rewstrategy1); try fixident)
 Ltac mytopdown rewstrategy1 :=
-  rewrite_strat
-  fix
-  fixident
-  :=
-  (choice (rewstrategy1) (progress subterms fixident); try fixident)
+  rewrite_strat fix fixident :=
+    (choice (rewstrategy1) (progress subterms fixident); try fixident)
 Ltac myinnermost rewstrategy1 :=
-  rewrite_strat
-  fix
-  fixident
-  :=
-  choice (subterm fixident) (rewstrategy1)
+  rewrite_strat fix fixident := choice (subterm fixident) (rewstrategy1)
 Ltac myoutermost rewstrategy1 :=
-  rewrite_strat
-  fix
-  fixident
-  :=
-  choice (rewstrategy1) (subterm fixident)
+  rewrite_strat fix fixident := choice (rewstrategy1) (subterm fixident)

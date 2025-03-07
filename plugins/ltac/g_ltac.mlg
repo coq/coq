@@ -299,7 +299,7 @@ GRAMMAR EXTEND Gram
   ;
   term: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.ltac_expr; ")" ->
-        { let arg = Genarg.in_gen (Genarg.rawwit Tacarg.wit_tactic) tac in
+        { let arg = Genarg.in_gen (Genarg.rawwit Tacarg.wit_ltac_in_term) tac in
           CAst.make ~loc @@ CGenarg arg } ] ]
   ;
   END
