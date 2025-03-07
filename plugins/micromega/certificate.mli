@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Mutils
 module Mc = Micromega
 
 type ('prf, 'model) res = Prf of 'prf | Model of 'model | Unknown
@@ -21,11 +22,11 @@ val q_cert_of_pos : Sos_types.positivstellensatz -> Mc.q Mc.psatz
 val z_cert_of_pos : Sos_types.positivstellensatz -> Mc.z Mc.psatz
 
 (** [lia depth sys] generates an unsat proof for the linear constraints in [sys]. *)
-val lia : int -> (Mc.z Mc.pExpr * Mc.op1) list -> zres
+val lia : int -> ISet.t option -> (Mc.z Mc.pExpr * Mc.op1) list -> zres
 
 (** [nlia depth sys] generates an unsat proof for the non-linear constraints in [sys].
     The solver is incomplete -- the problem is undecidable *)
-val nlia : int -> (Mc.z Mc.pExpr * Mc.op1) list -> zres
+val nlia : int -> ISet.t option -> (Mc.z Mc.pExpr * Mc.op1) list -> zres
 
 (** [linear_prover_with_cert depth sys] generates an unsat proof for the linear constraints in [sys].
     Over the rationals, the solver is complete. *)
