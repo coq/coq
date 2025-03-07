@@ -936,11 +936,42 @@ let rec insert_impargs impargs r = match impargs with
       DAst.make ?loc:r.loc (GLetIn (na, rinfo, b, t, insert_impargs impargs c))
     | _ -> r
 
-let rec extern inctx scopes vars r =
+(* Max printing depth is handled by a combination of this and Format's max box depth.
+
+   Strictly speaking we will print an ellipsis for everything which
+   has bigger extern depth and everything which has bigger Pp box
+   depth than the limit, but in practice extern depth is always
+   smaller than box depth.
+
+   As such extern depth acts as an optimization to avoid work on
+   subterms which will anyway be ellipsis'd out. *)
+type depth = Unlimited | Until of { current : int; max : int }
+
+let max_depth = ref None
+
+let set_max_depth d = max_depth := d
+
+let init_depth () = match !max_depth with
+  | None -> Unlimited
+  | Some max -> Until { current = 0; max }
+
+let succ_depth = function
+  | Unlimited -> Some Unlimited
+  | Until { current; max } ->
+    let current = succ current in
+    if Int.equal current max then None
+    else Some (Until { current; max })
+
+let ellipsis = Constrexpr.CRef (Libnames.qualid_of_ident (Id.of_string_soft "..."), None)
+
+let rec extern depth0 inctx scopes vars r =
+  match succ_depth depth0 with
+  | None -> CAst.make ?loc:r.CAst.loc ellipsis
+  | Some depth ->
   match remove_one_coercion inctx (flatten_application r) with
   | Some (nargs,inctx,r') ->
-    (try extern_notations inctx scopes vars (Some nargs) r
-     with No_match -> extern inctx scopes vars r')
+    (try extern_notations depth inctx scopes vars (Some nargs) r
+     with No_match -> extern depth0 inctx scopes vars r')
   | None ->
 
   let r' = match DAst.get r with
@@ -952,7 +983,7 @@ let rec extern inctx scopes vars r =
        DAst.make (GApp (DAst.make (GRef (wrap, None)), [r]))
     | _ -> r in
 
-  try extern_notations inctx scopes vars None r'
+  try extern_notations depth inctx scopes vars None r'
   with No_match ->
 
   let loc = r.CAst.loc in
@@ -980,7 +1011,7 @@ let rec extern inctx scopes vars r =
   | GEvar (n,[]) when !print_meta_as_hole -> CHole (None)
 
   | GEvar (n,l) ->
-      extern_evar n (List.map (on_snd (extern false scopes vars)) l)
+      extern_evar n (List.map (on_snd (extern depth false scopes vars)) l)
 
   | GPatVar kind ->
       if !print_meta_as_hole then CHole (None) else
@@ -993,7 +1024,7 @@ let rec extern inctx scopes vars r =
          | GRef (ref,us) ->
              let subscopes = find_arguments_scope ref in
              let args = fill_arg_scopes args subscopes (snd scopes) in
-             let args = extern_args (extern true) vars args in
+             let args = extern_args (extern depth true) vars args in
              (* Try a "{|...|}" record notation *)
              (match extern_record ref args with
              | Some l -> CRecord l
@@ -1003,33 +1034,33 @@ let rec extern inctx scopes vars r =
                  (select_stronger_impargs (implicits_of_global ref))
                  (ref,extern_reference ?loc (fst vars) ref) (extern_instance (snd vars) us) args)
          | GProj (f,params,c) ->
-             extern_applied_proj inctx scopes vars f params c args
+             extern_applied_proj depth inctx scopes vars f params c args
          | _ ->
-             let args = List.map (fun c -> (sub_extern true scopes vars c,None)) args in
-             let head = sub_extern false scopes vars f in
+             let args = List.map (fun c -> (sub_extern depth true scopes vars c,None)) args in
+             let head = sub_extern depth false scopes vars f in
              mkFlattenedCApp (head,args))
 
   | GProj (f,params,c) ->
-      extern_applied_proj inctx scopes vars f params c []
+      extern_applied_proj depth inctx scopes vars f params c []
 
   | GLetIn (na,_,b,t,c) ->
     CLetIn (make ?loc na,
-            sub_extern (Option.has_some t) scopes vars b,
-            Option.map (extern_typ scopes vars) t,
-            extern inctx scopes (add_vname vars na) c)
+            sub_extern depth (Option.has_some t) scopes vars b,
+            Option.map (extern_typ depth scopes vars) t,
+            extern depth inctx scopes (add_vname vars na) c)
 
   | GProd (na,r,bk,t,c) ->
-      factorize_prod scopes vars na r bk t c
+      factorize_prod depth scopes vars na r bk t c
 
   | GLambda (na,r,bk,t,c) ->
-      factorize_lambda inctx scopes vars na r bk t c
+      factorize_lambda depth inctx scopes vars na r bk t c
 
   | GCases (sty,rtntypopt,tml,eqns) ->
     let vars' =
       List.fold_right (Name.fold_right Id.Set.add)
         (cases_predicate_names tml) (fst vars) in
     let vars' = vars', snd vars in
-    let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
+    let rtntypopt' = Option.map (extern_typ depth scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
                  let na' = match na, DAst.get tm with
                    | Anonymous, GVar id ->
@@ -1043,7 +1074,7 @@ let rec extern inctx scopes vars r =
                    | Anonymous, _ -> None
                    | Name id, GVar id' when Id.equal id id' -> None
                    | Name _, _ -> Some (CAst.make na) in
-                 (sub_extern false scopes vars tm,
+                 (sub_extern depth false scopes vars tm,
                   na',
                   Option.map (fun {CAst.loc;v=(ind,nal)} ->
                               let args = List.map (fun x -> DAst.make @@ PatVar x) nal in
@@ -1052,23 +1083,23 @@ let rec extern inctx scopes vars r =
                              ) x))
                 tml
     in
-    let eqns = List.map (extern_eqn (inctx || rtntypopt <> None) scopes vars) (factorize_eqns eqns) in
+    let eqns = List.map (extern_eqn depth (inctx || rtntypopt <> None) scopes vars) (factorize_eqns eqns) in
     CCases (sty,rtntypopt',tml,eqns)
 
   | GLetTuple (nal,(na,typopt),tm,b) ->
       let inctx = inctx || typopt <> None in
       CLetTuple (List.map CAst.make nal,
         (Option.map (fun _ -> (make na)) typopt,
-         Option.map (extern_typ scopes (add_vname vars na)) typopt),
-        sub_extern false scopes vars tm,
-        extern inctx scopes (List.fold_left add_vname vars nal) b)
+         Option.map (extern_typ depth scopes (add_vname vars na)) typopt),
+        sub_extern depth false scopes vars tm,
+        extern depth inctx scopes (List.fold_left add_vname vars nal) b)
 
   | GIf (c,(na,typopt),b1,b2) ->
       let inctx = inctx || typopt <> None in
-      CIf (sub_extern false scopes vars c,
+      CIf (sub_extern depth false scopes vars c,
         (Option.map (fun _ -> (CAst.make na)) typopt,
-         Option.map (extern_typ scopes (add_vname vars na)) typopt),
-        sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
+         Option.map (extern_typ depth scopes (add_vname vars na)) typopt),
+        sub_extern depth inctx scopes vars b1, sub_extern depth inctx scopes vars b2)
 
   | GRec (fk,idv,blv,tyv,bv) ->
       let vars' = on_fst (Array.fold_right Id.Set.add idv) vars in
@@ -1078,7 +1109,7 @@ let rec extern inctx scopes vars r =
                Array.mapi (fun i fi ->
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
                  let bl = List.map (extended_glob_local_binder_of_decl ?loc) bl in
-                 let (assums,ids,bl) = extern_local_binder scopes vars bl in
+                 let (assums,ids,bl) = extern_local_binder depth scopes vars bl in
                  let vars0 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars in
                  let vars1 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars' in
                  let n =
@@ -1086,19 +1117,19 @@ let rec extern inctx scopes vars r =
                    | None -> None
                    | Some x -> Some (CAst.make @@ CStructRec (CAst.make @@ Name.get_id (List.nth assums x)))
                              in
-                 ((CAst.make fi), None, n, bl, extern_typ scopes vars0 ty,
-                  sub_extern true scopes vars1 def)) idv
+                 ((CAst.make fi), None, n, bl, extern_typ depth scopes vars0 ty,
+                  sub_extern depth true scopes vars1 def)) idv
              in
              CFix (CAst.(make ?loc idv.(n)), Array.to_list listdecl)
          | GCoFix n ->
              let listdecl =
                Array.mapi (fun i fi ->
                  let bl = List.map (extended_glob_local_binder_of_decl ?loc) blv.(i) in
-                 let (_,ids,bl) = extern_local_binder scopes vars bl in
+                 let (_,ids,bl) = extern_local_binder depth scopes vars bl in
                  let vars0 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars in
                  let vars1 = on_fst (List.fold_right (Name.fold_right Id.Set.add) ids) vars' in
-                 ((CAst.make fi),None,bl,extern_typ scopes vars0 tyv.(i),
-                  sub_extern true scopes vars1 bv.(i))) idv
+                 ((CAst.make fi),None,bl,extern_typ depth scopes vars0 tyv.(i),
+                  sub_extern depth true scopes vars1 bv.(i))) idv
              in
              CCoFix (CAst.(make ?loc idv.(n)),Array.to_list listdecl))
 
@@ -1110,8 +1141,8 @@ let rec extern inctx scopes vars r =
 
   | GCast (c, k, c') ->
     let scl = Notation.compute_glob_type_scope c' in
-    let c' = extern_typ scopes vars c' in
-    let c = extern true (fst scopes,(scl, snd (snd scopes))) vars c in
+    let c' = extern_typ depth scopes vars c' in
+    let c = extern depth true (fst scopes,(scl, snd (snd scopes))) vars c in
     CCast (c, k, c')
 
   | GInt i ->
@@ -1127,19 +1158,23 @@ let rec extern inctx scopes vars r =
        "pstring" "pstring_scope" (snd scopes)
 
   | GArray(u,t,def,ty) ->
-    CArray(extern_instance (snd vars) u,Array.map (extern inctx scopes vars) t, extern inctx scopes vars def, extern_typ scopes vars ty)
+    CArray(
+      extern_instance (snd vars) u,
+      Array.map (extern depth inctx scopes vars) t,
+      extern depth inctx scopes vars def,
+      extern_typ depth scopes vars ty)
 
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
-and extern_typ (subentry,(_,scopes)) =
-  extern true (subentry,(Notation.current_type_scope_names (),scopes))
+and extern_typ depth (subentry,(_,scopes)) =
+  extern depth true (subentry,(Notation.current_type_scope_names (),scopes))
 
-and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,([],scopes))
+and sub_extern depth inctx (subentry,(_,scopes)) = extern depth inctx (subentry,([],scopes))
 
-and factorize_prod scopes vars na r bk t c =
+and factorize_prod depth scopes vars na r bk t c =
   let implicit_type = is_reserved_type na t in
   let r = extern_relevance_info r in
-  let aty = extern_typ scopes vars t in
+  let aty = extern_typ depth scopes vars t in
   let vars = add_vname vars na in
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
@@ -1149,7 +1184,7 @@ and factorize_prod scopes vars na r bk t c =
      | [{CAst.v=(ids,disj_of_patl,b)}] ->
       let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
-      let b = extern_typ scopes vars b in
+      let b = extern_typ depth scopes vars b in
       let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes (fst vars)) disjpat) in
       let binder = CLocalPattern p in
       (match b.v with
@@ -1157,7 +1192,7 @@ and factorize_prod scopes vars na r bk t c =
       | _ -> CProdN ([binder],b))
      | _ -> assert false)
   | _, _ ->
-      let c' = extern_typ scopes vars c in
+      let c' = extern_typ depth scopes vars c in
       match na, c'.v with
       | Name id, CProdN (CLocalAssum(nal,r',Default bk',ty)::bl,b)
         when relevance_info_expr_eq r r'
@@ -1173,10 +1208,10 @@ and factorize_prod scopes vars na r bk t c =
          let ty = if implicit_type then hole else aty in
          CProdN ([CLocalAssum([make na],r,Default bk,ty)],c')
 
-and factorize_lambda inctx scopes vars na r bk t c =
+and factorize_lambda depth inctx scopes vars na r bk t c =
   let implicit_type = is_reserved_type na t in
   let r = extern_relevance_info r in
-  let aty = extern_typ scopes vars t in
+  let aty = extern_typ depth scopes vars t in
   let vars = add_vname vars na in
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
@@ -1186,7 +1221,7 @@ and factorize_lambda inctx scopes vars na r bk t c =
      | [{CAst.v=(ids,disj_of_patl,b)}] ->
       let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
-      let b = sub_extern inctx scopes vars b in
+      let b = sub_extern depth inctx scopes vars b in
       let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes (fst vars)) disjpat) in
       let binder = CLocalPattern p in
       (match b.v with
@@ -1194,7 +1229,7 @@ and factorize_lambda inctx scopes vars na r bk t c =
       | _ -> CLambdaN ([binder],b))
      | _ -> assert false)
   | _, _ ->
-      let c' = sub_extern inctx scopes vars c in
+      let c' = sub_extern depth inctx scopes vars c in
       match c'.v with
       | CLambdaN (CLocalAssum(nal,r',Default bk',ty)::bl,b)
         when relevance_info_expr_eq r r'
@@ -1210,21 +1245,21 @@ and factorize_lambda inctx scopes vars na r bk t c =
          let ty = if implicit_type then hole else aty in
          CLambdaN ([CLocalAssum([make na],r,Default bk,ty)],c')
 
-and extern_local_binder scopes vars = function
+and extern_local_binder depth scopes vars = function
     [] -> ([],[],[])
   | b :: l ->
     match DAst.get b with
     | GLocalDef (na,r,bd,ty) ->
       let (assums,ids,l) =
-        extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l in
+        extern_local_binder depth scopes (on_fst (Name.fold_right Id.Set.add na) vars) l in
       (assums,na::ids,
-       CLocalDef(CAst.make na, extern_relevance_info r, extern false scopes vars bd,
-                   Option.map (extern_typ scopes vars) ty) :: l)
+       CLocalDef(CAst.make na, extern_relevance_info r, extern depth false scopes vars bd,
+                   Option.map (extern_typ depth scopes vars) ty) :: l)
 
     | GLocalAssum (na,r,bk,ty) ->
       let implicit_type = is_reserved_type na ty in
-      let ty = extern_typ scopes vars ty in
-      (match extern_local_binder scopes (on_fst (Name.fold_right Id.Set.add na) vars) l with
+      let ty = extern_typ depth scopes vars ty in
+      (match extern_local_binder depth scopes (on_fst (Name.fold_right Id.Set.add na) vars) l with
        | (assums,ids,CLocalAssum(nal,r',k,ty')::l)
          when (constr_expr_eq ty ty' || implicit_type && constr_expr_eq ty' hole) &&
               binder_kind_eq k (Default bk) &&
@@ -1239,27 +1274,27 @@ and extern_local_binder scopes vars = function
 
     | GLocalPattern ((p,_),_,bk,ty) ->
       let ty =
-        if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
+        if !Flags.raw_print then Some (extern_typ depth scopes vars ty) else None in
       let p = mkCPatOr (List.map (extern_cases_pattern (fst vars)) p) in
-      let (assums,ids,l) = extern_local_binder scopes vars l in
+      let (assums,ids,l) = extern_local_binder depth scopes vars l in
       let p = match ty with
         | None -> p
         | Some ty -> CAst.make @@ (CPatCast (p,ty)) in
       (assums,ids, CLocalPattern p :: l)
 
-and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
+and extern_eqn depth inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
   let pll = List.map (List.map (extern_cases_pattern_in_scope scopes (fst vars))) pll in
-  make ?loc (pll,extern inctx scopes vars c)
+  make ?loc (pll,extern depth inctx scopes vars c)
 
-and extern_notations inctx scopes vars nargs t =
+and extern_notations depth inctx scopes vars nargs t =
   if !Flags.raw_print then raise No_match;
   try extern_possible_prim_token scopes t
   with No_match ->
     if !print_no_symbol then raise No_match;
     let t = flatten_application t in
-    extern_notation inctx scopes vars t (filter_enough_applied nargs (uninterp_notations t))
+    extern_notation depth inctx scopes vars t (filter_enough_applied nargs (uninterp_notations t))
 
-and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes) vars t rules =
+and extern_notation depth inctx ((custom,(lev_after: int option)),scopes as allscopes) vars t rules =
   match rules with
   | [] -> raise No_match
   | { not_rule = keyrule; not_patt = pat; not_status = n } :: rules ->
@@ -1306,7 +1341,7 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
         (* Try externing extra args... *)
         let extra_args =
           let args = fill_arg_scopes args argsscopes (snd allscopes) in
-          let args = extern_args (extern true) (vars,uvars) args in
+          let args = extern_args (extern depth true) (vars,uvars) args in
           try UseCApp (adjust_implicit_arguments inctx nallargs args argsimpls) with Expl -> UseCAppExpl args in
         (* Try availability of interpretation ... *)
         match keyrule with
@@ -1324,13 +1359,13 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
                   let l =
                     List.map (fun ((vars,c),subscope) ->
                       let scopes = update_with_subscope entry subscope lev_after closed scopes' in
-                      extern (* assuming no overloading: *) true scopes (vars,uvars) c)
+                      extern depth (* assuming no overloading: *) true scopes (vars,uvars) c)
                       terms
                   in
                   let ll =
                     List.map (fun ((vars,l),subscope) ->
                       let scopes = update_with_subscope entry subscope lev_after closed scopes' in
-                      List.map (extern true scopes (vars,uvars)) l)
+                      List.map (extern depth true scopes (vars,uvars)) l)
                       termlists
                   in
                   let bl =
@@ -1344,7 +1379,7 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
                   let bll =
                     List.map (fun ((vars,bl),subscope) ->
                       let scopes = update_with_subscope entry subscope lev_after closed scopes' in
-                      pi3 (extern_local_binder scopes (vars,uvars) bl))
+                      pi3 (extern_local_binder depth scopes (vars,uvars) bl))
                       binderlists
                   in
                   let c = make_notation loc specific_ntn (l,ll,bl,bll) in
@@ -1353,7 +1388,7 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
           | AbbrevRule kn ->
               let l =
                 List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
-                  extern true ((subentry,lev_after),(scopt,scl@snd scopes)) (vars,uvars) c)
+                  extern depth true ((subentry,lev_after),(scopt,scl@snd scopes)) (vars,uvars) c)
                   terms
               in
               let cf = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
@@ -1364,26 +1399,28 @@ and extern_notation inctx ((custom,(lev_after: int option)),scopes as allscopes)
                 | None -> raise No_match
                 | Some coercion -> insert_entry_coercion coercion c
       with
-          No_match -> extern_notation inctx allscopes vars t rules
+          No_match -> extern_notation depth inctx allscopes vars t rules
 
-and extern_applied_proj inctx scopes vars (cst,us) params c extraargs =
+and extern_applied_proj depth inctx scopes vars (cst,us) params c extraargs =
   let ref = GlobRef.ConstRef cst in
   let subscopes = find_arguments_scope ref in
   let nparams = List.length params in
   let args = params @ c :: extraargs in
   let args = fill_arg_scopes args subscopes (snd scopes) in
-  let args = extern_args (extern true) vars args in
+  let args = extern_args (extern depth true) vars args in
   let imps = select_stronger_impargs (implicits_of_global ref) in
   let f = extern_reference (fst vars) ref in
   let us = extern_instance (snd vars) us in
   extern_projection inctx (f,us) nparams args imps
+
+let extern inctx scopes vars c : constr_expr = extern (init_depth()) inctx scopes vars c
 
 let extern_glob_constr vars c =
   extern false ((constr_some_level,None),([],[])) vars c
 
 let extern_glob_type ?impargs vars c =
   let c = Option.fold_right insert_impargs impargs c in
-  extern_typ ((constr_some_level,None),([],[])) vars c
+  extern_typ (init_depth()) ((constr_some_level,None),([],[])) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -1591,4 +1628,4 @@ let extern_rel_context where env sigma sign =
   let a = detype_rel_context Detyping.Later where ([],env) sigma sign in
   let vars = extern_env env sigma in
   let a = List.map (extended_glob_local_binder_of_decl) a in
-  pi3 (extern_local_binder ((constr_some_level,None),([],[])) vars a)
+  pi3 (extern_local_binder (init_depth()) ((constr_some_level,None),([],[])) vars a)
