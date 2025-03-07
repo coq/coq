@@ -15,7 +15,7 @@ val scan : prefix:string list -> string -> Coq_module.t t
 val iter : f:(prefix:string list -> 'a list -> unit) -> 'a t -> unit
 
 (** [fold ~f ~init dir_info] fold over each folder's contents *)
-val fold : f:(prefix:string list -> 'b list -> 'a list -> 'b) -> init:'b -> 'a t -> 'b
+val fold : f:(prefix:string list -> 'b -> 'a list -> 'b) -> init:'b -> 'a t -> 'b
 
 (** Flatten the list of objects of a recursive scan *)
 val coq_modules : 'a t -> 'a list
