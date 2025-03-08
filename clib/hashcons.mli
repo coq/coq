@@ -87,9 +87,6 @@ val simple_hcons : ('u -> 'tab) -> ('tab -> 't -> 't) -> 'u -> 't -> 't
 
 module type HashedType = sig type t val hash : t -> int end
 
-module Hstring : (S with type t = string and type u = unit)
-(** Hashconsing of strings.  *)
-
 module Hlist (D:HashedType) :
   (S with type t = D.t list and type u = (D.t->D.t))
 (** Hashconsing of lists.  *)

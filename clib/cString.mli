@@ -89,6 +89,12 @@ sig
   val hcons : string -> string
   (** Hashconsing on [string] *)
 
+  val share : string -> int * string
+  (** Hashconsing returning the hash *)
+
+  val unsafe_repr : int -> string -> string
+  (** hcons the string assuming the int is its hash *)
+
 end
 
 include ExtS
