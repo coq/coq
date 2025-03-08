@@ -35,6 +35,8 @@ sig
   module Pred : Predicate.S with type elt = t
   module List : CList.MonoS with type elt = t
   val hcons : string -> string
+  val share : string -> int * string
+  val unsafe_repr : int -> string -> string
 end
 
 include String
@@ -192,4 +194,14 @@ module List = struct
   let equal l l' = CList.equal equal l l'
 end
 
-let hcons = Hashcons.simple_hcons Hashcons.Hstring.generate Hashcons.Hstring.hcons ()
+module Htbl = Hashset.Make(struct type t = string let eq x y = String.equal x y end)
+
+let htbl = Htbl.create 97
+
+let unsafe_repr i s = Htbl.repr i s htbl
+
+let share s =
+  let h = hash s in
+  h, Htbl.repr h s htbl
+
+let hcons s = snd (share s)

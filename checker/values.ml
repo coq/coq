@@ -161,7 +161,7 @@ let v_pred v = v_pair v_bool (v_set v)
 
 (** kernel/names *)
 
-let v_id = v_string
+let v_id = v_tuple "ident" [|v_string;v_any(* XXX TODO check this *);v_int|]
 let v_dp = v_annot_c ("dirpath", v_list v_id)
 let v_name = v_sum "name" 1 [|[|v_id|]|]
 let v_uid = v_tuple "uniq_ident" [|v_int;v_string;v_dp|]
