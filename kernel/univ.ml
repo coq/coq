@@ -144,10 +144,9 @@ module Level = struct
 
   module Self = struct
     type nonrec t = t
-    type u = unit
     let eq x y = x.hash == y.hash && RawLevel.hequal x.data y.data
     let hash x = x.hash
-    let hashcons () x =
+    let hashcons x =
       let data' = RawLevel.hcons x.data in
       if x.data == data' then x else { x with data = data' }
   end
@@ -262,9 +261,8 @@ struct
     module ExprHash =
     struct
       type t = Level.t * int
-      type u = Level.t -> Level.t
-      let hashcons hdir (b,n as x) =
-        let b' = hdir b in
+      let hashcons (b,n as x) =
+        let b' = Level.hcons b in
           if b' == b then x else (b',n)
       let eq l1 l2 =
         l1 == l2 ||
@@ -278,7 +276,7 @@ struct
     module H = Hashcons.Make(ExprHash)
 
     let hcons =
-      Hashcons.simple_hcons H.generate H.hcons Level.hcons
+      Hashcons.simple_hcons H.generate H.hcons ()
 
     let make l = (l, 0)
 
@@ -342,7 +340,7 @@ struct
 
   module Huniv = Hashcons.Hlist(Expr)
 
-  let hcons = Hashcons.simple_hcons Huniv.generate Huniv.hcons Expr.hcons
+  let hcons = Hashcons.simple_hcons Huniv.generate Huniv.hcons ()
 
   module Self = struct type nonrec t = t let compare = compare end
   module Map = CMap.Make(Self)
@@ -476,29 +474,21 @@ module Hconstraint =
   Hashcons.Make(
     struct
       type t = univ_constraint
-      type u = universe_level -> universe_level
-      let hashcons hul (l1,k,l2) = (hul l1, k, hul l2)
+      let hashcons (l1,k,l2) = (Level.hcons l1, k, Level.hcons l2)
       let eq (l1,k,l2) (l1',k',l2') =
         l1 == l1' && k == k' && l2 == l2'
-      let hash = Hashtbl.hash
+      let hash = Hashtbl.hash (* XXX *)
     end)
 
-module Hconstraints =
-  Hashcons.Make(
-    struct
-      type t = Constraints.t
-      type u = univ_constraint -> univ_constraint
-      let hashcons huc s =
-        Constraints.fold (fun x -> Constraints.add (huc x)) s Constraints.empty
-      let eq s s' =
-        List.for_all2eq (==)
-          (Constraints.elements s)
-          (Constraints.elements s')
-      let hash = Hashtbl.hash
-    end)
+let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate Hconstraint.hcons ()
 
-let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate Hconstraint.hcons Level.hcons
-let hcons_constraints = Hashcons.simple_hcons Hconstraints.generate Hconstraints.hcons hcons_constraint
+module Hconstraints = CSet.Hashcons(UConstraintOrd)(struct
+    type t = UConstraintOrd.t
+    let hash = Hashtbl.hash (* XXX *)
+    let hcons = hcons_constraint
+  end)
+
+let hcons_constraints = Hashcons.simple_hcons Hconstraints.generate Hconstraints.hcons ()
 
 
 (** A value with universe constraints. *)
@@ -632,16 +622,15 @@ module Huniverse_set =
   Hashcons.Make(
     struct
       type t = universe_set
-      type u = universe_level -> universe_level
-      let hashcons huc s =
-        Level.Set.fold (fun x -> Level.Set.add (huc x)) s Level.Set.empty
+      let hashcons s =
+        Level.Set.fold (fun x -> Level.Set.add (Level.hcons x)) s Level.Set.empty
       let eq s s' =
         Level.Set.equal s s'
-      let hash = Hashtbl.hash
+      let hash = Hashtbl.hash (* XXX *)
     end)
 
 let hcons_universe_set =
-  Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons Level.hcons
+  Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons ()
 
 let hcons_universe_context_set (v, c) =
   (hcons_universe_set v, hcons_constraints c)

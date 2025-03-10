@@ -1285,8 +1285,7 @@ and hash_branches bl =
 module CaseinfoHash =
 struct
   type t = case_info
-  type u = inductive -> inductive
-  let hashcons hind ci = { ci with ci_ind = hind ci.ci_ind }
+  let hashcons ci = { ci with ci_ind = hcons_ind ci.ci_ind }
   let pp_info_equal info1 info2 =
     info1.style == info2.style
   let eq ci ci' =
@@ -1317,19 +1316,18 @@ module Hcaseinfo = Hashcons.Make(CaseinfoHash)
 
 let case_info_hash = CaseinfoHash.hash
 
-let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate Hcaseinfo.hcons hcons_ind
+let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate Hcaseinfo.hcons ()
 
 module Hannotinfo = struct
     type t = Name.t binder_annot
-    type u = Name.t -> Name.t
     let hash = hash_annot Name.hash
     let eq = eq_annot (fun na1 na2 -> na1 == na2) Sorts.relevance_equal
-    let hashcons h {binder_name=na;binder_relevance} =
-      {binder_name=h na;binder_relevance}
+    let hashcons {binder_name=na;binder_relevance} =
+      {binder_name=Name.hcons na;binder_relevance}
   end
 module Hannot = Hashcons.Make(Hannotinfo)
 
-let hcons_annot = Hashcons.simple_hcons Hannot.generate Hannot.hcons Name.hcons
+let hcons_annot = Hashcons.simple_hcons Hannot.generate Hannot.hcons ()
 
 let dbg = CDebug.create ~name:"hcons" ()
 

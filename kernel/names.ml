@@ -113,9 +113,8 @@ struct
   module Self_Hashcons =
     struct
       type nonrec t = t
-      type u = Id.t -> Id.t
-      let hashcons hident = function
-        | Name id -> Name (hident id)
+      let hashcons = function
+        | Name id -> Name (Id.hcons id)
         | n -> n
       let eq n1 n2 =
         n1 == n2 ||
@@ -128,7 +127,7 @@ struct
 
   module Hname = Hashcons.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons Hname.generate Hname.hcons Id.hcons
+  let hcons = Hashcons.simple_hcons Hname.generate Hname.hcons ()
 
 end
 
@@ -184,7 +183,7 @@ struct
 
   module Hdir = Hashcons.Hlist(Id)
 
-  let hcons = Hashcons.simple_hcons Hdir.generate Hdir.hcons Id.hcons
+  let hcons = Hashcons.simple_hcons Hdir.generate Hdir.hcons ()
 
 end
 
@@ -237,8 +236,7 @@ struct
   module Self_Hashcons =
     struct
       type nonrec t = t
-      type u = (Id.t -> Id.t) * (DirPath.t -> DirPath.t)
-      let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
+      let hashcons (n,s,dir) = (n,Id.hcons s,DirPath.hcons dir)
       let eq ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
         (x == y) ||
         (Int.equal n1 n2 && s1 == s2 && dir1 == dir2)
@@ -247,7 +245,7 @@ struct
 
   module HashMBId = Hashcons.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons HashMBId.generate HashMBId.hcons (Id.hcons, DirPath.hcons)
+  let hcons = Hashcons.simple_hcons HashMBId.generate HashMBId.hcons ()
 
 end
 
@@ -337,27 +335,24 @@ module ModPath = struct
 
   module Self_Hashcons = struct
     type t = module_path
-    type u = (DirPath.t -> DirPath.t) * (MBId.t -> MBId.t) *
-        (string -> string)
-    let rec hashcons (hdir,huniqid,hstr as hfuns) = function
-      | MPfile dir -> MPfile (hdir dir)
-      | MPbound m -> MPbound (huniqid m)
-      | MPdot (md,l) -> MPdot (hashcons hfuns md, hstr l)
+    let hashcons hcons = function
+      | MPfile dir -> MPfile (DirPath.hcons dir)
+      | MPbound m -> MPbound (MBId.hcons m)
+      | MPdot (md,l) -> MPdot (hcons md, Id.hcons l)
     let eq d1 d2 =
       d1 == d2 ||
       match d1,d2 with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
       | MPbound m1, MPbound m2 -> m1 == m2
       | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && equal mod1 mod2
+      (* XXX use physical equality for mod1 = mod2 *)
       | _ -> false
     let hash = hash
   end
 
-  module HashMP = Hashcons.Make(Self_Hashcons)
+  module HashMP = Hashcons.MakeRec(Self_Hashcons)
 
-  let hcons =
-    Hashcons.simple_hcons HashMP.generate HashMP.hcons
-      (DirPath.hcons,MBId.hcons,String.hcons)
+  let hcons = Hashcons.simple_hcons HashMP.generate HashMP.hcons ()
 
 end
 
@@ -423,11 +418,9 @@ module KerName = struct
 
   module Self_Hashcons = struct
     type t = kernel_name
-    type u = (ModPath.t -> ModPath.t) * (DirPath.t -> DirPath.t)
-        * (string -> string)
-    let hashcons (hmod,_hdir,hstr) kn =
+    let hashcons kn =
       let { modpath = mp; knlabel = l; refhash; } = kn in
-      { modpath = hmod mp; knlabel = hstr l; refhash; }
+      { modpath = ModPath.hcons mp; knlabel = Id.hcons l; refhash; }
     let eq kn1 kn2 =
       kn1.modpath == kn2.modpath && kn1.knlabel == kn2.knlabel
     let hash = hash
@@ -435,9 +428,7 @@ module KerName = struct
 
   module HashKN = Hashcons.Make(Self_Hashcons)
 
-  let hcons =
-    Hashcons.simple_hcons HashKN.generate HashKN.hcons
-      (ModPath.hcons,DirPath.hcons,String.hcons)
+  let hcons = Hashcons.simple_hcons HashKN.generate HashKN.hcons ()
 end
 
 module KNmap = HMap.Make(KerName)
@@ -571,10 +562,9 @@ module KerPair = struct
   module Self_Hashcons =
     struct
       type t = kernel_pair
-      type u = KerName.t -> KerName.t
-      let hashcons hkn = function
-        | Same kn -> Same (hkn kn)
-        | Dual (knu,knc) -> make (hkn knu) (hkn knc)
+      let hashcons = function
+        | Same kn -> Same (KerName.hcons kn)
+        | Dual (knu,knc) -> make (KerName.hcons knu) (KerName.hcons knc)
       let eq x y = (* physical comparison on subterms *)
         x == y ||
         match x,y with
@@ -585,6 +575,7 @@ module KerPair = struct
           the same canonical part is a logical invariant of the system, it
           is not necessarily an invariant in memory, so we treat kernel
           names as they are syntactically for hash-consing) *)
+
       let hash = function
       | Same kn -> KerName.hash kn
       | Dual (knu, knc) ->
@@ -593,7 +584,7 @@ module KerPair = struct
 
   module HashKP = Hashcons.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons HashKP.generate HashKP.hcons KerName.hcons
+  let hcons = Hashcons.simple_hcons HashKP.generate HashKP.hcons ()
 
 end
 
@@ -749,25 +740,24 @@ module Constrmap_env = Map.Make(Construct.UserOrd)
 module Hind = Hashcons.Make(
   struct
     type t = inductive
-    type u = MutInd.t -> MutInd.t
-    let hashcons hmind (mind, i) = (hmind mind, i)
+    let hashcons (mind, i) = (MutInd.hcons mind, i)
     let eq (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
     let hash = Ind.CanOrd.hash
   end)
 
+let hcons_con = Constant.hcons
+let hcons_mind = MutInd.hcons
+let hcons_ind = Hashcons.simple_hcons Hind.generate Hind.hcons ()
+
 module Hconstruct = Hashcons.Make(
   struct
     type t = constructor
-    type u = inductive -> inductive
-    let hashcons hind (ind, j) = (hind ind, j)
+    let hashcons (ind, j) = (hcons_ind ind, j)
     let eq (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
     let hash = Construct.CanOrd.hash
   end)
 
-let hcons_con = Constant.hcons
-let hcons_mind = MutInd.hcons
-let hcons_ind = Hashcons.simple_hcons Hind.generate Hind.hcons hcons_mind
-let hcons_construct = Hashcons.simple_hcons Hconstruct.generate Hconstruct.hcons hcons_ind
+let hcons_construct = Hashcons.simple_hcons Hconstruct.generate Hconstruct.hcons ()
 
 (*****************)
 
@@ -904,18 +894,17 @@ struct
 
     module Self_Hashcons = struct
       type nonrec t = t
-      type u = (inductive -> inductive) * (Constant.t -> Constant.t)
-      let hashcons (hind,hid) p =
-        { proj_ind = hind p.proj_ind;
+      let hashcons p =
+        { proj_ind = hcons_ind p.proj_ind;
           proj_npars = p.proj_npars;
           proj_arg = p.proj_arg;
-          proj_name = hid p.proj_name }
+          proj_name = Constant.hcons p.proj_name }
       let eq p p' =
         p == p' || (p.proj_ind == p'.proj_ind && p.proj_npars == p'.proj_npars && p.proj_arg == p'.proj_arg && p.proj_name == p'.proj_name)
       let hash = hash
     end
     module HashRepr = Hashcons.Make(Self_Hashcons)
-    let hcons = Hashcons.simple_hcons HashRepr.generate HashRepr.hcons (hcons_ind,Constant.hcons)
+    let hcons = Hashcons.simple_hcons HashRepr.generate HashRepr.hcons ()
 
     let map_npars f p =
       let npars = p.proj_npars in
@@ -986,8 +975,7 @@ struct
   module Self_Hashcons =
     struct
       type nonrec t = t
-      type u = Repr.t -> Repr.t
-      let hashcons hc (c,b) = (hc c,b)
+      let hashcons (c,b) = (Repr.hcons c,b)
       let eq ((c,b) as x) ((c',b') as y) =
         x == y || (c == c' && b == b')
       let hash = hash
@@ -999,7 +987,7 @@ struct
 
   module HashProjection = Hashcons.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons HashProjection.generate HashProjection.hcons Repr.hcons
+  let hcons = Hashcons.simple_hcons HashProjection.generate HashProjection.hcons ()
 
   let compare (p, b) (p', b') =
     let c = Bool.compare b b' in

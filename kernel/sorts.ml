@@ -36,9 +36,8 @@ struct
 
   module Hstruct = struct
     type nonrec t = t
-    type u = unit
 
-    let hashcons () = function
+    let hashcons = function
       | Var _ as q -> q
       | Unif (s,i) as q ->
         let s' = CString.hcons s in
@@ -160,12 +159,11 @@ module Quality = struct
 
   module Hstruct = struct
     type nonrec t = t
-    type u = QVar.t -> QVar.t
 
-    let hashcons hv = function
+    let hashcons = function
       | QConstant _ as q -> q
       | QVar qv as q ->
-        let qv' = hv qv in
+        let qv' = QVar.hcons qv in
         if qv == qv' then q else QVar qv'
 
     let eq a b =
@@ -179,7 +177,7 @@ module Quality = struct
 
   module Hasher = Hashcons.Make(Hstruct)
 
-  let hcons = Hashcons.simple_hcons Hasher.generate Hasher.hcons QVar.hcons
+  let hcons = Hashcons.simple_hcons Hasher.generate Hasher.hcons ()
 
   let qsprop = hcons (QConstant QSProp)
   let qprop = hcons (QConstant QProp)
@@ -407,16 +405,14 @@ let hash = function
 module Hsorts =
   Hashcons.Make(
     struct
-      type _t = t
-      type t = _t
-      type u = Universe.t -> Universe.t
+      type nonrec t = t
 
-      let hashcons huniv = function
+      let hashcons = function
         | Type u as c ->
-          let u' = huniv u in
+          let u' = hcons_univ u in
             if u' == u then c else Type u'
         | QSort (q, u) as c ->
-          let u' = huniv u in
+          let u' = hcons_univ u in
           if u' == u then c else QSort (q, u)
         | SProp | Prop | Set as s -> s
       let eq s1 s2 = match (s1,s2) with
@@ -428,7 +424,7 @@ module Hsorts =
       let hash = hash
     end)
 
-let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons hcons_univ
+let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons ()
 
 (** On binders: is this variable proof relevant *)
 type relevance = Relevant | Irrelevant | RelevanceVar of QVar.t

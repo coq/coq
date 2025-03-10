@@ -103,22 +103,21 @@ struct
   module HInstancestruct =
   struct
     type nonrec t = t
-    type u = (Quality.t -> Quality.t) * (Level.t -> Level.t)
 
-    let hashcons (hqual, huniv) (aq, au as a) =
+    let hashcons (aq, au as a) =
       let qlen = Array.length aq in
       let ulen = Array.length au in
         if Int.equal qlen 0 && Int.equal ulen 0 then empty
         else begin
           for i = 0 to qlen - 1 do
             let x = Array.unsafe_get aq i in
-            let x' = hqual x in
+            let x' = Quality.hcons x in
               if x == x' then ()
               else Array.unsafe_set aq i x'
           done;
           for i = 0 to ulen - 1 do
             let x = Array.unsafe_get au i in
-            let x' = huniv x in
+            let x' = Level.hcons x in
               if x == x' then ()
               else Array.unsafe_set au i x'
           done;
@@ -148,7 +147,7 @@ struct
 
   module HInstance = Hashcons.Make(HInstancestruct)
 
-  let hcons = Hashcons.simple_hcons HInstance.generate HInstance.hcons (Quality.hcons,Level.hcons)
+  let hcons = Hashcons.simple_hcons HInstance.generate HInstance.hcons ()
 
   let hash = HInstancestruct.hash
 
