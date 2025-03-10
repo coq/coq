@@ -30,12 +30,8 @@ module type HashconsedType =
     type t
     (** Type of objects to hashcons. *)
 
-    type u
-    (** Type of hashcons functions for the sub-structures contained in [t].
-        Usually a tuple of functions. *)
-
-    val hashcons :  u -> t -> t
-    (** The actual hashconsing function, using its fist argument to recursively
+    val hashcons : t -> t
+    (** The actual hashconsing function, using its first argument to recursively
         hashcons substructures. It should be compatible with [eq], that is
         [eq x (hashcons f x) = true]. *)
 
@@ -50,18 +46,25 @@ module type HashconsedType =
         [hash x = hash y]. *)
   end
 
+module type HashconsedRecType = sig
+  type t
+
+  val hashcons : (t -> t) -> t -> t
+
+  val eq : t -> t -> bool
+
+  val hash : t -> int
+end
+
 module type S =
   sig
     type t
     (** Type of objects to hashcons. *)
 
-    type u
-    (** Type of hashcons functions for the sub-structures contained in [t]. *)
-
     type table
     (** Type of hashconsing tables *)
 
-    val generate : u -> table
+    val generate : unit -> table
     (** This create a hashtable of the hashconsed objects. *)
 
     val hcons : table -> t -> t
@@ -71,8 +74,12 @@ module type S =
     (** Recover statistics of the hashconsing table. *)
   end
 
-module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u)
+module Make (X : HashconsedType) : (S with type t = X.t)
 (** Create a new hashconsing, given canonicalization functions. *)
+
+module MakeRec (X : HashconsedRecType) : (S with type t = X.t)
+(** Create a new hashconsing, given canonicalization functions.
+    [hashcons] will get the resulting [hcons] as first argument. *)
 
 (** {6 Wrappers} *)
 
@@ -80,16 +87,14 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u)
     functor. *)
 
 val simple_hcons : ('u -> 'tab) -> ('tab -> 't -> 't) -> 'u -> 't -> 't
-(** [simple_hcons f sub obj] creates a new table each time it is applied to any
-    sub-hash function [sub]. *)
+(** Typically used as [let hcons = simple_hcons H.generate H.hcons ()] where [H] is of type [S]. *)
 
 (** {6 Hashconsing of usual structures} *)
 
-module type HashedType = sig type t val hash : t -> int end
+module type HashedType = sig type t val hash : t -> int val hcons : t -> t end
 
-module Hstring : (S with type t = string and type u = unit)
+module Hstring : (S with type t = string)
 (** Hashconsing of strings.  *)
 
-module Hlist (D:HashedType) :
-  (S with type t = D.t list and type u = (D.t->D.t))
+module Hlist (D:HashedType) : (S with type t = D.t list)
 (** Hashconsing of lists.  *)

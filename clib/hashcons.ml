@@ -25,11 +25,20 @@
 module type HashconsedType =
   sig
     type t
-    type u
-    val hashcons :  u -> t -> t
+    val hashcons : t -> t
     val eq : t -> t -> bool
     val hash : t -> int
   end
+
+module type HashconsedRecType = sig
+  type t
+
+  val hashcons : (t -> t) -> t -> t
+
+  val eq : t -> t -> bool
+
+  val hash : t -> int
+end
 
 (** The output is a function [generate] such that [generate args] creates a
     hash-table of the hash-consed objects, together with [hcons], a function
@@ -39,17 +48,15 @@ module type HashconsedType =
 module type S =
   sig
     type t
-    type u
     type table
-    val generate : u -> table
+    val generate : unit -> table
     val hcons : table -> t -> t
     val stats : table -> Hashset.statistics
   end
 
-module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
+module Make (X : HashconsedType) : (S with type t = X.t) =
   struct
     type t = X.t
-    type u = X.u
 
     (* We create the type of hashtables for t, with our comparison fun.
      * An invariant is that the table never contains two entries equals
@@ -58,19 +65,39 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
      *)
     module Htbl = Hashset.Make(X)
 
-    type table = (Htbl.t * u)
+    type table = Htbl.t
 
-    let generate u =
+    let generate () =
       let tab = Htbl.create 97 in
-      (tab, u)
+      tab
 
-    let hcons (tab, u) x =
-      let y = X.hashcons u x in
+    let hcons tab x =
+      let y = X.hashcons x in
       Htbl.repr (X.hash y) y tab
 
-    let stats (tab, _) = Htbl.stats tab
+    let stats = Htbl.stats
 
   end
+
+module MakeRec (X : HashconsedRecType) : (S with type t = X.t) =
+struct
+  type t = X.t
+
+  module Htbl = Hashset.Make(X)
+
+  type table = Htbl.t
+
+  let generate () =
+    let tab = Htbl.create 97 in
+    tab
+
+  let rec hcons tab x =
+    let y = X.hashcons (hcons tab) x in
+    Htbl.repr (X.hash y) y tab
+
+  let stats = Htbl.stats
+
+end
 
 (* A few useful wrappers:
  * takes as argument the function [generate] above and build a function of type
@@ -85,7 +112,7 @@ let simple_hcons h f u =
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
 
-module type HashedType = sig type t val hash : t -> int end
+module type HashedType = sig type t val hash : t -> int val hcons : t -> t end
 
 (* list *)
 module Hlist (D:HashedType) =
@@ -102,29 +129,28 @@ module Hlist (D:HashedType) =
     end
 
     type t = X.t
-    type u = (D.t -> D.t)
 
     module Htbl = Hashset.Make(X)
 
-    type table = (Htbl.t * u)
+    type table = Htbl.t
 
-    let generate u =
+    let generate () =
       let tab = Htbl.create 97 in
-      (tab, u)
+      tab
 
-    let rec hcons (tab, hdata as data) l =
+    let rec hcons tab l =
       let h, l = match l with
       | [] -> 0, []
       | x :: l ->
-        let h, l = hcons data l in
+        let h, l = hcons tab l in
         let h = Hashset.Combine.combine (D.hash x) h in
-        h, hdata x :: l
+        h, D.hcons x :: l
       in
       h, Htbl.repr h l tab
 
     let hcons data l = snd (hcons data l)
 
-    let stats (tab, _) = Htbl.stats tab
+    let stats = Htbl.stats
 
   end
 
@@ -132,8 +158,7 @@ module Hlist (D:HashedType) =
 module Hstring = Make(
   struct
     type t = string
-    type u = unit
-    let hashcons () s =(* incr accesstr;*) s
+    let hashcons s =(* incr accesstr;*) s
 
     let eq = String.equal
 

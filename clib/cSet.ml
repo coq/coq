@@ -52,7 +52,7 @@ sig
   val hash : t -> int
 end
 
-module Hashcons(M : OrderedType)(H : HashedType with type t = M.t)  =
+module Hashcons(M : OrderedType)(H : Hashcons.HashedType with type t = M.t)  =
 struct
   module Set = Make(M)
 
@@ -68,12 +68,12 @@ struct
   | SEmpty -> accu
   | SNode (l, v, r, _) -> spine l ((v, r) :: accu)
 
-  let rec umap f s = match set_prj s with
+  let rec umap s = match set_prj s with
   | SEmpty -> set_inj SEmpty
   | SNode (l, v, r, h) ->
-    let l' = umap f l in
-    let r' = umap f r in
-    let v' = f v in
+    let l' = umap l in
+    let r' = umap r in
+    let v' = H.hcons v in
     set_inj (SNode (l', v', r', h))
 
   let rec eqeq s1 s2 = match s1, s2 with
@@ -86,7 +86,6 @@ struct
   struct
     open Hashset.Combine
     type t = set
-    type u = M.t -> M.t
     let eq s1 s2 = s1 == s2 || eqeq (spine s1 []) (spine s2 [])
     let hash s = Set.fold (fun v accu -> combine (H.hash v) accu) s 0
     let hashcons = umap
