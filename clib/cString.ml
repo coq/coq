@@ -192,4 +192,11 @@ module List = struct
   let equal l l' = CList.equal equal l l'
 end
 
-let hcons = Hashcons.simple_hcons Hashcons.Hstring.generate Hashcons.Hstring.hcons ()
+module Hstring = Hashcons.Make(struct
+    type t = string
+    let hashcons s = s
+    let eq = String.equal
+    let hash = hash
+  end)
+
+let hcons = Hashcons.simple_hcons Hstring.generate Hstring.hcons ()

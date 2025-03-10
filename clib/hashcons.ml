@@ -153,23 +153,3 @@ module Hlist (D:HashedType) =
     let stats = Htbl.stats
 
   end
-
-(* string *)
-module Hstring = Make(
-  struct
-    type t = string
-    let hashcons s =(* incr accesstr;*) s
-
-    let eq = String.equal
-
-    (** Copy from CString *)
-    let rec hash len s i accu =
-      if i = len then accu
-      else
-        let c = Char.code (String.unsafe_get s i) in
-        hash len s (succ i) (accu * 19 + c)
-
-    let hash s =
-      let len = String.length s in
-      hash len s 0 0
-  end)
