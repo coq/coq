@@ -12,6 +12,9 @@
 
 (** {6 Hashconsing functorial interface} *)
 
+type 'a f = 'a -> int * 'a
+(** Type of hashconsing function for ['a]. The returned int is the hash. *)
+
 module type HashconsedType =
   sig
     (** {6 Generic hashconsing signature}
@@ -30,30 +33,26 @@ module type HashconsedType =
     type t
     (** Type of objects to hashcons. *)
 
-    val hashcons : t -> t
-    (** The actual hashconsing function, using its first argument to recursively
-        hashcons substructures. It should be compatible with [eq], that is
-        [eq x (hashcons f x) = true]. *)
+    val hashcons : t f
+    (** The actual hashconsing function. It should be compatible with [eq], that is
+        [eq x (snd @@ hashcons f x) = true]. It also returns the hash. *)
 
     val eq : t -> t -> bool
     (** A comparison function. It is allowed to use physical equality
         on the sub-terms hashconsed by the [hashcons] function, but it should be
-        insensible to shallow copy of the compared object. *)
-
-    val hash : t -> int
-    (** A hash function passed to the underlying hashtable structure. [hash]
-        should be compatible with [eq], i.e. if [eq x y = true] then
-        [hash x = hash y]. *)
+        insensible to shallow copy of the compared object.
+        It should be compatible with the hash returned by [hashcons], ie
+        [eq x y] implies [fst @@ hashcons x = fst @@ hashcons y].
+    *)
   end
 
 module type HashconsedRecType = sig
   type t
 
-  val hashcons : (t -> t) -> t -> t
+  val hashcons : t f -> t f
+  (** Hashcons the given constructor, calling the provided function on children. *)
 
   val eq : t -> t -> bool
-
-  val hash : t -> int
 end
 
 module type S =
@@ -67,8 +66,8 @@ module type S =
     val generate : unit -> table
     (** This create a hashtable of the hashconsed objects. *)
 
-    val hcons : table -> t -> t
-    (** Perform the hashconsing of the given object within the table. *)
+    val hcons : table -> t f
+    (** Perform the hashconsing of the given object within the table, and returns the hash. *)
 
     val stats : table -> Hashset.statistics
     (** Recover statistics of the hashconsing table. *)
@@ -86,12 +85,20 @@ module MakeRec (X : HashconsedRecType) : (S with type t = X.t)
 (** These are intended to be used together with instances of the [Make]
     functor. *)
 
-val simple_hcons : ('u -> 'tab) -> ('tab -> 't -> 't) -> 'u -> 't -> 't
+val simple_hcons : ('u -> 'tab) -> ('tab -> 't -> 'v) -> 'u -> 't -> 'v
 (** Typically used as [let hcons = simple_hcons H.generate H.hcons ()] where [H] is of type [S]. *)
 
 (** {6 Hashconsing of usual structures} *)
 
-module type HashedType = sig type t val hash : t -> int val hcons : t -> t end
+module type HashedType = sig
+  type t
+  val hcons : t f
+end
 
 module Hlist (D:HashedType) : (S with type t = D.t list)
 (** Hashconsing of lists.  *)
+
+val hashcons_array : 'v f -> 'v array f
+(** Helper for array hashconsing. Shares the elements producing a new
+    array if needed, does not mutate the array, does not share the
+    array itself. *)

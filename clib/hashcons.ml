@@ -10,34 +10,28 @@
 
 (* Hash consing of datastructures *)
 
+type 'a f = 'a -> int * 'a
+
 (* [t] is the type of object to hash-cons
- * [u] is the type of hash-cons functions for the sub-structures
- *   of objects of type t (u usually has the form (t1->t1)*(t2->t2)*...).
- * [hashcons u x] is a function that hash-cons the sub-structures of x using
- *   the hash-consing functions u provides.
+ * [hashcons x] is a function that hash-cons the sub-structures of x
  * [eq] is a comparison function. It is allowed to use physical equality
  *   on the sub-terms hash-consed by the hashcons function.
- * [hash] is the hash function given to the Hashtbl.Make function
- *
- * Note that this module type coerces to the argument of Hashtbl.Make.
  *)
 
 module type HashconsedType =
   sig
     type t
-    val hashcons : t -> t
+    val hashcons : t f
     val eq : t -> t -> bool
-    val hash : t -> int
   end
 
 module type HashconsedRecType = sig
   type t
 
-  val hashcons : (t -> t) -> t -> t
+  val hashcons : t f -> t f
 
   val eq : t -> t -> bool
 
-  val hash : t -> int
 end
 
 (** The output is a function [generate] such that [generate args] creates a
@@ -50,7 +44,7 @@ module type S =
     type t
     type table
     val generate : unit -> table
-    val hcons : table -> t -> t
+    val hcons : table -> t f
     val stats : table -> Hashset.statistics
   end
 
@@ -72,8 +66,8 @@ module Make (X : HashconsedType) : (S with type t = X.t) =
       tab
 
     let hcons tab x =
-      let y = X.hashcons x in
-      Htbl.repr (X.hash y) y tab
+      let h, y = X.hashcons x in
+      h, Htbl.repr h y tab
 
     let stats = Htbl.stats
 
@@ -92,8 +86,8 @@ struct
     tab
 
   let rec hcons tab x =
-    let y = X.hashcons (hcons tab) x in
-    Htbl.repr (X.hash y) y tab
+    let h, y = X.hashcons (hcons tab) x in
+    h, Htbl.repr h y tab
 
   let stats = Htbl.stats
 
@@ -112,10 +106,13 @@ let simple_hcons h f u =
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
 
-module type HashedType = sig type t val hash : t -> int val hcons : t -> t end
+module type HashedType = sig
+  type t
+  val hcons : t f
+end
 
 (* list *)
-module Hlist (D:HashedType) =
+module Hlist (D:HashedType) : S with type t = D.t list =
   struct
     module X =
     struct
@@ -142,14 +139,20 @@ module Hlist (D:HashedType) =
       let h, l = match l with
       | [] -> 0, []
       | x :: l ->
+        let hx, x = D.hcons x in
         let h, l = hcons tab l in
-        let h = Hashset.Combine.combine (D.hash x) h in
-        h, D.hcons x :: l
+        let h = Hashset.Combine.combine hx h in
+        h, x :: l
       in
       h, Htbl.repr h l tab
-
-    let hcons data l = snd (hcons data l)
 
     let stats = Htbl.stats
 
   end
+
+let hashcons_array hcons a =
+  CArray.Smart.fold_left_map (fun acc x ->
+      let hx, x = hcons x in
+      Hashset.Combine.combine acc hx, x)
+    0
+    a

@@ -14,6 +14,8 @@ open Util
 
 module RelDecl = Context.Rel.Declaration
 
+let noh hcons x = snd (hcons x)
+
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
@@ -34,10 +36,10 @@ let safe_flags oracle = {
 (** {6 Arities } *)
 
 let hcons_template_universe ar =
-  { template_param_arguments = List.Smart.map (Option.Smart.map Sorts.hcons) ar.template_param_arguments;
-    template_concl = Sorts.hcons ar.template_concl;
-    template_context = UVars.hcons_abstract_universe_context ar.template_context;
-    template_defaults = UVars.Instance.hcons ar.template_defaults;
+  { template_param_arguments = List.Smart.map (Option.Smart.map (noh Sorts.hcons)) ar.template_param_arguments;
+    template_concl = noh Sorts.hcons ar.template_concl;
+    template_context = noh UVars.hcons_abstract_universe_context ar.template_context;
+    template_defaults = noh UVars.Instance.hcons ar.template_defaults;
   }
 
 let universes_context = function
@@ -117,11 +119,11 @@ let subst_const_body subst cb =
     themselves. But would it really bring substantial gains ? *)
 
 let hcons_rel_decl =
-  RelDecl.map_name Names.Name.hcons %> RelDecl.map_value Constr.hcons %> RelDecl.map_type Constr.hcons
+  RelDecl.map_name (noh Names.Name.hcons) %> RelDecl.map_value (noh Constr.hcons) %> RelDecl.map_type (noh Constr.hcons)
 
 let hcons_rel_context l = List.Smart.map hcons_rel_decl l
 
-let hcons_const_def ?(hbody=Constr.hcons) = function
+let hcons_const_def ?(hbody=noh Constr.hcons) = function
   | Undef inl -> Undef inl
   | Primitive p -> Primitive p
   | Symbol r -> Symbol r
@@ -133,12 +135,12 @@ let hcons_universes cbu =
   match cbu with
   | Monomorphic -> Monomorphic
   | Polymorphic ctx ->
-    Polymorphic (UVars.hcons_abstract_universe_context ctx)
+    Polymorphic (noh UVars.hcons_abstract_universe_context ctx)
 
 let hcons_const_body ?hbody cb =
   { cb with
     const_body = hcons_const_def ?hbody cb.const_body;
-    const_type = Constr.hcons cb.const_type;
+    const_type = noh Constr.hcons cb.const_type;
     const_universes = hcons_universes cb.const_universes;
   }
 
@@ -301,15 +303,15 @@ let inductive_make_projections ind mib =
 (** Just as for constants, this hash-consing is quite partial *)
 
 let hcons_mind_packet oib =
-  let user = Array.Smart.map Constr.hcons oib.mind_user_lc in
-  let map (ctx, c) = Context.Rel.map Constr.hcons ctx, Constr.hcons c in
+  let user = Array.Smart.map (noh Constr.hcons) oib.mind_user_lc in
+  let map (ctx, c) = Context.Rel.map (noh Constr.hcons) ctx, noh Constr.hcons c in
   let nf = Array.Smart.map map oib.mind_nf_lc in
   { oib with
-    mind_typename = Names.Id.hcons oib.mind_typename;
+    mind_typename = noh Names.Id.hcons oib.mind_typename;
     mind_arity_ctxt = hcons_rel_context oib.mind_arity_ctxt;
-    mind_user_arity = Constr.hcons oib.mind_user_arity;
-    mind_sort = Sorts.hcons oib.mind_sort;
-    mind_consnames = Array.Smart.map Names.Id.hcons oib.mind_consnames;
+    mind_user_arity = noh Constr.hcons oib.mind_user_arity;
+    mind_sort = noh Sorts.hcons oib.mind_sort;
+    mind_consnames = Array.Smart.map (noh Names.Id.hcons) oib.mind_consnames;
     mind_user_lc = user;
     mind_nf_lc = nf }
 

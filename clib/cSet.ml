@@ -64,17 +64,20 @@ struct
   let set_prj : set -> _set = Obj.magic
   let set_inj : _set -> set = Obj.magic
 
+  (* equivalent sets may have different structure, so we don't hash and compare by
+     the actual structure but only by the list of elements *)
   let rec spine s accu = match set_prj s with
   | SEmpty -> accu
   | SNode (l, v, r, _) -> spine l ((v, r) :: accu)
 
-  let rec umap s = match set_prj s with
-  | SEmpty -> set_inj SEmpty
+  let rec umap hacc s = match set_prj s with
+  | SEmpty -> hacc, set_inj SEmpty
   | SNode (l, v, r, h) ->
-    let l' = umap l in
-    let r' = umap r in
-    let v' = H.hcons v in
-    set_inj (SNode (l', v', r', h))
+    let hacc, l' = umap hacc l in
+    let hv, v' = H.hcons v in
+    let hacc = Hashset.Combine.combine hacc hv in
+    let hacc, r' = umap hacc r in
+    hacc, set_inj (SNode (l', v', r', h))
 
   let rec eqeq s1 s2 = match s1, s2 with
   | [], [] -> true
@@ -84,11 +87,9 @@ struct
 
   module Hashed =
   struct
-    open Hashset.Combine
     type t = set
     let eq s1 s2 = s1 == s2 || eqeq (spine s1 []) (spine s2 [])
-    let hash s = Set.fold (fun v accu -> combine (H.hash v) accu) s 0
-    let hashcons = umap
+    let hashcons v = umap 0 v
   end
 
   include Hashcons.Make(Hashed)

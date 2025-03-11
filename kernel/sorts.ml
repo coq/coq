@@ -37,19 +37,19 @@ struct
   module Hstruct = struct
     type nonrec t = t
 
+    open Hashset.Combine
+
     let hashcons = function
-      | Var _ as q -> q
+      | Var qv as q -> combinesmall 1 qv, q
       | Unif (s,i) as q ->
-        let s' = CString.hcons s in
-        if s == s' then q else Unif (s',i)
+        let hs, s' = CString.hcons s in
+        combinesmall 2 (combine hs i), if s == s' then q else Unif (s',i)
 
     let eq a b =
       match a, b with
       | Var a, Var b -> Int.equal a b
       | Unif (sa, ia), Unif (sb, ib) -> sa == sb && Int.equal ia ib
       | (Var _ | Unif _), _ -> false
-
-    let hash = hash
   end
 
   module Hasher = Hashcons.Make(Hstruct)
@@ -161,27 +161,25 @@ module Quality = struct
     type nonrec t = t
 
     let hashcons = function
-      | QConstant _ as q -> q
+      | QConstant c as q -> Constants.hash c, q
       | QVar qv as q ->
-        let qv' = QVar.hcons qv in
-        if qv == qv' then q else QVar qv'
+        let hqv, qv' = QVar.hcons qv in
+        Hashset.Combine.combinesmall 3 hqv, if qv == qv' then q else QVar qv'
 
     let eq a b =
       match a, b with
       | QVar a, QVar b -> a == b
       | QVar _, _ -> false
       | (QConstant _), _ -> equal a b
-
-    let hash = hash
   end
 
   module Hasher = Hashcons.Make(Hstruct)
 
   let hcons = Hashcons.simple_hcons Hasher.generate Hasher.hcons ()
 
-  let qsprop = hcons (QConstant QSProp)
-  let qprop = hcons (QConstant QProp)
-  let qtype = hcons (QConstant QType)
+  let qsprop = snd @@ hcons (QConstant QSProp)
+  let qprop = snd @@ hcons (QConstant QProp)
+  let qtype = snd @@ hcons (QConstant QType)
 
   module Self = struct type nonrec t = t let compare = compare end
   module Set = CSet.Make(Self)
@@ -409,19 +407,18 @@ module Hsorts =
 
       let hashcons = function
         | Type u as c ->
-          let u' = hcons_univ u in
-            if u' == u then c else Type u'
+          let hu, u' = hcons_univ u in
+          combinesmall 2 hu, if u' == u then c else Type u'
         | QSort (q, u) as c ->
-          let u' = hcons_univ u in
-          if u' == u then c else QSort (q, u)
-        | SProp | Prop | Set as s -> s
+          let hq, q' = QVar.hcons q in
+          let hu, u' = hcons_univ u in
+          combinesmall 3 (combine hu hq), if u' == u && q' == q then c else QSort (q', u')
+        | SProp | Prop | Set as s -> hash s, s
       let eq s1 s2 = match (s1,s2) with
         | SProp, SProp | Prop, Prop | Set, Set -> true
         | (Type u1, Type u2) -> u1 == u2
         | QSort (q1, u1), QSort (q2, u2) -> q1 == q2 && u1 == u2
         | (SProp | Prop | Set | Type _ | QSort _), _ -> false
-
-      let hash = hash
     end)
 
 let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons ()

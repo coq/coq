@@ -624,7 +624,6 @@ val eq_invert : ('a -> 'a -> bool)
 (** {6 Hashconsing} *)
 
 val hash : constr -> int
-val case_info_hash : case_info -> int
 
 (*********************************************************************)
 
@@ -637,15 +636,15 @@ module GenHCons(C:sig
     val via_hconstr : bool
 
     module Tbl : sig
-      val find_opt : t -> (constr * int) option
-      val add : t -> constr * int -> unit
+      val find_opt : t -> (int * constr) option
+      val add : t -> int * constr -> unit
     end
   end) : sig
-  val hcons : C.t -> constr
+  val hcons : C.t -> int * constr
 end
 
 
-val hcons : constr -> constr
+val hcons : constr Hashcons.f
 
 val hasheq_kind : (_ kind_of_term as 'k) -> 'k -> bool
 (** Checks physical equality of every immediate element (goes inside tuples and arrays) *)
@@ -662,8 +661,8 @@ val mkInd : inductive -> constr
 val mkConstruct : constructor -> constr
 [@@deprecated "(8.18) Use [mkConstructU] or if truly needed [UnsafeMonomorphic.mkConstruct]"]
 
-val hcons_annot : Name.t binder_annot -> Name.t binder_annot
+val hcons_annot : Name.t binder_annot Hashcons.f
 
-val hcons_caseinfo : case_info -> case_info
+val hcons_caseinfo : case_info Hashcons.f
 
 val hash_cast_kind : cast_kind -> int

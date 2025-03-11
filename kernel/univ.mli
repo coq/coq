@@ -46,7 +46,7 @@ sig
 
   val hash : t -> int
 
-  val hcons : t -> t
+  val hcons : t Hashcons.f
 
   val make : UGlobal.t -> t
 
@@ -111,7 +111,7 @@ sig
   val hash : t -> int
   (** Hash function *)
 
-  val hcons : t -> t
+  val hcons : t Hashcons.f
 
   val make : Level.t -> t
   (** Create a universe representing the given level. *)
@@ -255,7 +255,7 @@ val pr_universe_level_subst : (Level.t -> Pp.t) -> universe_level_subst -> Pp.t
 
 (** {6 Hash-consing } *)
 
-val hcons_univ : Universe.t -> Universe.t
-val hcons_constraints : Constraints.t -> Constraints.t
-val hcons_universe_set : Level.Set.t -> Level.Set.t
-val hcons_universe_context_set : ContextSet.t -> ContextSet.t
+val hcons_univ : Universe.t Hashcons.f
+val hcons_constraints : Constraints.t Hashcons.f
+val hcons_universe_set : Level.Set.t Hashcons.f
+val hcons_universe_context_set : ContextSet.t Hashcons.f

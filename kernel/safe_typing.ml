@@ -732,7 +732,7 @@ let make_hbody = function
   | None -> None
   | Some hc -> Some (fun c ->
       assert (c == HConstr.self hc);
-      HConstr.hcons hc)
+      snd @@ HConstr.hcons hc)
 
 let add_constant_aux senv ?hbody (kn, cb) =
   let l = Constant.label kn in
@@ -969,7 +969,7 @@ let export_private_constants eff senv =
     | Monomorphic -> None
     | Polymorphic auctx -> Some (UVars.AbstractContext.size auctx)
     in
-    let body = Constr.hcons body in
+    let _, body = Constr.hcons body in
     let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in
     senv, (kn, { c with const_body = OpaqueDef o }, Some opaque)
   | Def _ | Undef _ | Primitive _ | Symbol _ as body ->
@@ -1040,15 +1040,15 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
     body, uctx, trusted
   in
   let (hbody, c, ctx) = Constant_typing.check_delayed handle ty_ctx pf in
-  let c = match hbody with
+  let _, c = match hbody with
     | Some hbody -> assert (c == HConstr.self hbody); HConstr.hcons hbody
     | None -> Constr.hcons c
   in
   let ctx = match ctx with
   | Opaqueproof.PrivateMonomorphic u ->
-    Opaqueproof.PrivateMonomorphic (Univ.hcons_universe_context_set u)
+    Opaqueproof.PrivateMonomorphic (snd @@ Univ.hcons_universe_context_set u)
   | Opaqueproof.PrivatePolymorphic u ->
-    Opaqueproof.PrivatePolymorphic (Univ.hcons_universe_context_set u)
+    Opaqueproof.PrivatePolymorphic (snd @@ Univ.hcons_universe_context_set u)
   in
   { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
 

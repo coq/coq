@@ -75,7 +75,7 @@ module Quality : sig
 
   val hash : t -> int
 
-  val hcons : t -> t
+  val hcons : t Hashcons.f
 
   (* XXX Inconsistent naming: this one should be subst_fn *)
   val subst : (QVar.t -> t) -> t -> t
@@ -155,7 +155,7 @@ val is_small : t -> bool
 val family : t -> family
 val quality : t -> Quality.t
 
-val hcons : t -> t
+val hcons : t Hashcons.f
 
 val family_compare : family -> family -> int
 val family_equal : family -> family -> bool

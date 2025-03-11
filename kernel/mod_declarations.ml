@@ -188,7 +188,7 @@ let rec hcons_structure_field_body sb = match sb with
 and hcons_structure_body sb =
   (** FIXME *)
   let map (l, sfb as fb) =
-    let l' = Names.Label.hcons l in
+    let _, l' = Names.Label.hcons l in
     let sfb' = hcons_structure_field_body sfb in
     if l == l' && sfb == sfb' then fb else (l', sfb')
   in

@@ -51,15 +51,15 @@ struct
   let of_bytes s =
     let s = Bytes.to_string s in
     check_valid s;
-    String.hcons s
+    snd @@ String.hcons s
 
   let of_string s =
     let () = check_valid s in
-    String.hcons s
+    snd @@ String.hcons s
 
   let of_string_soft s =
     let () = check_valid ~strict:false s in
-    String.hcons s
+    snd @@ String.hcons s
 
   let to_string id = id
 
@@ -114,15 +114,16 @@ struct
     struct
       type nonrec t = t
       let hashcons = function
-        | Name id -> Name (Id.hcons id)
-        | n -> n
+        | Name id ->
+          let h, id = Id.hcons id in
+          h, Name id
+        | Anonymous -> 0, Anonymous
       let eq n1 n2 =
         n1 == n2 ||
         match (n1,n2) with
           | (Name id1, Name id2) -> id1 == id2
           | (Anonymous,Anonymous) -> true
           | _ -> false
-      let hash = hash
     end
 
   module Hname = Hashcons.Make(Self_Hashcons)
@@ -236,11 +237,13 @@ struct
   module Self_Hashcons =
     struct
       type nonrec t = t
-      let hashcons (n,s,dir) = (n,Id.hcons s,DirPath.hcons dir)
+      let hashcons (n,s,dir) =
+        let hs, s = Id.hcons s in
+        let hdir, dir = DirPath.hcons dir in
+        combine3 (Int.hash n) hs hdir, (n,s,dir)
       let eq ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
         (x == y) ||
         (Int.equal n1 n2 && s1 == s2 && dir1 == dir2)
-      let hash = hash
     end
 
   module HashMBId = Hashcons.Make(Self_Hashcons)
@@ -336,9 +339,16 @@ module ModPath = struct
   module Self_Hashcons = struct
     type t = module_path
     let hashcons hcons = function
-      | MPfile dir -> MPfile (DirPath.hcons dir)
-      | MPbound m -> MPbound (MBId.hcons m)
-      | MPdot (md,l) -> MPdot (hcons md, Id.hcons l)
+      | MPfile dir ->
+        let hdir, dir = DirPath.hcons dir in
+        combinesmall 1 hdir, MPfile dir
+      | MPbound m ->
+        let hm, m = MBId.hcons m in
+        combinesmall 2 hm, MPbound m
+      | MPdot (md,l) ->
+        let hmd, md = hcons md in
+        let hl, l = Id.hcons l in
+        combinesmall 3 (combine hmd hl), MPdot (md, l)
     let eq d1 d2 =
       d1 == d2 ||
       match d1,d2 with
@@ -347,7 +357,6 @@ module ModPath = struct
       | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && equal mod1 mod2
       (* XXX use physical equality for mod1 = mod2 *)
       | _ -> false
-    let hash = hash
   end
 
   module HashMP = Hashcons.MakeRec(Self_Hashcons)
@@ -420,10 +429,11 @@ module KerName = struct
     type t = kernel_name
     let hashcons kn =
       let { modpath = mp; knlabel = l; refhash; } = kn in
-      { modpath = ModPath.hcons mp; knlabel = Id.hcons l; refhash; }
+      let _, mp = ModPath.hcons mp in
+      let _, l = Id.hcons l in
+      refhash, { modpath =  mp; knlabel = l; refhash; }
     let eq kn1 kn2 =
       kn1.modpath == kn2.modpath && kn1.knlabel == kn2.knlabel
-    let hash = hash
   end
 
   module HashKN = Hashcons.Make(Self_Hashcons)
@@ -563,8 +573,13 @@ module KerPair = struct
     struct
       type t = kernel_pair
       let hashcons = function
-        | Same kn -> Same (KerName.hcons kn)
-        | Dual (knu,knc) -> make (KerName.hcons knu) (KerName.hcons knc)
+        | Same kn ->
+          let hkn, kn = KerName.hcons kn in
+          hkn, Same kn
+        | Dual (knu,knc) ->
+          let hknu, knu = KerName.hcons knu in
+          let hknc, knc = KerName.hcons knc in
+          Hashset.Combine.combine hknu hknc, make knu knc
       let eq x y = (* physical comparison on subterms *)
         x == y ||
         match x,y with
@@ -575,11 +590,6 @@ module KerPair = struct
           the same canonical part is a logical invariant of the system, it
           is not necessarily an invariant in memory, so we treat kernel
           names as they are syntactically for hash-consing) *)
-
-      let hash = function
-      | Same kn -> KerName.hash kn
-      | Dual (knu, knc) ->
-        Hashset.Combine.combine (KerName.hash knu) (KerName.hash knc)
     end
 
   module HashKP = Hashcons.Make(Self_Hashcons)
@@ -740,9 +750,10 @@ module Constrmap_env = Map.Make(Construct.UserOrd)
 module Hind = Hashcons.Make(
   struct
     type t = inductive
-    let hashcons (mind, i) = (MutInd.hcons mind, i)
+    let hashcons (mind, i) =
+      let hmind, mind = MutInd.hcons mind in
+      Hashset.Combine.combine hmind (Int.hash i), (mind, i)
     let eq (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
-    let hash = Ind.CanOrd.hash
   end)
 
 let hcons_con = Constant.hcons
@@ -752,9 +763,10 @@ let hcons_ind = Hashcons.simple_hcons Hind.generate Hind.hcons ()
 module Hconstruct = Hashcons.Make(
   struct
     type t = constructor
-    let hashcons (ind, j) = (hcons_ind ind, j)
+    let hashcons (ind, j) =
+      let hind, ind = hcons_ind ind in
+      Hashset.Combine.combine hind (Int.hash j), (ind, j)
     let eq (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
-    let hash = Construct.CanOrd.hash
   end)
 
 let hcons_construct = Hashcons.simple_hcons Hconstruct.generate Hconstruct.hcons ()
@@ -895,13 +907,16 @@ struct
     module Self_Hashcons = struct
       type nonrec t = t
       let hashcons p =
-        { proj_ind = hcons_ind p.proj_ind;
+        let hind, ind = hcons_ind p.proj_ind in
+        let _, na = Constant.hcons p.proj_name in
+        Hashset.Combine.combinesmall p.proj_arg hind, {
+          proj_ind = ind;
           proj_npars = p.proj_npars;
           proj_arg = p.proj_arg;
-          proj_name = Constant.hcons p.proj_name }
+          proj_name = na;
+        }
       let eq p p' =
         p == p' || (p.proj_ind == p'.proj_ind && p.proj_npars == p'.proj_npars && p.proj_arg == p'.proj_arg && p.proj_name == p'.proj_name)
-      let hash = hash
     end
     module HashRepr = Hashcons.Make(Self_Hashcons)
     let hcons = Hashcons.simple_hcons HashRepr.generate HashRepr.hcons ()
@@ -975,10 +990,11 @@ struct
   module Self_Hashcons =
     struct
       type nonrec t = t
-      let hashcons (c,b) = (Repr.hcons c,b)
+      let hashcons (c,b) =
+        let hc, c = Repr.hcons c in
+        (if b then 0 else 1) + hc, (c,b)
       let eq ((c,b) as x) ((c',b') as y) =
         x == y || (c == c' && b == b')
-      let hash = hash
     end
 
   let canonize ((r, u) as p) =

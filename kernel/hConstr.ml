@@ -316,7 +316,7 @@ let kind_to_constr = function
   | String s -> mkString s
   | Array (u,t,def,ty) -> mkArray (u,Array.map self t,def.self,ty.self)
 
-let hcons_inplace f a = Array.iteri (fun i x -> Array.unsafe_set a i (f x)) a
+let hcons_inplace f a = Array.iteri (fun i x -> Array.unsafe_set a i (snd @@ f x)) a
 
 let of_kind_nohashcons = function
   | App (c, [||]) -> c
@@ -370,28 +370,28 @@ let rec of_constr henv c =
 and of_constr_aux henv c =
   match kind c with
   | Var i ->
-    let i = Id.hcons i in
+    let _, i = Id.hcons i in
     Var i
   | Rel _ as t -> t
   | Sort s ->
-    let s = Sorts.hcons s in
+    let _, s = Sorts.hcons s in
     Sort s
   | Cast (c,k,t) ->
     let c = of_constr henv c in
     let t = of_constr henv t in
     Cast (c, k, t)
   | Prod (na,t,c) ->
-    let na = hcons_annot na in
+    let _, na = hcons_annot na in
     let t = of_constr henv t in
     let c = of_constr (push_assum t henv) c in
     Prod (na, t, c)
   | Lambda (na, t, c) ->
-    let na = hcons_annot na in
+    let _, na = hcons_annot na in
     let t = of_constr henv t in
     let c = of_constr (push_assum t henv) c in
     Lambda (na,t,c)
   | LetIn (na,b,t,c) ->
-    let na = hcons_annot na in
+    let _, na = hcons_annot na in
     let b = of_constr henv b in
     let t = of_constr henv t in
     let c = of_constr (push_letin ~body:b ~typ:t henv) c in
@@ -403,16 +403,16 @@ and of_constr_aux henv c =
   | Evar _ -> CErrors.anomaly Pp.(str "evar in typeops")
   | Meta _ -> CErrors.anomaly Pp.(str "meta in typeops")
   | Const (c,u) ->
-    let c = hcons_con c in
-    let u = UVars.Instance.hcons u in
+    let _, c = hcons_con c in
+    let _, u = UVars.Instance.hcons u in
     Const (c,u)
   | Ind (ind,u) ->
-    let ind = hcons_ind ind in
-    let u = UVars.Instance.hcons u in
+    let _, ind = hcons_ind ind in
+    let _, u = UVars.Instance.hcons u in
     Ind (ind,u)
   | Construct (c,u) ->
-    let c = hcons_construct c in
-    let u = UVars.Instance.hcons u in
+    let _, c = hcons_construct c in
+    let _, u = UVars.Instance.hcons u in
     Construct (c,u)
   | Case (ci,u,pms,(p,r),iv,c,bl) ->
     let pctx, blctx =
@@ -427,8 +427,8 @@ and of_constr_aux henv c =
       let c = of_constr henv c in
       bnd, c
     in
-    let ci = hcons_caseinfo ci in
-    let u = UVars.Instance.hcons u in
+    let _, ci = hcons_caseinfo ci in
+    let _, u = UVars.Instance.hcons u in
     let pms = Array.map (of_constr henv) pms in
     let p = of_ctx p pctx in
     let iv = match iv with
@@ -451,14 +451,14 @@ and of_constr_aux henv c =
     let bl = Array.map (of_constr body_env) bl in
     CoFix (ln,(lna,tl,bl))
   | Proj (p,r,c) ->
-    let p = Projection.hcons p in
+    let _, p = Projection.hcons p in
     let c = of_constr henv c in
     Proj (p,r,c)
   | Int _ as t -> t
   | Float _ as t -> t
   | String _ as t -> t
   | Array (u,t,def,ty) ->
-    let u = UVars.Instance.hcons u in
+    let _, u = UVars.Instance.hcons u in
     let t = Array.map (of_constr henv) t in
     let def = of_constr henv def in
     let ty = of_constr henv ty in
