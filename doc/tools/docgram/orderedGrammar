@@ -2127,6 +2127,7 @@ ltac1_expr_in_env: [
 ]
 
 generic_tactic: [
+| ltac_expr
 ]
 
 ltac2_branches: [

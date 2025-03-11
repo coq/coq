@@ -13,7 +13,9 @@
 DOC_GRAMMAR
 
 (* defined in ml *)
-generic_tactic: [ ]
+generic_tactic: [
+| tactic
+]
 
 (* first, fixup symbols duplicated across files *)
 lglob: [
