@@ -223,16 +223,6 @@ let map_mp mp1 mp2 resolve = add_mp mp1 mp2 resolve empty_subst
 
 let mp_in_delta mp = Deltamap.mem_mp mp
 
-let kn_in_delta kn resolver =
-  try
-    match Deltamap.find_kn kn resolver with
-      | Equiv _ -> true
-      | Inline _ -> false
-  with Not_found -> false
-
-let con_in_delta con resolver = kn_in_delta (Constant.user con) resolver
-let mind_in_delta mind resolver = kn_in_delta (MutInd.user mind) resolver
-
 let mp_of_delta resolve mp =
  try Deltamap.find_mp mp resolve with Not_found -> mp
 
