@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module StrSet : Set.S with type elt = string
-
 module State : sig
   type t
   val loadpath : t -> Loadpath.State.t
@@ -19,7 +17,7 @@ end
 val init : make_separator_hack:bool -> Args.t -> State.t
 
 (** [treat_file_command_line file] Add an input file to be considered  *)
-val treat_file_command_line : string -> unit
+val treat_file_command_line : State.t -> string -> State.t
 
 val sort : State.t -> unit
 
