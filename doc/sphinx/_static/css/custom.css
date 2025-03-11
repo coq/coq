@@ -1,0 +1,12 @@
+html.writer-html5 .rst-content dl.field-list,
+html.writer-html5 .rst-content dl.footnote {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  justify-content: start;
+  justify-items: start;
+  align-items: start;
+}
+
+dt.field-even, dd.field-odd {
+  max-width: 100%;
+}
