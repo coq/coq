@@ -451,3 +451,14 @@ plus_O_n: forall n : nat, 0 + n = n
 plus_n_Sm: forall n m : nat, S (n + m) = n + S m
 plus_Sn_m: forall n m : nat, S n + m = S (n + m)
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
+should say both t and t_alias
+- : Init.unit = ()
+t: T
+t_alias: T
+should say only t
+- : Init.unit = ()
+BlacklistLocals.t: BlacklistLocals.T
+should say both t and t_alias
+- : Init.unit = ()
+BlacklistLocals.t_alias: BlacklistLocals.T
+BlacklistLocals.t: BlacklistLocals.T

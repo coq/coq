@@ -51,6 +51,9 @@ module SearchBlacklist =
         str "Search blacklist does " ++ (if b then mt () else str "not ") ++ str "include " ++ str s
      end)
 
+let { Goptions.get = blacklist_locals } =
+  Goptions.declare_bool_option_and_ref ~key:["Search";"Blacklist";"Locals"] ~value:true ()
+
 (* The functions iter_constructors and iter_declarations implement the behavior
    needed for the Rocq searching commands.
    These functions take as first argument the procedure
@@ -184,11 +187,17 @@ let full_name_of_reference ref =
   let (dir,id) = repr_path (Nametab.path_of_global ref) in
   DirPath.to_string dir ^ "." ^ Id.to_string id
 
+let is_local_ref : GlobRef.t -> bool = function
+  | ConstRef c -> Declare.is_local_constant c
+  | IndRef _ | ConstructRef _ | VarRef _ -> false
+
 (** Whether a reference is blacklisted *)
 let blacklist_filter : filter_function = fun ref kind env sigma typ ->
-  let name = full_name_of_reference ref in
-  let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
-  CString.Set.for_all is_not_bl (SearchBlacklist.v ())
+  if blacklist_locals() && is_local_ref ref then false
+  else
+    let name = full_name_of_reference ref in
+    let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
+    CString.Set.for_all is_not_bl (SearchBlacklist.v ())
 
 let module_filter : _ -> filter_function = fun mods ref kind env sigma typ ->
   let sp = Nametab.path_of_global ref in
