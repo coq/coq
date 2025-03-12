@@ -62,12 +62,9 @@ val mind_of_delta_kn : delta_resolver -> KerName.t -> MutInd.t
 (** Extract the set of inlined constant in the resolver *)
 val inline_of_delta : int option -> delta_resolver -> (int * KerName.t) list
 
-(** Does a [delta_resolver] contains a [mp], a constant, an inductive ? *)
+(** Does a [delta_resolver] contains a [mp]? *)
 
 val mp_in_delta : ModPath.t -> delta_resolver -> bool
-val con_in_delta : Constant.t -> delta_resolver -> bool
-val mind_in_delta : MutInd.t -> delta_resolver -> bool
-
 
 (** {6 Substitution} *)
 
