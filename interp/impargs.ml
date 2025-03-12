@@ -274,7 +274,8 @@ let compute_implicits_names env sigma t =
       (absolute_pos+1,nnondep',(na,absolute_pos,dep_pos)::names) in
     let _,_,names = set_names ([rels],ids) names in
     List.rev names
-  in aux env [] t
+  in
+  NewProfile.profile "compute_implicits_names" (fun () -> aux env [] t) ()
 
 let compute_implicits_explanation_gen strict strongly_strict revpat contextual env sigma t =
   let open Context.Rel.Declaration in
@@ -288,11 +289,13 @@ let compute_implicits_explanation_gen strict strongly_strict revpat contextual e
       add_free_rels_until strict strongly_strict revpat n env sigma t Conclusion v
     else v
   in
+  NewProfile.profile "compute_implicits_explanation_gen" (fun () ->
   match whd_prod env sigma t with
   | Some (na, a, b) ->
      let v = aux (push_rel (LocalAssum (na,a)) env) 1 b in
      Array.to_list v
-  | _ -> []
+  | _ -> [])
+    ()
 
 let compute_implicits_explanation_flags env sigma f t =
   compute_implicits_explanation_gen
