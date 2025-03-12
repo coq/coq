@@ -262,6 +262,7 @@ module Intern = struct
 end
 
 let intern_from_file file =
+  fst @@ Gc.ramp_up @@ fun () ->
   let ch = raw_intern_library file in
   let lsd, digest_lsd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
   let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
