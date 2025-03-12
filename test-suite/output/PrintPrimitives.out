@@ -1,0 +1,6 @@
+*** [ string = #string_type
+     : Set ]
+*** [ cat = #string_cat
+     : string -> string -> string ]
+
+Arguments cat (_ _)%_pstring_scope
