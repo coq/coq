@@ -559,9 +559,6 @@ let print_section_variable_with_infos env sigma id =
   print_named_decl env sigma true id ++
   with_line_skip (print_name_infos env (GlobRef.VarRef id))
 
-let print_typed_body env evd ~impargs (val_0,typ) =
-  (pr_lconstr_env ~inctx:true env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd ~impargs typ)
-
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
     let univs = Declareops.constant_polymorphic_context cb in
@@ -578,37 +575,60 @@ let print_constant env ~with_values with_implicit cst udecl =
     UState.of_names
       (Printer.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)
   in
-  let val_0 = match cb.const_body with
-    (* XXX print something for primitives? for symbols? *)
-      | Undef _ | Symbol _ | Primitive _ -> None
-      | Def c -> Some ((if Option.has_some with_values then Some c else None), None)
-      | OpaqueDef o ->
-        match with_values with
-        | None -> Some (None, None)
+  let sigma = Evd.from_ctx uctx in
+  let impargs = if with_implicit then select_stronger_impargs (implicits_of_global (ConstRef cst)) else [] in
+  let impargs = List.map binding_kind_of_status impargs in
+  let pptyp = pr_ltype_env env sigma ~impargs typ in
+  let typonly = str " :" ++ spc() ++ pptyp in
+  let sep_body_typ = fnl() ++ str "     : " in
+  let withbody c =
+    str " =" ++ spc() ++
+    pr_lconstr_env ~inctx:true env sigma c ++
+    sep_body_typ ++
+    pptyp
+  in
+  let is_axiom, ppdata, priv = match cb.const_body with
+    | Undef _ ->
+      let ex p = CPrimitives.PTE p in
+      let prims = CPrimitives.[ex PT_int63; ex PT_float64; ex PT_string; ex PT_array] in
+      let is_prim (CPrimitives.PTE p) =
+        let test = match p with
+        | PT_int63 -> Environ.is_int63_type
+        | PT_float64 -> Environ.is_float64_type
+        | PT_string -> Environ.is_string_type
+        | PT_array -> Environ.is_array_type
+        in
+        if test env cst then Some (CPrimitives.prim_type_to_string p)
+        else None
+      in
+      let prim = List.find_map is_prim prims in
+      let pp = match prim with
+        | None -> typonly
+        | Some prim -> str " =" ++ spc() ++ str "#" ++ str prim ++ sep_body_typ ++ pptyp
+      in
+      true, pp, None
+    | Symbol _ -> true, typonly, None
+    | Def c ->
+      let pp = if Option.has_some with_values then withbody c else typonly in
+      false, pp, None
+    | OpaqueDef o -> begin match with_values with
+        | None -> false, typonly, None
         | Some access ->
           let c, priv = Global.force_proof access o in
           let priv = match priv with
             | PrivateMonomorphic () -> None
             | PrivatePolymorphic priv -> Some priv
           in
-          Some (Some c, priv)
+          false, withbody c, priv
+      end
+    | Primitive prim ->
+      let pp = str " =" ++ spc() ++ str "#" ++ str (CPrimitives.to_string prim) ++ sep_body_typ ++ pptyp in
+      (* do we want to print with is_axiom = false? *)
+      true, pp, None
   in
-  let sigma = Evd.from_ctx uctx in
-  let impargs = if with_implicit then select_stronger_impargs (implicits_of_global (ConstRef cst)) else [] in
-  let impargs = List.map binding_kind_of_status impargs in
-  let pr_ltype = pr_ltype_env env sigma in
-  hov 0 (
-    match val_0 with
-    | None ->
-        str"*** [ " ++
-        print_basename cst ++ print_instance sigma cb ++ str " :" ++ spc () ++ pr_ltype ~impargs typ ++
-        str" ]" ++
-        Printer.pr_universes sigma univs
-    | Some (optbody, priv) ->
-      print_basename cst ++ print_instance sigma cb ++
-      str (if Option.has_some optbody then " =" else " :") ++ spc() ++
-      (match optbody with Some c-> print_typed_body env sigma ~impargs (c,typ) | None -> pr_ltype ~impargs typ)++
-      Printer.pr_universes sigma univs ?priv)
+  let ppmain = print_basename cst ++ print_instance sigma cb ++ ppdata in
+  let ppmain = if is_axiom then str"*** [ " ++ ppmain ++ str" ]" else ppmain in
+  hov 0 (ppmain ++ Printer.pr_universes sigma univs ?priv)
 
 let print_constant_with_infos env access cst udecl =
   print_constant env ~with_values:(Some access) true cst udecl ++
