@@ -254,7 +254,7 @@ let check_caml_version ~caml:s ~file:f =
 
 let marshal_out ch v = Marshal.to_channel ch v []; flush ch
 let marshal_in filename ch =
-  try Marshal.from_channel ch
+  try Marshal.static_from_channel ch
   with
   | End_of_file -> error_corrupted filename "premature end of file"
   | Failure s -> error_corrupted filename s
