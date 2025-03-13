@@ -151,7 +151,13 @@ let classify_vernac e =
         VtSideff (ids, VtLater)
     | VernacPrimitive ((id,_),_,_) ->
         VtSideff ([id.CAst.v], VtLater)
-    | VernacDefinition (_,({v=id},_),DefineBody _) -> VtSideff (idents_of_name id, VtLater)
+    | VernacDefinition (_,({v=id},_),DefineBody _) ->
+        let refine = Attributes.(parse_drop_extra Classes.refine_att atts) in
+        if refine then
+          (* Type may still be an evar *)
+          VtStartProof (Doesn'tGuaranteeOpacity, idents_of_name id)
+        else
+          VtSideff (idents_of_name id, VtLater)
     | VernacInductive (_,l) ->
         let ids = List.map (fun (((_,({v=id},_)),_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,({v=id},_)) -> id) l

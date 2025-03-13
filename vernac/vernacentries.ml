@@ -847,6 +847,19 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, udecl) bl t =
   ComDefinition.do_definition_interactive ?loc:lid.loc ~typing_flags ~program_mode ~name ~poly ~scope ?clearbody:atts.clearbody
     ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook udecl bl t
 
+let vernac_definition_refine ~atts (discharge, kind) (lid, udecl) bl red_option c typ_opt =
+  if Option.has_some red_option then
+    CErrors.user_err ?loc:c.loc Pp.(str "Cannot use Eval with #[refine].");
+  let open DefAttributes in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
+  let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
+  let name = vernac_definition_name lid scope in
+  ComDefinition.do_definition_refine ~name ?loc:lid.loc
+    ?clearbody ~poly ~typing_flags ~scope ~kind:(Decls.IsDefinition kind)
+    ?user_warns ?using udecl bl c typ_opt ?hook
+
 let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
@@ -2587,9 +2600,15 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacDefinition ((discharge,kind as dkind),lid,DefineBody (bl,red_option,c,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
-    vtmodifyprogram (fun ~pm ->
-      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
-       vernac_definition ~pm dkind lid bl red_option c typ)
+    let atts, refine = Attributes.(parse_with_extra Classes.refine_att) atts in
+    if refine then
+      vtopenproof(fun () ->
+        with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
+         vernac_definition_refine dkind lid bl red_option c typ)
+    else
+      vtmodifyprogram (fun ~pm ->
+        with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
+        vernac_definition ~pm dkind lid bl red_option c typ)
   | VernacDefinition ((discharge,kind as dkind),lid,ProveBody(bl,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
