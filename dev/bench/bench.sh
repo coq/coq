@@ -35,8 +35,8 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.14.1}"
-: "${old_ocaml_version:=4.14.1}"
+: "${new_ocaml_version:=5.2.1}"
+: "${old_ocaml_version:=5.2.1}"
 : "${new_ocaml_flambda:=0}"
 : "${old_ocaml_flambda:=0}"
 : "${new_coq_repository:=${CI_REPOSITORY_URL:-.}}"
@@ -58,8 +58,8 @@ check_variable () {
 : "${old_opam_override_urls:=}"
 
 if [ "$CI" ]; then
-  : "${new_coq_commit:=$(git rev-parse HEAD^2)}"
-  : "${old_coq_commit:=$(git merge-base HEAD^1 $new_coq_commit)}"
+  : "${new_coq_commit:=57797dc6390d9acac26e5b9b5ae62151b59d605e}"
+  : "${old_coq_commit:=f68ad925bc5b3f97900c6514f3481257f09640d8}"
 else
   echo New coq commit:
   read -r new_coq_commit
@@ -385,6 +385,10 @@ create_opam() {
     # number of jobs available on Travis, so we set it here manually:
     opam var --global jobs=$number_of_processors >/dev/null
     if [ ! -z "$BENCH_DEBUG" ]; then opam config list; fi
+
+    # if [ $RUNNER = NEW ]; then
+      opam pin add -y ocaml-base-compiler https://github.com/gasche/ocaml.git#gc-rampup-control-5.2
+    # fi
 
     opam repo add -q --this-switch coq-core-dev "$OPAM_COQ_DIR/core-dev"  # For rocq-stdlib
     opam repo add -q --this-switch coq-extra-dev "$OPAM_COQ_DIR/extra-dev"
