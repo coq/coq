@@ -199,9 +199,15 @@ struct
 
 end
 
+type exp_substituted_object = (substitutive_objects, exp_algebraic_objects, Empty.t, Empty.t) object_view
+
+and exp_algebraic_objects = { exp_algebraic_objects : exp_substituted_object list }
+
+(* and exp_substitutive_objects = Names.MBId.t list * exp_algebraic_objects *)
+
 type module_objects =
   { module_prefix : Nametab.object_prefix;
-    module_substituted_objects : Libobject.t list;
+    module_substituted_objects : exp_substituted_object list;
     module_keep_objects : keep_objects;
     module_escape_objects : escape_objects;
   }
@@ -327,6 +333,42 @@ let expand_aobjs = function
 
 let expand_sobjs (_,aobjs) = expand_aobjs aobjs
 
+module Expand =
+struct
+
+type exp_object = (substitutive_objects, exp_algebraic_objects, keep_objects, escape_objects) object_view
+
+let exp_substituted_view (obj : exp_substituted_object) : exp_object = match obj with
+| (AtomicObject _ | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | ExportObject _) as o -> o
+| EscapeObject (_, o) | KeepObject (_, o) -> Empty.abort o
+
+let keep_view (obj : Libobject.t) : exp_object = match obj with
+| (AtomicObject _ | KeepObject _) as o -> o
+| ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | ExportObject _ | EscapeObject _ ->
+  assert false (** keep objects only contain atomic / keep *)
+
+let escape_view (obj : Libobject.t) : exp_object = match obj with
+| (AtomicObject _ | EscapeObject _) as o -> o
+| ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | ExportObject _ | KeepObject _ ->
+  assert false (** escape objects only contain atomic / escape *)
+
+let rec substituted_object_view (obj : Libobject.t) : exp_substituted_object = match obj with
+| (AtomicObject _ | ModuleObject _ | ModuleTypeObject _ | ExportObject _) as o -> o
+| IncludeObject aobjs ->
+  let aobjs = expand_aobjs aobjs in
+  IncludeObject { exp_algebraic_objects = List.map substituted_object_view aobjs }
+| EscapeObject _ | KeepObject _ ->
+  (* forbidden in substitutive objects *)
+  assert false
+
+let object_view (obj : Libobject.t) : exp_object = match obj with
+| (AtomicObject _ | EscapeObject _ | ModuleObject _ | ModuleTypeObject _ | ExportObject _ | KeepObject _) as o -> o
+| IncludeObject aobjs ->
+  let aobjs = expand_aobjs aobjs in
+  IncludeObject { exp_algebraic_objects = List.map substituted_object_view aobjs }
+
+end
+
 
 (** {6 ModObjs : a cache of module objects}
 
@@ -367,6 +409,8 @@ module ModObjs :
    let all () = !table
  end
 
+ open Expand
+
 (** {6 Declaration of module substitutive objects} *)
 
 (** Nota: Interactive modules and module types cannot be recached!
@@ -383,8 +427,8 @@ let load_modtype i sp mp sobjs =
 
 (** {6 Declaration of substitutive objects for Include} *)
 
-let rec load_object i (prefix, obj) =
-  match obj with
+let rec load_object : type a. (a -> exp_object) -> int -> Nametab.object_prefix * a -> unit = fun view i (prefix, obj) ->
+  match view obj with
   | AtomicObject o -> Libobject.load_object i (prefix, o)
   | ModuleObject (id,sobjs) ->
     let sp, kn = Lib.make_oname prefix id in
@@ -403,12 +447,11 @@ let rec load_object i (prefix, obj) =
     let sp, kn = Lib.make_oname prefix id in
     load_escape i (dir_of_sp sp) (mp_of_kn kn) objs
 
-and load_objects i prefix objs =
-  List.iter (fun obj -> load_object i (prefix, obj)) objs
+and load_objects : type a. (a -> exp_object) -> int -> Nametab.object_prefix -> a list -> unit = fun view i prefix objs ->
+  List.iter (fun obj -> load_object view i (prefix, obj)) objs
 
 and load_include i (prefix, aobjs) =
-  let o = expand_aobjs aobjs in
-  load_objects i prefix o
+  load_objects exp_substituted_view i prefix aobjs.exp_algebraic_objects
 
 and load_keep i obj_dir obj_mp kobjs =
   (* Invariant : seg isn't empty *)
@@ -420,7 +463,7 @@ and load_keep i obj_dir obj_mp kobjs =
   assert Nametab.(eq_op modobjs.module_prefix prefix);
   assert (List.is_empty modobjs.module_keep_objects.keep_objects);
   ModObjs.set obj_mp { modobjs with module_keep_objects = kobjs };
-  load_objects (i+1) prefix kobjs.keep_objects
+  load_objects keep_view (i+1) prefix kobjs.keep_objects
 
 and load_escape i obj_dir obj_mp eobjs =
   (* Invariant : seg isn't empty *)
@@ -438,7 +481,7 @@ and load_escape i obj_dir obj_mp eobjs =
   assert Nametab.(eq_op modobjs.module_prefix prefix);
   assert (List.is_empty modobjs.module_escape_objects.escape_objects);
   ModObjs.set obj_mp { modobjs with module_escape_objects = eobjs };
-  load_objects (i+1) prefix eobjs.escape_objects
+  load_objects escape_view (i+1) prefix eobjs.escape_objects
 
 and load_module i obj_dir obj_mp sobjs =
   let prefix = Nametab.{ obj_dir ; obj_mp; } in
@@ -447,6 +490,7 @@ and load_module i obj_dir obj_mp sobjs =
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
     let objs = expand_sobjs sobjs in
+    let objs = List.map substituted_object_view objs in
     let module_objects =
       { module_prefix = prefix;
         module_substituted_objects = objs;
@@ -455,7 +499,7 @@ and load_module i obj_dir obj_mp sobjs =
       }
     in
     ModObjs.set obj_mp module_objects;
-    load_objects (i+1) prefix objs
+    load_objects exp_substituted_view (i+1) prefix objs
   end
 
 (** {6 Implementation of Import and Export commands} *)
@@ -468,20 +512,20 @@ let rec collect_module (f,mp) acc =
     (* May raise Not_found for unknown module and for functors *)
     let modobjs = ModObjs.get mp in
     let prefix = modobjs.module_prefix in
-    let acc = collect_objects f 1 prefix modobjs.module_escape_objects.escape_objects acc in
-    let acc = collect_objects f 1 prefix modobjs.module_keep_objects.keep_objects acc in
-    collect_objects f 1 prefix modobjs.module_substituted_objects acc
+    let acc = collect_objects escape_view f 1 prefix modobjs.module_escape_objects.escape_objects acc in
+    let acc = collect_objects keep_view f 1 prefix modobjs.module_keep_objects.keep_objects acc in
+    collect_objects exp_substituted_view f 1 prefix modobjs.module_substituted_objects acc
   with Not_found when Actions.stage = Summary.Stage.Synterp ->
     acc
 
-and collect_object f i prefix obj acc =
-  match obj with
+and collect_object : type a. (a -> exp_object) -> _ -> _ -> _ -> a -> _ -> _ = fun view f i prefix obj acc ->
+  match view obj with
   | ExportObject { mpl } -> collect_exports f i mpl acc
-  | AtomicObject _ | IncludeObject _ | KeepObject _ | EscapeObject _
-  | ModuleObject _ | ModuleTypeObject _ -> mark_object f (prefix,obj) acc
+  | (AtomicObject _ | IncludeObject _ | KeepObject _ | EscapeObject _
+  | ModuleObject _ | ModuleTypeObject _) as obj -> mark_object f (prefix,obj) acc
 
-and collect_objects f i prefix objs acc =
-  List.fold_left (fun acc obj -> collect_object f i prefix obj acc)
+and collect_objects : type a. (a -> exp_object) -> _ -> _ -> _ -> a list -> _ = fun view f i prefix objs acc ->
+  List.fold_left (fun acc obj -> collect_object view f i prefix obj acc)
     acc
     (List.rev objs)
 
@@ -520,8 +564,8 @@ let open_modtype i ((sp,kn),_) =
   assert (ModPath.equal mp mp');
   Nametab.push_modtype (Nametab.Exactly i) sp mp
 
-let rec open_object f i (prefix, obj) =
-  match obj with
+let rec open_object : type a. (a -> exp_object) -> _ -> _ -> _ * a -> _ = fun view f i (prefix, obj) ->
+  match view obj with
   | AtomicObject o -> Libobject.open_object f i (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
@@ -546,40 +590,40 @@ and open_module f i obj_dir obj_mp sobjs =
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
     let modobjs = ModObjs.get obj_mp in
-    open_objects f (i+1) modobjs.module_prefix modobjs.module_substituted_objects
+    open_objects exp_substituted_view f (i+1) modobjs.module_prefix modobjs.module_substituted_objects
   end
 
-and open_objects f i prefix objs =
-  List.iter (fun obj -> open_object f i (prefix, obj)) objs
+and open_objects : type a. (a -> exp_object) -> _ -> _ -> _ -> a list -> _ = fun view f i prefix objs ->
+  List.iter (fun obj -> open_object view f i (prefix, obj)) objs
 
 and open_include f i (prefix, aobjs) =
-  let o = expand_aobjs aobjs in
-  open_objects f i prefix o
+  open_objects exp_substituted_view f i prefix aobjs.exp_algebraic_objects
 
 and open_export f i mpl =
   let _,objs = collect_exports f i mpl (MPmap.empty, []) in
-  List.iter (fun (f,o) -> open_object f 1 o) objs
+  List.iter (fun (f,o) -> open_object (fun x -> x) f 1 o) objs
 
 and open_keep f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
   let prefix = Nametab.{ obj_dir; obj_mp; } in
-  open_objects f (i+1) prefix kobjs.keep_objects
+  open_objects keep_view f (i+1) prefix kobjs.keep_objects
 
 and open_escape f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
   let prefix = Nametab.{ obj_dir; obj_mp; } in
-  open_objects f (i+1) prefix kobjs.escape_objects
+  open_objects escape_view f (i+1) prefix kobjs.escape_objects
 
 let cache_include (prefix, aobjs) =
   let o = expand_aobjs aobjs in
-  load_objects 1 prefix o;
-  open_objects unfiltered 1 prefix o
+  let o = List.map substituted_object_view o in
+  load_objects exp_substituted_view 1 prefix o;
+  open_objects exp_substituted_view unfiltered 1 prefix o
 
 let cache_object (prefix, obj) =
   match obj with
   | AtomicObject o -> Libobject.cache_object (prefix, o)
-  | ModuleObject _ -> load_object 1 (prefix,obj)
-  | ModuleTypeObject _ -> load_object 0 (prefix,obj)
+  | ModuleObject _ -> load_object object_view 1 (prefix,obj)
+  | ModuleTypeObject _ -> load_object object_view 0 (prefix,obj)
   | IncludeObject aobjs -> cache_include (prefix, aobjs)
   | ExportObject { mpl } -> anomaly Pp.(str "Export should not be cached")
   | KeepObject _ | EscapeObject _ -> anomaly (Pp.str "This module should not be cached!")
@@ -598,13 +642,13 @@ let add_leaf obj =
 let add_leaves objs =
   let add_obj obj =
     add_leaf_entry obj;
-    load_object 1 (Lib.prefix (),obj)
+    load_object object_view 1 (Lib.prefix (),obj)
   in
   List.iter add_obj objs
 
 let import_modules ~export mpl =
   let _,objs = collect_modules mpl in
-  List.iter (fun (f,o) -> open_object f 1 o) objs;
+  List.iter (fun (f,o) -> open_object (fun x -> x) f 1 o) objs;
   match export with
   | Lib.Import -> ()
   | Lib.Export ->
@@ -1629,10 +1673,17 @@ let iter_all_interp_segments f =
       List.iter (apply_obj prefix) objs
     | _ -> f prefix obj
   in
+  let rec subst_view (obj : exp_substituted_object) : Libobject.t = match obj with
+  | KeepObject (_, o) | EscapeObject (_, o) -> Empty.abort o
+  | (AtomicObject _ | ExportObject _ | ModuleObject _ | ModuleTypeObject _) as o -> o
+  | IncludeObject aobjs ->
+    let aobjs = aobjs.exp_algebraic_objects in
+    IncludeObject (Objs (List.map subst_view aobjs))
+  in
   let apply_mod_obj _ modobjs =
     let prefix = modobjs.module_prefix in
-    List.iter (apply_obj prefix) modobjs.module_substituted_objects;
-    List.iter (apply_obj prefix) modobjs.module_keep_objects.keep_objects
+    List.iter (fun obj -> apply_obj prefix (subst_view obj)) modobjs.module_substituted_objects;
+    List.iter (fun obj -> apply_obj prefix obj) modobjs.module_keep_objects.keep_objects
   in
   let apply_nodes (node, os) = List.iter (fun o -> apply_obj (Lib.node_prefix node) o) os in
   MPmap.iter apply_mod_obj (InterpVisitor.ModObjs.all ());
