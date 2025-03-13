@@ -123,20 +123,26 @@ module ExportObj = struct
   type t = { mpl : (open_filter * Names.ModPath.t) list } [@@unboxed]
 end
 
-type algebraic_objects =
-  | Objs of t list
-  | Ref of Names.ModPath.t * Mod_subst.substitution
+type ('subs, 'alg, 'keep, 'escape) object_view =
+| ModuleObject of Names.Id.t * 'subs
+| ModuleTypeObject of Names.Id.t * 'subs
+| IncludeObject of 'alg
+| KeepObject of Names.Id.t * 'keep
+| EscapeObject of Names.Id.t * 'escape
+| ExportObject of ExportObj.t
+| AtomicObject of obj
 
-and t =
-  | ModuleObject of Names.Id.t * substitutive_objects
-  | ModuleTypeObject of Names.Id.t * substitutive_objects
-  | IncludeObject of algebraic_objects
-  | KeepObject of Names.Id.t * t list
-  | EscapeObject of Names.Id.t * t list
-  | ExportObject of ExportObj.t
-  | AtomicObject of obj
+type t = (substitutive_objects, algebraic_objects, keep_objects, escape_objects) object_view
+
+and algebraic_objects =
+| Objs of t list
+| Ref of Names.ModPath.t * Mod_subst.substitution
 
 and substitutive_objects = Names.MBId.t list * algebraic_objects
+
+and keep_objects = { keep_objects : t list }
+
+and escape_objects = { escape_objects : t list }
 
 type 'a stored_decl = O : ('a, Nametab.object_prefix * 'a, 'd) object_declaration -> 'a stored_decl
 

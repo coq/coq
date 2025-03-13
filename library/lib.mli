@@ -97,8 +97,8 @@ type discharged_item =
 
 type classified_objects = {
   substobjs : Libobject.t list;
-  keepobjs : Libobject.t list;
-  escapeobjs : Libobject.t list;
+  keepobjs : Libobject.keep_objects;
+  escapeobjs : Libobject.escape_objects;
   anticipateobjs : Libobject.t list;
 }
 

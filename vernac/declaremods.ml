@@ -84,13 +84,13 @@ let dir_of_sp sp =
   add_dirpath_suffix dir id
 
 (* Avoid generating a KeepObject for nothing *)
-let keep_objects id = function
+let keep_objects id keep = match keep.keep_objects with
   | [] -> []
-  | keep -> [KeepObject (id, keep)]
+  | _ :: _ -> [KeepObject (id, keep)]
 
-let escape_objects id = function
+let escape_objects id escape = match escape.escape_objects with
   | [] -> []
-  | escape -> [EscapeObject (id, escape)]
+  | _ :: _ -> [EscapeObject (id, escape)]
 
 (** The [ModActions] abstraction represent operations on modules
     that are specific to a given stage. Two instances are defined below,
@@ -202,8 +202,8 @@ end
 type module_objects =
   { module_prefix : Nametab.object_prefix;
     module_substituted_objects : Libobject.t list;
-    module_keep_objects : Libobject.t list;
-    module_escape_objects : Libobject.t list;
+    module_keep_objects : keep_objects;
+    module_escape_objects : escape_objects;
   }
 
 (** The [StagedModS] abstraction describes module operations at a given stage. *)
@@ -214,8 +214,8 @@ module type StagedModS = sig
 
   val get_module_sobjs : bool -> env -> Entries.inline -> typexpr module_alg_expr -> substitutive_objects
 
-  val load_keep : int -> DirPath.t -> ModPath.t -> Libobject.t list -> unit
-  val load_escape : int -> DirPath.t -> ModPath.t -> Libobject.t list -> unit
+  val load_keep : int -> DirPath.t -> ModPath.t -> keep_objects -> unit
+  val load_escape : int -> DirPath.t -> ModPath.t -> escape_objects -> unit
   val load_module : int -> DirPath.t -> ModPath.t -> substitutive_objects -> unit
   val import_modules : export:Lib.export_flag -> (open_filter * ModPath.t) list -> unit
 
@@ -418,9 +418,9 @@ and load_keep i obj_dir obj_mp kobjs =
     with Not_found -> assert false (* a substobjs should already be loaded *)
   in
   assert Nametab.(eq_op modobjs.module_prefix prefix);
-  assert (List.is_empty modobjs.module_keep_objects);
+  assert (List.is_empty modobjs.module_keep_objects.keep_objects);
   ModObjs.set obj_mp { modobjs with module_keep_objects = kobjs };
-  load_objects (i+1) prefix kobjs
+  load_objects (i+1) prefix kobjs.keep_objects
 
 and load_escape i obj_dir obj_mp eobjs =
   (* Invariant : seg isn't empty *)
@@ -431,14 +431,14 @@ and load_escape i obj_dir obj_mp eobjs =
       (* escape objects can exist even if there is no corresponding real module *)
       { module_prefix = prefix;
         module_substituted_objects = [];
-        module_keep_objects = [];
-        module_escape_objects = [];
+        module_keep_objects = { keep_objects = [] };
+        module_escape_objects = { escape_objects = [] };
       }
   in
   assert Nametab.(eq_op modobjs.module_prefix prefix);
-  assert (List.is_empty modobjs.module_escape_objects);
+  assert (List.is_empty modobjs.module_escape_objects.escape_objects);
   ModObjs.set obj_mp { modobjs with module_escape_objects = eobjs };
-  load_objects (i+1) prefix eobjs
+  load_objects (i+1) prefix eobjs.escape_objects
 
 and load_module i obj_dir obj_mp sobjs =
   let prefix = Nametab.{ obj_dir ; obj_mp; } in
@@ -450,8 +450,8 @@ and load_module i obj_dir obj_mp sobjs =
     let module_objects =
       { module_prefix = prefix;
         module_substituted_objects = objs;
-        module_keep_objects = [];
-        module_escape_objects = [];
+        module_keep_objects = { keep_objects = [] };
+        module_escape_objects = { escape_objects = [] };
       }
     in
     ModObjs.set obj_mp module_objects;
@@ -468,8 +468,8 @@ let rec collect_module (f,mp) acc =
     (* May raise Not_found for unknown module and for functors *)
     let modobjs = ModObjs.get mp in
     let prefix = modobjs.module_prefix in
-    let acc = collect_objects f 1 prefix modobjs.module_escape_objects acc in
-    let acc = collect_objects f 1 prefix modobjs.module_keep_objects acc in
+    let acc = collect_objects f 1 prefix modobjs.module_escape_objects.escape_objects acc in
+    let acc = collect_objects f 1 prefix modobjs.module_keep_objects.keep_objects acc in
     collect_objects f 1 prefix modobjs.module_substituted_objects acc
   with Not_found when Actions.stage = Summary.Stage.Synterp ->
     acc
@@ -563,12 +563,12 @@ and open_export f i mpl =
 and open_keep f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
   let prefix = Nametab.{ obj_dir; obj_mp; } in
-  open_objects f (i+1) prefix kobjs
+  open_objects f (i+1) prefix kobjs.keep_objects
 
 and open_escape f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
   let prefix = Nametab.{ obj_dir; obj_mp; } in
-  open_objects f (i+1) prefix kobjs
+  open_objects f (i+1) prefix kobjs.escape_objects
 
 let cache_include (prefix, aobjs) =
   let o = expand_aobjs aobjs in
@@ -702,7 +702,7 @@ let debug_print_modtab () =
     | l -> str "[." ++ int (List.length l) ++ str ".]"
   in
   let pr_modinfo mp modobjs s =
-    let objs = modobjs.module_substituted_objects @ modobjs.module_keep_objects in
+    let objs = List.map ignore modobjs.module_substituted_objects @ List.map ignore modobjs.module_keep_objects.keep_objects in
     s ++ str (ModPath.to_string mp) ++ spc () ++ pr_seg objs
   in
   let modules = MPmap.fold pr_modinfo (ModObjs.all ()) (mt ()) in
@@ -838,7 +838,7 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
   let sobjs0, keep = match m_info.cur_typ with
     | None -> ([], Objs substitute), keep
     | Some (mty, inline) ->
-      SynterpVisitor.get_module_sobjs false () inline mty, []
+      SynterpVisitor.get_module_sobjs false () inline mty, { keep_objects = [] }
   in
   Summary.Synterp.unfreeze_summaries fs;
   let sobjs = let (ms,objs) = sobjs0 in (m_info.cur_mbids@ms,objs) in
@@ -1047,7 +1047,7 @@ let end_module_core id m_info objects fs =
   let sobjs0, keep = match m_info.cur_typ with
     | None -> ([], Objs substitute), keep
     | Some (mty, inline) ->
-      InterpVisitor.get_module_sobjs false (Global.env()) inline mty, []
+      InterpVisitor.get_module_sobjs false (Global.env()) inline mty, { keep_objects = [] }
   in
 
   let struc = current_struct () in
@@ -1420,7 +1420,7 @@ type library_name = DirPath.t
 (** A library object is made of some substitutive objects
     and some "keep" and "escape" objects. *)
 
-type library_objects = Libobject.t list * Libobject.t list * Libobject.t list
+type library_objects = Libobject.t list * keep_objects * escape_objects
 
 module Synterp = struct
 
@@ -1441,8 +1441,8 @@ let declare_module_includes id args res mexpr_l =
   let incl_objs = List.map (fun x -> IncludeObject x) incl_objs in
   let objects = {
     Lib.substobjs = incl_objs;
-    keepobjs = [];
-    escapeobjs = [];
+    keepobjs = { keep_objects = [] };
+    escapeobjs = { escape_objects = [] };
     anticipateobjs = [];
   } in
   let mp, objects = RawModOps.Synterp.end_module_core id mod_info objects fs in
@@ -1460,8 +1460,8 @@ let declare_modtype_includes id args res mexpr_l =
   let incl_objs = List.map (fun x -> IncludeObject x) incl_objs in
   let objects = {
     Lib.substobjs = incl_objs;
-    keepobjs = [];
-    escapeobjs = [];
+    keepobjs = { keep_objects = [] };
+    escapeobjs = { escape_objects = [] };
     anticipateobjs = [];
   } in
   let objects = RawModTypeOps.Synterp.end_modtype_core id mbids objects fs in
@@ -1526,8 +1526,8 @@ let declare_module_includes id args res mexpr_l =
   let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.Interp.declare_one_include_core x)) mexpr_l in
   let objects = {
     Lib.substobjs = incl_objs;
-    keepobjs = [];
-    escapeobjs = [];
+    keepobjs = { keep_objects = [] };
+    escapeobjs = { escape_objects = [] };
     anticipateobjs = [];
   } in
   let mp, objects = RawModOps.Interp.end_module_core id mod_info objects fs in
@@ -1543,8 +1543,8 @@ let declare_modtype_includes id args res mexpr_l =
   let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.Interp.declare_one_include_core x)) mexpr_l in
   let objects = {
     Lib.substobjs = incl_objs;
-    keepobjs = [];
-    escapeobjs = [];
+    keepobjs = { keep_objects = [] };
+    escapeobjs = { escape_objects = [] };
     anticipateobjs = [];
   } in
   let mp, objects = RawModTypeOps.Interp.end_modtype_core id subtyps objects fs in
@@ -1632,7 +1632,7 @@ let iter_all_interp_segments f =
   let apply_mod_obj _ modobjs =
     let prefix = modobjs.module_prefix in
     List.iter (apply_obj prefix) modobjs.module_substituted_objects;
-    List.iter (apply_obj prefix) modobjs.module_keep_objects
+    List.iter (apply_obj prefix) modobjs.module_keep_objects.keep_objects
   in
   let apply_nodes (node, os) = List.iter (fun o -> apply_obj (Lib.node_prefix node) o) os in
   MPmap.iter apply_mod_obj (InterpVisitor.ModObjs.all ());

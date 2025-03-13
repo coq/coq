@@ -40,15 +40,15 @@ let module_kind is_type =
 
 type classified_objects = {
   substobjs : Libobject.t list;
-  keepobjs : Libobject.t list;
-  escapeobjs : Libobject.t list;
+  keepobjs : Libobject.keep_objects;
+  escapeobjs : Libobject.escape_objects;
   anticipateobjs : Libobject.t list;
 }
 
 let empty_classified = {
   substobjs = [];
-  keepobjs = [];
-  escapeobjs = [];
+  keepobjs = { keep_objects = [] };
+  escapeobjs = { escape_objects = [] };
   anticipateobjs = [];
 }
 
@@ -67,9 +67,9 @@ let classify_segment seg =
       | Substitute ->
         clean {acc with substobjs = o :: acc.substobjs} stk
       | Keep ->
-        clean {acc with keepobjs = o :: acc.keepobjs} stk
+        clean {acc with keepobjs = { keep_objects = o :: acc.keepobjs.keep_objects } } stk
       | Escape ->
-        clean {acc with escapeobjs = o :: acc.escapeobjs} stk
+        clean {acc with escapeobjs = { escape_objects = o :: acc.escapeobjs.escape_objects } } stk
       | Anticipate ->
         clean {acc with anticipateobjs = o :: acc.anticipateobjs} stk
       end
