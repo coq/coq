@@ -339,6 +339,7 @@ let synterp_require ~intern from export qidl =
     | Error LibNotFound -> Loc.raise ?loc:qid.loc (NotFoundLibrary (root, qid))
   in
   let modrefl = List.map locate qidl in
+  fst @@ Gc.ramp_up @@ fun () ->
   let filenames = Library.require_library_syntax_from_dirpath ~intern modrefl in
   Option.iter (fun (export,cats) ->
       let cats = synterp_import_cats cats in
