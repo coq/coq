@@ -687,6 +687,24 @@ and intern_genarg ist (GenArg (Rawwit wit, x)) =
   | ExtraArg s ->
       snd (Genintern.generic_intern ist (in_gen (rawwit wit) x))
 
+(* ntnvars are also in ltacvars so using Genintern.with_used_ntnvars
+   may not see them even if they are used *)
+let used_all_ntnvars ntnvars =
+  let set_used status = match status.Genintern.ntnvar_used with
+    | [] | true :: _ -> ()
+    | false :: rest -> status.ntnvar_used <- true :: rest
+  in
+  let ntnvars = Id.Map.filter (fun _ status -> match status.Genintern.ntnvar_typ with
+      | NtnInternTypeAny _ -> set_used status; true
+      | NtnInternTypeOnlyBinder -> false)
+      ntnvars
+  in
+  Id.Map.domain ntnvars
+
+let intern_ltac_in_term ist tac =
+  let tac = intern_tactic_or_tacarg ist tac in
+  used_all_ntnvars ist.intern_sign.notation_variable_status, tac
+
 (** Other entry points *)
 
 let glob_tactic x =
@@ -757,6 +775,7 @@ let () =
   Genintern.register_intern0 wit_ident intern_ident';
   Genintern.register_intern0 wit_hyp (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_ltac_in_term (lift intern_ltac_in_term);
   Genintern.register_intern0 wit_ltac (lift intern_ltac);
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
   Genintern.register_intern0 wit_constr (fun ist c -> (ist,intern_constr ist c));
@@ -770,17 +789,20 @@ let () =
 
 (** Substitution for notations containing tactic-in-terms *)
 
-let notation_subst _avoid bindings tac =
-  let fold id c accu =
-    let loc = Glob_ops.loc_of_glob_constr c in
-    let c = ConstrMayEval (ConstrTerm (c, None)) in
-    (make ?loc @@ Name id, c) :: accu
+let notation_subst ntnvars bindings (used_ntnvars,tac) =
+  let fold id accu =
+    match bindings id with
+    | exception (Nametab.GlobalizationError _) | None -> accu
+    | Some c ->
+      let loc = Glob_ops.loc_of_glob_constr c in
+      let c = ConstrMayEval (ConstrTerm (c, None)) in
+      (make ?loc @@ Name id, c) :: accu
   in
-  let bindings = Id.Map.fold fold bindings [] in
+  let bindings = Id.Set.fold fold used_ntnvars [] in
   (* This is theoretically not correct due to potential variable
      capture, but Ltac has no true variables so one cannot simply
      substitute *)
-  if List.is_empty bindings then tac
-  else CAst.make (TacLetIn (false, bindings, tac))
+  if List.is_empty bindings then Id.Set.empty, tac
+  else used_all_ntnvars ntnvars, CAst.make (TacLetIn (false, bindings, tac))
 
-let () = Genintern.register_ntn_subst0 wit_tactic notation_subst
+let () = Genintern.register_ntn_subst0 wit_ltac_in_term notation_subst

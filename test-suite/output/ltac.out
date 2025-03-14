@@ -3,8 +3,8 @@ The command has indeed failed with message:
 Ltac variable y depends on pattern variable name z which is not bound in current context.
 
 Ltac f x y z :=
-  symmetry in x, y; auto with z; auto; intros; clearbody x; generalize
-   dependent z
+  symmetry in x, y; auto with z; auto; intros; clearbody x;
+   generalize dependent z
 File "./output/ltac.v", line 38, characters 5-9:
 The command has indeed failed with message:
 The term "I" has type "True" while it is expected to have type "False".

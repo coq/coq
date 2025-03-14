@@ -1111,22 +1111,28 @@ let warn_unused_variables = CWarnings.create ~name:"ltac2-unused-variable"
     ~category:CWarnings.CoreCategories.ltac2
     Pp.(fun ids -> str "Unused " ++ str (String.lplural ids "variable") ++ str ":" ++ spc() ++ prlist_with_sep spc Id.print ids ++ str ".")
 
-let check_unused_variables ?loc env bnd =
-  let unused, _seen = List.fold_right (fun na (unused,seen) -> match na with
-      | Anonymous -> (unused, seen)
-      | Name id ->
-        (* if [id] occurred in the tail of the list, this occurrence is unused
-           (eg in [fun x x => x] the first [x] is unused) *)
-        let unused =
-          if CString.is_prefix "_" (Id.to_string id)
-          || (not (Id.Set.mem id seen) && is_used_var id env)
-          then unused
-          else id :: unused
-        in
-        unused, (Id.Set.add id seen))
+let list_unused_variables env bnd =
+  let unused, _seen =
+    List.fold_right (fun na (unused,seen) ->
+        match na with
+        | Anonymous -> (unused, seen)
+        | Name id ->
+          (* if [id] occurred in the tail of the list, this occurrence is unused
+             (eg in [fun x x => x] the first [x] is unused) *)
+          let unused =
+            if CString.is_prefix "_" (Id.to_string id)
+            || (not (Id.Set.mem id seen) && is_used_var id env)
+            then unused
+            else id :: unused
+          in
+          unused, (Id.Set.add id seen))
       bnd
       ([], Id.Set.empty)
   in
+  unused
+
+let check_unused_variables ?loc env bnd =
+  let unused = list_unused_variables env bnd in
   if CList.is_empty unused then ()
   else warn_unused_variables ?loc unused
 
@@ -2089,8 +2095,19 @@ let () =
     in
     (* don't check unused variables: we may be in the case of
        eg "Notation foo x := (ltac2:(tac) + x)" which shouldn't call x unused *)
-    let v = genintern_warn_not_unit ~check_unused:false ist locals tac in
+    let env, v, t = genintern_core ~check_unused:false ist locals None tac in
+    let () = check_elt_unit tac.loc env t in
+    let unused = list_unused_variables env (List.map fst locals) in
     let ids = Id.Map.domain ntn_vars in
+    let ids = List.fold_left (fun ids id -> Id.Set.remove id ids) ids unused in
+    let () = Id.Set.iter (fun id ->
+        let status = Id.Map.get id ist.intern_sign.notation_variable_status in
+        match status.Genintern.ntnvar_typ with
+        | NtnInternTypeAny _ -> ()
+        | NtnInternTypeOnlyBinder ->
+          CErrors.user_err ?loc:tac.loc Pp.(str "Cannot use binder notation variable " ++ Id.print id ++ str " as a preterm."))
+        ids
+    in
     (ist, (ids, v))
   in
   Genintern.register_intern0 wit_ltac2_constr intern
