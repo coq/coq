@@ -812,6 +812,29 @@ let expand_table_key ~metas ts env sigma args = function
         | def ->
         let unf = unfold_projection_under_eta env ts c def in
         Some (EConstr.of_constr @@ Option.default def unf, args)
+        | exception NotEvaluableConst (IsPrimitive (u, op)) ->
+          let nargs = CPrimitives.arity op in
+          begin match Array.chop nargs args with
+          | (args, appl) ->
+            let args_red = Array.of_list @@ CPrimitives.kind op in
+            assert (Array.length args_red <= Array.length args);
+            let args =
+              let open CPrimitives in
+              let red arg = function
+                | Kparam | Karg -> arg
+                | Kwhnf ->
+                  let flags = RedFlags.all in
+                  let flags = RedFlags.red_add_transparent flags ts in
+                  Reductionops.clos_whd_flags flags env sigma arg
+              in
+              Array.map2 red args args_red
+            in
+            begin match CredNative.(red_prim env sigma op (EInstance.make u) args) with
+              | Some v -> Some (v, appl)
+              | None -> None
+              end
+            | exception Failure _ -> None
+          end
         | exception NotEvaluableConst (HasRules (u, b, r)) ->
         begin try
           let metas = Meta.meta_handler metas in
