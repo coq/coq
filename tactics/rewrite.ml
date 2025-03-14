@@ -983,7 +983,7 @@ let unfold_match env sigma sk app =
 let is_rew_cast = function RewCast _ -> true | _ -> false
 
 let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
-  let rec aux { state ; env ; unfresh ;
+  let aux { state ; env ; unfresh ;
                 term1 = t ; ty1 = ty ; cstr = (prop, cstr) ; evars } =
     let cstr' = Option.map (fun c -> (ty, Some c)) cstr in
       match EConstr.kind (goalevars evars) t with
@@ -1091,7 +1091,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
             else TypeGlobal.arrow_morphism
           in
           let (evars', mor), unfold = arr env evars n.binder_name tx tb x b in
-          let state, res = aux { state ; env ; unfresh ;
+          let state, res = s.strategy { state ; env ; unfresh ;
                                  term1 = mor ; ty1 = ty ;
                                  cstr = (prop,cstr) ; evars = evars' } in
           let res =
@@ -1109,7 +1109,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
               let forall = if prop then PropGlobal.rocq_forall else TypeGlobal.rocq_forall in
                 (app_poly_sort prop env evars forall [| dom; lam |]), TypeGlobal.unfold_forall
           in
-          let state, res = aux { state ; env ; unfresh ;
+          let state, res = s.strategy { state ; env ; unfresh ;
                                  term1 = app ; ty1 = ty ;
                                  cstr = (prop,cstr) ; evars = evars' } in
           let res =
@@ -1205,7 +1205,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
               match try Some (fold_match env (goalevars evars) t) with Not_found -> None with
               | None -> state, c'
               | Some (cst, t') ->
-                 let state, res = aux { state ; env ; unfresh ;
+                 let state, res = s.strategy { state ; env ; unfresh ;
                                         term1 = t' ; ty1 = ty ;
                                         cstr = (prop,cstr) ; evars } in
                 let res =
