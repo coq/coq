@@ -1,10 +1,10 @@
+array_empty : 'a array
 fst : 'a * 'b -> 'a
 snd : 'b * 'a -> 'a
-type : constr -> constr
-Ltac2 type : constr -> constr
-      type := @external "rocq-runtime.plugins.ltac2" "constr_type"
-Ltac2 ltac2_printabout.type
-Ltac2 type : constr -> constr
+Ltac2 array_empty : 'a array
+      array_empty := @external "rocq-runtime.plugins.ltac2" "array_empty"
+Ltac2 ltac2_printabout.array_empty
+Ltac2 array_empty : 'a array
 None : 'a option
 Some : 'a -> 'a option
 Ltac2 constructor Err : exn -> 'a result
