@@ -39,6 +39,7 @@ theories/micromega/Lra.v
 theories/micromega/MExtraction.v
 theories/micromega/OrderedRing.v
 theories/micromega/Psatz.v
+theories/micromega/MMicromega.v
 theories/micromega/QMicromega.v
 theories/micromega/RMicromega.v
 theories/micromega/Refl.v
