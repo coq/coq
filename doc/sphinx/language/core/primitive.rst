@@ -1,3 +1,5 @@
+.. _primitive-objects:
+
 Primitive objects
 =================
 
