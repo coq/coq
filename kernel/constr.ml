@@ -1349,15 +1349,13 @@ open C
 
 let steps = ref 0
 
-(* XXX don't hashcons in place? *)
-let hcons_in_place hcons a a' =
-  let fold i accu x =
-    let hx, x = hcons x in
-    Array.unsafe_set a i x;
-    combine hx accu
-  in
-  let h = Array.fold_left_i fold 0 a' in
-  h
+let hashcons_array2 hcons a a' =
+  assert (Array.length a = Array.length a');
+  CArray.Smart.fold_left_map_i (fun i h _ ->
+      let hx, x = hcons (Array.unsafe_get a' i) in
+      combine hx h, x)
+    0
+    a
 
 let rec hash_term (t : t) : int * (constr,constr,_,_,_) kind_of_term =
   match kind t with
@@ -1408,7 +1406,7 @@ let rec hash_term (t : t) : int * (constr,constr,_,_,_) kind_of_term =
   | Case (ci,u,pms,(p,r),iv,c,bl) ->
     (** FIXME: use a dedicated hashconsing structure *)
     let hcons_ctx (lna, c) =
-      let hna = hcons_in_place hcons_annot lna lna in
+      let hna, lna = hashcons_array2 hcons_annot lna lna in
       let hc, c = sh_rec c in
       combine hna hc, (lna, c)
     in
@@ -1420,21 +1418,21 @@ let rec hash_term (t : t) : int * (constr,constr,_,_,_) kind_of_term =
     let hp, p = hcons_ctx p in
     let hiv, iv = sh_invert civ iv in
     let hc, c = sh_rec c in
-    let hbl = hcons_in_place hcons_ctx cbl bl in
+    let hbl, cbl = hashcons_array2 hcons_ctx cbl bl in
     let hbl = combine (combine hc (combine hiv (combine hpms (combine hu hp)))) hbl in
     (combinesmall 12 hbl, Case (ci, u, pms, (p,r), iv, c, cbl))
   | Fix (ln,(lna,tl,bl)) ->
     let _, (_,ctl,cbl) = destFix (self t) in
     let hbl,bl = hash_term_array cbl bl in
     let htl,tl = hash_term_array ctl tl in
-    let hna = hcons_in_place hcons_annot lna lna in
+    let hna, lna = Hashcons.hashcons_array hcons_annot lna in
     let h = combine3 hna hbl htl in
     (combinesmall 13 h, Fix (ln,(lna,tl,bl)))
   | CoFix(ln,(lna,tl,bl)) ->
     let _, (_,ctl,cbl) = destCoFix (self t) in
     let hbl,bl = hash_term_array cbl bl in
     let htl,tl = hash_term_array ctl tl in
-    let hna = hcons_in_place hcons_annot lna lna in
+    let hna, lna = Hashcons.hashcons_array hcons_annot lna in
     let h = combine3 hna hbl htl in
     (combinesmall 14 h, CoFix (ln,(lna,tl,bl)))
   | Meta n as t ->
@@ -1483,7 +1481,7 @@ and sh_rec t =
 (* Note : During hash-cons of arrays, we modify them *in place* *)
 
 and hash_term_array ct t =
-  let h = hcons_in_place sh_rec ct t in
+  let h, ct = hashcons_array2 sh_rec ct t in
   (h, HashsetTermArray.repr h ct term_array_table)
 
 let hcons t = NewProfile.profile "Constr.hcons" (fun () -> sh_rec t) ()

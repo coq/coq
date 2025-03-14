@@ -316,8 +316,6 @@ let kind_to_constr = function
   | String s -> mkString s
   | Array (u,t,def,ty) -> mkArray (u,Array.map self t,def.self,ty.self)
 
-let hcons_inplace f a = Array.iteri (fun i x -> Array.unsafe_set a i (snd @@ f x)) a
-
 let of_kind_nohashcons = function
   | App (c, [||]) -> c
   | kind ->
@@ -422,7 +420,7 @@ and of_constr_aux henv c =
       pctx, blctx
     in
     let of_ctx (bnd, c) bnd' =
-      let () = hcons_inplace hcons_annot bnd in
+      let _, bnd = Hashcons.hashcons_array hcons_annot bnd in
       let henv = push_rel_context henv bnd' in
       let c = of_constr henv c in
       bnd, c
@@ -439,13 +437,13 @@ and of_constr_aux henv c =
     let bl = Array.map2 of_ctx bl blctx in
     Case (ci,u,pms,(p,r),iv,c,bl)
   | Fix (ln,(lna,tl,bl)) ->
-    let () = hcons_inplace hcons_annot lna in
+    let _, lna = Hashcons.hashcons_array hcons_annot lna in
     let tl = Array.map (of_constr henv) tl in
     let body_env = push_rec tl henv in
     let bl = Array.map (of_constr body_env) bl in
     Fix (ln,(lna,tl,bl))
   | CoFix (ln,(lna,tl,bl)) ->
-    let () = hcons_inplace hcons_annot lna in
+    let _, lna = Hashcons.hashcons_array hcons_annot lna in
     let tl = Array.map (of_constr henv) tl in
     let body_env = push_rec tl henv in
     let bl = Array.map (of_constr body_env) bl in
