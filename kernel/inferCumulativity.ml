@@ -213,7 +213,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FProj (_,_,c) ->
     let variances = infer_fterm CONV infos variances c [] in
     infer_stack infos variances stk
-  | FLambda _ ->
+  | FLambda _ | FLambdaF _ ->
     let (na,ty,bd) = destFLambda mk_clos hd in
     let variances = infer_fterm CONV infos variances ty [] in
     infer_fterm CONV (push_relevance infos na) variances bd []
@@ -262,7 +262,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
     Array.fold_right infer br variances
 
   (* Removed by whnf *)
-  | FLOCKED | FCaseT _ | FLetIn _ | FApp _ | FLIFT _ | FCLOS _ -> assert false
+  | FLOCKED | FCaseT _ | FLetIn _ | FLetInF _ | FApp _ | FLIFT _ | FCLOS _ -> assert false
   | FIrrelevant -> assert false (* TODO: use create_conv_infos below and use it? *)
 
 and infer_stack infos variances (stk:CClosure.stack) =
