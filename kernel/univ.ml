@@ -229,13 +229,24 @@ module Level = struct
     let pr prl s =
       hov 1 (str"{" ++ prlist_with_sep spc prl (elements s) ++ str"}")
 
+
+    module Huniverse_set =
+      Hashcons.Make(
+      struct
+        type nonrec t = t
+        let hashcons s =
+          fold (fun x (h,acc) ->
+              let hx, x = hcons x in
+              Hashset.Combine.combine h hx, add x acc)
+            s
+            (0,empty)
+        let eq s s' = Map.Set.equal s s'
+      end)
+
+    let hcons = Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons ()
   end
 
 end
-
-type universe_level = Level.t
-
-type universe_set = Level.Set.t
 
 (* An algebraic universe [universe] is either a universe variable
    [Level.t] or a formal universe known to be greater than some
@@ -444,6 +455,11 @@ let pr_constraint_type op =
     | Eq -> " = "
   in str op_str
 
+let hash_constraint_type = function
+  | Lt -> 0
+  | Le -> 1
+  | Eq -> 2
+
 module UConstraintOrd =
 struct
   type t = univ_constraint
@@ -455,23 +471,6 @@ struct
       if not (Int.equal i' 0) then i'
       else Level.compare v v'
 end
-
-module Constraints =
-struct
-  module S = Set.Make(UConstraintOrd)
-  include S
-
-  let pr prl c =
-    v 0 (prlist_with_sep spc (fun (u1,op,u2) ->
-      hov 0 (prl u1 ++ pr_constraint_type op ++ prl u2))
-       (elements c))
-
-end
-
-let hash_constraint_type = function
-  | Lt -> 0
-  | Le -> 1
-  | Eq -> 2
 
 module Hconstraint =
   Hashcons.Make(
@@ -487,13 +486,23 @@ module Hconstraint =
 
 let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate Hconstraint.hcons ()
 
-module Hconstraints = CSet.Hashcons(UConstraintOrd)(struct
-    type t = UConstraintOrd.t
-    let hcons = hcons_constraint
-  end)
+module Constraints =
+struct
+  module S = Set.Make(UConstraintOrd)
+  include S
 
-let hcons_constraints = Hashcons.simple_hcons Hconstraints.generate Hconstraints.hcons ()
+  let pr prl c =
+    v 0 (prlist_with_sep spc (fun (u1,op,u2) ->
+      hov 0 (prl u1 ++ pr_constraint_type op ++ prl u2))
+        (elements c))
 
+  module Hconstraints = CSet.Hashcons(UConstraintOrd)(struct
+      type t = UConstraintOrd.t
+      let hcons = hcons_constraint
+    end)
+
+  let hcons = Hashcons.simple_hcons Hconstraints.generate Hconstraints.hcons ()
+end
 
 (** A value with universe constraints. *)
 type 'a constrained = 'a * Constraints.t
@@ -533,7 +542,7 @@ let univ_level_rem u v min =
 (** A universe level substitution, note that no algebraic universes are
     involved *)
 
-type universe_level_subst = universe_level Level.Map.t
+type universe_level_subst = Level.t Level.Map.t
 
 (** A set of universes with universe constraints.
     We linearize the set to a list after typechecking.
@@ -542,7 +551,7 @@ type universe_level_subst = universe_level Level.Map.t
 
 module ContextSet =
 struct
-  type t = universe_set constrained
+  type t = Level.Set.t constrained
 
   let empty = (Level.Set.empty, Constraints.empty)
   let is_empty (univs, cst) = Level.Set.is_empty univs && Constraints.is_empty cst
@@ -579,12 +588,16 @@ struct
   let levels (univs, _cst) = univs
 
   let size (univs,_) = Level.Set.cardinal univs
+
+  let hcons (v,c) =
+    let hv, v = Level.Set.hcons v in
+    let hc, c = Constraints.hcons c in
+    Hashset.Combine.combine hv hc, (v, c)
+
 end
 
-type universe_context_set = ContextSet.t
-
 (** A value in a universe context (resp. context set). *)
-type 'a in_universe_context_set = 'a * universe_context_set
+type 'a in_universe_context_set = 'a * ContextSet.t
 
 (** Substitutions. *)
 
@@ -617,31 +630,5 @@ let subst_univs_level_constraints subst csts =
 
 (** Pretty-printing *)
 
-let pr_universe_context_set = ContextSet.pr
-
 let pr_universe_level_subst prl =
   Level.Map.pr prl (fun u -> str" := " ++ prl u ++ spc ())
-
-module Huniverse_set =
-  Hashcons.Make(
-    struct
-      type t = universe_set
-      let hashcons s =
-        Level.Set.fold (fun x (h,acc) ->
-            let hx, x = Level.hcons x in
-            Hashset.Combine.combine h hx, Level.Set.add x acc)
-          s
-          (0,Level.Set.empty)
-      let eq s s' =
-        Level.Set.equal s s'
-    end)
-
-let hcons_universe_set =
-  Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons ()
-
-let hcons_universe_context_set (v, c) =
-  let hv, v = hcons_universe_set v in
-  let hc, c = hcons_constraints c in
-  Hashset.Combine.combine hv hc, (v, c)
-
-let hcons_univ x = Universe.hcons x

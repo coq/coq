@@ -315,7 +315,7 @@ struct
     let hqnames, qnames = Hashcons.hashcons_array Names.Name.hcons qnames in
     let hunames, unames = Hashcons.hashcons_array Names.Name.hcons unames in
     let hunivs, univs = Instance.hcons univs in
-    let hcsts, csts = hcons_constraints csts in
+    let hcsts, csts = Constraints.hcons csts in
     Hashset.Combine.combine4 hqnames hunames hunivs hcsts, ((qnames, unames), (univs, csts))
 
   let names ((names, _) : t) = names
@@ -380,7 +380,7 @@ struct
   let hcons ((qnames,unames), cst) =
     let hqnames, qnames = Hashcons.hashcons_array Names.Name.hcons qnames in
     let hunames, unames = Hashcons.hashcons_array Names.Name.hcons unames in
-    let hcst, cst = hcons_constraints cst in
+    let hcst, cst = Constraints.hcons cst in
     Hashset.Combine.combine3 hqnames hunames hcst, ((qnames, unames), cst)
 
   let empty = (([||],[||]), Constraints.empty)
