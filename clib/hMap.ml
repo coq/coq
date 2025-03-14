@@ -211,6 +211,10 @@ struct
 
 end
 
+module HashconsSet (M:HashedType) (H:Hashcons.HashedType with type t = CSet.Make(M).t)
+  : Hashcons.S with type t = SetMake(M).t
+  = Int.HashconsMap(H)
+
 module Make(M : HashedType) =
 struct
   (** This module is essentially the same as SetMake, except that we have maps
@@ -453,3 +457,8 @@ struct
       lm rm acc
 
 end
+
+module Hashcons (M : HashedType) (V : sig type t end)
+    (H : Hashcons.HashedType with type t = V.t CMap.Make(M).t)
+  : Hashcons.S with type t = V.t Make(M).t
+  = Int.HashconsMap(H)
