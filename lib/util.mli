@@ -62,21 +62,21 @@ val subst_command_placeholder : string -> string -> string
 
 (** {6 Lists. } *)
 
-module List : module type of CList
+module List = CList
 
 val (@) : 'a list -> 'a list -> 'a list
 
 (** {6 Arrays. } *)
 
-module Array : CArray.ExtS
+module Array = CArray
 
 (** {6 Sets. } *)
 
-module Set : module type of CSet
+module Set = CSet
 
 (** {6 Maps. } *)
 
-module Map : module type of CMap
+module Map = CMap
 
 (** {6 Matrices. } *)
 

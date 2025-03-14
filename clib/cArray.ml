@@ -10,90 +10,6 @@
 
 module type S = module type of Array
 
-module type ExtS =
-sig
-  include S
-  val compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
-  val equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
-  val equal_norefl : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
-  val is_empty : 'a array -> bool
-  val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-  val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-  val for_all3 : ('a -> 'b -> 'c -> bool) ->
-    'a array -> 'b array -> 'c array -> bool
-  val for_all4 : ('a -> 'b -> 'c -> 'd -> bool) ->
-    'a array -> 'b array -> 'c array -> 'd array -> bool
-  val for_all_i : (int -> 'a -> bool) -> int -> 'a array -> bool
-  val findi : (int -> 'a -> bool) -> 'a array -> int option
-  val find2_map : ('a -> 'b -> 'c option) -> 'a array -> 'b array -> 'c option
-  val hd : 'a array -> 'a
-  val tl : 'a array -> 'a array
-  val last : 'a array -> 'a
-  val cons : 'a -> 'a array -> 'a array
-  val rev : 'a array -> unit
-  val fold_right_i :
-    (int -> 'b -> 'a -> 'a) -> 'b array -> 'a -> 'a
-  val fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
-  val fold_right2 :
-    ('a -> 'b -> 'c -> 'c) -> 'a array -> 'b array -> 'c -> 'c
-  val fold_right3 :
-    ('a -> 'b -> 'c -> 'd -> 'd) -> 'a array -> 'b array -> 'c array -> 'd -> 'd
-  val fold_left2 :
-    ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
-  val fold_left3 :
-    ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'a
-  val fold_left4 :
-    ('a -> 'b -> 'c -> 'd -> 'e -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'e array -> 'a
-  val fold_left2_i :
-    (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
-  val fold_left3_i :
-    (int -> 'a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'a
-  val fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
-  val map_to_list : ('a -> 'b) -> 'a array -> 'b list
-  val map_of_list : ('a -> 'b) -> 'a list -> 'b array
-  val chop : int -> 'a array -> 'a array * 'a array
-  val split : ('a * 'b) array -> 'a array * 'b array
-  val split3 : ('a * 'b * 'c) array -> 'a array * 'b array * 'c array
-  val split4 : ('a * 'b * 'c * 'd) array -> 'a array * 'b array * 'c array * 'd array
-  val transpose : 'a array array -> 'a array array
-  val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-  val map3 :
-    ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
-  val map3_i :
-    (int -> 'a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
-  val map_left : ('a -> 'b) -> 'a array -> 'b array
-  val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
-  val iter3 : ('a -> 'b -> 'c -> unit) -> 'a array -> 'b array -> 'c array -> unit
-  val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
-  val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
-  val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
-  val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
-  val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
-  val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
-  val distinct : 'a array -> bool
-  val rev_of_list : 'a list -> 'a array
-  val rev_to_list : 'a array -> 'a list
-  val filter_with : bool list -> 'a array -> 'a array
-  module Smart :
-  sig
-    val map : ('a -> 'a) -> 'a array -> 'a array
-    val map_i : (int -> 'a -> 'a) -> 'a array -> 'a array
-    val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
-    val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
-    val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
-  end
-  module Fun1 :
-  sig
-    val map : ('r -> 'a -> 'b) -> 'r -> 'a array -> 'b array
-    val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
-    val iter2 : ('r -> 'a -> 'b -> unit) -> 'r -> 'a array -> 'b array -> unit
-    module Smart :
-    sig
-      val map : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
-    end
-  end
-end
-
 include Array
 
 let uget = Array.unsafe_get
@@ -647,6 +563,39 @@ struct
       while !i < len do
         let v = Array.unsafe_get ar !i in
         let (accu, v') = f !r v in
+        r := accu;
+        if v != v' then Array.unsafe_set ans !i v';
+        incr i
+      done;
+      !r, ans
+    end else !r, ar
+
+  (** Same as [Smart.mapi] but threads a state meanwhile *)
+  let fold_left_map_i f accu (ar : 'a array) =
+    let len = Array.length ar in
+    let i = ref 0 in
+    let break = ref true in
+    let r = ref accu in
+    (* This variable is never accessed unset *)
+    let temp = ref None in
+    while !break && (!i < len) do
+      let v = Array.unsafe_get ar !i in
+      let (accu, v') = f !i !r v in
+      r := accu;
+      if v == v' then incr i
+      else begin
+        break := false;
+        temp := Some v';
+      end
+    done;
+    if !i < len then begin
+      let ans : 'a array = Array.copy ar in
+      let v = match !temp with None -> assert false | Some x -> x in
+      Array.unsafe_set ans !i v;
+      incr i;
+      while !i < len do
+        let v = Array.unsafe_get ar !i in
+        let (accu, v') = f !i !r v in
         r := accu;
         if v != v' then Array.unsafe_set ans !i v';
         incr i
