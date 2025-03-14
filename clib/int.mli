@@ -21,6 +21,8 @@ val hash : t -> int
 module Set : Set.S with type elt = t
 module Map : CMap.ExtS with type key = t and module Set := Set
 
+module HashconsMap(V : Hashcons.HashedType) : Hashcons.S with type t = V.t Map.t
+
 module List : sig
   val mem : int -> int list -> bool
   val assoc : int -> (int * 'a) list -> 'a

@@ -28,3 +28,10 @@ end
     this if you need it.
 *)
 module Make(M : HashedType) : CMap.UExtS with type key = M.t
+
+module HashconsSet (M : HashedType) (_ : Hashcons.HashedType with type t = CSet.Make(M).t)
+  : Hashcons.S with type t = Make(M).Set.t
+
+module Hashcons (M : HashedType) (V:sig type t end)
+    (_ : Hashcons.HashedType with type t = V.t CMap.Make(M).t)
+    : Hashcons.S with type t = V.t Make(M).t

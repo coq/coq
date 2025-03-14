@@ -1320,7 +1320,7 @@ let pr ctx =
   else
     v 0
       (str"UNIVERSES:"++brk(0,1)++
-       h (Univ.pr_universe_context_set prl (context_set ctx)) ++ fnl () ++
+       h (Univ.ContextSet.pr prl (context_set ctx)) ++ fnl () ++
        UnivFlex.pr prl (subst ctx) ++ fnl() ++
        str"SORTS:"++brk(0,1)++
        h (pr_sort_opt_subst ctx) ++ fnl() ++

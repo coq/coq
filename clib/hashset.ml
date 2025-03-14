@@ -16,6 +16,9 @@
     given to the caller, which makes possible the interleaving of the
     hash key computation and the hash-consing. *)
 
+(* avoid false dependency loop Hashset -> Int -> CMap -> Hashcons -> Hashset *)
+module Int = Stdlib.Int
+
 module type EqType = sig
   type t
   val eq : t -> t -> bool

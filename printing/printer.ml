@@ -246,7 +246,7 @@ let universe_binders_with_opt_names orig names =
 
 let pr_universe_ctx_set sigma c =
   if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then
-    fnl()++pr_in_comment (v 0 (Univ.pr_universe_context_set (Termops.pr_evd_level sigma) c))
+    fnl()++pr_in_comment (v 0 (Univ.ContextSet.pr (Termops.pr_evd_level sigma) c))
   else
     mt()
 
@@ -268,7 +268,7 @@ let pr_abstract_universe_ctx sigma ?variance ?priv c =
     let prqvar u = Termops.pr_evd_qvar sigma u in
     let prlev u = Termops.pr_evd_level sigma u in
     let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (UVars.pr_abstract_universe_context prqvar prlev ?variance c) in
-    let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.pr_universe_context_set prlev priv) else mt() in
+    let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.ContextSet.pr prlev priv) else mt() in
     fnl()++pr_in_comment (pub ++ priv)
   else
     mt()

@@ -1046,9 +1046,9 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
   in
   let ctx = match ctx with
   | Opaqueproof.PrivateMonomorphic u ->
-    Opaqueproof.PrivateMonomorphic (snd @@ Univ.hcons_universe_context_set u)
+    Opaqueproof.PrivateMonomorphic (snd @@ Univ.ContextSet.hcons u)
   | Opaqueproof.PrivatePolymorphic u ->
-    Opaqueproof.PrivatePolymorphic (snd @@ Univ.hcons_universe_context_set u)
+    Opaqueproof.PrivatePolymorphic (snd @@ Univ.ContextSet.hcons u)
   in
   { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
 

@@ -20,6 +20,7 @@ module Self =
 struct
   type t = int
   let compare = compare
+  let hcons i = i, i
 end
 
 module Set = Set.Make(Self)
@@ -89,6 +90,8 @@ struct
       else map_inj (MNode {l; v; d; r=r'; h})
 
 end
+
+module HashconsMap = CMap.Hashcons(Self)(Self)
 
 module List = struct
   let mem = List.memq

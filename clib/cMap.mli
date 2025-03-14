@@ -123,3 +123,8 @@ module Make(M : Map.OrderedType) : ExtS with
   type key = M.t
   and type 'a t = 'a Map.Make(M).t
   and module Set := Set.Make(M)
+
+module Hashcons(M : Map.OrderedType)
+    (_ : Hashcons.HashedType with type t = M.t)
+    (V : Hashcons.HashedType)
+  : Hashcons.S with type t = V.t Map.Make(M).t
