@@ -230,20 +230,14 @@ module Level = struct
       hov 1 (str"{" ++ prlist_with_sep spc prl (elements s) ++ str"}")
 
 
-    module Huniverse_set =
-      Hashcons.Make(
-      struct
-        type nonrec t = t
-        let hashcons s =
-          fold (fun x (h,acc) ->
-              let hx, x = hcons x in
-              Hashset.Combine.combine h hx, add x acc)
-            s
-            (0,empty)
-        let eq s s' = Map.Set.equal s s'
-      end)
+    module HLevel_set0 = CSet.Hashcons(Map.Self)(struct type t = Self.t let hcons = hcons end)
 
-    let hcons = Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons ()
+    let hcons0 = Hashcons.simple_hcons HLevel_set0.generate HLevel_set0.hcons ()
+
+    module HLevel_set =
+      HMap.HashconsSet(Map.Self)(struct type t = HLevel_set0.t let hcons = hcons0 end)
+
+    let hcons = Hashcons.simple_hcons HLevel_set.generate HLevel_set.hcons ()
   end
 
 end
