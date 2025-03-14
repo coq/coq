@@ -644,8 +644,7 @@ while noting a few exceptional commands for which :attr:`local` and
       **Exception:** when :attr:`local` is applied to
       :cmd:`Definition`, :cmd:`Theorem` or their variants, its
       semantics are different: it makes the defined objects available
-      only through their fully qualified names rather than their
-      unqualified names after an :cmd:`Import`.
+      only through their fully qualified names, even after an :cmd:`Import`.
 
 .. attr:: export
 
