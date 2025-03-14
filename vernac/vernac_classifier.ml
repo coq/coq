@@ -151,7 +151,13 @@ let classify_vernac e =
         VtSideff (ids, VtLater)
     | VernacPrimitive ((id,_),_,_) ->
         VtSideff ([id.CAst.v], VtLater)
-    | VernacDefinition (_,({v=id},_),DefineBody _) -> VtSideff (idents_of_name id, VtLater)
+    | VernacDefinition (_,({v=id},_),DefineBody _) ->
+        let refine, polymorphic = Attributes.(parse_drop_extra Notations.(Classes.refine_att ++ polymorphic) atts) in
+        let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
+        if refine then
+          VtStartProof(guarantee, idents_of_name id)
+        else
+          VtSideff (idents_of_name id, VtLater)
     | VernacInductive (_,l) ->
         let ids = List.map (fun (((_,({v=id},_)),_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,({v=id},_)) -> id) l
