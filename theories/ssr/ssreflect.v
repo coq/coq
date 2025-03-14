@@ -404,6 +404,7 @@ Ltac ssrdone0 :=
 (**  To unlock opaque constants.  **)
 #[universes(template)]
 Structure unlockable T v := Unlockable {unlocked : T; _ : unlocked = v}.
+#[warnings="-bad-template-constraint"] (* projections of template record generate bad constraints *)
 Lemma unlock T x C : @unlocked T x C = x. Proof. by case: C. Qed.
 
 Notation "[ 'unlockable' 'of' C ]" :=
@@ -428,6 +429,7 @@ Canonical locked_with_unlockable T k x :=
   @Unlockable T x (locked_with k x) (locked_withE k x).
 
 (**  More accurate variant of unlock, and safer alternative to locked_withE. **)
+#[warnings="-bad-template-constraint"] (* projections of template record generate bad constraints *)
 Lemma unlock_with T k x : unlocked (locked_with_unlockable k x) = x :> T.
 Proof. exact: unlock. Qed.
 
