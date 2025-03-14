@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Util
 open Pp
 open Names
 open Constr
@@ -165,6 +166,41 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
       let _,_,body = destLambda evd lam in
       let evk = fst (destEvar evd body) in
       evar_absorb_arguments env evd (evk, SList.cons a args) l
+
+(* Refining an evar to a record *)
+let define_evar_as_record env evd (evk,args) =
+  let evi = Evd.find_undefined evd evk in
+  let evenv = evar_env env evi in
+  let IndType(ind_fam,_) = Inductiveops.find_rectype evenv evd (Evd.evar_concl evi) in
+  let (ind,u), pars = Inductiveops.dest_ind_family ind_fam in
+  let (mib, mip) = (Inductive.lookup_mind_specif env ind) in
+  let (ctx, _) = mip.mind_nf_lc.(0) in
+  let (ctx, _) = List.chop mip.mind_consnrealargs.(0) ctx in
+  let paramdecl = Vars.subst_instance_context u (EConstr.of_rel_context mib.mind_params_ctxt) in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl (Array.of_list pars) in
+  let ctx = subst_instance_context u (EConstr.of_rel_context ctx) in
+  let relevance = evar_relevance evi in
+  let filter = evar_filter evi in
+  let abstract_arguments = evar_abstract_arguments evi in
+  let src = subterm_source evk ~where:EtaExpansion (evar_source evi) in
+  let fold acc (evd,subst,evars) =
+    let open Context.Rel.Declaration in
+    match acc with
+    | LocalAssum (na, ty) ->
+       let ty = substl subst ty in
+       let evd,evar = new_evar evenv evd ty ~src ~filter ~relevance ~abstract_arguments in
+       (evd, evar :: subst, evar :: evars)
+    | LocalDef (na, tm, ty) ->
+       let tm = substl subst tm in
+       (evd, tm :: subst, evars)
+  in
+  let evd, _, evars = Context.Rel.fold_outside fold ctx ~init:(evd, paramsubst, []) in
+  let evars = List.rev evars in
+  let evars' =
+    List.map (fun evar -> mkEvar (fst (destEvar evd evar), args)) evars in
+  let expanded = mkApp (mkConstructU ((ind,1), u), Array.of_list (pars @ evars)) in
+  let expanded' = mkApp (mkConstructU ((ind,1), u), Array.of_list (pars @ evars')) in
+  Evd.define evk expanded evd, expanded'
 
 (* Refining an evar to a sort *)
 
