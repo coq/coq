@@ -494,23 +494,23 @@ let [_v_hpattern;v_elimination;_v_head_elim;_v_patarg] : _ Vector.t =
   mfix [();();();()] (fun [v_hpattern;v_elimination;v_head_elim;v_patarg] ->
   let v_hpattern =
     v_sum_c ("head_pattern", 0,
-         [|[|v_int|];                      (* PHRel *)
-           [|v_sort_pattern|];           (* PHSort *)
-           [|v_cst; v_instance_mask|];   (* PHSymbol *)
-           [|v_ind; v_instance_mask|];   (* PHInd *)
-           [|v_cons; v_instance_mask|];  (* PHConstr *)
-           [|v_uint63|];                 (* PHv_int *)
-           [|v_float64|];                  (* PHFloat *)
-           [|v_string|];                   (* PHv_string *)
-           [|v_array v_patarg; v_patarg|]; (* PHLambda *)
-           [|v_array v_patarg; v_patarg|]; (* PHProd *)
+         [|[|v_int|];                         (* PHRel *)
+           [|v_sort_pattern|];                (* PHSort *)
+           [|v_cst; v_instance_mask|];        (* PHSymbol *)
+           [|v_ind; v_instance_mask|];        (* PHInd *)
+           [|v_cons; v_instance_mask|];       (* PHConstr *)
+           [|v_uint63|];                      (* PHInt *)
+           [|v_float64|];                     (* PHFloat *)
+           [|v_string|];                      (* PHString *)
+           [|v_array v_patarg; v_head_elim|]; (* PHLambda *)
+           [|v_array v_patarg; v_patarg|];    (* PHProd *)
          |])
 
   and v_elimination =
     v_sum_c ("pattern_elimination", 0,
-         [|[|v_array v_patarg|];                                   (* PEApp *)
-           [|v_ind; v_instance_mask; v_patarg; v_array v_patarg|]; (* PECase *)
-           [|v_proj|];                                           (* PEProj *)
+         [|[|v_array v_patarg|];                    (* PEApp *)
+           [|v_ind; v_patarg; v_array v_patarg|];   (* PECase *)
+           [|v_proj_repr|];                         (* PEProj *)
          |])
 
   and v_head_elim = v_tuple_c ("head*elims", [|v_hpattern; v_list v_elimination|])
@@ -518,7 +518,7 @@ let [_v_hpattern;v_elimination;_v_head_elim;_v_patarg] : _ Vector.t =
   and v_patarg =
     v_sum_c ("pattern_argument", 1,
          [|[|v_int|];         (* EHole *)
-           [|v_head_elim|]; (* ERigid *)
+           [|v_head_elim|];   (* ERigid *)
          |])
   in
   [v_hpattern;v_elimination;v_head_elim;v_patarg])
