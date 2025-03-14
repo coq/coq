@@ -145,7 +145,7 @@ type 'a vernac_argument = {
   arg_parsing : 'a argument_rule;
 }
 
-val vernac_argument_extend : plugin:string -> name:string -> 'a vernac_argument ->
+val vernac_argument_extend : plugin:string option -> name:string -> 'a vernac_argument ->
   'a Genarg.vernac_genarg_type * 'a Procq.Entry.t
 
 (** {5 STM classifiers} *)
