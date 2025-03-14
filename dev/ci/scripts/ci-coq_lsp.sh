@@ -9,6 +9,11 @@ git_download coq_lsp
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
+if [ -n "${GITLAB_CI}" ]; then
+  export ROCQLIB="$PWD/_install_ci/lib/coq"
+  export ROCQRUNTIMELIB="$PWD/_install_ci/lib/rocq-runtime"
+fi
+
 ( cd "${CI_BUILD_DIR}/coq_lsp"
   dune build --root . --only-packages=coq-lsp @install
   # Tests

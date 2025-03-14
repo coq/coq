@@ -81,34 +81,23 @@ let expand_path_macros ~warn s =
 
 (** {2 Rocq paths} *)
 
-let coqbin =
-  CUnix.canonical_path_name (Filename.dirname Sys.executable_name)
-
-(** The following only makes sense when executables are running from
-    source tree (e.g. during build or in local mode). *)
-let coqroot =
-  Filename.dirname coqbin
-
-(** On win32, we add coqbin to the PATH at launch-time (this used to be
-    done in a .bat script). *)
-let _ =
-  if Coq_config.arch_is_win32 then
-    Unix.putenv "PATH" (coqbin ^ ";" ^ getenv_else "PATH" (fun () -> ""))
-
 (** Add a local installation suffix (unless the suffix is itself
     absolute in which case the prefix does not matter) *)
-let use_suffix prefix suffix =
-  if String.length suffix > 0 && suffix.[0] = '/' then suffix else prefix / suffix
+let use_suffix suffix =
+  if String.length suffix > 0 && suffix.[0] = '/' then suffix
+  else Boot.Env.relocate (Relocatable suffix)
 
-let datadir () =
+(* XXX do we actually need the local_suffix? *)
+let relocate local_suffix path =
   (* This assumes implicitly that the suffix is non-trivial *)
-  let path = use_suffix coqroot Coq_config.datadirsuffix in
-  if Sys.file_exists path then path else Coq_config.datadir
+  let local_path = use_suffix local_suffix in
+  if Sys.file_exists local_path
+  then local_path
+  else Boot.Env.relocate path
 
-let configdir () =
-  (* This assumes implicitly that the suffix is non-trivial *)
-  let path = use_suffix coqroot Coq_config.configdirsuffix in
-  if Sys.file_exists path then path else Coq_config.configdir
+let datadir () = relocate Coq_config.datadirsuffix Coq_config.datadir
+
+let configdir () = relocate Coq_config.configdirsuffix Coq_config.configdir
 
 let coqpath () =
   let make_search_path path =

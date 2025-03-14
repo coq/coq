@@ -89,7 +89,6 @@ help-install:
 	@echo "The Dune-based Rocq build is split into several packages; see Dune and dev/doc"
 	@echo "documentation for more details. A quick install of Rocq alone can be done with"
 	@echo ""
-	@echo " $$ ./configure -prefix <install_prefix>"
 	@echo " $$ make dunestrap"
 	@echo " $$ dune build -p rocq-runtime,coq-core,rocq-core"
 	@echo " $$ dune install --prefix=<install_prefix> rocq-runtime coq-core rocq-core"
