@@ -407,11 +407,11 @@ module Hsorts =
 
       let hashcons = function
         | Type u as c ->
-          let hu, u' = hcons_univ u in
+          let hu, u' = Universe.hcons u in
           combinesmall 2 hu, if u' == u then c else Type u'
         | QSort (q, u) as c ->
           let hq, q' = QVar.hcons q in
-          let hu, u' = hcons_univ u in
+          let hu, u' = Universe.hcons u in
           combinesmall 3 (combine hu hq), if u' == u && q' == q then c else QSort (q', u')
         | SProp | Prop | Set as s -> hash s, s
       let eq s1 s2 = match (s1,s2) with
