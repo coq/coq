@@ -369,6 +369,12 @@ described elsewhere
 
          SearchRewrite (_ + _ + _).
 
+.. flag:: Search Blacklist Locals
+
+   By default :cmd:`Search` excludes lemmas declared with :attr:`local` from its results
+   (except for those from the current module or its parents).
+   Unsetting this :term:`flag` will include such lemmas in the results.
+
 .. table:: Search Blacklist @string
 
    This :term:`table` specifies a set of strings used to exclude lemmas from the results of :cmd:`Search`,

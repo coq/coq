@@ -625,6 +625,8 @@ val program_inference_hook : Environ.env -> Evd.evar_map -> Evar.t -> (Evd.evar_
 end
 
 val is_local_constant : Constant.t -> bool
+(** [true] on constants declared Local and not from the current
+    interactive module (or its parents). *)
 
 (** {6 For internal support, do not use}  *)
 
