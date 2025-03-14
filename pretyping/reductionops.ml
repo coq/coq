@@ -1135,23 +1135,315 @@ let whd_zeta = red_of_state_red ~delta:false whd_zeta_state
 let whd_evar = Evarutil.whd_evar
 let nf_evar = Evarutil.nf_evar
 
+let pp_sample_rate (num,denum) =
+  if num = denum then None
+  else if denum = 100 then Some (Printf.sprintf "%d%%" num)
+  else Some (Printf.sprintf "%d / %d" num denum)
+
+let () =
+  let optread () =
+    let rate = !CClosure.RecordedSteps.sample_rate in
+    pp_sample_rate rate
+  in
+  let optwrite s =
+    (* supported syntaxes:
+       - "1"
+       - "44%"
+       - "369 / 987"
+       - "0.42" and ".42" *)
+    let fail () = CErrors.user_err Pp.(str "Invalid sample rate.") in
+    let parse_int s =
+      let i = try int_of_string (CString.trim s)
+        with Failure _ -> fail ()
+      in
+      if i <= 0 then fail()
+      else i
+    in
+    let num, denum as rate = match s with
+      | None | Some "1" -> (1,1)
+      | Some s ->
+        if CString.is_suffix "%" s
+        then (parse_int (CString.sub s 0 (String.length s - 1)), 100)
+        else match CString.split_on_char '/' s with
+          | [num;denum] -> (parse_int num, parse_int denum)
+          | [_] -> begin match CString.split_on_char '.' s with
+              | [int;decimals] ->
+                let () = match CString.trim int with
+                  | "" -> ()
+                  | int -> match int_of_string int with
+                    | 0 -> ()
+                    | _ | exception Failure _ -> fail()
+                in
+                let decimals = String.trim decimals in
+                let num = parse_int decimals in
+                (* denum = pow 10 (String.length decimals), but we don't have [pow] *)
+                let denum = int_of_string ("1"^String.make (String.length decimals) '0') in
+                (num, denum)
+              | _ -> fail()
+            end
+          | _ -> fail ()
+    in
+    if num > denum then fail()
+    else CClosure.RecordedSteps.sample_rate := rate
+  in
+  Goptions.declare_stringopt_option {
+    optstage = Interp;
+    optdepr = None;
+    optkey = ["Lazy";"Sample";"Rate"];
+    optread;
+    optwrite;
+  }
+
+let { Goptions.get = lazy_profiling } =
+  Goptions.declare_bool_option_and_ref ~key:["Lazy";"Profiling"] ~value:false ()
+
+let { Goptions.get = lazy_time_profiling } =
+  Goptions.declare_bool_option_and_ref ~key:["Lazy";"Time";"Profiling"] ~value:true ()
+
+let () = Goptions.declare_bool_option {
+    optkey = ["Ccnv"; "Profiling"];
+    optstage = Interp;
+    optdepr = None;
+    optread = (fun () -> !Conversion.ccnv_profiling);
+    optwrite = (fun b -> Conversion.ccnv_profiling := b);
+  }
+
+let get_lazy_profiling () =
+  match lazy_profiling(), lazy_time_profiling() with
+  | false, _ -> None
+  | true, false -> Some CClosure.StepsOnly
+  | true, true -> Some CClosure.StepsAndTime
+
+module RedContext = struct
+  (* deepest last means eg mul calling add is [mul; add]
+     then the order puts [mul] before [mul; add] and [top] before everything *)
+  type t = {
+    deepest_last : GlobRef.t list option;
+    deepest_first : GlobRef.t list option;
+  }
+
+  (* cclosure current_context come out as deepest_first *)
+  let make deepest_first = {
+    deepest_last = Option.map List.rev deepest_first;
+    deepest_first;
+  }
+
+  let compare (a:t) (b:t) =
+    Option.compare (List.compare GlobRef.UserOrd.compare) a.deepest_last b.deepest_last
+
+  let fold_parents f acc ctx =
+    let rec aux acc = function
+      | [] -> f acc (make None)
+      | _ :: rest as ctx ->
+        let acc = f acc (make (Some ctx)) in
+        aux acc rest
+    in
+    match ctx.deepest_first with
+    | None -> acc
+    | Some [] -> assert false
+    | Some (_ :: parent) -> aux acc parent
+
+end
+
+module RedContextMap = Map.Make(RedContext)
+
+let inherit_steps steps =
+  let add_inherited ctx steps acc =
+    RedContextMap.update ctx (function
+        | None -> Some steps
+        | Some steps' -> Some (CClosure.RecordedSteps.add_steps steps steps'))
+      acc
+  in
+  let acc = RedContextMap.empty in
+  let acc =
+    RedContextMap.fold (fun ctx steps acc ->
+        let acc = add_inherited ctx steps acc in
+        RedContext.fold_parents (fun acc parent -> add_inherited parent steps acc) acc ctx)
+      steps
+      acc
+  in
+  acc
+
+let pp_table title top (table:Pp.t list list) =
+  let sized_str str = { Table.str; Table.size = Unicode.utf8_length str } in
+  let empty = sized_str "" in
+  let fmt = Format.str_formatter in
+  let old_margin = Format.pp_get_margin fmt () in
+  let table () = CList.concat_map (fun row ->
+      (* we need to split the row into multiple rows according to how
+         many lines it uses *)
+      let max_lines = ref 1 in
+      let subrows = row |> List.map (fun pp ->
+          let s = Pp.string_of_ppcmds pp in
+          let s = String.split_on_char '\n' s in
+          max_lines := max !max_lines (List.length s);
+          List.map sized_str s)
+      in
+      (* subrows is the list of columns, each containing a list of lines
+         We want to produce the list of lines each containing a list of columns *)
+      List.init !max_lines (fun i ->
+          (* NB: the columns are not subdivided so we have a 1-element list *)
+          [subrows |> List.map (fun column ->
+               Option.default empty (List.nth_opt column i))]))
+      table
+  in
+  let table =
+    Util.try_finally (fun () ->
+        (* we don't want to do [/ (number of columns)] as we expect
+           the first column to be the only long column. [/ 3] is
+           chosen arbitrarily.
+
+           We could also expect that we don't want to break in the
+           other columns so print them first, then use the remaining
+           margin for the first column. *)
+        Format.pp_set_margin fmt (old_margin / 3);
+        table())
+      ()
+      (fun () -> Format.pp_set_margin fmt old_margin) ()
+  in
+  let header = [sized_str title] in
+  let top = [List.map sized_str top] in
+  let align_rows = List.hd table |> List.map (List.map (fun _ -> Table.Align.Left)) in
+  let table = Table.print ~align_rows header top table () in
+  (* without the "\n" indentation in msg_debug messes up the table *)
+  Pp.(str "\n" ++ str table)
+
+let process_steps steps =
+  let steps = List.map (fun (ctx,v) -> RedContext.make ctx, v) steps in
+  let steps = RedContextMap.of_list steps in
+  let inherited = inherit_steps steps in
+  let total = RedContextMap.get (RedContext.make None) inherited in
+  (* [bindings] orders the steps *)
+  let steps = RedContextMap.bindings steps in
+  let inherited = RedContextMap.bindings inherited in
+  total, steps, inherited
+
+let safe_pr_global gr =
+  try Nametab.pr_global_env Id.Set.empty gr
+  with Not_found -> GlobRef.print gr
+
+let to_table header total steps =
+  let open Pp in
+  let pr_row (ctx, (steps:CClosure.RecordedSteps.t)) =
+    let ppctx = match ctx.RedContext.deepest_first with
+      | None -> str "top"
+      | Some ctx ->
+        hov 2
+          (prlist_with_sep (fun () -> spc() ++ str "in ")
+             safe_pr_global
+             ctx)
+    in
+    let pp_flag get =
+      let v = get steps in
+      let total = get total in
+      let percentage = if total = 0 then begin
+          assert (v = 0);
+          int 0
+        end
+        else int ((v * 100) / total)
+      in
+      [int v; percentage ++ str "%"]
+    in
+    let pp_time get =
+      if not (lazy_time_profiling()) then []
+      else
+      let v = get steps in
+      let total = get total in
+      let percentage = if total = 0. then begin
+          assert (v = 0.);
+          int 0
+        end
+        else int (int_of_float ((v *. 100.) /. total))
+      in
+      [str (Format.asprintf "%a" NewProfile.pptime v); percentage ++ str "%"]
+    in
+    let ppsteps = List.concat [
+        pp_flag (fun v -> v.betas);
+        pp_flag (fun v -> v.deltas);
+        pp_flag (fun v -> v.matches);
+        pp_flag (fun v -> v.fixpoints);
+        pp_time (fun v -> v.seconds);
+      ]
+    in
+    ppctx :: ppsteps
+  in
+  let top = ["CTX"; "β"; ""; "δ"; ""; "ι"; ""; "fix"; ""] @
+            if not (lazy_time_profiling()) then [] else [ "time"; ""]
+  in
+  pp_table header top (List.map pr_row steps)
+
+let format_conversion_steps left right =
+  let open Pp in
+  let one_side which steps =
+    if CList.is_empty steps then str which ++ str": nothing"
+    else
+      let total, steps, inherited = process_steps steps in
+      to_table ("individual ("^which^")")  total steps ++ spc() ++
+      spc() ++
+      to_table ("inherited ("^which^")") total inherited
+  in
+  let rate = pp_sample_rate !CClosure.RecordedSteps.sample_rate in
+  (match rate with None -> mt() | Some rate -> str "sample rate: " ++ str rate ++ spc()) ++
+  one_side "left" left ++ spc() ++
+  spc() ++
+  one_side "right" right
+
+let print_conversion_steps left right =
+  NewProfile.profile "print_conversion_steps" (fun () ->
+      let get_steps = CClosure.RecordedSteps.get_recorded_steps in
+      let pp = format_conversion_steps (get_steps left) (get_steps right) in
+      Feedback.msg_info Pp.(hv 2 (str "[ccnv]" ++ spc() ++ v 0 pp)))
+    ()
+
+let () = Conversion.ccnv_profiling_printer := print_conversion_steps
+
+let format_steps steps =
+  let open Pp in
+  let total, steps, inherited = process_steps steps in
+  let rate = pp_sample_rate !CClosure.RecordedSteps.sample_rate in
+  (match rate with None -> mt() | Some rate -> str "sample rate: " ++ str rate ++ spc()) ++
+  to_table "individual" total steps ++ spc() ++
+  spc() ++
+  to_table "inherited" total inherited
+
+(* future work: print percentages, print step counts in children
+   nicer formatting (some kind of table?) *)
+let print_recorded_steps tab =
+  let open CClosure.RecordedSteps in
+  if not @@ has_recorded_steps tab then ()
+  else
+    NewProfile.profile "print_recorded_steps" (fun () ->
+        let steps = get_recorded_steps tab in
+        let pp = format_steps steps in
+        Feedback.msg_info Pp.(hv 2 (str "[lazy]" ++ spc() ++ v 0 pp)))
+      ()
+
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add
    a [nf_evar] here *)
 let clos_norm_flags flgs env sigma t =
   try
-    EConstr.of_constr (CClosure.norm_term
+    let tab = CClosure.create_tab ?profiling:(get_lazy_profiling()) () in
+    let res = EConstr.of_constr (CClosure.norm_term
       (Evarutil.create_clos_infos env sigma flgs)
-      (CClosure.create_tab ())
+      tab
       (Esubst.subs_id 0, UVars.Instance.empty) (EConstr.Unsafe.to_constr t))
+    in
+    print_recorded_steps tab;
+    res
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let clos_whd_flags flgs env sigma t =
   try
-    EConstr.of_constr (CClosure.whd_val
+    let tab = CClosure.create_tab ?profiling:(get_lazy_profiling()) () in
+    let res =
+      EConstr.of_constr (CClosure.whd_val
       (Evarutil.create_clos_infos env sigma flgs)
-      (CClosure.create_tab ())
+      tab
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
+    in
+    print_recorded_steps tab;
+    res
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let nf_beta = clos_norm_flags RedFlags.beta
