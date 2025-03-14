@@ -968,6 +968,8 @@ let check_convert_instances ~flex:_ u u' univs =
 
 (* general conversion and inference functions *)
 let check_inductive_instances cv_pb variance u1 u2 univs =
+  if UGraph.type_in_type univs then Result.Ok univs
+  else
   let qcsts, ucsts = get_cumulativity_constraints cv_pb variance u1 u2 in
   if Sorts.QConstraints.trivial qcsts && (UGraph.check_constraints ucsts univs) then Result.Ok univs
   else Result.Error None
