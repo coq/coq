@@ -104,15 +104,16 @@ struct
       | Var n, Var n' -> n == n'
       | _ -> false
 
-  let hcons = function
-    | Set as x -> x
-    | UGlobal.(Level { library = d; process = s; uid = n }) as x ->
-      let s' = CString.hcons s in
-      let d' = Names.DirPath.hcons d in
-        if s' == s && d' == d then x else Level (UGlobal.make d' s' n)
-    | Var _n as x -> x
-
   open Hashset.Combine
+
+  let hcons = function
+    | Set as x -> combinesmall 1 2, x
+    | UGlobal.(Level { library = d; process = s; uid = n }) as x ->
+      let hs, s' = CString.hcons s in
+      let hd, d' = Names.DirPath.hcons d in
+      let x = if s' == s && d' == d then x else Level (UGlobal.make d' s' n) in
+      combinesmall 3 (combine3 n hs hd), x
+    | Var n as x -> combinesmall 2 n, x
 
   let hash = function
     | Set -> combinesmall 1 2
@@ -145,17 +146,16 @@ module Level = struct
   module Self = struct
     type nonrec t = t
     let eq x y = x.hash == y.hash && RawLevel.hequal x.data y.data
-    let hash x = x.hash
     let hashcons x =
-      let data' = RawLevel.hcons x.data in
-      if x.data == data' then x else { x with data = data' }
+      let _, data' = RawLevel.hcons x.data in
+      x.hash, if x.data == data' then x else { x with data = data' }
   end
 
   let hcons =
     let module H = Hashcons.Make(Self) in
     Hashcons.simple_hcons H.generate H.hcons ()
 
-  let make l = hcons { hash = RawLevel.hash l; data = l }
+  let make l = snd @@ hcons { hash = RawLevel.hash l; data = l }
 
   let set = make Set
 
@@ -262,8 +262,8 @@ struct
     struct
       type t = Level.t * int
       let hashcons (b,n as x) =
-        let b' = Level.hcons b in
-          if b' == b then x else (b',n)
+        let hb, b' = Level.hcons b in
+        n + hb, if b' == b then x else (b',n)
       let eq l1 l2 =
         l1 == l2 ||
         match l1,l2 with
@@ -288,8 +288,8 @@ struct
         if Int.equal 0 c then  Level.compare x x'
         else c
 
-    let set = hcons (Level.set, 0)
-    let type1 = hcons (Level.set, 1)
+    let _, set = hcons (Level.set, 0)
+    let _, type1 = hcons (Level.set, 1)
 
     let is_small = function
       | (l,0) -> Level.is_small l
@@ -298,8 +298,6 @@ struct
     let equal x y = x == y ||
       (let (u,n) = x and (v,n') = y in
          Int.equal n n' && Level.equal u v)
-
-    let hash = ExprHash.hash
 
     let successor (u,n as e) =
       if is_small e then type1
@@ -470,21 +468,27 @@ struct
 
 end
 
+let hash_constraint_type = function
+  | Lt -> 0
+  | Le -> 1
+  | Eq -> 2
+
 module Hconstraint =
   Hashcons.Make(
     struct
       type t = univ_constraint
-      let hashcons (l1,k,l2) = (Level.hcons l1, k, Level.hcons l2)
+      let hashcons (l1,k,l2) =
+        let hl1, l1 = Level.hcons l1 in
+        let hl2, l2 = Level.hcons l2 in
+        Hashset.Combine.(combinesmall (hash_constraint_type k) (combine hl1 hl2)), (l1, k, l2)
       let eq (l1,k,l2) (l1',k',l2') =
         l1 == l1' && k == k' && l2 == l2'
-      let hash = Hashtbl.hash (* XXX *)
     end)
 
 let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate Hconstraint.hcons ()
 
 module Hconstraints = CSet.Hashcons(UConstraintOrd)(struct
     type t = UConstraintOrd.t
-    let hash = Hashtbl.hash (* XXX *)
     let hcons = hcons_constraint
   end)
 
@@ -623,16 +627,21 @@ module Huniverse_set =
     struct
       type t = universe_set
       let hashcons s =
-        Level.Set.fold (fun x -> Level.Set.add (Level.hcons x)) s Level.Set.empty
+        Level.Set.fold (fun x (h,acc) ->
+            let hx, x = Level.hcons x in
+            Hashset.Combine.combine h hx, Level.Set.add x acc)
+          s
+          (0,Level.Set.empty)
       let eq s s' =
         Level.Set.equal s s'
-      let hash = Hashtbl.hash (* XXX *)
     end)
 
 let hcons_universe_set =
   Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons ()
 
 let hcons_universe_context_set (v, c) =
-  (hcons_universe_set v, hcons_constraints c)
+  let hv, v = hcons_universe_set v in
+  let hc, c = hcons_constraints c in
+  Hashset.Combine.combine hv hc, (v, c)
 
 let hcons_univ x = Universe.hcons x

@@ -10,33 +10,6 @@
 
 module type S = module type of String
 
-module type ExtS =
-sig
-  include S
-  val hash : string -> int
-  val is_empty : string -> bool
-  val explode : string -> string list
-  val implode : string list -> string
-  val drop_simple_quotes : string -> string
-  val quote_coq_string : string -> string
-  val unquote_coq_string : string -> string option
-  val html_escape : string -> string
-  val string_index_from : string -> int -> string -> int
-  val string_contains : where:string -> what:string -> bool
-  val plural : int -> string -> string
-  val lplural : _ list -> string -> string
-  val conjugate_verb_to_be : int -> string
-  val ordinal : int -> string
-  val is_sub : string -> string -> int -> bool
-  val is_prefix : string -> string -> bool
-  val is_suffix : string -> string -> bool
-  module Set : CSet.ExtS with type elt = t
-  module Map : CMap.ExtS with type key = t and module Set := Set
-  module Pred : Predicate.S with type elt = t
-  module List : CList.MonoS with type elt = t
-  val hcons : string -> string
-end
-
 include String
 
 let rec hash len s i accu =
@@ -194,9 +167,8 @@ end
 
 module Hstring = Hashcons.Make(struct
     type t = string
-    let hashcons s = s
+    let hashcons s = hash s, s
     let eq = String.equal
-    let hash = hash
   end)
 
 let hcons = Hashcons.simple_hcons Hstring.generate Hstring.hcons ()

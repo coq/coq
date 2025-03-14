@@ -58,4 +58,4 @@ module Tbl : sig
   val create : unit -> 'a t
 end
 
-val hcons : t -> Constr.t
+val hcons : t -> int * Constr.t

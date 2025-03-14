@@ -74,7 +74,7 @@ sig
   module List : List.MonoS with type elt = t
   (** Operations over lists of identifiers. *)
 
-  val hcons : t -> t
+  val hcons : t Hashcons.f
   (** Hashconsing of identifiers. *)
 
 end
@@ -104,7 +104,7 @@ sig
   val hash : t -> int
   (** Hash over names. *)
 
-  val hcons : t -> t
+  val hcons : t Hashcons.f
   (** Hashconsing over names. *)
 
   val print : t -> Pp.t
@@ -155,7 +155,7 @@ sig
   val dummy : t
   (** Used in [Safe_typing.empty_environment] and similar *)
 
-  val hcons : t -> t
+  val hcons : t Hashcons.f
   (** Hashconsing of directory paths. *)
 
   val to_string : t -> string
@@ -201,7 +201,7 @@ sig
   module Set : Set.ExtS with type elt = t
   module Map : Map.ExtS with type key = t and module Set := Set
 
-  val hcons : t -> t
+  val hcons : t Hashcons.f
 
 end
 
@@ -547,10 +547,10 @@ val index_of_constructor : constructor -> int
 
 (** {6 Hash-consing } *)
 
-val hcons_con : Constant.t -> Constant.t
-val hcons_mind : MutInd.t -> MutInd.t
-val hcons_ind : inductive -> inductive
-val hcons_construct : constructor -> constructor
+val hcons_con : Constant.t Hashcons.f
+val hcons_mind : MutInd.t Hashcons.f
+val hcons_ind : inductive Hashcons.f
+val hcons_construct : constructor Hashcons.f
 
 (******)
 
@@ -630,7 +630,7 @@ module Projection : sig
   [@@ocaml.deprecated "(8.13) Use QProjection.equal"]
   val hash : t -> int
   [@@ocaml.deprecated "(8.13) Use QProjection.hash"]
-  val hcons : t -> t
+  val hcons : t Hashcons.f
   (** Hashconsing of projections. *)
 
   val repr_equal : t -> t -> bool

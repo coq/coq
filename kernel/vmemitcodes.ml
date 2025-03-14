@@ -658,7 +658,7 @@ let to_memory fv code =
   } in
   emit env code [];
   let code = compress_code env.out_buffer env.out_position in
-  let code = CString.hcons code in
+  let _, code = CString.hcons code in
   let fold reloc id accu = (id, reloc) :: accu in
   let reloc = RelocTable.fold fold env.reloc_info [] in
   let reloc = List.sort (fun (id1, _) (id2, _) -> Int.compare id1 id2) reloc in
