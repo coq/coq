@@ -349,3 +349,49 @@ struct
   include Map.Make(M)
   include MapExt(M)
 end
+
+module Hashcons(M : Map.OrderedType)
+    (K : Hashcons.HashedType with type t = M.t)
+    (V : Hashcons.HashedType) = struct
+
+  module Map = Make(M)
+
+  type 'a _map =
+    | MEmpty
+    | MNode of {l:'a Map.t; v:K.t; d:'a; r:'a Map.t; h:int}
+
+  let map_prj : 'a Map.t -> 'a _map = Obj.magic
+  let map_inj : 'a _map -> 'a Map.t = Obj.magic
+
+  (* equivalent maps may have different structure, so we don't hash and compare by
+     the actual structure but only by the list of elements *)
+  let rec spine s accu = match map_prj s with
+  | MEmpty -> accu
+  | MNode {l; v; d; r; _} -> spine l (((v,d), r) :: accu)
+
+  let rec umap hacc s = match map_prj s with
+  | MEmpty -> hacc, map_inj MEmpty
+  | MNode {l; v; d; r; h} ->
+    let hacc, l' = umap hacc l in
+    let hv, v' = K.hcons v in
+    let hd, d' = V.hcons d in
+    let hacc = Hashset.Combine.combine3 hacc hv hd in
+    let hacc, r' = umap hacc r in
+    hacc, map_inj (MNode {l=l'; v=v'; d=d'; r=r'; h})
+
+  let rec eqeq s1 s2 = match s1, s2 with
+  | [], [] -> true
+  | ((v1,d1), r1) :: s1, ((v2,d2), r2) :: s2 ->
+      v1 == v2 && d1 == d2 && eqeq (spine r1 s1) (spine r2 s2)
+  | _ -> false
+
+  module Hashed =
+  struct
+    type t = V.t Map.t
+    let eq s1 s2 = s1 == s2 || eqeq (spine s1 []) (spine s2 [])
+    let hashcons v = umap 0 v
+  end
+
+  include Hashcons.Make(Hashed)
+
+end

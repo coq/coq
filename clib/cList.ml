@@ -11,6 +11,9 @@
 type 'a cmp = 'a -> 'a -> int
 type 'a eq = 'a -> 'a -> bool
 
+(* avoid false dependency loop CList -> Int -> CMap -> Hashcons -> CArray -> CList *)
+module Int = Stdlib.Int
+
 include List
 
 (** Tail-rec implementation of usual functions. This is a well-known trick used

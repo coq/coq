@@ -10,6 +10,9 @@
 
 module type S = module type of Array
 
+(* avoid false dependency loop CArray -> Int -> CMap -> Hashcons -> CArray *)
+module Int = Stdlib.Int
+
 module type ExtS =
 sig
   include S
