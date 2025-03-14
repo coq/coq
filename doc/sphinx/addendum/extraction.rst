@@ -570,6 +570,15 @@ Additional settings
    This :term:`option` provides a comment that is
    included at the beginning of the output files.
 
+.. opt:: Extraction File Pragma @string
+
+   Specifies a compiler `pragma
+   <https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/pragmas.html#options-ghc-pragma>`_
+   that is included at the beginning of the output files.
+   For example, for a Haskell extraction, `Set Extraction File Pragma "OPTIONS_GHC -cpp -XMagicHash".`
+   enables the C preprocessor and the `MagicHash
+   <https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/magic_hash.html#the-magic-hash>`_
+   language extension.
 .. opt:: Extraction Flag @natural
 
    This :term:`option` controls which optimizations are used during extraction, providing a finer-grained
