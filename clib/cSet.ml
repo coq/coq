@@ -46,12 +46,6 @@ struct
   include SetExt(M)
 end
 
-module type HashedType =
-sig
-  type t
-  val hash : t -> int
-end
-
 module Hashcons(M : OrderedType)(H : Hashcons.HashedType with type t = M.t)  =
 struct
   module Set = Make(M)

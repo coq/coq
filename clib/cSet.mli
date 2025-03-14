@@ -31,12 +31,6 @@ module Make(M : Map.OrderedType) : ExtS
   with type elt = M.t
   and type t = Set.Make(M).t
 
-module type HashedType =
-sig
-  type t
-  val hash : t -> int
-end
-
 module Hashcons (M : OrderedType) (_ : Hashcons.HashedType with type t = M.t) : Hashcons.S with
   type t = Set.Make(M).t
 (** Create hash-consing for sets. The hashing function provided must be
