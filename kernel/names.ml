@@ -957,7 +957,7 @@ struct
 
   let repr_equal p p' = Repr.equal (repr p) (repr p')
 
-  let hash (c, b) = (if b then 0 else 1) + Repr.hash c
+  let hash (c, b) = (if b then 1 else 0) + Repr.hash c
 
   module SyntacticOrd = struct
     type nonrec t = t
@@ -966,7 +966,7 @@ struct
       if c <> 0 then c else Repr.SyntacticOrd.compare p p'
     let equal (c, b as x) (c', b' as x') =
       x == x' || b = b' && Repr.SyntacticOrd.equal c c'
-    let hash (c, b) = (if b then 0 else 1) + Repr.SyntacticOrd.hash c
+    let hash (c, b) = (if b then 1 else 0) + Repr.SyntacticOrd.hash c
   end
   module CanOrd = struct
     type nonrec t = t
@@ -975,7 +975,7 @@ struct
       if c <> 0 then c else Repr.CanOrd.compare p p'
     let equal (c, b as x) (c', b' as x') =
       x == x' || b = b' && Repr.CanOrd.equal c c'
-    let hash (c, b) = (if b then 0 else 1) + Repr.CanOrd.hash c
+    let hash (c, b) = (if b then 1 else 0) + Repr.CanOrd.hash c
   end
   module UserOrd = struct
     type nonrec t = t
@@ -984,7 +984,7 @@ struct
       if c <> 0 then c else Repr.UserOrd.compare p p'
     let equal (c, b as x) (c', b' as x') =
       x == x' || b = b' && Repr.UserOrd.equal c c'
-    let hash (c, b) = (if b then 0 else 1) + Repr.UserOrd.hash c
+    let hash (c, b) = (if b then 1 else 0) + Repr.UserOrd.hash c
   end
 
   module Self_Hashcons =
@@ -992,7 +992,7 @@ struct
       type nonrec t = t
       let hashcons (c,b) =
         let hc, c = Repr.hcons c in
-        (if b then 0 else 1) + hc, (c,b)
+        (if b then 1 else 0) + hc, (c,b)
       let eq ((c,b) as x) ((c',b') as y) =
         x == y || (c == c' && b == b')
     end
