@@ -392,7 +392,7 @@ Module Pretype.
       set_use_typeclasses false open_constr_flags_with_tc.
     (** The flags used by open_constr:() and its alias [']. *)
 
-    #[deprecated(since="8.20", note="use open_constr_flags_with_tc (or no_tc as desired)")]
+    #[deprecated(since="8.20", note="use open_constr_flags_with_tc (or open_constr_flags_no_tc as desired)")]
     Ltac2 Notation open_constr_flags := open_constr_flags_with_tc.
   End Flags.
 
