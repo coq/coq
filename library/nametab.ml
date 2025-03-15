@@ -209,7 +209,8 @@ struct
               | current -> push_path (Relative (uname, o)) current
           else tree.path
         in
-        mktree this map
+        if this == tree.path && map == tree.map then tree
+        else mktree this map
     | [] ->
         match tree.path with
           | Absolute (uname',o') :: _ ->
@@ -224,7 +225,10 @@ struct
                 (* But ours is also absolute! This is an error! *)
                 CErrors.user_err Pp.(str @@ "Cannot mask the absolute name \""
                                    ^ U.to_string uname' ^ "\"!")
-          | current -> mktree (push_path (Absolute (uname, o)) current) tree.map
+          | current ->
+            let this = push_path (Absolute (uname, o)) current in
+            if this == tree.path then tree
+            else mktree this tree.map
 
 let rec push_exactly uname o level tree = function
 | [] ->
@@ -239,7 +243,8 @@ let rec push_exactly uname o level tree = function
             warn_masking_absolute n; tree.path
         | current -> push_path (Relative (uname, o)) current
     in
-    mktree this tree.map
+    if this == tree.path then tree
+    else mktree this tree.map
   else (* not right level *)
     let modify _ mc = push_exactly uname o (level-1) mc path in
     let map =
@@ -248,8 +253,8 @@ let rec push_exactly uname o level tree = function
         let ptab = modify () empty_tree in
         ModIdmap.add modid ptab tree.map
     in
-    mktree tree.path map
-
+    if map == tree.map then tree
+    else mktree tree.path map
 
 let push visibility uname o tab =
   let id,dir = U.repr uname in
