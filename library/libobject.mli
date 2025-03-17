@@ -156,24 +156,30 @@ module ExportObj : sig
   type t = { mpl : (open_filter * Names.ModPath.t) list } [@@unboxed]
 end
 
-type algebraic_objects =
-  | Objs of t list
-  | Ref of ModPath.t * Mod_subst.substitution
+type ('subs, 'alg, 'keep, 'escape) object_view =
+| ModuleObject of Id.t * 'subs
+| ModuleTypeObject of Id.t * 'subs
+| IncludeObject of 'alg
+| KeepObject of Id.t * 'keep
+| EscapeObject of Id.t * 'escape
+| ExportObject of ExportObj.t
+| AtomicObject of obj
 
 (* there are some extra invariants we could try to enforce by typing:
    - substitutive_objects do not contain KeepObject and EscapeObject
    - KeepObject only contains itself and atoms
    - EscapeObject only contains itself and atoms *)
-and t =
-  | ModuleObject of Id.t * substitutive_objects
-  | ModuleTypeObject of Id.t * substitutive_objects
-  | IncludeObject of algebraic_objects
-  | KeepObject of Id.t * t list
-  | EscapeObject of Id.t * t list
-  | ExportObject of ExportObj.t
-  | AtomicObject of obj
+type t = (substitutive_objects, algebraic_objects, keep_objects, escape_objects) object_view
 
-and substitutive_objects = MBId.t list * algebraic_objects
+and algebraic_objects =
+| Objs of t list
+| Ref of Names.ModPath.t * Mod_subst.substitution
+
+and substitutive_objects = Names.MBId.t list * algebraic_objects
+
+and keep_objects = { keep_objects : t list }
+
+and escape_objects = { escape_objects : t list }
 
 (** Object declaration and names: if you need the current prefix
    (typically to interact with the nametab), you need to have it
