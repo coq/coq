@@ -106,26 +106,11 @@ struct
       let qlen = Array.length aq in
       let ulen = Array.length au in
       if Int.equal qlen 0 && Int.equal ulen 0 then 0, empty
-      else begin
-        let h = ref 0 in
-        for i = 0 to qlen - 1 do
-          let x = Array.unsafe_get aq i in
-          let hx, x' = Quality.hcons x in
-          h := Hashset.Combine.combine !h hx;
-          if x == x' then ()
-          else Array.unsafe_set aq i x'
-        done;
-        for i = 0 to ulen - 1 do
-          let x = Array.unsafe_get au i in
-          let hx, x' = Level.hcons x in
-          h := Hashset.Combine.combine !h hx;
-          if x == x' then ()
-          else Array.unsafe_set au i x'
-        done;
-        (* [h] must be positive (XXX why?). *)
-        let h = !h land 0x3FFFFFFF in
-        h, a
-      end
+      else
+        let hq, aq' = Hashcons.hashcons_array Quality.hcons aq in
+        let hu, au' = Hashcons.hashcons_array Level.hcons au in
+        let a = if aq' == aq && au' == au then a else (aq',au') in
+        Hashset.Combine.combine hq hu, a
 
     let eq t1 t2 =
       CArray.equal (==) (fst t1) (fst t2)
