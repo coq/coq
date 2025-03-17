@@ -480,11 +480,7 @@ module Modules = struct
     modtyperevtab = MPmap.empty
   }
 
-  let nametab, summary_tag =
-    Summary.ref_tag ~stage:Summary.Stage.Synterp ~name:"MODULES-NAMETAB" initial
-
-  let freeze () = !nametab
-  let unfreeze v = nametab := v
+  let nametab = Summary.ref ~stage:Summary.Stage.Synterp ~name:"MODULES-NAMETAB" initial
 
 end
 
