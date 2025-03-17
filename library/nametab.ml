@@ -149,10 +149,19 @@ struct
     | Relative of user_name * elt
     | Absolute of user_name * elt
 
+  let eq_path_status p q = match p, q with
+  | Relative (u1, o1), Relative (u2, o2) -> U.equal u1 u2 && E.equal o1 o2
+  | Absolute (u1, o1), Absolute (u2, o2) -> U.equal u1 u2 && E.equal o1 o2
+  | (Absolute _ | Relative _), _ -> false
+
   (* Dictionaries of short names *)
   type nametree =
       { path : path_status list;
         map : nametree ModIdmap.t }
+
+  let push_path arg path = match path with
+  | [] -> [arg]
+  | arg' :: _ -> if eq_path_status arg arg' then path else arg :: path
 
   let mktree p m = { path=p; map=m }
   let empty_tree = mktree [] ModIdmap.empty
@@ -197,10 +206,11 @@ struct
                   (* This is an absolute name, we must keep it
                      otherwise it may become unaccessible forever *)
                 warn_masking_absolute n; tree.path
-              | current -> Relative (uname,o) :: current
+              | current -> push_path (Relative (uname, o)) current
           else tree.path
         in
-        mktree this map
+        if this == tree.path && map == tree.map then tree
+        else mktree this map
     | [] ->
         match tree.path with
           | Absolute (uname',o') :: _ ->
@@ -215,7 +225,10 @@ struct
                 (* But ours is also absolute! This is an error! *)
                 CErrors.user_err Pp.(str @@ "Cannot mask the absolute name \""
                                    ^ U.to_string uname' ^ "\"!")
-          | current -> mktree (Absolute (uname,o) :: current) tree.map
+          | current ->
+            let this = push_path (Absolute (uname, o)) current in
+            if this == tree.path then tree
+            else mktree this tree.map
 
 let rec push_exactly uname o level tree = function
 | [] ->
@@ -228,9 +241,10 @@ let rec push_exactly uname o level tree = function
             (* This is an absolute name, we must keep it
                 otherwise it may become unaccessible forever *)
             warn_masking_absolute n; tree.path
-        | current -> Relative (uname,o) :: current
+        | current -> push_path (Relative (uname, o)) current
     in
-    mktree this tree.map
+    if this == tree.path then tree
+    else mktree this tree.map
   else (* not right level *)
     let modify _ mc = push_exactly uname o (level-1) mc path in
     let map =
@@ -239,8 +253,8 @@ let rec push_exactly uname o level tree = function
         let ptab = modify () empty_tree in
         ModIdmap.add modid ptab tree.map
     in
-    mktree tree.path map
-
+    if map == tree.map then tree
+    else mktree tree.path map
 
 let push visibility uname o tab =
   let id,dir = U.repr uname in
