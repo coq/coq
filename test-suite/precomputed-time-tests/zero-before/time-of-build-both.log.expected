@@ -1,5 +1,5 @@
-   After |  Peak Mem | File Name                             |   Before | Peak Mem ||    Change || Change (mem) | % Change | % Change (mem)
+   After |  Peak Mem |   Before | Peak Mem ||    Change || Change (mem) | % Change | % Change (mem) | File Name                            
 -------------------------------------------------------------------------------------------------------------------------------------------
-0m25.97s | 566428 ko | Total Time / Peak Mem                 | 0m00.00s |     0 ko || +0m25.97s ||    566428 ko |   N/A    |              ∞
+0m25.97s | 566428 ko | 0m00.00s |     0 ko || +0m25.97s ||    566428 ko |   N/A    |              ∞ | Total Time / Peak Mem                
 -------------------------------------------------------------------------------------------------------------------------------------------
-0m25.97s | 566428 ko | UnsaturatedSolinasHeuristics/Tests.vo |   N/A    |   N/A    || +0m25.97s ||    566428 ko |        ∞ |              ∞
+0m25.97s | 566428 ko |   N/A    |   N/A    || +0m25.97s ||    566428 ko |        ∞ |              ∞ | UnsaturatedSolinasHeuristics/Tests.vo

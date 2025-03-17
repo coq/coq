@@ -861,12 +861,12 @@ file timing data:
 
         ::
 
-             After |  Peak Mem | File Name             |   Before |  Peak Mem ||    Change || Change (mem) |  % Change | % Change (mem)
+             After |  Peak Mem |   Before |  Peak Mem ||    Change || Change (mem) |  % Change | % Change (mem) | File Name
           -----------------------------------------------------------------------------------------------------------------------------
-          0m00.43s | 394700 ko | Total Time / Peak Mem | 0m00.41s | 394648 ko || +0m00.01s ||        52 ko |    +4.87% |         +0.01%
+          0m00.43s | 394700 ko | 0m00.41s | 394648 ko || +0m00.01s ||        52 ko |    +4.87% |         +0.01% | Total Time / Peak Mem
           -----------------------------------------------------------------------------------------------------------------------------
-          0m00.39s | 394700 ko | Fast.vo               | 0m00.02s |  56980 ko || +0m00.37s ||    337720 ko | +1850.00% |       +592.69%
-          0m00.04s |  56772 ko | Slow.vo               | 0m00.39s | 394648 ko || -0m00.35s ||   -337876 ko |   -89.74% |        -85.61%
+          0m00.39s | 394700 ko | 0m00.02s |  56980 ko || +0m00.37s ||    337720 ko | +1850.00% |       +592.69% | Fast.vo
+          0m00.04s |  56772 ko | 0m00.39s | 394648 ko || -0m00.35s ||   -337876 ko |   -89.74% |        -85.61% | Slow.vo
 
 
 The following targets and ``Makefile`` variables allow collection of per-

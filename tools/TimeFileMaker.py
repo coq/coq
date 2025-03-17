@@ -392,7 +392,7 @@ def make_diff_table_string(left_dict, right_dict,
     far_right_width = max(max(map(len, ['N/A', change_tag] + list(diff_times_dict.values()))), len(diff_sum))
     far_far_right_width = max(max(map(len, ['N/A', percent_change_tag] + list(percent_diff_times_dict.values()))), len(percent_diff_sum))
     total_string = 'Total' if not include_mem else 'Total Time / Peak Mem'
-    middle_width = max(map(len, names + [tag, total_string]))
+    filenames_width = max(map(len, names + [tag, total_string]))
 
     left_peak = max([0] + [v.get(MEM_KEY, 0) for v in left_dict.values()])
     right_peak = max([0] + [v.get(MEM_KEY, 0) for v in right_dict.values()])
@@ -406,27 +406,29 @@ def make_diff_table_string(left_dict, right_dict,
     far_far_right_mem_width = max(max(map(len, ['N/A', percent_change_mem_tag] + list(percent_diff_mems_dict.values()))), len(percent_diff_peak))
 
     if include_mem:
-        format_string = ("%%(left)%ds | %%(left_mem)%ds | %%(middle)-%ds | %%(right)%ds | %%(right_mem)%ds || %%(far_right)%ds || %%(far_right_mem)%ds"
-                         % (left_width, left_mem_width, middle_width, right_width, right_mem_width, far_right_width, far_right_mem_width))
+        format_string = ("%%(left)%ds | %%(left_mem)%ds | %%(right)%ds | %%(right_mem)%ds || %%(far_right)%ds || %%(far_right_mem)%ds"
+                         % (left_width, left_mem_width, right_width, right_mem_width, far_right_width, far_right_mem_width))
     else:
-        format_string = ("%%(left)%ds | %%(middle)-%ds | %%(right)%ds || %%(far_right)%ds"
-                         % (left_width, middle_width, right_width, far_right_width))
+        format_string = ("%%(left)%ds | %%(right)%ds || %%(far_right)%ds"
+                         % (left_width, right_width, far_right_width))
 
     if with_percent:
         format_string += " | %%(far_far_right)%ds" % far_far_right_width
         if include_mem:
             format_string += " | %%(far_far_right_mem)%ds" % far_far_right_mem_width
 
+    format_string += " | %%(filenames)-%ds" % filenames_width
+
     header = format_string % {'left': left_tag, 'left_mem': left_mem_tag,
-                              'middle': tag,
                               'right': right_tag, 'right_mem': right_mem_tag,
                               'far_right': change_tag, 'far_right_mem': change_mem_tag,
-                              'far_far_right': percent_change_tag, 'far_far_right_mem': percent_change_mem_tag}
+                              'far_far_right': percent_change_tag, 'far_far_right_mem': percent_change_mem_tag,
+                              'filenames': tag}
     total = format_string % {'left': left_sum, 'left_mem': mem_fmt % left_peak,
-                             'middle': total_string,
                              'right': right_sum, 'right_mem': mem_fmt % right_peak,
                              'far_right': diff_sum, 'far_right_mem': mem_fmt % diff_peak,
-                             'far_far_right': percent_diff_sum, 'far_far_right_mem': percent_diff_peak}
+                             'far_far_right': percent_diff_sum, 'far_far_right_mem': percent_diff_peak,
+                             'filenames': total_string}
     # separator to go between headers and body
     sep = '-' * len(header)
     # the representation of the default value (0), to get replaced by N/A
@@ -436,13 +438,13 @@ def make_diff_table_string(left_dict, right_dict,
     return '\n'.join([header, sep, total, sep] +
                      [format_string % {'left': left_dict.get(name, {}).get(TIME_KEY, 'N/A'),
                                        'left_mem': get_formatted_mem(MEM_KEY, left_dict.get(name, {})),
-                                       'middle': name,
                                        'right': right_dict.get(name, {}).get(TIME_KEY, 'N/A'),
                                        'right_mem': get_formatted_mem(MEM_KEY, right_dict.get(name, {})),
                                        'far_right': diff_times_dict.get(name, 'N/A'),
                                        'far_right_mem': get_formatted_mem(name, diff_mems_dict),
                                        'far_far_right': percent_diff_times_dict.get(name, 'N/A'),
-                                       'far_far_right_mem': percent_diff_mems_dict.get(name, 'N/A')}
+                                       'far_far_right_mem': percent_diff_mems_dict.get(name, 'N/A'),
+                                       'filenames': name}
                       for name in names]).replace(left_rep, 'N/A'.center(len(left_rep) - 3) + ' | ').replace(right_rep, ' | ' + 'N/A'.center(len(right_rep) - 5) + ' |').replace(far_right_rep, '|| ' + 'N/A'.center(len(far_right_rep) - 3)).replace(far_far_right_rep, '| ' + 'N/A'.center(len(far_far_right_rep) - 2)).replace(left_mem_rep, 'N/A'.center(len(left_mem_rep) - 3) + ' | ').replace(right_mem_rep, ' | ' + 'N/A'.center(len(right_mem_rep) - 5) + ' |').replace(far_right_mem_rep, '|| ' + 'N/A'.center(len(far_right_mem_rep) - 3)).replace(far_far_right_mem_rep, '| ' + 'N/A'.center(len(far_far_right_mem_rep) - 2))
 
 def make_table_string(stats_dict,

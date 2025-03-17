@@ -1,29 +1,29 @@
-    After | Code                                                        |    Before ||    Change | % Change
+    After |    Before ||    Change | % Change | Code                                                       
 -----------------------------------------------------------------------------------------------------------
- 0m01.15s | Total                                                       |  0m01.16s || -0m00.01s |   -0.77%
+ 0m01.15s |  0m01.16s || -0m00.01s |   -0.77% | Total                                                      
 -----------------------------------------------------------------------------------------------------------
-0m00.504s | Chars 260-284 ~ 280-304 [(vm_compute;~reflexivity).]        | 0m00.528s || -0m00.02s |   -4.54%
-0m00.384s | Chars 285-289 ~ 305-309 [Qed.]                              |   0m00.4s || -0m00.02s |   -4.00%
-0m00.172s | Chars 031-064 ~ 031-064 [Require~Import~Coq.ZArith.ZArith.] | 0m00.156s || +0m00.02s |  +10.25%
-0m00.083s | Chars 000-030 ~ 000-030 [Require~Import~Coq.Lists.List.]    | 0m00.072s || +0m00.01s |  +15.27%
-0m00.004s | Chars 200-257 ~ 220-277 [Goal~_~List.repeat~Z.div_eucl~...] |    0m00.s || +0m00.00s |        ∞
-   0m00.s | Chars 065-075 ~ 065-075 [Goal~_~True.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 078-086 ~ 078-086 [exact~I.]                          |    N/A    || +0m00.00s |   N/A   
-   N/A    | Chars 078-090 ~ 078-090 [constructor.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 087-091 ~ 091-095 [Qed.]                              |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 092-102 ~ 096-106 [Goal~_~True.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 105-113 ~ 109-117 [exact~I.]                          |    N/A    || +0m00.00s |   N/A   
-   N/A    | Chars 105-117 ~ 109-121 [constructor.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 114-118 ~ 122-126 [Qed.]                              |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 119-129 ~ 127-137 [Goal~_~True.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 132-140 ~ 140-148 [exact~I.]                          |    N/A    || +0m00.00s |   N/A   
-   N/A    | Chars 132-144 ~ 140-152 [constructor.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 141-145 ~ 153-157 [Qed.]                              |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 146-156 ~ 158-168 [Goal~_~True.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 159-167 ~ 171-179 [exact~I.]                          |    N/A    || +0m00.00s |   N/A   
-   N/A    | Chars 159-171 ~ 171-183 [constructor.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 168-172 ~ 184-188 [Qed.]                              |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 173-183 ~ 189-199 [Goal~_~True.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 186-194 ~ 202-210 [exact~I.]                          |    N/A    || +0m00.00s |   N/A   
-   N/A    | Chars 186-198 ~ 202-214 [constructor.]                      |    0m00.s || +0m00.00s |   N/A   
-   0m00.s | Chars 195-199 ~ 215-219 [Qed.]                              |    0m00.s || +0m00.00s |   N/A   
+0m00.504s | 0m00.528s || -0m00.02s |   -4.54% | Chars 260-284 ~ 280-304 [(vm_compute;~reflexivity).]       
+0m00.384s |   0m00.4s || -0m00.02s |   -4.00% | Chars 285-289 ~ 305-309 [Qed.]                             
+0m00.172s | 0m00.156s || +0m00.02s |  +10.25% | Chars 031-064 ~ 031-064 [Require~Import~Coq.ZArith.ZArith.]
+0m00.083s | 0m00.072s || +0m00.01s |  +15.27% | Chars 000-030 ~ 000-030 [Require~Import~Coq.Lists.List.]   
+0m00.004s |    0m00.s || +0m00.00s |        ∞ | Chars 200-257 ~ 220-277 [Goal~_~List.repeat~Z.div_eucl~...]
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 065-075 ~ 065-075 [Goal~_~True.]                     
+   0m00.s |    N/A    || +0m00.00s |   N/A    | Chars 078-086 ~ 078-086 [exact~I.]                         
+   N/A    |    0m00.s || +0m00.00s |   N/A    | Chars 078-090 ~ 078-090 [constructor.]                     
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 087-091 ~ 091-095 [Qed.]                             
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 092-102 ~ 096-106 [Goal~_~True.]                     
+   0m00.s |    N/A    || +0m00.00s |   N/A    | Chars 105-113 ~ 109-117 [exact~I.]                         
+   N/A    |    0m00.s || +0m00.00s |   N/A    | Chars 105-117 ~ 109-121 [constructor.]                     
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 114-118 ~ 122-126 [Qed.]                             
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 119-129 ~ 127-137 [Goal~_~True.]                     
+   0m00.s |    N/A    || +0m00.00s |   N/A    | Chars 132-140 ~ 140-148 [exact~I.]                         
+   N/A    |    0m00.s || +0m00.00s |   N/A    | Chars 132-144 ~ 140-152 [constructor.]                     
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 141-145 ~ 153-157 [Qed.]                             
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 146-156 ~ 158-168 [Goal~_~True.]                     
+   0m00.s |    N/A    || +0m00.00s |   N/A    | Chars 159-167 ~ 171-179 [exact~I.]                         
+   N/A    |    0m00.s || +0m00.00s |   N/A    | Chars 159-171 ~ 171-183 [constructor.]                     
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 168-172 ~ 184-188 [Qed.]                             
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 173-183 ~ 189-199 [Goal~_~True.]                     
+   0m00.s |    N/A    || +0m00.00s |   N/A    | Chars 186-194 ~ 202-210 [exact~I.]                         
+   N/A    |    0m00.s || +0m00.00s |   N/A    | Chars 186-198 ~ 202-214 [constructor.]                     
+   0m00.s |    0m00.s || +0m00.00s |   N/A    | Chars 195-199 ~ 215-219 [Qed.]                             
