@@ -848,21 +848,17 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, udecl) bl t =
     ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook udecl bl t
 
 let vernac_definition_refine ~atts (discharge, kind) (lid, udecl) bl red_option c typ_opt =
+  if Option.has_some red_option then
+    CErrors.user_err ?loc:c.loc Pp.(str "Cannot reduce open definition.");
   let open DefAttributes in
   let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
      atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
   let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
   let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
   let name = vernac_definition_name lid scope in
-  let red_option = match red_option with
-    | None -> None
-    | Some r ->
-      let env = Global.env () in
-      let sigma = Evd.from_env env in
-      Some (snd (Redexpr.interp_redexp_no_ltac env sigma r)) in
   ComDefinition.do_definition_refine ~name ?loc:lid.loc
     ?clearbody ~poly ~typing_flags ~scope ~kind:(Decls.IsDefinition kind)
-    ?user_warns ?using udecl bl red_option c typ_opt ?hook
+    ?user_warns ?using udecl bl c typ_opt ?hook
 
 let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c typ_opt =
   let open DefAttributes in

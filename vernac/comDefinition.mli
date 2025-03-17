@@ -92,7 +92,6 @@ val do_definition_refine
   -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
   -> universe_decl_expr option
   -> local_binder_expr list
-  -> red_expr option
   -> constr_expr
   -> constr_expr option
   -> Declare.Proof.t

@@ -167,13 +167,13 @@ let do_definition_interactive ?loc ~program_mode ?hook ~name ~scope ?clearbody ~
   let evd = if poly then evd else Evd.fix_undefined_variables evd in
   Declare.Proof.start_definition ~info ~cinfo ?using evd
 
-let do_definition_refine ?loc ?hook ~name ~scope ?clearbody ~poly ~typing_flags ~kind ?using ?user_warns udecl bl red_option c ctypopt =
+let do_definition_refine ?loc ?hook ~name ~scope ?clearbody ~poly ~typing_flags ~kind ?using ?user_warns udecl bl c ctypopt =
   let env = Global.env() in
   let env = Environ.update_typing_flags ?typing_flags env in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = interp_univ_decl_opt env udecl in
   let evd, (body, typ), impargs =
-    interp_definition ~program_mode:false env evd empty_internalization_env bl red_option c ctypopt
+    interp_definition ~program_mode:false env evd empty_internalization_env bl None c ctypopt
   in
   let typ = match typ with Some typ -> typ | None -> Retyping.get_type_of env evd body in
   let typ = EConstr.Unsafe.to_constr typ in
