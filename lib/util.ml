@@ -74,7 +74,7 @@ let (@) = CList.append
 
 (* Arrays *)
 
-module Array : CArray.ExtS = CArray
+module Array = CArray
 
 (* Sets *)
 
