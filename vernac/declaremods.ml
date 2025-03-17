@@ -742,11 +742,11 @@ let rec get_module_sobjs is_mod env inl = function
 
 let debug_print_modtab () =
   let pr_seg = function
-    | [] -> str "[]"
-    | l -> str "[." ++ int (List.length l) ++ str ".]"
+    | 0 -> str "[]"
+    | l -> str "[." ++ int l ++ str ".]"
   in
   let pr_modinfo mp modobjs s =
-    let objs = List.map ignore modobjs.module_substituted_objects @ List.map ignore modobjs.module_keep_objects.keep_objects in
+    let objs = List.length modobjs.module_substituted_objects + List.length modobjs.module_keep_objects.keep_objects in
     s ++ str (ModPath.to_string mp) ++ spc () ++ pr_seg objs
   in
   let modules = MPmap.fold pr_modinfo (ModObjs.all ()) (mt ()) in
