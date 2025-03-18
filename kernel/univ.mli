@@ -72,6 +72,8 @@ sig
 
       val pr : (elt -> Pp.t) -> t -> Pp.t
       (** Pretty-printing *)
+
+      val hcons : t Hashcons.f
     end
 
   module Map :
@@ -181,6 +183,8 @@ module Constraints : sig
   include CSet.ExtS with type elt = univ_constraint
 
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
+
+  val hcons : t Hashcons.f
 end
 
 (** A value with universe Constraints.t. *)
@@ -229,6 +233,11 @@ sig
   val size : t -> int
   (** The number of universes in the context *)
 
+  val hcons : t Hashcons.f
+
+  val pr : (Level.t -> Pp.t) -> t -> Pp.t
+
+
 end
 
 (** A value in a universe context set. *)
@@ -249,13 +258,5 @@ val subst_univs_level_constraints : universe_level_subst -> Constraints.t -> Con
 (** {6 Pretty-printing of universes. } *)
 
 val pr_constraint_type : constraint_type -> Pp.t
-val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
 
 val pr_universe_level_subst : (Level.t -> Pp.t) -> universe_level_subst -> Pp.t
-
-(** {6 Hash-consing } *)
-
-val hcons_univ : Universe.t Hashcons.f
-val hcons_constraints : Constraints.t Hashcons.f
-val hcons_universe_set : Level.Set.t Hashcons.f
-val hcons_universe_context_set : ContextSet.t Hashcons.f
