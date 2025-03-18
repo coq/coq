@@ -355,7 +355,6 @@ module type LibActions = sig
 
   type summary
   val stage : Summary.Stage.t
-  val check_mod_fresh : is_type:bool -> Nametab.object_prefix -> Id.t -> unit
   val check_section_fresh : DirPath.t -> Id.t -> unit
   val open_section : Id.t -> unit
 
@@ -389,14 +388,6 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
   type summary = Summary.Synterp.frozen
   let stage = Summary.Stage.Synterp
 
-  let check_mod_fresh ~is_type prefix id =
-    let exists =
-      if is_type then Nametab.exists_cci (Libnames.make_path prefix.Nametab.obj_dir id)
-      else Nametab.exists_module prefix.Nametab.obj_dir
-    in
-    if exists then
-      CErrors.user_err Pp.(Id.print id ++ str " already exists.")
-
   let check_section_fresh obj_dir id =
     if Nametab.exists_dir obj_dir then
       CErrors.user_err Pp.(Id.print id ++ str " already exists.")
@@ -422,7 +413,6 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
   let start_mod ~is_type export id mp fs =
     let dir = Libnames.add_dirpath_suffix !synterp_state.path_prefix.Nametab.obj_dir id in
     let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; } in
-    check_mod_fresh ~is_type prefix id;
     assert (not (sections_are_opened()));
     add_entry (OpenedModule (is_type,export,prefix,fs));
     synterp_state := { !synterp_state with path_prefix = prefix } ;
@@ -486,7 +476,6 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
 
   let stage = Summary.Stage.Interp
 
-  let check_mod_fresh ~is_type prefix id = ()
   let check_section_fresh _ _ = ()
 
   let push_section_name _ = ()
