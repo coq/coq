@@ -185,20 +185,20 @@ let rec dirpath_of_modpath = function
   | MPbound mbid -> let (_,id,_) = MBId.repr mbid in DirPath.make [id]
   | MPdot (t, l) -> Libnames.add_dirpath_suffix (dirpath_of_modpath t) (Label.to_id l)
 
-let path_of_global = function
-  | GlobRef.VarRef id -> Libnames.make_path DirPath.empty id
+let qualid_of_global = function
+  | GlobRef.VarRef id -> Libnames.qualid_of_ident id
   (* We rely on the tacite invariant that the label of a constant is used to build its internal name *)
-  | GlobRef.ConstRef cst -> Libnames.make_path (dirpath_of_modpath (Constant.modpath cst)) (Label.to_id (Constant.label cst))
+  | GlobRef.ConstRef cst -> Libnames.make_qualid (dirpath_of_modpath (Constant.modpath cst)) (Label.to_id (Constant.label cst))
   (* We rely on the tacite invariant that an inductive block inherits the name of its first type *)
-  | GlobRef.IndRef (ind,1) -> Libnames.make_path (dirpath_of_modpath (MutInd.modpath ind)) (Label.to_id (MutInd.label ind))
+  | GlobRef.IndRef (ind,1) -> Libnames.make_qualid (dirpath_of_modpath (MutInd.modpath ind)) (Label.to_id (MutInd.label ind))
   (* These are hacks *)
-  | GlobRef.IndRef (ind,n) -> Libnames.make_path (dirpath_of_modpath (MutInd.modpath ind)) (Id.of_string_soft ("<inductive:" ^ Label.to_string (MutInd.label ind) ^ ":" ^ string_of_int n ^ ">"))
-  | GlobRef.ConstructRef ((ind,1),p) -> Libnames.make_path (dirpath_of_modpath (MutInd.modpath ind)) (Id.of_string_soft ("<constructor:" ^ Label.to_string (MutInd.label ind) ^ ":" ^ string_of_int (p+1) ^ ">"))
-  | GlobRef.ConstructRef ((ind,n),p) -> Libnames.make_path (dirpath_of_modpath (MutInd.modpath ind)) (Id.of_string_soft ("<constructor:" ^ Label.to_string (MutInd.label ind) ^ ":" ^ string_of_int n ^ ":" ^ string_of_int (p+1) ^ ">"))
+  | GlobRef.IndRef (ind,n) -> Libnames.make_qualid (dirpath_of_modpath (MutInd.modpath ind)) (Id.of_string_soft ("<inductive:" ^ Label.to_string (MutInd.label ind) ^ ":" ^ string_of_int n ^ ">"))
+  | GlobRef.ConstructRef ((ind,1),p) -> Libnames.make_qualid (dirpath_of_modpath (MutInd.modpath ind)) (Id.of_string_soft ("<constructor:" ^ Label.to_string (MutInd.label ind) ^ ":" ^ string_of_int (p+1) ^ ">"))
+  | GlobRef.ConstructRef ((ind,n),p) -> Libnames.make_qualid (dirpath_of_modpath (MutInd.modpath ind)) (Id.of_string_soft ("<constructor:" ^ Label.to_string (MutInd.label ind) ^ ":" ^ string_of_int n ^ ":" ^ string_of_int (p+1) ^ ">"))
 
 let default_extern_reference ?loc vars r =
   try Nametab.shortest_qualid_of_global ?loc vars r
-  with Not_found when GlobRef.is_bound r -> qualid_of_path (path_of_global r)
+  with Not_found when GlobRef.is_bound r -> qualid_of_global r
 
 let my_extern_reference = ref default_extern_reference
 
