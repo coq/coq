@@ -22,7 +22,6 @@ type export = (export_flag * Libobject.open_filter) option (* None for a Module 
 
 val make_oname : Libobject.object_prefix -> Names.Id.t -> Libobject.object_name
 val make_foname : Names.Id.t -> Libobject.object_name
-val oname_prefix : Libobject.object_name -> Libobject.object_prefix
 
 type 'summary node =
   | CompilingLibrary of Libobject.object_prefix

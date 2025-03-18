@@ -18,9 +18,6 @@ type export = (export_flag * Libobject.open_filter) option (* None for a Module 
 let make_oname Libobject.{ obj_dir; obj_mp } id =
   Names.(Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
 
-let oname_prefix (sp, kn) =
-  { Libobject.obj_dir = Libnames.dirpath sp; obj_mp = KerName.modpath kn }
-
 type 'summary node =
   | CompilingLibrary of Libobject.object_prefix
   | OpenedModule of is_type * export * Libobject.object_prefix * 'summary
