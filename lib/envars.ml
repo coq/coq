@@ -89,12 +89,6 @@ let coqbin =
 let coqroot =
   Filename.dirname coqbin
 
-(** On win32, we add coqbin to the PATH at launch-time (this used to be
-    done in a .bat script). *)
-let _ =
-  if Coq_config.arch_is_win32 then
-    Unix.putenv "PATH" (coqbin ^ ";" ^ getenv_else "PATH" (fun () -> ""))
-
 (** Add a local installation suffix (unless the suffix is itself
     absolute in which case the prefix does not matter) *)
 let use_suffix prefix suffix =
