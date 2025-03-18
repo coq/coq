@@ -849,7 +849,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, udecl) bl t =
 
 let vernac_definition_refine ~atts (discharge, kind) (lid, udecl) bl red_option c typ_opt =
   if Option.has_some red_option then
-    CErrors.user_err ?loc:c.loc Pp.(str "Cannot reduce open definition.");
+    CErrors.user_err ?loc:c.loc Pp.(str "Cannot use Eval with #[refine].");
   let open DefAttributes in
   let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
      atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
