@@ -36,7 +36,9 @@ else
 TEST_SUITE_CONFIG_PATH:=$(TEST_SUITE_CONFIG_FILE)
 endif
 
-include $(TEST_SUITE_CONFIG_PATH)
+ifneq ($(MAKECMDGOALS),clean)
+include $(TEST_SUITE_CONFIG_FILE)
+endif
 
 #######################################################################
 # Variables
@@ -188,7 +190,7 @@ all:
 	@echo ""
 	@echo "Coq's standard library has not been built; please run: "
 	@echo "  - make world"
-	@echo ""
+	@echo "(looked in $(COQLIBINSTALL))"
 	@false
 else
 ifeq ($(TIMED),)
@@ -287,10 +289,14 @@ report: summary.log
 # Test suite configuration, to eventually go away
 #######################################################################
 
-# Not inside Dune, build by hand, note the shuffling
+# Not inside Dune, build by hand
 ifeq ($(INSIDE_DUNE),)
-$(TEST_SUITE_CONFIG_PATH):
-	dune build $(TEST_SUITE_CONFIG_FILE)
+CONFIG_TO_MAKE_EXE:=../_build/$(DUNE_CONTEXT)/test-suite/tools/coq_config_to_make.exe
+ROCQ_EXE:=../_build/install/$(DUNE_CONTEXT)/bin/rocq
+
+$(TEST_SUITE_CONFIG_FILE):
+	dune build $(CONFIG_TO_MAKE_EXE)
+	$(CONFIG_TO_MAKE_EXE) $(ROCQ_EXE) > $@
 endif
 
 #######################################################################

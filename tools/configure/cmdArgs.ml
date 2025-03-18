@@ -12,12 +12,14 @@ open Util
 
 (** * Command-line parsing *)
 
+type prefix = RelocatableInstall | Prefix of string
+
 type nativecompiler = NativeYes | NativeNo | NativeOndemand
 
 module Prefs = struct
 
 type t = {
-  prefix : string option;
+  prefix : prefix option;
   quiet : bool;
   interactive : bool;
   libdir : string option;
@@ -85,16 +87,16 @@ let warn_warn_error () =
                   warnings are not set in the config section of the \
                   corresponding build tool [coq_makefile, dune]@\n%!"
 
-let make_absolute = function
-  | None -> None
-  | Some path ->
-    if Filename.is_relative path then
-      Some (Sys.getcwd() ^ "/" ^ path)
-    else Some path
+let make_prefix path =
+  if Filename.is_relative path then
+    Prefix (Sys.getcwd() ^ "/" ^ path)
+  else Prefix path
 
 let args_options = Arg.align [
-  "-prefix", arg_string_option (fun p prefix -> { p with prefix = make_absolute prefix }),
+  "-prefix", arg_string (fun p prefix -> { p with prefix = Some (make_prefix prefix) }),
     "<dir> Set installation directory to <dir>";
+  "-relocatable", arg_set (fun p -> { p with prefix = Some RelocatableInstall } ),
+    "Make a relocatable installation";
   "-quiet", arg_set (fun p -> { p with quiet = true }),
     " Don't print variables during configure";
   "-no-ask", arg_set (fun p -> { p with interactive = false }),

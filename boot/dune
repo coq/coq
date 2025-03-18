@@ -6,7 +6,7 @@
  (synopsis "Rocq Enviroment and Paths facilities")
  ; until ocaml/dune#4892 fixed
  ; (private_modules util)
- (libraries rocq-runtime.config))
+ (libraries rocq-runtime.config rocq-runtime.clib))
 
 (deprecated_library_name
  (old_public_name coq-core.boot)

@@ -24,14 +24,6 @@ type t =
   ; lib : Path.t
   }
 
-(* fatal error *)
-let fail_msg =
-  "cannot guess a path for Rocq libraries; please use -coqlib option \
-   or ensure you have installed the package containing Rocq's prelude (rocq-core in OPAM) \
-   If you intend to use Rocq without prelude, the -boot -noinit options must be used."
-
-let fail s = Format.eprintf "%s@\n%!" fail_msg; exit 1
-
 (* This code needs to be refactored, for now it is just what used to be in envvars  *)
 
 let use_suffix prefix suffix =
@@ -54,13 +46,46 @@ let theories_dir = "theories"
 let plugins_dir = "plugins"
 let prelude = Filename.concat theories_dir "Init/Prelude.vo"
 
-let coqbin =
-  canonical_path_name (Filename.dirname Sys.executable_name)
+let find_in_PATH f =
+  match Sys.getenv_opt "PATH" with
+  | None -> None
+  | Some paths ->
+    let sep = if Coq_config.arch_is_win32 then ';' else ':' in
+    let paths = String.split_on_char sep paths in
+    paths |> List.find_opt (fun path ->
+        Sys.file_exists (if path = "" then f else Filename.concat path f))
+
+let rocqbin =
+  (* avoid following symlinks if possible (Sys.executable_name followed symlinks) *)
+  if Filename.basename Sys.argv.(0) <> Sys.argv.(0) then
+    (* explicit directory (maybe relative to current dir) *)
+    canonical_path_name (Filename.dirname Sys.argv.(0))
+  else match find_in_PATH Sys.argv.(0) with
+    | Some p -> p
+    | None -> canonical_path_name (Filename.dirname Sys.executable_name)
 
 (** The following only makes sense when executables are running from
     source tree (e.g. during build or in local mode). *)
-let coqroot =
-  Filename.dirname coqbin
+let rocqroot =
+  let rec search = function
+    | [] ->
+      (* couldn't recognize the layout, guess the executable is 1 dir below the root
+         (eg "mybin/rocq")
+         XXX we should search only when we need the root
+         and produce an error if we can't find it *)
+      Filename.dirname rocqbin
+    | path :: rest ->
+      if Sys.file_exists (Filename.concat path "bin") then path
+      else search rest
+  in
+  (* we can be "bin/rocq" or "lib/rocq-runtime/rocqworker"
+     so rocqbin can be "bin/" or "lib/rocq-runtime/" *)
+  let dirname = Filename.dirname in
+  search [ dirname rocqbin; dirname @@ dirname rocqbin ]
+
+let relocate = function
+  | Coq_config.NotRelocatable p -> p
+  | Coq_config.Relocatable p -> Filename.concat rocqroot p
 
 (** [check_file_else ~dir ~file oth] checks if [file] exists in
     the installation directory [dir] given relatively to [coqroot],
@@ -68,7 +93,7 @@ let coqroot =
     If the check fails, then [oth ()] is evaluated.
     Using file system equality seems well enough for this heuristic *)
 let check_file_else ~dir ~file oth =
-  let path = use_suffix coqroot dir in
+  let path = use_suffix rocqroot dir in
   if Sys.file_exists (Filename.concat path file) then path else oth ()
 
 let guess_coqlib () =
@@ -78,12 +103,10 @@ let guess_coqlib () =
     check_file_else
       ~dir:Coq_config.coqlibsuffix
       ~file:prelude
-      (fun () ->
-         if Sys.file_exists (Filename.concat Coq_config.coqlib prelude)
-         then Coq_config.coqlib
-         else fail ())
+      (fun () -> relocate Coq_config.coqlib)
 
-(* Build layout uses coqlib = coqcorelib *)
+(* Build layout uses coqlib = coqcorelib
+   XXX we should be using -boot in build layout so is that dead code? *)
 let guess_coqcorelib lib =
   if Sys.file_exists (Path.relative lib plugins_dir)
   then lib
@@ -161,8 +184,8 @@ let ocamlfind () = match Util.getenv_opt "OCAMLFIND" with
 
 let docdir () =
   (* This assumes implicitly that the suffix is non-trivial *)
-  let path = use_suffix coqroot Coq_config.docdirsuffix in
-  if Sys.file_exists path then path else Coq_config.docdir
+  let path = use_suffix rocqroot Coq_config.docdirsuffix in
+  if Sys.file_exists path then path else relocate Coq_config.docdir
 
 (* Print the configuration information *)
 

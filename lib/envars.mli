@@ -37,15 +37,6 @@ val datadir : unit -> string
 (** [configdir] is the path to the installed config directory. *)
 val configdir : unit -> string
 
-(** [coqbin] is the name of the current executable. *)
-val coqbin : string
-
-(** [coqroot] is the path to [coqbin].
-    The following value only makes sense when executables are running from
-    source tree (e.g. during build or in local mode).
-*)
-val coqroot : string
-
 (** [coqpath] is the standard path to coq.
     Notice that coqpath is stored in reverse order, since that is
     the order it gets added to the search path. *)
