@@ -448,9 +448,10 @@ applications of :n:`@qualid`, to first type check the arguments in
 :n:`@arg_specs__1` and then propagate information from the typing context to
 type check the remaining arguments (in :n:`@arg_specs__2`).
 
-.. example:: Bidirectionality hints
+.. example:: Bidirectionality hints, example with coercion
 
-   In a context where a coercion was declared from ``bool`` to ``nat``:
+   In a context where a coercion was declared from ``bool`` to ``nat``
+   (see section :ref:`coercions`):
 
    .. rocqtop:: in reset
 
@@ -471,6 +472,45 @@ type check the remaining arguments (in :n:`@arg_specs__2`).
 
       Arguments ex_intro _ _ & _ _.
       Check (ex_intro _ true _ : exists n : nat, n > 0).
+
+.. example:: Bidirectionality hints, example with number comparison
+
+   Bidirectionality hints can be used without coercions,
+   as shown by the following example.
+
+   One could provide arguments with simpler types than expected
+   (or even fully implicit), and let Rocq infer the correct one.
+   For instance, consider the following definition:
+
+   .. rocqtop:: in reset extra-stdlib
+
+      From Stdlib Require Import PeanoNat.
+
+      Definition blt_implies_lt {n m} (H : (n <? m) = true) : n < m.
+      Proof. eapply Bool.reflect_iff; [apply Nat.ltb_spec0 | exact H]. Qed.
+
+   One could use blt_implies_lt to prove ``3 < 4`` without providing
+   an explicit proof of ``3 <? 4 = true``, by using eq_refl in H's place.
+
+   Rocq is able to infer that ``n = 3`` and ``m = 4`` by using ``3 < 4`` from the
+   expected type and ``n < m`` from the definition of blt_implies_lt.
+   But it cannot use these values to infer that H's type should be ``(3 <? 4) = true``
+   from ``(?n <? ?m) = true`` as one could expect. The reason is that Rocq doesn't
+   make types infered for some arguments available for the inference of the
+   remaining arguments :
+
+   .. rocqtop:: all extra-stdlib
+
+      Fail Check blt_implies_lt (eq_refl _) : 3 < 4.
+
+   However, by using a bidirectionality hint, values infered for arguments on the left of ``&``
+   are propagated to those on the right. This makes values ``n = 3`` and ``m = 4`` propagate to ``H``,
+   allowing ``(?n <? ?m)`` to be reduced to ``true``:
+
+   .. rocqtop:: all extra-stdlib
+
+      Arguments blt_implies_lt n m & H.
+      Check blt_implies_lt (eq_refl _) : 3 < 4.
 
 Rocq will attempt to produce a term which uses the arguments you
 provided, but in some cases involving Program mode the arguments after
