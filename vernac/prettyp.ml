@@ -671,14 +671,14 @@ let print_abbreviation access env sigma kn =
 
 (** Unused outside? *)
 
-let pr_prefix_name prefix = Id.print (snd (split_dirpath prefix.Nametab.obj_dir))
+let pr_prefix_name prefix = Id.print (snd (split_dirpath prefix.obj_dir))
 
 let print_library_node = function
   | Lib.OpenedSection (prefix, _) ->
     str " >>>>>>> Section " ++ pr_prefix_name prefix
   | Lib.OpenedModule (_,_,prefix,_) ->
     str " >>>>>>> Module " ++ pr_prefix_name prefix
-  | Lib.CompilingLibrary { Nametab.obj_dir; _ } ->
+  | Lib.CompilingLibrary { obj_dir; _ } ->
     str " >>>>>>> Library " ++ DirPath.print obj_dir
 
 (** Printing part of command [Check] *)
@@ -756,7 +756,7 @@ let print_context env sigma ~with_values =
     | (node, leaves) :: rest ->
       if is_done n then mt()
       else
-        let mp = (Lib.node_prefix node).Nametab.obj_mp in
+        let mp = (Lib.node_prefix node).obj_mp in
         let n, pleaves = print_leaves env sigma ~with_values mp n leaves in
         if is_done n then pleaves
         else prec n rest ++ pleaves
@@ -830,7 +830,7 @@ let print_full_pure_leaf access env sigma mp = function
 let print_full_pure_context access env sigma =
   let rec prec = function
     | (node,leaves)::rest ->
-      let mp = (Lib.node_prefix node).Nametab.obj_mp in
+      let mp = (Lib.node_prefix node).obj_mp in
       let pp = Pp.prlist (print_full_pure_leaf access env sigma mp) leaves in
       prec rest ++ pp
   | [] -> mt ()
@@ -851,7 +851,7 @@ let read_sec_context qid =
     with Not_found ->
       user_err ?loc:qid.loc (str "Unknown section.") in
   let rec get_cxt in_cxt = function
-    | (Lib.OpenedSection ({Nametab.obj_dir;_},_), _ as hd)::rest ->
+    | (Lib.OpenedSection ({obj_dir;_},_), _ as hd)::rest ->
         if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest
