@@ -35,10 +35,6 @@ let is_dirpath_suffix_of dir1 dir2 =
   let dir2 = DirPath.repr dir2 in
   List.prefix_of Id.equal dir1 dir2
 
-let chop_dirpath n d =
-  let d1,d2 = List.chop n (List.rev (DirPath.repr d)) in
-  DirPath.make (List.rev d1), DirPath.make (List.rev d2)
-
 let drop_dirpath_prefix d1 d2 =
   let d =
     List.drop_prefix Id.equal
@@ -47,8 +43,6 @@ let drop_dirpath_prefix d1 d2 =
   DirPath.make (List.rev d)
 
 let append_dirpath d1 d2 = DirPath.make (DirPath.repr d2 @ DirPath.repr d1)
-
-let add_dirpath_prefix id d = DirPath.make (DirPath.repr d @ [id])
 
 let add_dirpath_suffix p id = DirPath.make (id :: DirPath.repr p)
 
@@ -86,8 +80,6 @@ type full_path = {
 
 let dirpath sp = sp.dirpath
 let basename sp = sp.basename
-
-let full_path_is_ident sp = DirPath.is_empty (dirpath sp)
 
 let make_path pa id = { dirpath = pa; basename = id }
 
@@ -155,8 +147,7 @@ let qualid_of_dirpath ?loc dir =
 
 let qualid_of_lident lid = qualid_of_ident ?loc:lid.CAst.loc lid.CAst.v
 
-let qualid_is_ident qid =
-  full_path_is_ident qid.CAst.v
+let qualid_is_ident qid = DirPath.is_empty (dirpath qid.CAst.v)
 
 let qualid_basename qid =
   qid.CAst.v.basename

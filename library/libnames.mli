@@ -23,9 +23,7 @@ val pop_dirpath_n : int -> DirPath.t -> DirPath.t
 val split_dirpath : DirPath.t -> DirPath.t * Id.t
 
 val add_dirpath_suffix : DirPath.t -> Id.t -> DirPath.t
-val add_dirpath_prefix : Id.t -> DirPath.t -> DirPath.t
 
-val chop_dirpath : int -> DirPath.t -> DirPath.t * DirPath.t
 val append_dirpath : DirPath.t -> DirPath.t -> DirPath.t
 
 val drop_dirpath_prefix : DirPath.t -> DirPath.t -> DirPath.t
@@ -45,7 +43,6 @@ val make_path : DirPath.t -> Id.t -> full_path
 val repr_path : full_path -> DirPath.t * Id.t
 val dirpath : full_path -> DirPath.t
 val basename : full_path -> Id.t
-val full_path_is_ident : full_path -> bool
 
 (** Parsing and printing of section path as ["root.module.id"] *)
 val path_of_string : string -> full_path
