@@ -355,10 +355,7 @@ module type LibActions = sig
 
   type summary
   val stage : Summary.Stage.t
-  val check_section_fresh : DirPath.t -> Id.t -> unit
   val open_section : Id.t -> unit
-
-  val push_section_name : DirPath.t -> unit
 
   val close_section : summary -> unit
 
@@ -476,9 +473,6 @@ module InterpActions : LibActions with type summary = Summary.Interp.frozen = st
 
   let stage = Summary.Stage.Interp
 
-  let check_section_fresh _ _ = ()
-
-  let push_section_name _ = ()
   let close_section fs = Global.close_section fs
 
   let add_entry node =
