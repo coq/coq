@@ -49,14 +49,14 @@ let do_univ_name ~check i dp src (id,univ) =
 
 let cache_univ_names (prefix, (src, univs)) =
   let depth = Lib.sections_depth () in
-  let dp = Libnames.pop_dirpath_n depth prefix.Nametab.obj_dir in
+  let dp = Libnames.pop_dirpath_n depth prefix.Libobject.obj_dir in
   List.iter (do_univ_name ~check:true (Nametab.Until 1) dp src) univs
 
 let load_univ_names i (prefix, (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Until i) prefix.Nametab.obj_dir src) univs
+  List.iter (do_univ_name ~check:false (Nametab.Until i) prefix.Libobject.obj_dir src) univs
 
 let open_univ_names i (prefix, (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Exactly i) prefix.Nametab.obj_dir src) univs
+  List.iter (do_univ_name ~check:false (Nametab.Exactly i) prefix.Libobject.obj_dir src) univs
 
 let discharge_univ_names = function
   | BoundUniv, _ -> None

@@ -206,7 +206,7 @@ and exp_algebraic_objects = { exp_algebraic_objects : exp_substituted_object lis
 (* and exp_substitutive_objects = Names.MBId.t list * exp_algebraic_objects *)
 
 type module_objects =
-  { module_prefix : Nametab.object_prefix;
+  { module_prefix : object_prefix;
     module_substituted_objects : exp_substituted_object list;
     module_keep_objects : keep_objects;
     module_escape_objects : escape_objects;
@@ -427,7 +427,7 @@ let load_modtype i sp mp sobjs =
 
 (** {6 Declaration of substitutive objects for Include} *)
 
-let rec load_object : type a. (a -> exp_object) -> int -> Nametab.object_prefix * a -> unit = fun view i (prefix, obj) ->
+let rec load_object : type a. (a -> exp_object) -> int -> object_prefix * a -> unit = fun view i (prefix, obj) ->
   match view obj with
   | AtomicObject o -> Libobject.load_object i (prefix, o)
   | ModuleObject (id,sobjs) ->
@@ -447,7 +447,7 @@ let rec load_object : type a. (a -> exp_object) -> int -> Nametab.object_prefix 
     let sp, kn = Lib.make_oname prefix id in
     load_escape i (dir_of_sp sp) (mp_of_kn kn) objs
 
-and load_objects : type a. (a -> exp_object) -> int -> Nametab.object_prefix -> a list -> unit = fun view i prefix objs ->
+and load_objects : type a. (a -> exp_object) -> int -> object_prefix -> a list -> unit = fun view i prefix objs ->
   List.iter (fun obj -> load_object view i (prefix, obj)) objs
 
 and load_include i (prefix, aobjs) =
@@ -455,19 +455,19 @@ and load_include i (prefix, aobjs) =
 
 and load_keep i obj_dir obj_mp kobjs =
   (* Invariant : seg isn't empty *)
-  let prefix = Nametab.{ obj_dir ; obj_mp; } in
+  let prefix = { obj_dir ; obj_mp; } in
   let modobjs =
     try ModObjs.get obj_mp
     with Not_found -> assert false (* a substobjs should already be loaded *)
   in
-  assert Nametab.(eq_op modobjs.module_prefix prefix);
+  assert (eq_object_prefix modobjs.module_prefix prefix);
   assert (List.is_empty modobjs.module_keep_objects.keep_objects);
   ModObjs.set obj_mp { modobjs with module_keep_objects = kobjs };
   load_objects keep_view (i+1) prefix kobjs.keep_objects
 
 and load_escape i obj_dir obj_mp eobjs =
   (* Invariant : seg isn't empty *)
-  let prefix = Nametab.{ obj_dir ; obj_mp; } in
+  let prefix = { obj_dir ; obj_mp; } in
   let modobjs =
     try ModObjs.get obj_mp
     with Not_found ->
@@ -478,13 +478,13 @@ and load_escape i obj_dir obj_mp eobjs =
         module_escape_objects = { escape_objects = [] };
       }
   in
-  assert Nametab.(eq_op modobjs.module_prefix prefix);
+  assert (eq_object_prefix modobjs.module_prefix prefix);
   assert (List.is_empty modobjs.module_escape_objects.escape_objects);
   ModObjs.set obj_mp { modobjs with module_escape_objects = eobjs };
   load_objects escape_view (i+1) prefix eobjs.escape_objects
 
 and load_module i obj_dir obj_mp sobjs =
-  let prefix = Nametab.{ obj_dir ; obj_mp; } in
+  let prefix = { obj_dir ; obj_mp; } in
   Actions.enter_module obj_mp obj_dir i;
   ModSubstObjs.set obj_mp sobjs;
   (* If we're not a functor, let's iter on the internal components *)
@@ -605,12 +605,12 @@ and open_export f i mpl =
 
 and open_keep f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
-  let prefix = Nametab.{ obj_dir; obj_mp; } in
+  let prefix = { obj_dir; obj_mp; } in
   open_objects keep_view f (i+1) prefix kobjs.keep_objects
 
 and open_escape f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
-  let prefix = Nametab.{ obj_dir; obj_mp; } in
+  let prefix = { obj_dir; obj_mp; } in
   open_objects escape_view f (i+1) prefix kobjs.escape_objects
 
 let cache_include (prefix, aobjs) =
@@ -905,12 +905,12 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
 let end_module () =
   let oldprefix,fs,objects = Lib.Synterp.end_module () in
   let m_info = openmod_syntax_info () in
-  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
+  let olddp, id = split_dirpath oldprefix.obj_dir in
   let mp,objects = end_module_core id m_info objects fs in
 
   let () = SynterpVisitor.add_leaves objects in
 
-  assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
+  assert (DirPath.equal (Lib.prefix()).obj_dir olddp);
   mp
 
 let get_functor_sobjs is_mod inl (mbids,mexpr) =
@@ -1081,7 +1081,7 @@ let start_module export id args res =
   let fs = Summary.Interp.freeze_summaries () in
   let mp, res_entry_o, subtyps, _, _ = start_module_core id args res in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
-  let _ : Nametab.object_prefix = Lib.Interp.start_module export id mp fs in
+  let _ : object_prefix = Lib.Interp.start_module export id mp fs in
   mp
 
 let end_module_core id m_info objects fs =
@@ -1127,13 +1127,13 @@ let end_module_core id m_info objects fs =
 let end_module () =
   let oldprefix,fs,objects = Lib.Interp.end_module () in
   let m_info = !openmod_info in
-  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
+  let olddp, id = split_dirpath oldprefix.obj_dir in
   let mp,objects = end_module_core id m_info objects fs in
 
   let () = InterpVisitor.add_leaves objects in
 
   (* Name consistency check : kernel vs. library *)
-  assert (ModPath.equal oldprefix.Nametab.obj_mp mp);
+  assert (ModPath.equal oldprefix.obj_mp mp);
 
   mp
 
@@ -1223,7 +1223,7 @@ let end_modtype_core id mbids objects fs =
 
 let end_modtype () =
   let oldprefix,fs,objects = Lib.Synterp.end_modtype () in
-  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
+  let olddp, id = split_dirpath oldprefix.obj_dir in
   let objects = end_modtype_core id (openmod_syntax_info ()).cur_mbids objects fs in
   SynterpVisitor.add_leaves objects;
   (openmod_syntax_info ()).cur_mp
@@ -1280,13 +1280,13 @@ let end_modtype_core id sub_mty_l objects fs =
 
 let end_modtype () =
   let oldprefix,fs,objects = Lib.Interp.end_modtype () in
-  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
+  let olddp, id = split_dirpath oldprefix.obj_dir in
   let sub_mty_l = !openmodtype_info in
   let mp, objects = end_modtype_core id sub_mty_l objects fs in
   let () = InterpVisitor.add_leaves objects in
   (* Check name consistence : start_ vs. end_modtype, kernel vs. library *)
-  assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
-  assert (ModPath.equal oldprefix.Nametab.obj_mp mp);
+  assert (DirPath.equal (Lib.prefix()).obj_dir olddp);
+  assert (ModPath.equal oldprefix.obj_mp mp);
   mp
 
 let declare_modtype id args mtys (mte,base,kind,inl) =

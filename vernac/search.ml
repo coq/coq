@@ -83,7 +83,7 @@ let generic_search env sigma (fn : GlobRef.t -> Decls.logical_kind option -> env
     | AtomicObject o ->
       let handler =
         DynHandle.add Declare.Internal.Constant.tag begin fun (id,obj) ->
-          let kn = KerName.make prefix.Nametab.obj_mp (Label.of_id id) in
+          let kn = KerName.make prefix.obj_mp (Label.of_id id) in
           let cst = Global.constant_of_delta_kn kn in
           let gr = GlobRef.ConstRef cst in
           let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
@@ -91,7 +91,7 @@ let generic_search env sigma (fn : GlobRef.t -> Decls.logical_kind option -> env
           fn gr (Some kind) env sigma typ
         end @@
         DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
-          let kn = KerName.make prefix.Nametab.obj_mp (Label.of_id id) in
+          let kn = KerName.make prefix.obj_mp (Label.of_id id) in
           let mind = Global.mind_of_delta_kn kn in
           let mib = Global.lookup_mind mind in
           let iter_packet i mip =

@@ -144,7 +144,16 @@ and keep_objects = { keep_objects : t list }
 
 and escape_objects = { escape_objects : t list }
 
-type 'a stored_decl = O : ('a, Nametab.object_prefix * 'a, 'd) object_declaration -> 'a stored_decl
+type object_prefix = {
+  obj_dir : Names.DirPath.t;
+  obj_mp  : Names.ModPath.t;
+}
+
+let eq_object_prefix op1 op2 =
+  Names.DirPath.equal op1.obj_dir op2.obj_dir &&
+  Names.ModPath.equal op1.obj_mp  op2.obj_mp
+
+type 'a stored_decl = O : ('a, object_prefix * 'a, 'd) object_declaration -> 'a stored_decl
 
 module DynMap = Dyn.Map (struct type 'a t = 'a stored_decl end)
 
@@ -156,7 +165,7 @@ let declare_object_gen odecl =
   let () = cache_tab := DynMap.add tag (O odecl) !cache_tab in
   tag
 
-let make_oname Nametab.{ obj_dir; obj_mp } id =
+let make_oname { obj_dir; obj_mp } id =
   Libnames.make_path obj_dir id, Names.KerName.make obj_mp (Names.Label.of_id id)
 
 let declare_named_object_full odecl =

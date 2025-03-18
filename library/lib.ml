@@ -15,23 +15,23 @@ type is_type = bool (* Module Type or just Module *)
 type export_flag = Export | Import
 type export = (export_flag * Libobject.open_filter) option (* None for a Module Type *)
 
-let make_oname Nametab.{ obj_dir; obj_mp } id =
+let make_oname Libobject.{ obj_dir; obj_mp } id =
   Names.(Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
 
 let oname_prefix (sp, kn) =
-  { Nametab.obj_dir = Libnames.dirpath sp; obj_mp = KerName.modpath kn }
+  { Libobject.obj_dir = Libnames.dirpath sp; obj_mp = KerName.modpath kn }
 
 type 'summary node =
-  | CompilingLibrary of Nametab.object_prefix
-  | OpenedModule of is_type * export * Nametab.object_prefix * 'summary
-  | OpenedSection of Nametab.object_prefix * 'summary
+  | CompilingLibrary of Libobject.object_prefix
+  | OpenedModule of is_type * export * Libobject.object_prefix * 'summary
+  | OpenedSection of Libobject.object_prefix * 'summary
 
 let node_prefix = function
   | CompilingLibrary prefix
   | OpenedModule (_,_,prefix,_)
   | OpenedSection (prefix,_) -> prefix
 
-let prefix_id prefix = snd (Libnames.split_dirpath prefix.Nametab.obj_dir)
+let prefix_id prefix = snd (Libnames.split_dirpath prefix.Libobject.obj_dir)
 
 type 'summary library_segment = ('summary node * Libobject.t list) list
 
@@ -112,7 +112,7 @@ let open_blocks_message es =
    sections, but on the contrary there are many constructions of section
    paths based on the library path. *)
 
-let dummy_prefix = Nametab.{
+let dummy_prefix = Libobject.{
   obj_dir = DirPath.dummy;
   obj_mp  = ModPath.dummy;
 }
@@ -120,7 +120,7 @@ let dummy_prefix = Nametab.{
 type synterp_state = {
   comp_name : DirPath.t option;
   lib_stk : Summary.Synterp.frozen library_segment;
-  path_prefix : Nametab.object_prefix;
+  path_prefix : Libobject.object_prefix;
 }
 
 let dummy = {
@@ -148,7 +148,7 @@ let start_compilation s mp =
   assert (List.is_empty !interp_state);
   if Global.sections_are_opened () then (* XXX not sure if we need this check *)
     CErrors.user_err Pp.(str "some sections are already opened");
-  let prefix = Nametab.{ obj_dir = s; obj_mp = mp } in
+  let prefix = Libobject.{ obj_dir = s; obj_mp = mp } in
   let initial_stk = [ CompilingLibrary prefix, [] ] in
   let st = {
     comp_name = Some s;
@@ -181,8 +181,8 @@ let library_dp () =
    module path and relative section path *)
 
 let prefix () = !synterp_state.path_prefix
-let cwd () = !synterp_state.path_prefix.Nametab.obj_dir
-let current_mp () = !synterp_state.path_prefix.Nametab.obj_mp
+let cwd () = !synterp_state.path_prefix.Libobject.obj_dir
+let current_mp () = !synterp_state.path_prefix.Libobject.obj_mp
 
 let sections_depth () =
   !synterp_state.lib_stk |> List.count (function
@@ -232,7 +232,7 @@ let pop_path_prefix () =
   let op = !synterp_state.path_prefix in
   synterp_state := {
     !synterp_state
-    with path_prefix = Nametab.{
+    with path_prefix = Libobject.{
         op with obj_dir = Libnames.pop_dirpath op.obj_dir;
       } }
 
@@ -307,7 +307,7 @@ let discharge_item = Libobject.(function
 (* Misc *)
 
 let mp_of_global = let open GlobRef in function
-  | VarRef id -> !synterp_state.path_prefix.Nametab.obj_mp
+  | VarRef id -> !synterp_state.path_prefix.Libobject.obj_mp
   | ConstRef cst -> Names.Constant.modpath cst
   | IndRef ind -> Names.Ind.modpath ind
   | ConstructRef constr -> Names.Construct.modpath constr
@@ -361,7 +361,7 @@ module type LibActions = sig
 
   val add_entry : summary node -> unit
   val add_leaf_entry : Libobject.t -> unit
-  val start_mod : is_type:is_type -> export -> Id.t -> ModPath.t -> summary -> Nametab.object_prefix
+  val start_mod : is_type:is_type -> export -> Id.t -> ModPath.t -> summary -> Libobject.object_prefix
 
   val get_lib_stk : unit -> summary library_segment
   val set_lib_stk : summary library_segment -> unit
@@ -408,8 +408,8 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
 
   (* Returns the opening node of a given name *)
   let start_mod ~is_type export id mp fs =
-    let dir = Libnames.add_dirpath_suffix !synterp_state.path_prefix.Nametab.obj_dir id in
-    let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; } in
+    let dir = Libnames.add_dirpath_suffix !synterp_state.path_prefix.Libobject.obj_dir id in
+    let prefix = Libobject.{ obj_dir = dir; obj_mp = mp; } in
     assert (not (sections_are_opened()));
     add_entry (OpenedModule (is_type,export,prefix,fs));
     synterp_state := { !synterp_state with path_prefix = prefix } ;
@@ -423,8 +423,8 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
 
   let open_section id =
     let opp = !synterp_state.path_prefix in
-    let obj_dir = Libnames.add_dirpath_suffix opp.Nametab.obj_dir id in
-    let prefix = Nametab.{ obj_dir; obj_mp=opp.obj_mp; } in
+    let obj_dir = Libnames.add_dirpath_suffix opp.Libobject.obj_dir id in
+    let prefix = Libobject.{ obj_dir; obj_mp=opp.obj_mp; } in
     check_section_fresh obj_dir id;
     let fs = Summary.Synterp.freeze_summaries () in
     add_entry (OpenedSection (prefix, fs));
@@ -565,19 +565,19 @@ module type StagedLibS = sig
   (** {6 Modules and module types } *)
   val start_module :
     export -> Id.t -> ModPath.t ->
-    summary -> Nametab.object_prefix
+    summary -> Libobject.object_prefix
 
   val start_modtype :
     Id.t -> ModPath.t ->
-    summary -> Nametab.object_prefix
+    summary -> Libobject.object_prefix
 
   val end_module :
     unit ->
-    Nametab.object_prefix * summary * classified_objects
+    Libobject.object_prefix * summary * classified_objects
 
   val end_modtype :
     unit ->
-    Nametab.object_prefix * summary * classified_objects
+    Libobject.object_prefix * summary * classified_objects
 
   type frozen
 

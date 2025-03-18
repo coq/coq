@@ -201,16 +201,16 @@ let load_replace i (prefix, {repl_local; repl_tac; repl_expr=t}) =
   match repl_local with
   | Local | Export -> ()
   | SuperGlobal ->
-    replace repl_tac prefix.Nametab.obj_mp t
+    replace repl_tac prefix.obj_mp t
 
 let open_replace i (prefix, {repl_local; repl_tac; repl_expr=t}) =
   match repl_local with
   | Local | SuperGlobal -> ()
   | Export ->
-    replace repl_tac prefix.Nametab.obj_mp t
+    replace repl_tac prefix.obj_mp t
 
 let cache_replace (prefix, {repl_local; repl_tac; repl_expr=t}) =
-  replace repl_tac prefix.Nametab.obj_mp t
+  replace repl_tac prefix.obj_mp t
 
 let subst_replace (subst, {repl_local; repl_tac; repl_expr}) =
   { repl_local;
