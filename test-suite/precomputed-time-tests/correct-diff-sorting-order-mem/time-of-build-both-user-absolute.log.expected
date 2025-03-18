@@ -1,26 +1,26 @@
-    After |   Peak Mem | File Name                                      |    Before |   Peak Mem ||    Change || Change (mem) | % Change | % Change (mem)
+    After |   Peak Mem |    Before |   Peak Mem ||    Change || Change (mem) | % Change | % Change (mem) | File Name                                     
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
-19m16.05s | 3302508 ko | Total Time / Peak Mem                          | 21m25.28s | 3307052 ko || -2m09.23s ||     -4544 ko |  -10.05% |         -0.13%
+19m16.05s | 3302508 ko | 21m25.28s | 3307052 ko || -2m09.23s ||     -4544 ko |  -10.05% |         -0.13% | Total Time / Peak Mem                         
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
- 3m09.62s | 3302508 ko | Specific/NISTP256/AMD64/femul                  |  3m22.52s | 3307052 ko || -0m12.90s ||     -4544 ko |   -6.36% |         -0.13%
- 4m01.34s | 1617000 ko | Specific/X25519/C64/ladderstep                 |  4m59.49s | 1621500 ko || -0m58.15s ||     -4500 ko |  -19.41% |         -0.27%
- 2m48.52s | 1589516 ko | Specific/solinas32_2e255m765_13limbs/femul     |  3m12.95s | 1656912 ko || -0m24.43s ||    -67396 ko |  -12.66% |         -4.06%
- 2m23.70s | 1454696 ko | Specific/solinas32_2e255m765_12limbs/femul     |  2m44.11s | 1549104 ko || -0m20.41s ||    -94408 ko |  -12.43% |         -6.09%
- 0m31.50s |  828104 ko | Specific/X25519/C64/freeze                     |  0m33.24s |  826476 ko || -0m01.74s ||      1628 ko |   -5.23% |         +0.19%
- 0m36.32s |  825448 ko | Specific/X25519/C64/femul                      |  0m39.50s |  839624 ko || -0m03.18s ||    -14176 ko |   -8.05% |         -1.68%
- 0m30.13s |  799620 ko | Specific/X25519/C64/fesquare                   |  0m32.24s |  802776 ko || -0m02.11s ||     -3156 ko |   -6.54% |         -0.39%
- 0m35.40s |  799216 ko | Specific/NISTP256/AMD64/feadd                  |  0m37.21s |  797944 ko || -0m01.81s ||      1272 ko |   -4.86% |         +0.15%
- 0m39.59s |  793376 ko | Specific/NISTP256/AMD64/fesub                  |  0m40.09s |  799668 ko || -0m00.50s ||     -6292 ko |   -1.24% |         -0.78%
- 0m24.99s |  786052 ko | Specific/X25519/C64/fecarry                    |  0m26.31s |  787148 ko || -0m01.32s ||     -1096 ko |   -5.01% |         -0.13%
- 0m22.65s |  778792 ko | Specific/X25519/C64/fesub                      |  0m23.72s |  781808 ko || -0m01.07s ||     -3016 ko |   -4.51% |         -0.38%
- 0m20.93s |  766300 ko | Specific/X25519/C64/feadd                      |  0m21.41s |  766168 ko || -0m00.48s ||       132 ko |   -2.24% |         +0.01%
- 0m28.51s |  765208 ko | Specific/NISTP256/AMD64/feopp                  |  0m29.46s |  765212 ko || -0m00.95s ||        -4 ko |   -3.22% |         -0.00%
- 0m25.50s |  756080 ko | Specific/NISTP256/AMD64/fenz                   |  0m26.41s |  756216 ko || -0m00.91s ||      -136 ko |   -3.44% |         -0.01%
- 0m45.75s |  744240 ko | Specific/solinas32_2e255m765_13limbs/Synthesis |  0m45.58s |  744472 ko || +0m00.17s ||      -232 ko |   +0.37% |         -0.03%
- 0m36.92s |  728464 ko | Specific/solinas32_2e255m765_12limbs/Synthesis |  0m36.64s |  729464 ko || +0m00.28s ||     -1000 ko |   +0.76% |         -0.13%
- 0m10.37s |  687760 ko | Specific/X25519/C64/Synthesis                  |  0m10.30s |  687812 ko || +0m00.07s ||       -52 ko |   +0.67% |         -0.00%
- 0m12.55s |  668216 ko | Specific/NISTP256/AMD64/Synthesis              |  0m12.54s |  667664 ko || +0m00.01s ||       552 ko |   +0.07% |         +0.08%
- 0m01.67s |  646300 ko | Specific/Framework/SynthesisFramework          |  0m01.72s |  648632 ko || -0m00.05s ||     -2332 ko |   -2.90% |         -0.35%
- 0m07.18s |  574388 ko | Compilers/Z/Bounds/Pipeline/Definition         |  0m07.22s |  578344 ko || -0m00.04s ||     -3956 ko |   -0.55% |         -0.68%
- 0m01.72s |  544172 ko | Compilers/Z/Bounds/Pipeline/ReflectiveTactics  |  0m01.58s |  546112 ko || +0m00.14s ||     -1940 ko |   +8.86% |         -0.35%
- 0m01.19s |  539808 ko | Compilers/Z/Bounds/Pipeline                    |  0m01.04s |  539160 ko || +0m00.15s ||       648 ko |  +14.42% |         +0.12%
+ 3m09.62s | 3302508 ko |  3m22.52s | 3307052 ko || -0m12.90s ||     -4544 ko |   -6.36% |         -0.13% | Specific/NISTP256/AMD64/femul                 
+ 4m01.34s | 1617000 ko |  4m59.49s | 1621500 ko || -0m58.15s ||     -4500 ko |  -19.41% |         -0.27% | Specific/X25519/C64/ladderstep                
+ 2m48.52s | 1589516 ko |  3m12.95s | 1656912 ko || -0m24.43s ||    -67396 ko |  -12.66% |         -4.06% | Specific/solinas32_2e255m765_13limbs/femul    
+ 2m23.70s | 1454696 ko |  2m44.11s | 1549104 ko || -0m20.41s ||    -94408 ko |  -12.43% |         -6.09% | Specific/solinas32_2e255m765_12limbs/femul    
+ 0m31.50s |  828104 ko |  0m33.24s |  826476 ko || -0m01.74s ||      1628 ko |   -5.23% |         +0.19% | Specific/X25519/C64/freeze                    
+ 0m36.32s |  825448 ko |  0m39.50s |  839624 ko || -0m03.18s ||    -14176 ko |   -8.05% |         -1.68% | Specific/X25519/C64/femul                     
+ 0m30.13s |  799620 ko |  0m32.24s |  802776 ko || -0m02.11s ||     -3156 ko |   -6.54% |         -0.39% | Specific/X25519/C64/fesquare                  
+ 0m35.40s |  799216 ko |  0m37.21s |  797944 ko || -0m01.81s ||      1272 ko |   -4.86% |         +0.15% | Specific/NISTP256/AMD64/feadd                 
+ 0m39.59s |  793376 ko |  0m40.09s |  799668 ko || -0m00.50s ||     -6292 ko |   -1.24% |         -0.78% | Specific/NISTP256/AMD64/fesub                 
+ 0m24.99s |  786052 ko |  0m26.31s |  787148 ko || -0m01.32s ||     -1096 ko |   -5.01% |         -0.13% | Specific/X25519/C64/fecarry                   
+ 0m22.65s |  778792 ko |  0m23.72s |  781808 ko || -0m01.07s ||     -3016 ko |   -4.51% |         -0.38% | Specific/X25519/C64/fesub                     
+ 0m20.93s |  766300 ko |  0m21.41s |  766168 ko || -0m00.48s ||       132 ko |   -2.24% |         +0.01% | Specific/X25519/C64/feadd                     
+ 0m28.51s |  765208 ko |  0m29.46s |  765212 ko || -0m00.95s ||        -4 ko |   -3.22% |         -0.00% | Specific/NISTP256/AMD64/feopp                 
+ 0m25.50s |  756080 ko |  0m26.41s |  756216 ko || -0m00.91s ||      -136 ko |   -3.44% |         -0.01% | Specific/NISTP256/AMD64/fenz                  
+ 0m45.75s |  744240 ko |  0m45.58s |  744472 ko || +0m00.17s ||      -232 ko |   +0.37% |         -0.03% | Specific/solinas32_2e255m765_13limbs/Synthesis
+ 0m36.92s |  728464 ko |  0m36.64s |  729464 ko || +0m00.28s ||     -1000 ko |   +0.76% |         -0.13% | Specific/solinas32_2e255m765_12limbs/Synthesis
+ 0m10.37s |  687760 ko |  0m10.30s |  687812 ko || +0m00.07s ||       -52 ko |   +0.67% |         -0.00% | Specific/X25519/C64/Synthesis                 
+ 0m12.55s |  668216 ko |  0m12.54s |  667664 ko || +0m00.01s ||       552 ko |   +0.07% |         +0.08% | Specific/NISTP256/AMD64/Synthesis             
+ 0m01.67s |  646300 ko |  0m01.72s |  648632 ko || -0m00.05s ||     -2332 ko |   -2.90% |         -0.35% | Specific/Framework/SynthesisFramework         
+ 0m07.18s |  574388 ko |  0m07.22s |  578344 ko || -0m00.04s ||     -3956 ko |   -0.55% |         -0.68% | Compilers/Z/Bounds/Pipeline/Definition        
+ 0m01.72s |  544172 ko |  0m01.58s |  546112 ko || +0m00.14s ||     -1940 ko |   +8.86% |         -0.35% | Compilers/Z/Bounds/Pipeline/ReflectiveTactics 
+ 0m01.19s |  539808 ko |  0m01.04s |  539160 ko || +0m00.15s ||       648 ko |  +14.42% |         +0.12% | Compilers/Z/Bounds/Pipeline                   
