@@ -201,7 +201,7 @@ let blacklist_filter : filter_function = fun ref kind env sigma typ ->
 
 let module_filter : _ -> filter_function = fun mods ref kind env sigma typ ->
   let sp = Nametab.path_of_global ref in
-  let sl = dirpath sp in
+  let sl = pop_dirpath @@ dirpath_of_path sp in
   match mods with
   | SearchOutside mods ->
     let is_outside md = not (is_dirpath_prefix_of md sl) in
@@ -321,7 +321,7 @@ let interface_search env sigma =
   in
   let filter_function ref kind env sigma constr =
     let id = Names.Id.to_string (Nametab.basename_of_global ref) in
-    let path = Libnames.dirpath (Nametab.path_of_global ref) in
+    let path = pop_dirpath @@ dirpath_of_path (Nametab.path_of_global ref) in
     let toggle x b = if x then b else not b in
     let match_name (regexp, flag) =
       toggle (Str.string_match regexp id 0) flag

@@ -72,16 +72,37 @@ let dirpath_of_string s =
   in
   DirPath.make path
 
-(*s Section paths are absolute names *)
+(** Absolute paths *)
 
 type full_path = {
-  dirpath : DirPath.t ;
-  basename : Id.t }
+  dirpath : DirPath.t;
+  basename : Id.t;
+}
 
 let dirpath sp = sp.dirpath
 let basename sp = sp.basename
 
+let dirpath_of_path { dirpath; basename } =
+  add_dirpath_suffix dirpath basename
+
 let make_path pa id = { dirpath = pa; basename = id }
+
+let make_path0 dp =
+  let dp, id = split_dirpath dp in
+  make_path dp id
+
+let dummy_full_path = make_path0 DirPath.dummy
+
+let add_path_suffix { dirpath = pa0; basename = id0 } id =
+  { dirpath = add_dirpath_suffix pa0 id0; basename = id }
+
+let path_pop_n_suffixes n ({ dirpath = dp; } as path) =
+  if n = 0 then path
+  else
+    let dp = pop_dirpath_n (n-1) dp in
+    make_path0 dp
+
+let path_pop_suffix p = path_pop_n_suffixes 1 p
 
 let repr_path { dirpath = pa; basename = id } = (pa,id)
 
