@@ -589,7 +589,7 @@ let classes_dirpath =
   DirPath.make (List.map Id.of_string ["Classes";"Corelib"])
 
 let init_setoid () =
-  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
+  if is_dirpath_prefix_of classes_dirpath (Libnames.dirpath_of_path @@ Lib.cwd ()) then ()
   else check_required_library ["Corelib";"Setoids";"Setoid"]
 
 let check_setoid cl =

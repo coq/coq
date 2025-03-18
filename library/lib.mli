@@ -61,15 +61,15 @@ val contents : unit -> Summary.Interp.frozen library_segment
     - cwd = A.B.M.S
     - cwd_except_section = A.B.M
     - current_dirpath true = M.S
-    - current_dirpath false = S
+    - current_dirpath false = M
     - current_mp = MPdot(MPfile A.B, M)
 
     make_path (resp make_path_except_section) uses cwd (resp cwd_except_section)
     make_kn uses current_mp
 *)
 val prefix : unit -> Libobject.object_prefix
-val cwd : unit -> DirPath.t
-val cwd_except_section : unit -> DirPath.t
+val cwd : unit -> Libnames.full_path
+val cwd_except_section : unit -> Libnames.full_path
 val current_dirpath : bool -> DirPath.t (* false = except sections *)
 val make_path : Id.t -> Libnames.full_path
 val make_path_except_section : Id.t -> Libnames.full_path

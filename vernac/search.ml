@@ -202,12 +202,12 @@ let blacklist_filter : filter_function = fun ref kind env sigma typ ->
 let module_filter : _ -> filter_function = fun mods ref kind env sigma typ ->
   let sp = Nametab.path_of_global ref in
   let sl = pop_dirpath @@ dirpath_of_path sp in
+  let is_inside md = is_dirpath_prefix_of (dirpath_of_path md) sl in
   match mods with
   | SearchOutside mods ->
-    let is_outside md = not (is_dirpath_prefix_of md sl) in
+    let is_outside md = not (is_inside md) in
     List.for_all is_outside mods
   | SearchInside mods ->
-    let is_inside md = is_dirpath_prefix_of md sl in
     List.is_empty mods || List.exists is_inside mods
 
 let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
@@ -292,7 +292,7 @@ type search_constraint =
   | Name_Pattern of Str.regexp
   | Type_Pattern of Pattern.constr_pattern
   | SubType_Pattern of Pattern.constr_pattern
-  | In_Module of Names.DirPath.t
+  | In_Module of full_path
   | Include_Blacklist
 
 type 'a coq_object = {
@@ -335,7 +335,7 @@ let interface_search env sigma =
            env sigma pat (EConstr.of_constr constr)) flag
     in
     let match_module (mdl, flag) =
-      toggle (Libnames.is_dirpath_prefix_of mdl path) flag
+      toggle (Libnames.is_dirpath_prefix_of (dirpath_of_path mdl) path) flag
     in
     List.for_all match_name name &&
     List.for_all match_type tpe &&

@@ -671,15 +671,15 @@ let print_abbreviation access env sigma kn =
 
 (** Unused outside? *)
 
-let pr_prefix_name prefix = Id.print (snd (split_dirpath prefix.obj_dir))
+let pr_prefix_name prefix = Id.print (basename prefix.obj_path)
 
 let print_library_node = function
   | Lib.OpenedSection (prefix, _) ->
     str " >>>>>>> Section " ++ pr_prefix_name prefix
   | Lib.OpenedModule (_,_,prefix,_) ->
     str " >>>>>>> Module " ++ pr_prefix_name prefix
-  | Lib.CompilingLibrary { obj_dir; _ } ->
-    str " >>>>>>> Library " ++ DirPath.print obj_dir
+  | Lib.CompilingLibrary { obj_path; _ } ->
+    str " >>>>>>> Library " ++ pr_path obj_path
 
 (** Printing part of command [Check] *)
 
@@ -851,8 +851,8 @@ let read_sec_context qid =
     with Not_found ->
       user_err ?loc:qid.loc (str "Unknown section.") in
   let rec get_cxt in_cxt = function
-    | (Lib.OpenedSection ({obj_dir;_},_), _ as hd)::rest ->
-        if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
+    | (Lib.OpenedSection ({obj_path;_},_), _ as hd)::rest ->
+        if eq_full_path dir obj_path then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest
   in
@@ -955,11 +955,11 @@ let pr_located_qualid env = function
         let open GlobDirRef in match dir with
         | DirOpenModule mp -> "Open Module", ModPath.print mp
         | DirOpenModtype mp -> "Open Module Type", ModPath.print mp
-        | DirOpenSection dir -> "Open Section", DirPath.print dir
+        | DirOpenSection dir -> "Open Section", pr_path dir
       in
       str s ++ spc () ++ mp
   | Module mp ->
-    str "Module" ++ spc () ++ DirPath.print (Nametab.dirpath_of_module mp)
+    str "Module" ++ spc () ++ pr_path (Nametab.path_of_module mp)
   | ModuleType mp ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
   | Other (obj, info) -> info.name obj

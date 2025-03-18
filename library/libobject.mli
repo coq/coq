@@ -206,20 +206,20 @@ val declare_named_object :
   ('a, object_name * 'a, _) object_declaration -> (Id.t -> 'a -> obj)
 
 (** Object prefix morally contains the "prefix" naming of an object to
-   be stored by [library], where [obj_dir] is the "absolute" path and
+   be stored by [library], where [obj_path] is the "absolute" path and
    [obj_mp] is the current "module" prefix.
 
     Thus, for an object living inside [Module A. Section B.] the
    prefix would be:
 
-    [ { obj_dir = "A.B"; obj_mp = "A"; } ]
+    [ { obj_path = "A.B"; obj_mp = "A"; } ]
 
-    Note that [obj_dir] is a "path" that is to say,
+    Note that [obj_path] is a "path" that is to say,
    as opposed to [obj_mp] which is a single module name.
 
  *)
 type object_prefix = {
-  obj_dir : DirPath.t;
+  obj_path : Libnames.full_path;
   obj_mp  : ModPath.t;
 }
 

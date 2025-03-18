@@ -1368,12 +1368,12 @@ let add_subnames_of ?loc len n ns full_n ref =
       ns Sorts.all_families
 
 let interp_names m ns =
-  let dp_m = Nametab.dirpath_of_module m in
+  let dp_m = Nametab.path_of_module m in
   let ns =
     List.fold_left (fun ns (n,etc) ->
         let len, full_n =
           let dp_n,n = repr_qualid n in
-          List.length (DirPath.repr dp_n), make_path (append_dirpath dp_m dp_n) n
+          List.length (DirPath.repr dp_n), add_path_suffix (append_path dp_m dp_n) n
         in
         let ref = try importable_extended_global_of_path ?loc:n.loc full_n
           with Not_found ->
