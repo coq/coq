@@ -19,6 +19,30 @@ let fatal msg =
 
 let mk_code s = { code = s; loc = None }
 
+(** Annotating at the end of user code with the current line of the generated file.
+
+    To get the current line while generating the output we would need
+    to flush format and either intercept format's output
+    (Format.formatter_of_out_functions) or read the generated file as
+    we generate it. This is both inconvenient to write, and also the
+    flushing breaks the formatting.
+
+    Instead we generate the code with the following dummy annotation
+    and afterwards replace it with the real annotation.
+*)
+let exit_code_str = "# COQPP EXIT CODE"
+
+let exit_code fmt () =
+  fprintf fmt "@<0>%s" ("\n"^exit_code_str^"\n")
+
+let fix_exit_code ~filename str =
+  let lines = String.split_on_char '\n' str in
+  let lines = List.mapi (fun i l ->
+      if String.equal l exit_code_str then
+        asprintf "# %i \"%s\"" (i+2) filename
+      else l) lines in
+  String.concat "\n" lines
+
 let print_code fmt c =
   match c.loc with
   | None -> fprintf fmt "%s" c.code
@@ -27,7 +51,8 @@ let print_code fmt c =
     let loc = loc.loc_start in
     let padding = String.make (loc.pos_cnum - loc.pos_bol + 1) ' ' in
     let code_insert = asprintf "\n# %i \"%s\"\n%s%s" loc.pos_lnum loc.pos_fname padding c.code in
-    fprintf fmt "@[@<0>%s@]@\n" code_insert
+    fprintf fmt "@[@<0>%s@]" code_insert;
+    exit_code fmt ()
 
 module StringSet = Set.Make(String)
 
@@ -712,10 +737,11 @@ let main args =
   let file = parse args in
   let output = output_name file in
   let ast = parse_file file in
-  let chan = open_out output in
   let () = file_name := Filename.basename file in
-  let fmt = formatter_of_out_channel chan in
-  let iter ast = Format.fprintf fmt "@[%a@]%!" pr_ast ast in
-  let () = List.iter iter ast in
+  let iter fmt ast = Format.fprintf fmt "@[%a@]%!" pr_ast ast in
+  let str = asprintf "%a" (fun fmt ast -> List.iter (iter fmt) ast) ast in
+  let str = fix_exit_code ~filename:output str in
+  let chan = open_out output in
+  let () = output_string chan str in
   let () = close_out chan in
   exit 0
