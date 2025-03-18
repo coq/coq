@@ -41,6 +41,8 @@ val make_path : DirPath.t -> Id.t -> full_path
 
 val add_path_suffix : full_path -> Id.t -> full_path
 
+val append_path : full_path -> DirPath.t -> full_path
+
 (** Destructors of [full_path] *)
 val repr_path : full_path -> DirPath.t * Id.t
 
@@ -57,6 +59,8 @@ val basename : full_path -> Id.t
 
 (** The full path as a [DirPath.t]. *)
 val dirpath_of_path : full_path -> DirPath.t
+
+val is_path_prefix_of : full_path -> DirPath.t -> bool
 
 (** Parsing and printing of section path as ["root.module.id"] *)
 val path_of_string : string -> full_path

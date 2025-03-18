@@ -24,7 +24,7 @@ let _ = CErrors.register_handler (function
 
 type universe_source =
   | BoundUniv (* polymorphic universe, bound in a function (this will go away someday) *)
-  | QualifiedUniv of Id.t list (* global universe introduced by some global value *)
+  | QualifiedUniv of DirPath.t (* global universe introduced by some global value *)
   | UnqualifiedUniv (* other global universe, todo merge with [QualifiedUniv []] *)
 
 type universe_name_decl = universe_source * (Id.t * UGlobal.t) list
@@ -37,10 +37,10 @@ let check_exists_universe sp =
 let qualify_univ i dp src id =
   match src with
   | BoundUniv | UnqualifiedUniv ->
-    i,  Libnames.make_path dp id
+    i,  Libnames.add_path_suffix dp id
   | QualifiedUniv l ->
-    let dp = DirPath.repr dp in
-    Nametab.map_visibility (fun n -> n + List.length l) i, Libnames.make_path (DirPath.make (List.append l dp)) id
+    let path = Libnames.append_path dp l in
+    Nametab.map_visibility (fun n -> n + List.length (DirPath.repr l)) i, Libnames.add_path_suffix path id
 
 let do_univ_name ~check i dp src (id,univ) =
   let i, sp = qualify_univ i dp src id in
@@ -49,14 +49,14 @@ let do_univ_name ~check i dp src (id,univ) =
 
 let cache_univ_names (prefix, (src, univs)) =
   let depth = Lib.sections_depth () in
-  let dp = Libnames.pop_dirpath_n depth prefix.Libobject.obj_dir in
+  let dp = Libnames.path_pop_n_suffixes depth prefix.Libobject.obj_path in
   List.iter (do_univ_name ~check:true (Nametab.Until 1) dp src) univs
 
 let load_univ_names i (prefix, (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Until i) prefix.Libobject.obj_dir src) univs
+  List.iter (do_univ_name ~check:false (Nametab.Until i) prefix.Libobject.obj_path src) univs
 
 let open_univ_names i (prefix, (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Exactly i) prefix.Libobject.obj_dir src) univs
+  List.iter (do_univ_name ~check:false (Nametab.Exactly i) prefix.Libobject.obj_path src) univs
 
 let discharge_univ_names = function
   | BoundUniv, _ -> None
@@ -79,7 +79,7 @@ let input_univ_names (src, l) =
 let invent_name prefix (named,cnt) u =
   let rec aux i =
     let na = Id.of_string ("u"^(string_of_int i)) in
-    let sp = Libnames.make_path prefix na in
+    let sp = Libnames.add_path_suffix prefix na in
     if Id.Map.mem na named || Nametab.exists_universe sp then aux (i+1)
     else na, (Id.Map.add na u named, i+1)
   in
@@ -111,20 +111,23 @@ let declare_univ_binders gr (univs, pl) =
         pl (Level.Set.empty,[])
     in
     (* then invent names for the rest *)
-    let prefix = DirPath.make (l :: DirPath.repr (Lib.cwd_except_section())) in
+    let prefix = Libnames.add_path_suffix (Lib.cwd_except_section()) l in
     let _, univs = Level.Set.fold (fun univ (aux,univs) ->
         let id, aux = invent_name prefix aux univ in
         let univ = Option.get (Level.name univ) in
         aux, (id,univ) :: univs)
         (Level.Set.diff levels named) ((pl,0),univs)
     in
-    input_univ_names (QualifiedUniv [l], univs)
+    input_univ_names (QualifiedUniv (DirPath.make [l]), univs)
 
 let name_mono_section_univs univs =
   if Level.Set.is_empty univs then ()
   else
   let prefix = Lib.cwd () in
-  let sections = DirPath.repr @@ Libnames.drop_dirpath_prefix (Lib.cwd_except_section()) prefix in
+  let sections = let open Libnames in
+    drop_dirpath_prefix (dirpath_of_path @@ Lib.cwd_except_section())
+      (dirpath_of_path prefix)
+  in
   let _, univs = Level.Set.fold (fun univ (aux,univs) ->
       let id, aux = invent_name prefix aux univ in
       let univ = Option.get (Level.name univ) in

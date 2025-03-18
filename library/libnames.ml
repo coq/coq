@@ -85,6 +85,8 @@ let basename sp = sp.basename
 let dirpath_of_path { dirpath; basename } =
   add_dirpath_suffix dirpath basename
 
+let is_path_prefix_of p dp = is_dirpath_prefix_of (dirpath_of_path p) dp
+
 let make_path pa id = { dirpath = pa; basename = id }
 
 let make_path0 dp =
@@ -95,6 +97,12 @@ let dummy_full_path = make_path0 DirPath.dummy
 
 let add_path_suffix { dirpath = pa0; basename = id0 } id =
   { dirpath = add_dirpath_suffix pa0 id0; basename = id }
+
+let append_path ({ dirpath = dp; basename = id0 } as p) dp' =
+  if DirPath.is_empty dp' then p
+  else
+    let dp', id = split_dirpath dp' in
+    { dirpath = append_dirpath (add_dirpath_suffix dp id0) dp'; basename = id }
 
 let path_pop_n_suffixes n ({ dirpath = dp; } as path) =
   if n = 0 then path

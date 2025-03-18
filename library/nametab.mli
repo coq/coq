@@ -61,7 +61,7 @@ module GlobDirRef : sig
   type t =
     | DirOpenModule of ModPath.t
     | DirOpenModtype of ModPath.t
-    | DirOpenSection of DirPath.t
+    | DirOpenSection of full_path
   val equal : t -> t -> bool
 end
 
@@ -86,8 +86,8 @@ val map_visibility : (int -> int) -> visibility -> visibility
 
 val push : ?user_warns:Globnames.extended_global_reference UserWarn.with_qf -> visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
-val push_module : visibility -> DirPath.t -> ModPath.t -> unit
-val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
+val push_module : visibility -> full_path -> ModPath.t -> unit
+val push_dir : visibility -> full_path -> GlobDirRef.t -> unit
 val push_abbreviation : ?user_warns:Globnames.extended_global_reference UserWarn.with_qf -> visibility -> full_path -> Globnames.abbreviation -> unit
 
 val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
@@ -110,7 +110,7 @@ val locate_abbreviation : qualid -> Globnames.abbreviation
 val locate_modtype : qualid -> ModPath.t
 val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
-val locate_section : qualid -> DirPath.t
+val locate_section : qualid -> full_path
 val locate_universe : qualid -> Univ.UGlobal.t
 
 val locate_extended_nowarn : qualid -> Globnames.extended_global_reference
@@ -150,8 +150,8 @@ val extended_global_of_path : full_path -> Globnames.extended_global_reference
 
 val exists_cci : full_path -> bool
 val exists_modtype : full_path -> bool
-val exists_module : DirPath.t -> bool
-val exists_dir : DirPath.t -> bool
+val exists_module : full_path -> bool
+val exists_dir : full_path -> bool
 val exists_universe : full_path -> bool
 
 (** {6 These functions declare (resp. return) the source location of the object if known } *)
@@ -162,7 +162,7 @@ val cci_src_loc : Globnames.extended_global_reference -> Loc.t option
 (** {6 These functions locate qualids into full user names } *)
 
 val full_name_modtype : qualid -> full_path
-val full_name_module : qualid -> DirPath.t
+val full_name_module : qualid -> full_path
 
 (** {6 Reverse lookup }
   Finding user names corresponding to the given
@@ -173,7 +173,7 @@ val full_name_module : qualid -> DirPath.t
 
 val path_of_abbreviation : Globnames.abbreviation -> full_path
 val path_of_global : GlobRef.t -> full_path
-val dirpath_of_module : ModPath.t -> DirPath.t
+val path_of_module : ModPath.t -> full_path
 val path_of_modtype : ModPath.t -> full_path
 
 (** A universe_id might not be registered with a corresponding user name.

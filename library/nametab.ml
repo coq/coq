@@ -17,12 +17,12 @@ module GlobDirRef = struct
   type t =
     | DirOpenModule of ModPath.t
     | DirOpenModtype of ModPath.t
-    | DirOpenSection of DirPath.t
+    | DirOpenSection of full_path
 
   let equal r1 r2 = match r1, r2 with
     | DirOpenModule op1, DirOpenModule op2 -> ModPath.equal op1 op2
     | DirOpenModtype op1, DirOpenModtype op2 -> ModPath.equal op1 op2
-    | DirOpenSection op1, DirOpenSection op2 -> DirPath.equal op1 op2
+    | DirOpenSection op1, DirOpenSection op2 -> eq_full_path op1 op2
     | (DirOpenModule _ | DirOpenModtype _ | DirOpenSection _), _ -> false
 
 end
@@ -419,16 +419,8 @@ module MPTab = Make(FullPath)(MPEqual)
 type ccitab = ExtRefTab.t
 let the_ccitab = Summary.ref ~name:"ccitab" (ExtRefTab.empty : ccitab)
 
-module DirPath' =
-struct
-  include DirPath
-  let repr dir = match DirPath.repr dir with
-    | [] -> CErrors.anomaly (Pp.str "Empty dirpath.")
-    | id :: l -> (id, l)
-end
-
-module MPDTab = Make(DirPath')(MPEqual)
-module DirTab = Make(DirPath')(GlobDirRef)
+module MPDTab = Make(FullPath)(MPEqual)
+module DirTab = Make(FullPath)(GlobDirRef)
 
 module UnivTab = Make(FullPath)(Univ.UGlobal)
 type univtab = UnivTab.t
@@ -443,7 +435,7 @@ let the_globrevtab =
 
 let the_globwarntab = Summary.ref ~name:"globwarntag" ExtRefMap.empty
 
-type mprevtab = DirPath.t MPmap.t
+type mprevtab = full_path MPmap.t
 
 type mptrevtab = full_path MPmap.t
 
@@ -555,7 +547,7 @@ let basename_of_global ref =
 let path_of_abbreviation kn =
   ExtRefMap.find (Abbrev kn) !the_globrevtab
 
-let dirpath_of_module mp =
+let path_of_module mp =
   MPmap.find mp Modules.(!nametab.modrevtab)
 
 let path_of_modtype mp =

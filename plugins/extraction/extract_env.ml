@@ -699,9 +699,11 @@ let simple_extraction ~opaque_access r =
 let extraction_library ~opaque_access is_rec CAst.{loc;v=m} =
   init true true;
   let dir_m =
+    (* XXX WTF is going on here? *)
     let q = qualid_of_ident m in
     try Nametab.full_name_module q with Not_found -> error_unknown_module ?loc q
   in
+  let dir_m = dirpath_of_path dir_m in
   let venv = Visit.make () in
   let () = Visit.add_mp_all venv (MPfile dir_m) in
   let env = Global.env () in

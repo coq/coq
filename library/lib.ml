@@ -15,8 +15,8 @@ type is_type = bool (* Module Type or just Module *)
 type export_flag = Export | Import
 type export = (export_flag * Libobject.open_filter) option (* None for a Module Type *)
 
-let make_oname Libobject.{ obj_dir; obj_mp } id =
-  Names.(Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
+let make_oname Libobject.{ obj_path; obj_mp } id =
+  Names.(Libnames.add_path_suffix obj_path id, KerName.make obj_mp (Label.of_id id))
 
 type 'summary node =
   | CompilingLibrary of Libobject.object_prefix
@@ -28,7 +28,7 @@ let node_prefix = function
   | OpenedModule (_,_,prefix,_)
   | OpenedSection (prefix,_) -> prefix
 
-let prefix_id prefix = snd (Libnames.split_dirpath prefix.Libobject.obj_dir)
+let prefix_id prefix = Libnames.basename prefix.Libobject.obj_path
 
 type 'summary library_segment = ('summary node * Libobject.t list) list
 
@@ -110,7 +110,7 @@ let open_blocks_message es =
    paths based on the library path. *)
 
 let dummy_prefix = Libobject.{
-  obj_dir = DirPath.dummy;
+  obj_path = Libnames.dummy_full_path;
   obj_mp  = ModPath.dummy;
 }
 
@@ -145,7 +145,12 @@ let start_compilation s mp =
   assert (List.is_empty !interp_state);
   if Global.sections_are_opened () then (* XXX not sure if we need this check *)
     CErrors.user_err Pp.(str "some sections are already opened");
-  let prefix = Libobject.{ obj_dir = s; obj_mp = mp } in
+  let path = try
+      let prefix, id = Libnames.split_dirpath s in
+      Libnames.make_path prefix id
+    with Failure _ -> CErrors.anomaly Pp.(str "Cannot start compilation with empty dirpath")
+  in
+  let prefix = Libobject.{ obj_path = path; obj_mp = mp } in
   let initial_stk = [ CompilingLibrary prefix, [] ] in
   let st = {
     comp_name = Some s;
@@ -178,7 +183,7 @@ let library_dp () =
    module path and relative section path *)
 
 let prefix () = !synterp_state.path_prefix
-let cwd () = !synterp_state.path_prefix.Libobject.obj_dir
+let cwd () = !synterp_state.path_prefix.Libobject.obj_path
 let current_mp () = !synterp_state.path_prefix.Libobject.obj_mp
 
 let sections_depth () =
@@ -192,16 +197,16 @@ let sections_are_opened () =
   | _ -> false
 
 let cwd_except_section () =
-  Libnames.pop_dirpath_n (sections_depth ()) (cwd ())
+  Libnames.path_pop_n_suffixes (sections_depth ()) (cwd ())
 
 let current_dirpath sec =
   Libnames.drop_dirpath_prefix (library_dp ())
-    (if sec then cwd () else cwd_except_section ())
+    (Libnames.dirpath_of_path (if sec then cwd () else cwd_except_section ()))
 
-let make_path id = Libnames.make_path (cwd ()) id
+let make_path id = Libnames.add_path_suffix (cwd ()) id
 
 let make_path_except_section id =
-  Libnames.make_path (cwd_except_section ()) id
+  Libnames.add_path_suffix (cwd_except_section ()) id
 
 let make_kn id =
   let mp = current_mp () in
@@ -230,7 +235,7 @@ let pop_path_prefix () =
   synterp_state := {
     !synterp_state
     with path_prefix = Libobject.{
-        op with obj_dir = Libnames.pop_dirpath op.obj_dir;
+        op with obj_path = Libnames.path_pop_suffix op.obj_path;
       } }
 
 (* Modules. *)
@@ -382,12 +387,12 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
   type summary = Summary.Synterp.frozen
   let stage = Summary.Stage.Synterp
 
-  let check_section_fresh obj_dir id =
-    if Nametab.exists_dir obj_dir then
+  let check_section_fresh obj_path id =
+    if Nametab.exists_dir obj_path then
       CErrors.user_err Pp.(Id.print id ++ str " already exists.")
 
-  let push_section_name obj_dir =
-    Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection obj_dir))
+  let push_section_name obj_path =
+    Nametab.(push_dir (Until 1) obj_path (GlobDirRef.DirOpenSection obj_path))
 
   let close_section fs = Summary.Synterp.unfreeze_summaries fs
 
@@ -405,8 +410,8 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
 
   (* Returns the opening node of a given name *)
   let start_mod ~is_type export id mp fs =
-    let dir = Libnames.add_dirpath_suffix !synterp_state.path_prefix.Libobject.obj_dir id in
-    let prefix = Libobject.{ obj_dir = dir; obj_mp = mp; } in
+    let dir = Libnames.add_path_suffix !synterp_state.path_prefix.Libobject.obj_path id in
+    let prefix = Libobject.{ obj_path = dir; obj_mp = mp; } in
     assert (not (sections_are_opened()));
     add_entry (OpenedModule (is_type,export,prefix,fs));
     synterp_state := { !synterp_state with path_prefix = prefix } ;
@@ -420,13 +425,13 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
 
   let open_section id =
     let opp = !synterp_state.path_prefix in
-    let obj_dir = Libnames.add_dirpath_suffix opp.Libobject.obj_dir id in
-    let prefix = Libobject.{ obj_dir; obj_mp=opp.obj_mp; } in
-    check_section_fresh obj_dir id;
+    let obj_path = Libnames.add_path_suffix opp.Libobject.obj_path id in
+    let prefix = Libobject.{ obj_path; obj_mp=opp.obj_mp; } in
+    check_section_fresh obj_path id;
     let fs = Summary.Synterp.freeze_summaries () in
     add_entry (OpenedSection (prefix, fs));
     (*Pushed for the lifetime of the section: removed by unfreezing the summary*)
-    push_section_name obj_dir;
+    push_section_name obj_path;
     synterp_state := { !synterp_state with path_prefix = prefix }
 
   let pop_path_prefix () = pop_path_prefix ()
