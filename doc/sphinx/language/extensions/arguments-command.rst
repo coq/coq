@@ -450,27 +450,34 @@ type check the remaining arguments (in :n:`@arg_specs__2`).
 
 .. example:: Bidirectionality hints
 
-   In a context where a coercion was declared from ``bool`` to ``nat``:
+   .. rocqtop:: none reset
 
-   .. rocqtop:: in reset
+      Require Import Nat.
 
-      Definition b2n (b : bool) := if b then 1 else 0.
-      Coercion b2n : bool >-> nat.
+   .. rocqtop:: in
 
-   Rocq cannot automatically coerce existential statements over ``bool`` to
-   statements over ``nat``, because the need for inserting a coercion is known
-   only from the expected type of a subterm:
+      Definition auto_ineq {n m} (H : (m <? n) = true) : m < n.
 
-   .. rocqtop:: all
+   .. rocqtop:: none
 
-      Fail Check (ex_intro _ true _ : exists n : nat, n > 0).
+      Proof. Admitted.
 
-   However, a suitable bidirectionality hint makes the example work:
+   In the next line, ``3`` and ``4`` cannot be used as a suggestion to deduce ``H``'s expected form,
+   because the arguments' default behavior limits their type inference to auto_ineq's application:
 
    .. rocqtop:: all
 
-      Arguments ex_intro _ _ & _ _.
-      Check (ex_intro _ true _ : exists n : nat, n > 0).
+      Fail Check auto_ineq (eq_refl _) : 3 < 4.
+
+   However, a suitable bidirectionality hint makes information from the typing context propagate to ``H``,
+   allowing ``(?m <? ?n)`` to be reduced to ``true``:
+
+   .. rocqtop:: all
+
+      Arguments auto_ineq _ _ & _.
+      Check auto_ineq (eq_refl _) : 3 < 4.
+
+   The definition above requires the module Nat, but the import and the proof have been omitted for simplicity.
 
 Rocq will attempt to produce a term which uses the arguments you
 provided, but in some cases involving Program mode the arguments after
