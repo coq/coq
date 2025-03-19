@@ -1,9 +1,9 @@
 Ltac foo := let x := open_constr:(ltac:(exact 0)) in
-            idtac
-            x
+            idtac x
 Ltac2 bar : unit -> unit
       bar :=
         fun _ =>
-        let _ := open_constr:(ltac2:(let c := preterm:(0) in exact1 false c))
+        let _ := open_constr:(ltac2:(let c := preterm:(0) in
+                                     exact1 false c))
           in
         ()

@@ -1,7 +1,6 @@
 Ltac t1 := time "my tactic" idtac
 Ltac t2 := let x := string:("my tactic") in
-           idtac
-           x
+           idtac x
 Ltac t3 := idtacstr "my tactic"
 Ltac t4 x := match x with
              | ?A => constr:((A, A))
@@ -12,336 +11,69 @@ idnat is bound to a notation that does not denote a reference.
 Ltac withstrategy l x :=
   let idx := smart_global:(id) in
   let tl := strategy_level:(transparent) in
-  with_strategy
-  1
-  [
-  id
-  id
-  ]
-  with_strategy
-  l
-  [
-  id
-  id
-  ]
-  with_strategy
-  tl
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  ]
-  with_strategy
-  opaque
-  [
-  id
-  id
-  ]
-  with_strategy
-  expand
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  idx
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  x
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  x
-  ]
-  idtac
+  with_strategy 1 [ id id ]
+    with_strategy l [ id id ]
+      with_strategy tl [ id id ]
+        with_strategy transparent [ id id ]
+          with_strategy transparent [ id id ]
+            with_strategy opaque [ id id ]
+              with_strategy expand [ id id ]
+                with_strategy transparent [ idx ]
+                  with_strategy transparent [ id x ]
+                    with_strategy transparent [ x id ]
+                      with_strategy transparent [ id ]
+                        with_strategy transparent [ id x ]
+                          with_strategy transparent [ id id ]
+                            with_strategy transparent [ id id x ]
+                              with_strategy transparent [ id ]
+                                with_strategy transparent [ id x ]
+                                  with_strategy transparent [ id id ]
+                                    with_strategy transparent [ id id x ]
+                                      idtac
 File "./output/print_ltac.v", line 52, characters 29-34:
 The command has indeed failed with message:
 idnat is bound to a notation that does not denote a reference.
 Ltac withstrategy l x :=
   let idx := smart_global:(id) in
   let tl := strategy_level:(transparent) in
-  with_strategy
-  1
-  [
-  id
-  id
-  ]
-  with_strategy
-  l
-  [
-  id
-  id
-  ]
-  with_strategy
-  tl
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  ]
-  with_strategy
-  opaque
-  [
-  id
-  id
-  ]
-  with_strategy
-  expand
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  idx
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  x
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  ]
-  with_strategy
-  transparent
-  [
-  id
-  id
-  x
-  ]
-  idtac
+  with_strategy 1 [ id id ]
+    with_strategy l [ id id ]
+      with_strategy tl [ id id ]
+        with_strategy transparent [ id id ]
+          with_strategy transparent [ id id ]
+            with_strategy opaque [ id id ]
+              with_strategy expand [ id id ]
+                with_strategy transparent [ idx ]
+                  with_strategy transparent [ id x ]
+                    with_strategy transparent [ x id ]
+                      with_strategy transparent [ id ]
+                        with_strategy transparent [ id x ]
+                          with_strategy transparent [ id id ]
+                            with_strategy transparent [ id id x ]
+                              with_strategy transparent [ id ]
+                                with_strategy transparent [ id x ]
+                                  with_strategy transparent [ id id ]
+                                    with_strategy transparent [ id id x ]
+                                      idtac
 Ltac FE.withstrategy l x :=
   let idx := smart_global:(FE.id) in
   let tl := strategy_level:(transparent) in
-  with_strategy
-  1
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  l
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  tl
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  opaque
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  expand
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  transparent
-  [
-  idx
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  x
-  FE.id
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  FE.id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  x
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  FE.id
-  ]
-  with_strategy
-  transparent
-  [
-  FE.id
-  FE.id
-  x
-  ]
-  idtac
+  with_strategy 1 [ FE.id FE.id ]
+    with_strategy l [ FE.id FE.id ]
+      with_strategy tl [ FE.id FE.id ]
+        with_strategy transparent [ FE.id FE.id ]
+          with_strategy transparent [ FE.id FE.id ]
+            with_strategy opaque [ FE.id FE.id ]
+              with_strategy expand [ FE.id FE.id ]
+                with_strategy transparent [ idx ]
+                  with_strategy transparent [ FE.id x ]
+                    with_strategy transparent [ x FE.id ]
+                      with_strategy transparent [ FE.id ]
+                        with_strategy transparent [ FE.id x ]
+                          with_strategy transparent [ FE.id FE.id ]
+                            with_strategy transparent [ FE.id FE.id x ]
+                              with_strategy transparent [ FE.id ]
+                                with_strategy transparent [ FE.id x ]
+                                  with_strategy transparent [ FE.id FE.id ]
+                                    with_strategy transparent [ FE.id FE.id x
+                                      ] idtac

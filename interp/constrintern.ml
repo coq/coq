@@ -308,21 +308,26 @@ let error_expect_binder_notation_type ?loc id =
 
 let set_notation_var_scope ?loc id (tmp_scope,subscopes as scopes) ntnbinders ntnvars =
   try
-    let _,idscopes,ntn_binding_ids,typ = Id.Map.find id ntnvars in
+    let {Genintern.ntnvar_typ=typ} as status = Id.Map.find id ntnvars in
     match typ with
     | Notation_term.NtnInternTypeOnlyBinder -> error_expect_binder_notation_type ?loc id
     | Notation_term.NtnInternTypeAny principal ->
-      let () = match !idscopes with
-      | None -> idscopes := Some scopes
+      let () = match status.ntnvar_scopes with
+      | None -> status.ntnvar_scopes <- Some scopes
       | Some (tmp_scope', subscopes') ->
         let s' = make_current_scope tmp_scope' subscopes' in
         let s = make_current_scope tmp_scope subscopes in
         if Option.is_empty principal && not (List.equal String.equal s' s) then
           warn_inconsistent_scope ?loc (id,s',s)
       in
-      let () = match !ntn_binding_ids with
-      | None -> ntn_binding_ids := Some ntnbinders
-      | Some ntnbinders' -> ntn_binding_ids := Some (Id.Set.inter ntnbinders ntnbinders')
+      let () = match status.ntnvar_binding_ids with
+      | None -> status.ntnvar_binding_ids <- Some ntnbinders
+      | Some ntnbinders' -> status.ntnvar_binding_ids <- Some (Id.Set.inter ntnbinders ntnbinders')
+      in
+      let () = match status.ntnvar_used with
+        | [] -> () (* not recording if notation var is used *)
+        | true :: _ -> () (* already marked used *)
+        | false :: rest -> status.ntnvar_used <- true :: rest
       in
       ()
  with Not_found ->
@@ -331,8 +336,8 @@ let set_notation_var_scope ?loc id (tmp_scope,subscopes as scopes) ntnbinders nt
 
 let set_var_is_binder ?loc id ntnvars =
   try
-    let used_as_binder,_,_,_ = Id.Map.find id ntnvars in
-    used_as_binder := true
+    let status = Id.Map.find id ntnvars in
+    status.Genintern.ntnvar_used_as_binder <- true
   with Not_found ->
     (* Not in a notation *)
     ()
@@ -975,14 +980,12 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       in
       DAst.make ?loc @@ GHole (knd)
     | NGenarg arg ->
-      let mk_env id (c, scopes) map =
+      let glob_of_term (c, scopes) =
         let nenv = set_env_scopes env scopes in
-        try
-          let gc = intern nenv c in
-          Id.Map.add id (gc) map
-        with Nametab.GlobalizationError _ -> map
+        let gc = intern nenv c in
+        gc
       in
-      let mk_env' ((c,_bk), (onlyident,(tmp_scope,subscopes))) =
+      let glob_of_binder ((c,_bk), (onlyident,(tmp_scope,subscopes))) =
         let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
         let test_kind =
           if onlyident then test_kind_ident_in_notation
@@ -993,10 +996,14 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         | [pat] -> (glob_constr_of_cases_pattern (Global.env()) pat)
         | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.loc ()
       in
-      let terms = Id.Map.fold mk_env terms Id.Map.empty in
-      let binders = Id.Map.map mk_env' binders in
-      let bindings = Id.Map.fold Id.Map.add terms binders in
-      let arg = Genintern.generic_substitute_notation avoid bindings arg in
+      let get_glob id =
+        match Id.Map.find_opt id terms with
+        | Some term -> Some (glob_of_term term)
+        | None -> match Id.Map.find_opt id binders with
+          | Some binder -> Some (glob_of_binder binder)
+          | None -> None
+      in
+      let arg = Genintern.generic_substitute_notation ntnvars get_glob arg in
       DAst.make ?loc @@ GGenarg arg
     | NBinderList (x,y,iter,terminator,revert) ->
       (try
@@ -2408,7 +2415,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CGenarg gen ->
         let (ltacvars, ntnvars) = lvar in
         (* Preventively declare notation variables in ltac as non-bindings *)
-        Id.Map.iter (fun x (used_as_binder,_,_,_) -> used_as_binder := false) ntnvars;
+        Id.Map.iter (fun x status -> status.Genintern.ntnvar_used_as_binder <- false) ntnvars;
         let extra = ltacvars.ltac_extra in
         (* We inform ltac that the interning vars and the notation vars are bound *)
         (* but we could instead rely on the "intern_sign" *)
@@ -2793,11 +2800,18 @@ let intern_core kind env sigma ?strict_check ?(pattern_mode=false) ?(ltacvars=em
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let ids = extract_ids env in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
+  let make_status scopes typ = {
+    Genintern.ntnvar_used = [];
+    ntnvar_used_as_binder = false;
+    ntnvar_scopes = scopes;
+    ntnvar_binding_ids = None;
+    ntnvar_typ = typ;
+  }
+  in
   let vl = Id.Map.map (function
-    | (NtnInternTypeAny None | NtnInternTypeOnlyBinder) as typ -> (ref false, ref None, ref None, typ)
-    | NtnInternTypeAny (Some scope) as typ ->
-        (ref false, ref (Some ([scope],[])), ref None, typ)
-    ) nenv.ninterp_var_type in
+    | (NtnInternTypeAny None | NtnInternTypeOnlyBinder) as typ -> make_status None typ
+    | NtnInternTypeAny (Some scope) as typ -> make_status (Some ([scope],[])) typ)
+    nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize env
       {ids; strict_check = Some true;
@@ -2812,8 +2826,9 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let out_scope = function None -> [],[] | Some (a,l) -> a,l in
   let out_bindings = function None -> Id.Set.empty | Some a -> a in
   let unused = match reversible with NonInjective ids -> ids | _ -> [] in
-  let vars = Id.Map.mapi (fun id (used_as_binder, sc, ntn_binding_ids, typ) ->
-    (!used_as_binder && not (List.mem_f Id.equal id unused), out_scope !sc, out_bindings !ntn_binding_ids)) vl in
+  let vars = Id.Map.mapi (fun id status ->
+      (status.Genintern.ntnvar_used_as_binder && not (List.mem_f Id.equal id unused),
+       out_scope status.ntnvar_scopes, out_bindings status.ntnvar_binding_ids)) vl in
   (* Returns [a] and the ordered list of variables with their scopes *)
   vars, a, reversible
 
