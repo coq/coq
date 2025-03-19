@@ -155,6 +155,14 @@ let init () =
     env_ref := Some env; env
   | Some env -> env
 
+let init_with ~coqlib =
+  match coqlib with
+  | None -> init ()
+  | Some lib ->
+    let env = validate_env { lib; core = guess_coqcorelib lib } in
+    env_ref := Some env;
+    env
+
 let set_coqlib lib =
   let env = validate_env { lib; core = guess_coqcorelib lib } in
   env_ref := Some env
@@ -163,8 +171,7 @@ let maybe_init ~boot ~coqlib =
   match boot, coqlib with
   | true, None -> Ok None
   | false, (None | Some _ as coqlib) ->
-    Option.iter set_coqlib coqlib;
-    Ok (Some (init()))
+    Ok (Some (init_with ~coqlib))
   | true, Some _ ->
     Error "Command line options -boot and -coqlib are incompatible."
 

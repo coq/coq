@@ -150,9 +150,7 @@ let boot_env opts =
       not (List.exists Boot.Env.query_needs_env opts.queries)
   in
   if noenv then None
-  else
-    let () = Option.iter Boot.Env.set_coqlib opts.coqlib in
-    Some (Boot.Env.init ())
+  else Some (Boot.Env.init_with ~coqlib:opts.coqlib)
 
 let do_queries opts =
   match opts.queries with
