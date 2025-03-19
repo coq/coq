@@ -31,6 +31,7 @@ val out_channel : out_channel ref
 (** User-setable options from command line [coqdoc] arugments **********************)
 type t = {
   targetlang : target_language;
+  coqlib : string option;
   compile_targets : otype list;
   out_to : output_t;
   output_dir : string;

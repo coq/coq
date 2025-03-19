@@ -26,6 +26,7 @@ type otype = Dvi | Ps | Pdf
 (** User-setable options from command line [coqdoc] arugments **********************)
 type t = {
   targetlang : target_language;
+  coqlib : string option;
   compile_targets : otype list;
   out_to : output_t;
   output_dir: string;
@@ -62,6 +63,7 @@ type t = {
 
 let default : t = {
   targetlang = HTML;
+  coqlib = None;
   compile_targets = [];
   out_to = MultFiles;
   output_dir = "";
