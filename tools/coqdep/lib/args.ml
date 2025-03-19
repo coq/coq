@@ -10,6 +10,7 @@
 
 type t =
   { boot : bool
+  ; coqlib : string option
   ; sort : bool
   ; vos : bool
   ; noglob : bool
@@ -22,6 +23,7 @@ type t =
 
 let make () =
   { boot = false
+  ; coqlib = None
   ; sort = false
   ; vos = false
   ; noglob = false
@@ -101,7 +103,7 @@ let parse st args =
     | ("-Q"|"-R") :: ([] | [_]) -> usage ()
     | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse st ll
     | "-exclude-dir" :: [] -> usage ()
-    | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse st ll
+    | "-coqlib" :: r :: ll -> parse { st with coqlib = Some r } ll
     | "-coqlib" :: [] -> usage ()
     | "-dyndep" :: dyndep :: ll -> parse { st with dyndep } ll
     | "-worker" :: w :: ll -> parse { st with worker = Some w } ll

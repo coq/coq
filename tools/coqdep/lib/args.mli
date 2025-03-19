@@ -10,6 +10,7 @@
 
 type t =
   { boot : bool
+  ; coqlib : string option
   ; sort : bool
   ; vos : bool
   ; noglob : bool
