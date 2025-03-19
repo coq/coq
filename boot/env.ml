@@ -159,6 +159,15 @@ let set_coqlib lib =
   let env = validate_env { lib; core = guess_coqcorelib lib } in
   env_ref := Some env
 
+let maybe_init ~boot ~coqlib =
+  match boot, coqlib with
+  | true, None -> Ok None
+  | false, (None | Some _ as coqlib) ->
+    Option.iter set_coqlib coqlib;
+    Ok (Some (init()))
+  | true, Some _ ->
+    Error "Command line options -boot and -coqlib are incompatible."
+
 let coqlib { lib; _ } = lib
 let corelib { core; _ } = core
 let plugins { core; _ } = Path.relative core plugins_dir

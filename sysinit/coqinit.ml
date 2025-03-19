@@ -80,11 +80,6 @@ let init_ocaml () =
   (* Get error message (and backtrace if enabled) on Ctrl-C instead of just exiting the process *)
   Sys.catch_break true
 
-let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
-  | None -> ()
-  | Some s ->
-    Boot.Env.set_coqlib s
-
 let dirpath_of_file f =
   let ldir0 =
     try
@@ -134,10 +129,15 @@ let to_vo_path (x:Coqargs.vo_path) : Loadpath.vo_path = {
 
 let init_load_paths opts =
   let open Coqargs in
+  let coqenv = match Boot.Env.maybe_init ~boot:opts.pre.boot ~coqlib:opts.config.coqlib with
+    | Ok x -> x
+    | Error msg -> CErrors.user_err Pp.(str msg)
+  in
   let (boot_ml_path, boot_vo_path), native_ml_path =
-    if opts.pre.boot then ([],[]),opts.config.native_include_dirs
-    else
-      let coqenv = Boot.Env.init () in
+    match coqenv with
+    | None ->
+      ([],[]),opts.config.native_include_dirs
+    | Some coqenv ->
       let nI = match opts.config.native_include_dirs with
         | [] -> Nativelib.default_include_dirs coqenv
         | _ :: _ as nI -> nI
@@ -170,7 +170,6 @@ let init_runtime ~usage opts =
   Vernacextend.static_linking_done ();
   Option.iter (fun file -> init_profile ~file) opts.config.profile;
   Lib.init ();
-  init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;
 
   (* excluded directories *)

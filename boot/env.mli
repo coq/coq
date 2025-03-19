@@ -78,6 +78,10 @@ type t
 (** [init ()] will initialize the Rocq environment. *)
 val init : unit -> t
 
+(** Init if boot:false, possibly with a user provided coqlib.
+    Incompatible arguments produce [Error] (ie with boot:true and coqlib:Some) *)
+val maybe_init : boot:bool -> coqlib:string option -> (t option, string) result
+
 (** [stdlib directory] *)
 val stdlib : t -> Path.t
 
