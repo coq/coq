@@ -51,6 +51,9 @@ module SearchBlacklist =
         str "Search blacklist does " ++ (if b then mt () else str "not ") ++ str "include " ++ str s
      end)
 
+let { Goptions.get = blacklist_locals } =
+  Goptions.declare_bool_option_and_ref ~key:["Search";"Blacklist";"Locals"] ~value:true ()
+
 (* The functions iter_constructors and iter_declarations implement the behavior
    needed for the Rocq searching commands.
    These functions take as first argument the procedure
@@ -172,25 +175,31 @@ let prioritize_search seq fn =
 
 (** This function tries to see whether the conclusion matches a pattern.
     FIXME: this is quite dummy, we may find a more efficient algorithm. *)
-let rec pattern_filter pat ref env sigma typ =
+let rec pattern_filter pat env sigma typ =
   let typ = Termops.strip_outer_cast sigma typ in
   if Constr_matching.is_matching env sigma pat typ then true
   else match EConstr.kind sigma typ with
   | Prod (_, _, typ)
-  | LetIn (_, _, _, typ) -> pattern_filter pat ref env sigma typ
+  | LetIn (_, _, _, typ) -> pattern_filter pat env sigma typ
   | _ -> false
 
 let full_name_of_reference ref =
   let (dir,id) = repr_path (Nametab.path_of_global ref) in
   DirPath.to_string dir ^ "." ^ Id.to_string id
 
-(** Whether a reference is blacklisted *)
-let blacklist_filter ref kind env sigma typ =
-  let name = full_name_of_reference ref in
-  let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
-  CString.Set.for_all is_not_bl (SearchBlacklist.v ())
+let is_local_ref : GlobRef.t -> bool = function
+  | ConstRef c -> Declare.is_local_constant c
+  | IndRef _ | ConstructRef _ | VarRef _ -> false
 
-let module_filter mods ref kind env sigma typ =
+(** Whether a reference is blacklisted *)
+let blacklist_filter : filter_function = fun ref kind env sigma typ ->
+  if blacklist_locals() && is_local_ref ref then false
+  else
+    let name = full_name_of_reference ref in
+    let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
+    CString.Set.for_all is_not_bl (SearchBlacklist.v ())
+
+let module_filter : _ -> filter_function = fun mods ref kind env sigma typ ->
   let sp = Nametab.path_of_global ref in
   let sl = dirpath sp in
   match mods with
@@ -203,7 +212,7 @@ let module_filter mods ref kind env sigma typ =
 
 let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
 
-let search_filter query gr kind env sigma typ = match query with
+let search_filter : _ -> filter_function = fun query gr kind env sigma typ -> match query with
 | GlobSearchSubPattern (where,head,pat) ->
   let open Context.Rel.Declaration in
   let rec collect env hyps typ =
@@ -230,7 +239,7 @@ let search_filter query gr kind env sigma typ = match query with
 let search_pattern env sigma pat mods pr_search =
   let filter ref kind env sigma typ =
     module_filter mods ref kind env sigma typ &&
-    pattern_filter pat ref env sigma (EConstr.of_constr typ) &&
+    pattern_filter pat env sigma (EConstr.of_constr typ) &&
     blacklist_filter ref kind env sigma typ
   in
   let iter ref kind env sigma typ =
@@ -253,8 +262,8 @@ let search_rewrite env sigma pat mods pr_search =
   let pat2 = rewrite_pat2 pat in
   let filter ref kind env sigma typ =
     module_filter mods ref kind env sigma typ &&
-    (pattern_filter pat1 ref env sigma (EConstr.of_constr typ) ||
-       pattern_filter pat2 ref env sigma (EConstr.of_constr typ)) &&
+    (pattern_filter pat1 env sigma (EConstr.of_constr typ) ||
+       pattern_filter pat2 env sigma (EConstr.of_constr typ)) &&
     blacklist_filter ref kind env sigma typ
   in
   let iter ref kind env sigma typ =
@@ -310,7 +319,7 @@ let interface_search env sigma =
   let (name, tpe, subtpe, mods, blacklist) =
     extract_flags [] [] [] [] false flags
   in
-  let filter_function ref env sigma constr =
+  let filter_function ref kind env sigma constr =
     let id = Names.Id.to_string (Nametab.basename_of_global ref) in
     let path = Libnames.dirpath (Nametab.path_of_global ref) in
     let toggle x b = if x then b else not b in
@@ -359,7 +368,7 @@ let interface_search env sigma =
     ans := answer :: !ans;
   in
   let iter ref kind env sigma typ =
-    if filter_function ref env sigma typ then print_function ref env sigma typ
+    if filter_function ref kind env sigma typ then print_function ref env sigma typ
   in
   let () = generic_search env sigma iter in
   !ans
