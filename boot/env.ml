@@ -163,10 +163,6 @@ let init_with ~coqlib =
     env_ref := Some env;
     env
 
-let set_coqlib lib =
-  let env = validate_env { lib; core = guess_coqcorelib lib } in
-  env_ref := Some env
-
 let maybe_init ~boot ~coqlib =
   match boot, coqlib with
   | true, None -> Ok None
