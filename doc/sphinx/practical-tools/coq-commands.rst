@@ -148,6 +148,10 @@ Let `$runtimelib` be
 If `-boot` was not passed, Rocq will add `$runtimelib/..` to the
 OCamlfind search path (as though `-I $runtimelib/..` was passed).
 
+If `-boot` was not passed and no `-nI` argument was passed, Rocq will
+also add an implicit `-nI $runtimelib/kernel` for :tacn:`native_compute`
+(so if you use `-boot` and native compute you must use `-nI`).
+
 Then, regardless of `-boot`, Rocq will search for OCamlfind package `rocq-runtime`.
 
 .. exn:: Could not find package rocq-runtime.

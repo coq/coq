@@ -134,12 +134,17 @@ let to_vo_path (x:Coqargs.vo_path) : Loadpath.vo_path = {
 
 let init_load_paths opts =
   let open Coqargs in
-  let boot_ml_path, boot_vo_path =
-    if opts.pre.boot then [],[]
+  let (boot_ml_path, boot_vo_path), native_ml_path =
+    if opts.pre.boot then ([],[]),opts.config.native_include_dirs
     else
       let coqenv = Boot.Env.init () in
-      Coqloadpath.init_load_path ~coqenv
+      let nI = match opts.config.native_include_dirs with
+        | [] -> Nativelib.default_include_dirs coqenv
+        | _ :: _ as nI -> nI
+      in
+      Coqloadpath.init_load_path ~coqenv, nI
   in
+  let () = Nativelib.include_dirs := native_ml_path in
   let ml_path = opts.pre.ml_includes @ boot_ml_path in
   List.iter Mltop.add_ml_dir (List.rev ml_path);
   List.iter Loadpath.add_vo_path boot_vo_path;
@@ -197,7 +202,6 @@ let init_document opts =
   (* XXX these flags should probably be in the summary *)
   (* Native output dir *)
   Nativelib.output_dir := opts.config.native_output_dir;
-  Nativelib.include_dirs := opts.config.native_include_dirs;
 
   (* Default output dir *)
   Flags.output_directory := opts.config.output_directory;
