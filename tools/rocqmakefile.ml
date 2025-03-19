@@ -40,6 +40,7 @@ let usage_coq_makefile ~ok =
 \n[-Q physicalpath logicalpath]: look for Rocq dependencies starting from\
 \n  \"physicalpath\". The logical path associated to the physical path\
 \n  is \"logicalpath\".\
+\n[-coqlib dir]: set the Rocq Corelib directory\
 \n[VARIABLE = value]: Add the variable definition \"VARIABLE=value\"\
 \n[-arg opt]: send option \"opt\" to rocq compile\
 \n[-docroot path]: Install the documentation in this folder, relative to\
@@ -378,16 +379,19 @@ let chop_prefix p f =
 type extra_opts = {
   only_destination : string option;
   only_sources : bool;
+  coqlib : string option;
 }
 
 let empty_extra = {
   only_destination = None;
   only_sources = false;
+  coqlib = None;
 }
 
 let parse_extra f r opts = match f, r with
   | "-destination-of", tgt :: r -> Some (r, { opts with only_destination = Some tgt })
   | "-sources-of", r -> Some (r, { opts with only_sources = true })
+  | "-coqlib", v :: r -> Some (r, { opts with coqlib = Some v })
   | ("-h"|"--help"), _ -> usage_coq_makefile ~ok:true
   | ("-v"|"--version"), _ -> Boot.Usage.version (); exit 0
   | _ -> None
@@ -425,7 +429,7 @@ let destination_of { ml_includes; q_includes; r_includes; } file =
   | [s] -> Printf.printf "%s" (quote s)
   | _ -> assert false
 
-let normal_mode project prog args =
+let normal_mode ~coqlib project prog args =
   if project.makefile = None then
     eprintf "Warning: Omitting -o is deprecated\n\n";
     (* We want to know the name of the Makefile (say m) in order to
@@ -448,7 +452,7 @@ let normal_mode project prog args =
 
   (* NB: we need a full Boot.Env not just the runtime half because the
      conf file contains coqlib *)
-  let env = Boot.Env.init () in
+  let env = Boot.Env.init_with ~coqlib in
 
   let ocm = Option.cata open_out stdout project.makefile in
   generate_makefile ocm env conf_file local_file local_late_file dep_file (prog @ args) project;
@@ -461,13 +465,13 @@ let normal_mode project prog args =
 let main ~prog args =
   let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
 
-  let { extra_data = { only_destination; only_sources } } as project =
+  let { extra_data = { only_destination; only_sources; coqlib } } as project =
     let warning_fn x = Format.eprintf "%s@\n%!" x in
     try cmdline_args_to_project ~warning_fn ~curdir:Filename.current_dir_name ~parse_extra empty_extra args
     with Parsing_error s -> prerr_endline s; usage_coq_makefile ~ok:false in
 
   match only_destination, only_sources with
-  | None, false -> normal_mode project prog args
+  | None, false -> normal_mode ~coqlib project prog args
   | Some dest, false ->
     destination_of project dest
   | None, true ->
