@@ -66,9 +66,7 @@ let get_include_dirs () =
        explicit -nI flags once we remove the make-based system? I think
        so. *)
     let env = Boot.Env.init () in
-    [ Boot.Env.(Path.to_string (native_cmi env "kernel"))
-    ; Boot.Env.(Path.to_string (native_cmi env "library"))
-    ]
+    [ Boot.Env.(Path.to_string (native_cmi env "kernel")) ]
   | _::_ as l -> l
   in
   if Lazy.is_val my_temp_dir
