@@ -89,6 +89,18 @@ val init_with : coqlib:string option -> t
     Incompatible arguments produce [Error] (ie with boot:true and coqlib:Some) *)
 val maybe_init : boot:bool -> coqlib:string option -> (maybe_env, string) result
 
+(** If the query list is empty, behave as [maybe_init].
+    Otherwise, print the queries.
+
+    If the [usage] argument is [None], the queries must not be PrintHelp.
+
+    If a query needs an environment, [boot] must not be [true].
+    If there are queries and none need an environment,
+    returns [Ok Boot] even if [boot] was [false].
+*)
+val print_queries_maybe_init : boot:bool -> coqlib:string option ->
+  Usage.specific_usage option -> Usage.query list -> (maybe_env, string) result
+
 (** [stdlib directory] *)
 val stdlib : t -> Path.t
 
@@ -117,12 +129,5 @@ val coqlib : t -> Path.t
 val ocamlfind : unit -> string
 
 val print_config : ?prefix_var_name:string -> t -> out_channel -> unit
-
-(** Needs a Rocq environment for Where and Config.
-    If the [usage] argument is [None], the query must not be PrintHelp. *)
-val print_query : Usage.specific_usage option -> Usage.query -> unit
-
-(** Where and Config need to be able to find coqlib (i.e. -boot won't work) *)
-val query_needs_env : Usage.query -> bool
 
 val relocate : Coq_config.relocatable_path -> string
