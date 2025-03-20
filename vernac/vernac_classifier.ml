@@ -119,26 +119,26 @@ let classify_vernac e =
       let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
       VtStartProof (guarantee,ids)
     | VernacFixpoint (discharge,(_,l)) ->
-      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
+      let refine, polymorphic = Attributes.(parse_drop_extra Notations.(Classes.refine_att ++ polymorphic) atts) in
        let guarantee =
-         if discharge = DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
+         if discharge = DoDischarge || polymorphic || refine then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity
        in
         let ids, open_proof =
           List.fold_left (fun (l,b) {Vernacexpr.fname={CAst.v=id}; body_def} ->
-            id::l, b || body_def = None) ([],false) l in
+            id::l, b || body_def = None) ([],refine) l in
         if open_proof
         then VtStartProof (guarantee,ids)
         else VtSideff (ids, VtLater)
     | VernacCoFixpoint (discharge,l) ->
-      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
+      let refine, polymorphic = Attributes.(parse_drop_extra Notations.(Classes.refine_att ++ polymorphic) atts) in
        let guarantee =
-         if discharge = DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
+         if discharge = DoDischarge || polymorphic || refine then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity
        in
         let ids, open_proof =
           List.fold_left (fun (l,b) { Vernacexpr.fname={CAst.v=id}; body_def } ->
-            id::l, b || body_def = None) ([],false) l in
+            id::l, b || body_def = None) ([],refine) l in
         if open_proof
         then VtStartProof (guarantee,ids)
         else VtSideff (ids, VtLater)

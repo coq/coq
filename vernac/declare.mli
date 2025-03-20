@@ -208,7 +208,7 @@ module Proof : sig
   (** Pretty much internal, used by the Lemma vernaculars *)
   val start_definition
     :  info:Info.t
-    -> cinfo:Constr.t CInfo.t
+    -> cinfo:EConstr.t CInfo.t
     -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
     -> t
@@ -219,6 +219,16 @@ module Proof : sig
     -> cinfo:Constr.t CInfo.t list
     -> bodies:Constr.t option list
     -> possible_guard:(Pretyping.possible_guard * Sorts.relevance list)
+    -> ?using:Vernacexpr.section_subset_expr
+    -> Evd.evar_map
+    -> t
+
+  (** Pretty much internal, used by mutual Lemma / Fixpoint vernaculars with #[refine] *)
+  val start_mutual_definitions_refine
+    :  info:Info.t
+    -> cinfo:EConstr.t CInfo.t list
+    -> bodies:EConstr.t option list
+    -> possible_guard:(Pretyping.possible_guard * Evd.erelevance list)
     -> ?using:Vernacexpr.section_subset_expr
     -> Evd.evar_map
     -> t

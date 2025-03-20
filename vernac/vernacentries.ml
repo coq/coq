@@ -903,7 +903,7 @@ let vernac_start_proof ~atts kind l =
     let fix = List.map (fun ((fname, univs), (binders, rtype)) ->
         { fname; binders; rtype; body_def = None; univs; notations = []}) l in
     let pm, proof =
-      ComFixpoint.do_mutually_recursive ~program_mode ~use_inference_hook:program_mode
+      ComFixpoint.do_mutually_recursive ~refine:false ~program_mode ~use_inference_hook:program_mode
         ~scope ?clearbody ~kind:(Decls.IsProof kind) ~poly ?typing_flags
         ?user_warns ?using (CUnknownRecOrder, fix) in
     assert (Option.is_empty pm);
@@ -1269,7 +1269,7 @@ let with_obligations program_mode f pm =
     assert (Option.is_empty pm');
     pm, proof
 
-let vernac_fixpoint ~atts ~pm (rec_order,fixl) =
+let vernac_fixpoint ~atts ~refine ~pm (rec_order,fixl) =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts fixl in
   let poly, typing_flags, program_mode, clearbody, using, user_warns =
@@ -1280,7 +1280,7 @@ let vernac_fixpoint ~atts ~pm (rec_order,fixl) =
       let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
       if opens then CErrors.user_err Pp.(str"Program Fixpoint requires a body.") in
   with_obligations program_mode
-    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition Fixpoint) ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~refine ~scope ?clearbody ~kind:(IsDefinition Fixpoint) ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
     pm
 
 let vernac_cofixpoint_common ~atts l =
@@ -1290,7 +1290,7 @@ let vernac_cofixpoint_common ~atts l =
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 
-let vernac_cofixpoint ~pm ~atts cofixl =
+let vernac_cofixpoint ~pm ~refine ~atts cofixl =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts cofixl in
   let poly, typing_flags, program_mode, clearbody, using, user_warns =
@@ -1301,7 +1301,7 @@ let vernac_cofixpoint ~pm ~atts cofixl =
       if opens then
         CErrors.user_err Pp.(str"Program CoFixpoint requires a body.") in
   with_obligations program_mode
-    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition CoFixpoint) ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~refine ~scope ?clearbody ~kind:(IsDefinition CoFixpoint) ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
     pm
 
 let vernac_scheme l =
@@ -2641,30 +2641,32 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     vtdefault(fun () -> vernac_inductive ~atts finite l)
 
   | VernacFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) (snd l) in
+    let atts, refine = Attributes.(parse_with_extra Classes.refine_att) atts in
+    let opens = refine || List.exists (fun { body_def } -> Option.is_empty body_def) (snd l) in
     let discharge = discharge, "\"Let Fixpoint\"", "\"#[local] Fixpoint\"" in
     (if opens then
       vtopenproof (fun () ->
-        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:None) l in
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~refine ~pm:None) l in
         assert (Option.is_empty pm);
         Option.get proof)
     else
       vtmodifyprogram (fun ~pm ->
-        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:(Some pm)) l in
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~refine ~pm:(Some pm)) l in
         assert (Option.is_empty proof);
         Option.get pm))
 
   | VernacCoFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let atts, refine = Attributes.(parse_with_extra Classes.refine_att) atts in
+    let opens = refine || List.exists (fun { body_def } -> Option.is_empty body_def) l in
     let discharge = discharge,  "\"Let CoFixpoint\"", "\"#[local] CoFixpoint\"" in
     (if opens then
       vtopenproof (fun () ->
-        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm:None) l in
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~refine ~pm:None) l in
         assert (Option.is_empty pm);
         Option.get proof)
     else
       vtmodifyprogram (fun ~pm ->
-        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm:(Some pm)) l in
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~refine ~pm:(Some pm)) l in
         assert (Option.is_empty proof);
         Option.get pm))
 
