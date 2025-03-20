@@ -481,6 +481,16 @@ let restrict_evar evd evk filter candidates =
   | Some [] -> raise (ClearDependencyError (*FIXME*)(Id.of_string "blah", (NoCandidatesLeft evk), None))
   | _ -> Evd.restrict evk filter ?candidates evd
 
+let check_vars env sigma ids c =
+  let rec check_rec c =
+    match EConstr.destRef sigma c with
+    | gr, _ ->
+      let vars = vars_of_global env gr in
+      Id.Map.iter (fun id _ -> if Id.Set.mem id vars then raise (Depends id)) ids
+    | exception DestKO -> EConstr.iter sigma check_rec c
+  in
+  check_rec c
+
 let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~global c =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
@@ -531,29 +541,29 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
               (* Check if some rid to clear in the context of ev
                   has dependencies in another hyp of the context of ev
                   and transitively remember the dependency *)
-                let check id _ =
-                  if occur_var_in_decl env !evdref id h
-                  then raise (Depends id)
+                let () =
+                  if not @@ Id.Map.is_empty ri then
+                    NamedDecl.iter_constr (fun c -> check_vars env !evdref ri c) h
                 in
-                let () = Id.Map.iter check ri in
               (* No dependency at all, we can keep this ev's context hyp *)
                 (ri, true::filter)
               with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter)
             in
             let (rids, filter) = fold (Id.Map.empty, []) ctxt l in
-            (* Check if some rid to clear in the context of ev has dependencies
-               in the type of ev and adjust the source of the dependency *)
-            let _nconcl : EConstr.t =
-              try
-                let nids = Id.Map.domain rids in
-                let global = Id.Set.exists is_section_variable nids in
-                let concl = evar_concl evi in
-                check_and_clear_in_constr ~is_section_variable env evdref (EvarTypingBreak ev) nids ~global concl
-              with ClearDependencyError (rid,err,where) ->
-                raise (ClearDependencyError (Id.Map.find rid rids,err,where)) in
 
             if Id.Map.is_empty rids then c
             else
+              (* Check if some rid to clear in the context of ev has dependencies
+               in the type of ev and adjust the source of the dependency *)
+              let _nconcl : EConstr.t =
+                try
+                  let nids = Id.Map.domain rids in
+                  let global = Id.Set.exists is_section_variable nids in
+                  let concl = evar_concl evi in
+                  check_and_clear_in_constr ~is_section_variable env evdref (EvarTypingBreak ev) nids ~global concl
+                with ClearDependencyError (rid,err,where) ->
+                  raise (ClearDependencyError (Id.Map.find rid rids,err,where))
+              in
               let origfilter = Evd.evar_filter evi in
               let filter = Evd.Filter.apply_subfilter origfilter filter in
               let evd = !evdref in
