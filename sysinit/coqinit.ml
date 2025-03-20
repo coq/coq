@@ -127,12 +127,22 @@ let to_vo_path (x:Coqargs.vo_path) : Loadpath.vo_path = {
   recursive = true;
   }
 
-let init_load_paths opts =
+let boot_env usage opts =
   let open Coqargs in
-  let coqenv = match Boot.Env.maybe_init ~boot:opts.pre.boot ~coqlib:opts.config.coqlib with
+  let with_err = function
     | Ok x -> x
     | Error msg -> CErrors.user_err Pp.(str msg)
   in
+  let boot = opts.pre.boot in
+  let coqlib = opts.config.coqlib in
+  match opts.main with
+  | Run -> with_err (Boot.Env.maybe_init ~boot ~coqlib)
+  | Queries qs ->
+    let _ = with_err (Boot.Env.print_queries_maybe_init ~boot ~coqlib (Some usage) qs) in
+    exit 0
+
+let init_load_paths (coqenv:Boot.Env.maybe_env) opts =
+  let open Coqargs in
   let (boot_ml_path, boot_vo_path), native_ml_path =
     match coqenv with
     | Boot ->
@@ -175,12 +185,12 @@ let init_runtime ~usage opts =
   (* excluded directories *)
   List.iter System.exclude_directory opts.config.exclude_dirs;
 
-  (* Paths for loading stuff *)
-  init_load_paths opts;
+  let coqenv = boot_env usage opts in
 
-  match opts.Coqargs.main with
-  | Coqargs.Queries q -> List.iter (Boot.Env.print_query (Some usage)) q; exit 0
-  | Coqargs.Run -> ()
+  (* Paths for loading stuff *)
+  init_load_paths coqenv opts;
+
+  ()
 
 let init_document opts =
   let open Coqargs in

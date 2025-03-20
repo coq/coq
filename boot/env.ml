@@ -221,11 +221,15 @@ let print_config ?(prefix_var_name="") env f =
      | Coq_config.NativeOff -> "no"
      | Coq_config.NativeOn {ondemand=true} -> "ondemand")
 
-let print_query usage : Usage.query -> unit = function
+let query_getenv = function
+  | Boot -> assert false
+  | Env v -> v
+
+let print_query envopt usage : Usage.query -> unit = function
   | PrintVersion -> Usage.version ()
   | PrintMachineReadableVersion -> Usage.machine_readable_version ()
   | PrintWhere ->
-    let env = init () in
+    let env = query_getenv envopt in
     let coqlib = coqlib env |> Path.to_string in
     print_endline coqlib
   | PrintHelp -> begin match usage with
@@ -233,9 +237,28 @@ let print_query usage : Usage.query -> unit = function
       | None -> assert false
     end
   | PrintConfig ->
-    let env = init() in
+    let env = query_getenv envopt in
     print_config env stdout
 
-let query_needs_env : Usage.query -> bool = function
-  | PrintVersion | PrintMachineReadableVersion | PrintHelp -> false
-  | PrintWhere | PrintConfig -> true
+let query_needs_env : Usage.query -> string option = function
+  | PrintVersion | PrintMachineReadableVersion | PrintHelp -> None
+  | PrintWhere -> Some "-where"
+  | PrintConfig -> Some "-config"
+
+let print_queries_maybe_init ~boot ~coqlib usage = function
+  | [] -> maybe_init ~boot ~coqlib
+  | _ :: _ as qs ->
+    let needs_env = CList.find_map query_needs_env qs in
+    let res = match boot, needs_env with
+    | true, Some q -> Error ("Command line option -boot is not compatible with " ^ q ^ ".")
+    | true, None ->
+      (* produces Error if coqlib and boot used together *)
+      maybe_init ~boot ~coqlib
+    | false, None -> Ok Boot
+    | false, Some _ -> Ok (Env (init_with ~coqlib))
+    in
+    let () = match res with
+      | Error _ -> ()
+      | Ok envopt -> List.iter (print_query envopt usage) qs
+    in
+    res
