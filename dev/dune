@@ -24,7 +24,6 @@
     ../checker/coqchk.bc
     ../topbin/rocqworker.bc
     ../topbin/rocqnative.bc
-    ../ide/rocqide/rocqide_main.bc
     ; We require all the OCaml libs to be in place and searchable
     ; by OCamlfind, this is a bit of a hack but until Dune gets
     ; proper ocamldebug support we have to live with that.
