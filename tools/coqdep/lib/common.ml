@@ -346,8 +346,8 @@ let init ~make_separator_hack args =
     | Error msg -> CErrors.user_err Pp.(str msg)
   in
   let ml_path = match rocqenv with
-    | None -> ml_path
-    | Some env ->
+    | Boot -> ml_path
+    | Env env ->
       ml_path @ Boot.Env.Path.[to_string @@ relative (Boot.Env.corelib env) ".."]
   in
   findlib_init ml_path;

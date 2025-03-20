@@ -35,7 +35,9 @@ let coqdep args =
   (try ignore (Loadpath.find_dir_logpath (Sys.getcwd()))
    with Not_found -> Loadpath.add_norec_dir_import (Loadpath.add_known lst) "." []);
   (* We don't setup any loadpath if the -boot is passed *)
-  let () = rocqenv |> Option.iter @@ fun env ->
+  let () = match rocqenv with
+    | Boot -> ()
+    | Env env ->
     let stdlib = Boot.Env.(stdlib env |> Path.to_string) in
     let plugins = Boot.Env.(plugins env |> Path.to_string) in
     let user_contrib = Boot.Env.(user_contrib env |> Path.to_string) in

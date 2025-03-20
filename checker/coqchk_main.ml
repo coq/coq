@@ -47,8 +47,8 @@ let path_of_string s =
 
 let get_version env () =
   match env with
-  | None -> Coq_config.version
-  | Some env ->
+  | Boot.Env.Boot -> Coq_config.version
+  | Env env ->
   try
     let revision = Boot.Env.(Path.to_string (revision env)) in
     let ch = open_in revision in
@@ -422,7 +422,10 @@ let init_with_argv argv =
       | Error msg -> CErrors.user_err Pp.(str msg)
     in
     Flags.if_verbose (fun () -> print_header coqenv ()) ();
-    let () = Option.iter init_load_path coqenv in
+    let () = match coqenv with
+      | Boot -> ()
+      | Env coqenv -> init_load_path coqenv
+    in
     (* additional loadpath, given with -R/-Q options *)
     NewProfile.profile "add_load_paths" (fun () ->
         List.iter

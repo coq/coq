@@ -135,8 +135,6 @@ let validate_env ({ core; lib } as env) =
   if not (Sys.file_exists plugin) then fail_core plugin;
   env
 
-(* Should we fail on double initialization? That seems a way to avoid
-   mis-use for example when we pass command line arguments *)
 let init () =
   let lib = guess_coqlib () in
   let core =
@@ -146,28 +144,32 @@ let init () =
   in
   validate_env { core ; lib }
 
+type maybe_env =
+  | Env of t
+  | Boot
+
 let env_ref = ref None
 
-let init () =
-  match !env_ref with
-  | None ->
-    let env = init () in
-    env_ref := Some env; env
-  | Some env -> env
-
+(* Should we fail on double initialization? That seems a way to avoid
+   mis-use for example when we pass command line arguments *)
 let init_with ~coqlib =
   match coqlib with
-  | None -> init ()
+  | None ->
+    let env = init () in
+    env_ref := Some (Env env);
+    env
   | Some lib ->
     let env = validate_env { lib; core = guess_coqcorelib lib } in
-    env_ref := Some env;
+    env_ref := Some (Env env);
     env
+
+let initialized () = !env_ref
 
 let maybe_init ~boot ~coqlib =
   match boot, coqlib with
-  | true, None -> Ok None
+  | true, None -> Ok Boot
   | false, (None | Some _ as coqlib) ->
-    Ok (Some (init_with ~coqlib))
+    Ok (Env (init_with ~coqlib))
   | true, Some _ ->
     Error "Command line options -boot and -coqlib are incompatible."
 
