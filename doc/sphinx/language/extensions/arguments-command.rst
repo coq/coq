@@ -462,7 +462,7 @@ type check the remaining arguments (in :n:`@arg_specs__2`).
 
       Proof. Admitted.
 
-   In the next line, ``3`` and ``4`` cannot be used as a suggestion to deduce ``H``'s expected form,
+   In the next line, ``3 < 4`` cannot be used as a suggestion to deduce ``H``'s expected form,
    because the arguments' default behavior limits their type inference to auto_ineq's application:
 
    .. rocqtop:: all
