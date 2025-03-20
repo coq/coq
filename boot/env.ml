@@ -138,11 +138,6 @@ let validate_env ({ core; lib } as env) =
   if not (Sys.file_exists plugin) then fail_core plugin;
   env
 
-let init () =
-  let lib = guess_coqlib () in
-  let core = guess_coqcorelib lib in
-  validate_env { core ; lib }
-
 type maybe_env =
   | Env of t
   | Boot
@@ -152,15 +147,13 @@ let env_ref = ref None
 (* Should we fail on double initialization? That seems a way to avoid
    mis-use for example when we pass command line arguments *)
 let init_with ~coqlib =
-  match coqlib with
-  | None ->
-    let env = init () in
-    env_ref := Some (Env env);
-    env
-  | Some lib ->
-    let env = validate_env { lib; core = guess_coqcorelib lib } in
-    env_ref := Some (Env env);
-    env
+  let lib = match coqlib with
+    | None -> guess_coqlib ()
+    | Some lib -> lib
+  in
+  let env = validate_env { lib; core = guess_coqcorelib lib } in
+  env_ref := Some (Env env);
+  env
 
 let initialized () = !env_ref
 
