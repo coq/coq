@@ -161,9 +161,10 @@ let do_definition_interactive ?loc ~program_mode ?hook ~name ~scope ?clearbody ~
   let evd = Evd.minimize_universes evd in
   Pretyping.check_evars_are_solved ~program_mode env evd;
   let typ = EConstr.to_constr evd typ in
+  Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl [typ];
+  let typ = EConstr.of_constr typ in
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
   let cinfo = Declare.CInfo.make ?loc ~name ~typ ~args ~impargs () in
-  Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl [typ];
   let evd = if poly then evd else Evd.fix_undefined_variables evd in
   Declare.Proof.start_definition ~info ~cinfo ?using evd
 
@@ -176,7 +177,6 @@ let do_definition_refine ?loc ?hook ~name ~scope ?clearbody ~poly ~typing_flags 
     interp_definition ~program_mode:false env evd empty_internalization_env bl None c ctypopt
   in
   let typ = match typ with Some typ -> typ | None -> Retyping.get_type_of env evd body in
-  let typ = EConstr.Unsafe.to_constr typ in
 
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
   let cinfo = Declare.CInfo.make ?loc ~name ~typ ~impargs () in
