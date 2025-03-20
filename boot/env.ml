@@ -108,9 +108,12 @@ let guess_coqlib () =
 (* Build layout uses coqlib = coqcorelib
    XXX we should be using -boot in build layout so is that dead code? *)
 let guess_coqcorelib lib =
-  if Sys.file_exists (Path.relative lib plugins_dir)
-  then lib
-  else Path.relative lib "../rocq-runtime"
+  match Util.getenv_rocq_gen ~rocq:"ROCQRUNTIMELIB" ~coq:"COQCORELIB" with
+  | Some v -> v
+  | None ->
+    if Sys.file_exists (Path.relative lib plugins_dir)
+    then lib
+    else Path.relative lib "../rocq-runtime"
 
 let fail_lib lib =
   let open Printf in
@@ -137,11 +140,7 @@ let validate_env ({ core; lib } as env) =
 
 let init () =
   let lib = guess_coqlib () in
-  let core =
-    match Util.getenv_rocq_gen ~rocq:"ROCQRUNTIMELIB" ~coq:"COQCORELIB" with
-    | Some v -> v
-    | None -> guess_coqcorelib lib
-  in
+  let core = guess_coqcorelib lib in
   validate_env { core ; lib }
 
 type maybe_env =
