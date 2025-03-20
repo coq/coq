@@ -135,9 +135,9 @@ let init_load_paths opts =
   in
   let (boot_ml_path, boot_vo_path), native_ml_path =
     match coqenv with
-    | None ->
+    | Boot ->
       ([],[]),opts.config.native_include_dirs
-    | Some coqenv ->
+    | Env coqenv ->
       let nI = match opts.config.native_include_dirs with
         | [] -> Nativelib.default_include_dirs coqenv
         | _ :: _ as nI -> nI

@@ -2206,7 +2206,10 @@ let really_call_csdpcert :
  fun provername poly ->
   Lazy.force require_csdp;
   let cmdname =
-    let env = Boot.Env.init () in
+    match Boot.Env.initialized() with
+    | None -> assert false
+    | Some Boot -> CErrors.user_err Pp.(str "Cannot use csdpcert with -boot.")
+    | Some (Env env) ->
     let plugin_dir = Boot.Env.plugins env |> Boot.Path.to_string in
     List.fold_left Filename.concat plugin_dir
       ["micromega"; "csdpcert" ^ Coq_config.exec_extension]

@@ -31,7 +31,7 @@ let make ~args ~(dir_info : _ Dir_info.t) =
   let make_separator_hack = false in
   let rocqenv, st = CD.Common.init ~make_separator_hack args in
   (* we always use -boot *)
-  assert (Option.is_empty rocqenv);
+  assert (rocqenv = Boot);
   let st =
     Dir_info.fold dir_info ~init:st ~f:(fun ~prefix:_ vAccu files ->
         let files = List.map Coq_module.source files in
