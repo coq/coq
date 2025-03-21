@@ -1,5 +1,5 @@
 ifeq "$(ROCQBIN)" ""
-  ROCQBIN=$(dir $(shell which rocq))/
+  ROCQBIN=$(dir $(shell which rocq))
 endif
 
 %: Makefile.rocq
