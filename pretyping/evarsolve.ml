@@ -1583,6 +1583,13 @@ let instantiate_evar unify flags env evd evk body =
   let allowed_evars = AllowedEvars.remove evk flags.allowed_evars in
   let flags = { flags with allowed_evars } in
   let evd' = check_evar_instance unify flags env evd evk body in
+  let evd' = try
+      let evk' = match EConstr.kind evd' body with
+        | Evar (e, _) -> e
+        | App (f, _) -> fst (EConstr.destEvar evd' f)
+        | _ -> raise DestKO in
+      if List.mem evk (Evd.shelf evd') then Evd.shelve evd' [evk'] else evd'
+    with DestKO -> evd' in
   Evd.define evk body evd'
 
 (* We try to instantiate the evar assuming the body won't depend
@@ -1750,13 +1757,20 @@ let rec invert_definition unify flags choose imitate_defs
               add_conv_oriented_pb (None,env',mkEvar ev'',mkEvar ev') evd in
           evdref := evd;
           evar'')
-    | App (f, args) when EConstr.isLambda !evdref f ->
-        let p = !progress in
+    | App (f, args) when EConstr.isEvar !evdref f ->
         progress := true;
-        (try
-          map_constr_with_full_binders env' !evdref (fun d (env,k) -> push_rel d env, k+1)
-                                        imitate envk t
-        with _ -> progress := p; imitate envk (whd_beta env' !evdref t))
+        (* Tries to imitate the arguments. If this fails, i is Some i' with i' the index of the last argument we fail to imitate *)
+        let i, args' = Array.fold_left_map_i (fun i k a ->
+          try let a' = imitate envk a in (k, a')
+          with ex -> (Some i, a)) None args in
+        (match i with
+        | None ->
+          let f' = imitate envk f in
+          if f' == f && Array.for_all2 (==) args args' then t else EConstr.mkApp (f', args')
+        | Some i ->
+          let args, args' = Array.chop (i+1) args in
+          let evd, e = Evardefine.evar_absorb_arguments env !evdref (EConstr.destEvar !evdref f) (Array.to_list args) in
+          evdref := evd; imitate envk (EConstr.mkApp (EConstr.mkEvar e, args')))
     | _ ->
         progress := true;
         match
