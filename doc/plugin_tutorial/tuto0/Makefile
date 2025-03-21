@@ -1,14 +1,14 @@
-ifeq "$(COQBIN)" ""
-  COQBIN=$(dir $(shell which coqtop))/
+ifeq "$(ROCQBIN)" ""
+  ROCQBIN=$(dir $(shell which rocq))/
 endif
 
-%: Makefile.coq
+%: Makefile.rocq
 
-Makefile.coq: _CoqProject
-	$(COQBIN)coq_makefile -f _CoqProject -o Makefile.coq
+Makefile.rocq: _CoqProject
+	$(ROCQBIN)rocq makefile -f _CoqProject -o Makefile.rocq
 
 tests: all
 	@$(MAKE) -C tests -s clean
 	@$(MAKE) -C tests -s all
 
--include Makefile.coq
+-include Makefile.rocq
