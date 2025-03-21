@@ -318,15 +318,18 @@ let option_object name stage act =
     classify_function = classify_option;
   }
 
-let declare_option ?(preprocess = fun x -> x) ~kind
+let declare_option ?(preprocess = fun x -> x) ?(no_summary=false) ~kind
   { optstage=stage; optdepr=depr; optkey=key; optread=read; optwrite=write } =
   check_key key;
-  let default = read() in
-  let () = Summary.declare_summary (nickname key)
-      { stage;
-        Summary.freeze_function = read;
-        Summary.unfreeze_function = write;
-        Summary.init_function = (fun () -> write default) }
+  let () =
+    if not no_summary then begin
+      let default = read() in
+      Summary.declare_summary (nickname key)
+        { stage;
+          Summary.freeze_function = read;
+          Summary.unfreeze_function = write;
+          Summary.init_function = (fun () -> write default) }
+    end
   in
   let change =
       let options : option_locality * _ -> obj =
