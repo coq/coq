@@ -64,16 +64,6 @@ let project_hint ~poly pri l2r r =
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
   (info, true, Hints.hint_globref (GlobRef.ConstRef c))
 
-let warning_deprecated_hint_constr =
-  CWarnings.create_warning ~from:[CWarnings.CoreCategories.automation; Deprecation.Version.v8_20] ~name:"fragile-hint-constr" ~default:AsError ()
-
-let warn_deprecated_hint_constr =
-  CWarnings.create_in warning_deprecated_hint_constr
-    (fun () ->
-      Pp.strbrk
-        "Declaring arbitrary terms as hints is fragile and deprecated; it is \
-         recommended to declare a toplevel constant instead")
-
 (* Only error when we have to (axioms may be instantiated if from functors)
    XXX maybe error if not from a functor argument?
  *)
@@ -81,12 +71,12 @@ let soft_evaluable = Tacred.soft_evaluable_of_global_reference
 
 (* Slightly more lenient global hint syntax for backwards compatibility *)
 let rectify_hint_constr h = match h with
-| Vernacexpr.HintsReference _ -> h
+| Vernacexpr.HintsReference qid -> Some qid
 | Vernacexpr.HintsConstr c ->
   let open Constrexpr in
   match c.CAst.v with
-  | CAppExpl ((qid, None), []) -> Vernacexpr.HintsReference qid
-  | _ -> Vernacexpr.HintsConstr c
+  | CAppExpl ((qid, None), []) -> Some qid
+  | _ -> None
 
 let interp_hints ~poly h =
   let env = Global.env () in
@@ -99,25 +89,14 @@ let interp_hints ~poly h =
   let fr r = soft_evaluable ?loc:r.CAst.loc (fref r) in
   let fi c =
     let open Hints in
-    let open Vernacexpr in
     match rectify_hint_constr c with
-    | HintsReference c ->
+    | Some c ->
       let gr = Smartlocate.global_with_alias c in
       (hint_globref gr)
-    | HintsConstr c ->
-      let () = warn_deprecated_hint_constr () in
-      let env = Global.env () in
-      let sigma = Evd.from_env env in
-      let c, uctx = Constrintern.interp_constr env sigma c in
-      let uctx = UState.normalize_variables uctx in
-      let c = Evarutil.nf_evar (Evd.from_ctx uctx) c in
-      let c =
-        if poly then (c, Some (UState.sort_context_set uctx))
-        else
-          let () = Global.push_context_set (UState.context_set uctx) in
-          (c, None)
-      in
-      (Hints.hint_constr c) [@ocaml.warning "-3"]
+    | None ->
+      CErrors.user_err (Pp.strbrk
+        "Declaring arbitrary terms as hints is forbidden. You must declare a \
+        toplevel constant instead.")
   in
   let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =

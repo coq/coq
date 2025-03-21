@@ -200,9 +200,6 @@ val add_hints : locality:hint_locality -> hint_db_name list -> hints_entry -> un
 
 val hint_globref : GlobRef.t -> hint_term
 
-val hint_constr : constr * UnivGen.sort_context_set option -> hint_term
-[@@ocaml.deprecated "(8.13) Declare a hint constant instead"]
-
 (** A constr which is Hint'ed will be:
    - (1) used as an Exact, if it does not start with a product
    - (2) used as an Apply, if its HNF starts with a product, and
