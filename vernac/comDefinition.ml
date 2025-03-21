@@ -161,8 +161,38 @@ let do_definition_interactive ?loc ~program_mode ?hook ~name ~scope ?clearbody ~
   let evd = Evd.minimize_universes evd in
   Pretyping.check_evars_are_solved ~program_mode env evd;
   let typ = EConstr.to_constr evd typ in
+  Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl [typ];
+  let typ = EConstr.of_constr typ in
   let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
   let cinfo = Declare.CInfo.make ?loc ~name ~typ ~args ~impargs () in
-  Evd.check_univ_decl_early ~poly ~with_obls:false evd udecl [typ];
   let evd = if poly then evd else Evd.fix_undefined_variables evd in
   Declare.Proof.start_definition ~info ~cinfo ?using evd
+
+let do_definition_refine ?loc ?hook ~name ~scope ?clearbody ~poly ~typing_flags ~kind ?using ?user_warns udecl bl c ctypopt =
+  let env = Global.env() in
+  let env = Environ.update_typing_flags ?typing_flags env in
+  (* Explicitly bound universes and constraints *)
+  let evd, udecl = interp_univ_decl_opt env udecl in
+  let evd, (body, typ), impargs =
+    interp_definition ~program_mode:false env evd empty_internalization_env bl None c ctypopt
+  in
+  let typ = match typ with Some typ -> typ | None -> Retyping.get_type_of env evd body in
+
+  let info = Declare.Info.make ?hook ~poly ~scope ?clearbody ~kind ~udecl ?typing_flags ?user_warns () in
+  let cinfo = Declare.CInfo.make ?loc ~name ~typ ~impargs () in
+  let evd = if poly then evd else Evd.fix_undefined_variables evd in
+
+  let future_goals, evd = Evd.pop_future_goals evd in
+  let gls = List.rev (Evd.FutureGoals.comb future_goals) in
+  let evd = Evd.push_future_goals evd in
+
+  let lemma = Declare.Proof.start_definition ~cinfo ~info ?using evd in
+  let init_refine =
+    Tacticals.tclTHENLIST [
+      Refine.refine ~typecheck:false (fun evd -> evd, body);
+      Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
+      Tactics.reduce_after_refine;
+    ]
+  in
+  let lemma, _ = Declare.Proof.by init_refine lemma in
+  lemma
