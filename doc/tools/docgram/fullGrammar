@@ -11,6 +11,7 @@ Prim.name: [
 
 global: [
 | Prim.reference
+| "lib:" Prim.reference
 ]
 
 constr_pattern: [

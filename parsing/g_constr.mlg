@@ -125,7 +125,9 @@ GRAMMAR EXTEND Gram
     [ [ "_" -> { CAst.make ~loc Anonymous } ] ]
   ;
   global:
-    [ [ r = Prim.reference -> { CQualidRef, r } ] ]
+    [ [ r = Prim.reference -> { CQualidRef, r }
+      | "lib:"; r = Prim.reference -> { CLibRef, r }
+      ] ]
   ;
   constr_pattern:
     [ [ c = constr -> { c } ] ]
