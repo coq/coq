@@ -142,11 +142,11 @@ to apply specific treatments accordingly.
    | @pattern10
    pattern10 ::= @pattern1 as @name
    | @pattern1 {* @pattern1 }
-   | @ @qualid {* @pattern1 }
+   | @ @global {* @pattern1 }
    pattern1 ::= @pattern0 % @scope_key
    | @pattern0 %_ @scope_key
    | @pattern0
-   pattern0 ::= @qualid
+   pattern0 ::= @global
    | %{%| {* @qualid := @pattern } %|%}
    | _
    | ( {+| @pattern } )

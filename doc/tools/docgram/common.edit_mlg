@@ -2285,7 +2285,6 @@ SPLICE: [
 | ne_string
 | lstring
 | fullyqualid
-| global
 | reference
 | bar_cbrace
 | lconstr
