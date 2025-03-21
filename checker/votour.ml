@@ -448,7 +448,7 @@ let visit_vo f =
   let known_segments = [
     "summary", Values.v_libsum;
     "library", Values.v_lib;
-    "opaques", Values.v_opaquetable;
+    "opaque proofs", Values.v_opaquetable;
     "vmlibrary", Values.v_vmlib;
   ] in
   let repr =

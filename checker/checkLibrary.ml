@@ -335,7 +335,7 @@ let marshal_in_segment (type a) ~validate ~value ~(segment : a ObjFile.segment) 
 
 let summary_seg : summary_disk ObjFile.id = ObjFile.make_id "summary"
 let library_seg : library_disk ObjFile.id = ObjFile.make_id "library"
-let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaques"
+let opaques_seg : seg_proofs ObjFile.id = ObjFile.make_id "opaque proofs"
 let vm_seg = Vmlibrary.vm_segment
 
 let intern_from_file ~intern_mode ~enable_VM (dir, f) =
