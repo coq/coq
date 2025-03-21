@@ -297,8 +297,8 @@ let safe_pr_long_global r =
     | _ -> assert false
 
 let pr_long_mp mp =
-  let lid = DirPath.repr (Nametab.dirpath_of_module mp) in
-  str (String.concat "." (List.rev_map Id.to_string lid))
+  let sp = Nametab.path_of_module mp in
+  Libnames.pr_path sp
 
 let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 

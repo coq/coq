@@ -61,7 +61,7 @@ let keyword s = tag_keyword (str s)
 
 let get_new_id locals id =
   let rec get_id l id =
-    let dir = DirPath.make [id] in
+    let dir = Libnames.make_path DirPath.empty id in
       if not (Nametab.exists_module dir || Nametab.exists_dir dir) then
         id
       else
@@ -199,7 +199,7 @@ let print_kn locals kn =
 
 let nametab_register_dir obj_mp =
   let id = mk_fake_top () in
-  let obj_dir = DirPath.make [id] in
+  let obj_dir = Libnames.make_path DirPath.empty id in
   Nametab.(push_module (Until 1) obj_dir obj_mp)
 
 (** Nota: the [global_reference] we register in the nametab below
@@ -257,7 +257,7 @@ let nametab_register_modparam used mbid mtb =
     with e when CErrors.noncritical e ->
       (* Otherwise, we try to play with the nametab ourselves *)
       let mp = MPbound mbid in
-      let check id = Id.Set.mem id used || Nametab.exists_module (DirPath.make [id]) in
+      let check id = Id.Set.mem id used || Nametab.exists_module (Libnames.make_path DirPath.empty id) in
       let id = Namegen.next_ident_away_from id check in
       let dir = DirPath.make [id] in
       nametab_register_dir mp;

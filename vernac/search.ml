@@ -83,7 +83,7 @@ let generic_search env sigma (fn : GlobRef.t -> Decls.logical_kind option -> env
     | AtomicObject o ->
       let handler =
         DynHandle.add Declare.Internal.Constant.tag begin fun (id,obj) ->
-          let kn = KerName.make prefix.Nametab.obj_mp (Label.of_id id) in
+          let kn = KerName.make prefix.obj_mp (Label.of_id id) in
           let cst = Global.constant_of_delta_kn kn in
           let gr = GlobRef.ConstRef cst in
           let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
@@ -91,7 +91,7 @@ let generic_search env sigma (fn : GlobRef.t -> Decls.logical_kind option -> env
           fn gr (Some kind) env sigma typ
         end @@
         DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
-          let kn = KerName.make prefix.Nametab.obj_mp (Label.of_id id) in
+          let kn = KerName.make prefix.obj_mp (Label.of_id id) in
           let mind = Global.mind_of_delta_kn kn in
           let mib = Global.lookup_mind mind in
           let iter_packet i mip =
@@ -201,13 +201,13 @@ let blacklist_filter : filter_function = fun ref kind env sigma typ ->
 
 let module_filter : _ -> filter_function = fun mods ref kind env sigma typ ->
   let sp = Nametab.path_of_global ref in
-  let sl = dirpath sp in
+  let sl = pop_dirpath @@ dirpath_of_path sp in
+  let is_inside md = is_dirpath_prefix_of (dirpath_of_path md) sl in
   match mods with
   | SearchOutside mods ->
-    let is_outside md = not (is_dirpath_prefix_of md sl) in
+    let is_outside md = not (is_inside md) in
     List.for_all is_outside mods
   | SearchInside mods ->
-    let is_inside md = is_dirpath_prefix_of md sl in
     List.is_empty mods || List.exists is_inside mods
 
 let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
@@ -292,7 +292,7 @@ type search_constraint =
   | Name_Pattern of Str.regexp
   | Type_Pattern of Pattern.constr_pattern
   | SubType_Pattern of Pattern.constr_pattern
-  | In_Module of Names.DirPath.t
+  | In_Module of full_path
   | Include_Blacklist
 
 type 'a coq_object = {
@@ -321,7 +321,7 @@ let interface_search env sigma =
   in
   let filter_function ref kind env sigma constr =
     let id = Names.Id.to_string (Nametab.basename_of_global ref) in
-    let path = Libnames.dirpath (Nametab.path_of_global ref) in
+    let path = pop_dirpath @@ dirpath_of_path (Nametab.path_of_global ref) in
     let toggle x b = if x then b else not b in
     let match_name (regexp, flag) =
       toggle (Str.string_match regexp id 0) flag
@@ -335,7 +335,7 @@ let interface_search env sigma =
            env sigma pat (EConstr.of_constr constr)) flag
     in
     let match_module (mdl, flag) =
-      toggle (Libnames.is_dirpath_prefix_of mdl path) flag
+      toggle (Libnames.is_dirpath_prefix_of (dirpath_of_path mdl) path) flag
     in
     List.for_all match_name name &&
     List.for_all match_type tpe &&

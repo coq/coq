@@ -18,7 +18,7 @@ val interp_search_request :
   bool * Vernacexpr.search_request ->
   bool * Search.glob_search_request
 
-val interp_search_restriction : Libnames.qualid list search_restriction -> Names.DirPath.t list search_restriction
+val interp_search_restriction : Libnames.qualid list search_restriction -> Libnames.full_path list search_restriction
 
 val interp_search : Environ.env -> Evd.evar_map ->
   searchable -> Libnames.qualid list search_restriction -> unit

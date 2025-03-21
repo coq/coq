@@ -1351,7 +1351,7 @@ let add_subnames_of ?loc len n ns full_n ref =
     CErrors.user_err ?loc Pp.(str "Only inductive types can be used with Import (...).")
   | Globnames.TrueGlobal (IndRef (mind,i)) ->
     let open Declarations in
-    let dp = Libnames.dirpath full_n in
+    let path_prefix = path_pop_suffix full_n in
     let mib = Global.lookup_mind mind in
     let mip = mib.mind_packets.(i) in
     let ns = add1 (IndRef (mind,i)) ns in
@@ -1361,19 +1361,19 @@ let add_subnames_of ?loc len n ns full_n ref =
     List.fold_left (fun ns f ->
         let s = Indrec.elimination_suffix f in
         let n_elim = Id.of_string (Id.to_string mip.mind_typename ^ s) in
-        match importable_extended_global_of_path ?loc (Libnames.make_path dp n_elim) with
+        match importable_extended_global_of_path ?loc (Libnames.add_path_suffix path_prefix n_elim) with
         | exception Not_found -> ns
         | None -> ns
         | Some ref -> (len, ref) :: ns)
       ns Sorts.all_families
 
 let interp_names m ns =
-  let dp_m = Nametab.dirpath_of_module m in
+  let dp_m = Nametab.path_of_module m in
   let ns =
     List.fold_left (fun ns (n,etc) ->
         let len, full_n =
           let dp_n,n = repr_qualid n in
-          List.length (DirPath.repr dp_n), make_path (append_dirpath dp_m dp_n) n
+          List.length (DirPath.repr dp_n), add_path_suffix (append_path dp_m dp_n) n
         in
         let ref = try importable_extended_global_of_path ?loc:n.loc full_n
           with Not_found ->

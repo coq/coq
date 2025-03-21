@@ -312,7 +312,7 @@ let status force =
   ignore (Stm.finish ~doc:(get_doc ()) : Vernacstate.t);
   if force then Stm.join ~doc:(get_doc ());
   let path =
-    let l = Names.DirPath.repr (Lib.cwd ()) in
+    let l = Names.DirPath.repr (Libnames.dirpath_of_path @@ Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
   in
   let proof =
