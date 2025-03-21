@@ -200,10 +200,15 @@ sig
 
   val mkCaseStk : case_info * EInstance.t * EConstr.t array * EConstr.case_return * EConstr.t pcase_invert * EConstr.case_branch array -> case_stk
 
+  type proj_node
+  val projection : proj_node -> Projection.t
+  val projection_params : proj_node -> EConstr.t array
+  val mk_proj_node : env -> evar_map -> Projection.t -> EConstr.t array -> ERelevance.t -> proj_node
+
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t * ERelevance.t
+  | Proj of proj_node
   | Fix of fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 
@@ -244,6 +249,8 @@ struct
      - There is no array reallocation (outside of debug printing)
    *)
 
+  let mk_app_node a = (0, a, pred (Array.length a))
+
   let pr_app_node pr (i,a,j) =
     let open Pp in surround (
                      prvect_with_sep pr_comma pr (Array.sub a i (j - i + 1))
@@ -255,10 +262,19 @@ struct
 
   let mkCaseStk x = x
 
+  type proj_node =
+    { projection : Projection.t;
+      proj_params : app_node;
+      proj_relevance : ERelevance.t }
+
+  let projection p = p.projection
+  let projection_params p = let (_, args, _) = p.proj_params in args
+  let mk_proj_node env sigma projection proj_params proj_relevance = { projection; proj_params = mk_app_node proj_params; proj_relevance }
+
   type member =
   | App of app_node
   | Case of case_stk
-  | Proj of Projection.t * ERelevance.t
+  | Proj of proj_node
   | Fix of fixpoint * t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * t * CPrimitives.args_red
 
@@ -274,8 +290,8 @@ struct
        str "ZCase(" ++
          prvect_with_sep (pr_bar) (fun (_, c) -> pr_c c) br
        ++ str ")"
-    | Proj (p,_)  ->
-      str "ZProj(" ++ Projection.debug_print p ++ str ")"
+    | Proj p ->
+      str "ZProj(" ++ pr_app_node pr_c p.proj_params ++ str", " ++ Projection.debug_print p.projection ++ str ")"
     | Fix (f,args) ->
        str "ZFix(" ++ Constr.debug_print_fix pr_c f
        ++ pr_comma () ++ pr pr_c args ++ str ")"
@@ -297,6 +313,10 @@ struct
     | App (i,l,j) :: sk ->
       if i < j then Some (l.(j), App (i,l,pred j) :: sk)
       else Some (l.(j), sk)
+    | Proj p :: sk ->
+      let (i, l, j)= p.proj_params in
+      if i < j then Some (l.(j), Proj { p with proj_params = (i, l, pred j) } :: sk)
+      else Some (l.(j), sk)
     | _ -> None
 
   let decomp_node_last (i,l,j) sk =
@@ -311,7 +331,7 @@ struct
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
       | (Case _ :: s1, Case _::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
-      | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
+      | (Proj p::s1, Proj p2::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
       | (Fix(_,a1)::s1, Fix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
@@ -332,7 +352,7 @@ struct
       | Case ((_,_,pms1,((_, t1),_),_,a1)) :: q1, Case ((_,_,pms2, ((_, t2),_),_,a2)) :: q2 ->
         let f' o (_, t1) (_, t2) = f o t1 t2 in
         aux (Array.fold_left2 f' (f (Array.fold_left2 f o pms1 pms2) t1 t2) a1 a2) q1 q2
-      | Proj (p1,_) :: q1, Proj (p2,_) :: q2 ->
+      | Proj p1 :: q1, Proj p2 :: q2 ->
         aux o q1 q2
       | Fix ((_,(_,a1,b1)),s1) :: q1, Fix ((_,(_,a2,b2)),s2) :: q2 ->
         let o' = aux (Array.fold_left2 f (Array.fold_left2 f o b1 b2) a1 a2) (List.rev s1) (List.rev s2) in
@@ -419,7 +439,7 @@ struct
     | f, (Case (ci,u,pms,rt,iv,br)::s) -> zip (mkCase (ci,u,pms,rt,iv,f,br), s)
   | f, (Fix (fix,st)::s) -> zip
     (mkFix fix, st @ (append_app [|f|] s))
-  | f, (Proj (p,r)::s) -> zip (mkProj (p,r,f),s)
+  | f, (Proj p::s) -> zip (mkProj (p.projection,p.proj_relevance,f),s)
   | f, (Primitive (p,c,args,kargs)::s) ->
       zip (mkConstU c, args @ append_app [|f|] s)
   in
@@ -473,6 +493,8 @@ type meta_handler = { meta_value : metavariable -> EConstr.t option }
 let safe_meta_value metas ev = match metas with
 | None -> None
 | Some f -> f.meta_value ev
+
+type projection_handler = env -> evar_map -> Projection.t -> constr -> constr array
 
 (*************************************)
 (*** Reduction using bindingss ***)
@@ -797,8 +819,8 @@ and apply_rule whrec env sigma ctx psubst es stk =
       let psubst = match_arg_pattern whrec env sigma (ntys_ret @ ctx) psubst pret ret in
       let psubst = Array.fold_left2 (fun psubst pat (ctx', br) -> match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pat br) psubst pbrs brs in
       apply_rule whrec env sigma ctx psubst e s
-  | Declarations.PEProj proj :: e, Stack.Proj (proj', r) :: s ->
-      if not @@ QProjection.Repr.equal env proj (Projection.repr proj') then raise PatternFailure;
+  | Declarations.PEProj proj :: e, Stack.Proj p :: s ->
+      if not @@ QProjection.Repr.equal env proj (Projection.repr (Stack.projection p)) then raise PatternFailure;
       apply_rule whrec env sigma ctx psubst e s
   | _, _ -> raise PatternFailure
 
@@ -819,7 +841,7 @@ let rec apply_rules whrec env sigma u r stk =
       (rhs', stk)
     with PatternFailure -> apply_rules whrec env sigma u rs stk
 
-let whd_state_gen flags ?metas env sigma =
+let whd_state_gen ?(get_params = fun env sigma p c -> [||]) flags ?metas env sigma =
   let open Context.Named.Declaration in
   let rec whrec (x, stack) : state =
     let () =
@@ -884,7 +906,8 @@ let whd_state_gen flags ?metas env sigma =
        | exception NotEvaluableConst _ -> fold ()
       else fold ()
     | Proj (p, r, c) when RedFlags.red_projection flags p ->
-      let stack' = (c, Stack.Proj (p,r) :: stack) in
+      let proj = Stack.mk_proj_node env sigma p (get_params env sigma p c) r in
+      let stack' = (c, Stack.Proj proj :: stack) in
       whrec stack'
 
     | LetIn (_,b,_,c) when RedFlags.red_set flags RedFlags.fZETA ->
@@ -916,7 +939,8 @@ let whd_state_gen flags ?metas env sigma =
         |args, (Stack.Case case::s') when use_match ->
           let r = apply_branch env sigma cstr args case in
           whrec (r, s')
-        |args, (Stack.Proj (p,_)::s') when use_match ->
+        |args, (Stack.Proj proj::s') when use_match ->
+          let p = Stack.projection proj in
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
           let x' = Stack.zip sigma (x, args) in
@@ -965,7 +989,7 @@ let whd_state_gen flags ?metas env sigma =
   whrec
 
 (** reduction machine without global env and refold machinery *)
-let local_whd_state_gen flags ?metas env sigma =
+let local_whd_state_gen ?(get_params = fun env sigma p c -> [||]) flags ?metas env sigma =
   let rec whrec (x, stack) =
     let c0 = EConstr.kind sigma x in
     let s = (EConstr.of_kind c0, stack) in
@@ -981,7 +1005,8 @@ let local_whd_state_gen flags ?metas env sigma =
       | _ -> s)
 
     | Proj (p,r,c) when RedFlags.red_projection flags p ->
-      (whrec (c, Stack.Proj (p,r) :: stack))
+      let proj = Stack.mk_proj_node env sigma p (get_params env sigma p c) r in
+      (whrec (c, Stack.Proj proj :: stack))
 
     | Case (ci,u,pms,p,iv,d,lf) ->
       whrec (d, Stack.Case (ci,u,pms,p,iv,lf) :: stack)
@@ -1005,7 +1030,8 @@ let local_whd_state_gen flags ?metas env sigma =
         |args, (Stack.Case case :: s') when use_match ->
           let r = apply_branch env sigma cstr args case in
           whrec (r, s')
-        |args, (Stack.Proj (p,_) :: s') when use_match ->
+        |args, (Stack.Proj proj :: s') when use_match ->
+          let p = Stack.projection proj in
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
           let x' = Stack.zip sigma (x,args) in
@@ -1609,7 +1635,7 @@ let is_sort env sigma t =
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)
 
-let whd_betaiota_deltazeta_for_iota_state ts ?metas env sigma s =
+let whd_betaiota_deltazeta_for_iota_state ?(get_params = fun env sigma p c -> [||]) ts ?metas env sigma s =
   let all' = RedFlags.red_add_transparent RedFlags.all ts in
   (* Unset the sharing flag to get a call-by-name reduction. This matters for
      the shape of the generated term. *)
@@ -1628,7 +1654,7 @@ let whd_betaiota_deltazeta_for_iota_state ts ?metas env sigma s =
     | _ -> None
   in
   let rec whrec s =
-    let (t, stack as s) = whd_state_gen RedFlags.betaiota ?metas env sigma s in
+    let (t, stack as s) = whd_state_gen ~get_params RedFlags.betaiota ?metas env sigma s in
     let rewrite_step =
       match kind sigma t with
       | Const (cst, u) when Environ.is_symbol env cst ->
@@ -1653,9 +1679,10 @@ let whd_betaiota_deltazeta_for_iota_state ts ?metas env sigma s =
         | Some (t_o, args) when isConstruct sigma t_o -> whrec (t_o, Stack.append_app args stack')
         | (Some _ | None) -> s
         end
-      |args, (Stack.Proj (p,_) :: stack'') ->
+      |args, (Stack.Proj proj :: stack'') ->
         begin match whd_opt (t, args) with
         | Some (t_o, args) when isConstruct sigma t_o ->
+          let p = Stack.projection proj in
           whrec (args.(Projection.npars p + Projection.arg p), stack'')
         | (Some _ | None) -> s
         end
