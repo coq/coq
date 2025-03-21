@@ -474,8 +474,9 @@ module Intern = struct
     in
     let p = match p with
       | Inl r -> interp_ref r
-      | Inr { v = CAppExpl((r,None),[]) } ->
+      | Inr { v = CAppExpl(((CQualidRef,r),None),[]) } ->
         (* We interpret similarly @ref and ref *)
+        (* XXX CLibRef? *)
         interp_ref (make @@ AN r)
       | Inr c ->
         Inr (ist.intern_pattern c)

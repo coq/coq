@@ -352,7 +352,7 @@ let pattern_of_string ?env s =
 
 let dirpath_of_string_list s =
   let path = String.concat "." s in
-  let qid = Procq.parse_string Procq.Constr.global path in
+  let qid = Procq.parse_string Procq.Prim.reference path in
   let id =
     try Nametab.full_name_module qid
     with Not_found ->

@@ -115,12 +115,12 @@ let intern_ltac_variable ist qid =
 let intern_constr_reference strict ist qid =
   let id = qualid_basename qid in
   if qualid_is_ident qid && not strict && find_hyp (qualid_basename qid) ist then
-    (DAst.make @@ GVar id), Some (make @@ CRef (qid,None))
+    (DAst.make @@ GVar id), Some (make @@ CRef ((CQualidRef,qid),None))
   else if qualid_is_ident qid && find_var (qualid_basename qid) ist then
-    (DAst.make @@ GVar id), if strict then None else Some (make @@ CRef (qid,None))
+    (DAst.make @@ GVar id), if strict then None else Some (make @@ CRef ((CQualidRef,qid),None))
   else
     DAst.make @@ GRef (locate_global_with_alias qid,None),
-    if strict then None else Some (make @@ CRef (qid,None))
+    if strict then None else Some (make @@ CRef ((CQualidRef,qid),None))
 
 (* Internalize an isolated reference in position of tactic *)
 
@@ -288,7 +288,7 @@ let intern_destruction_arg ist = function
   | clear,ElimOnIdent {loc;v=id} ->
       if ist.strict_check then
         (* If in a defined tactic, no intros-until *)
-        let c, p = intern_constr ist (make @@ CRef (qualid_of_ident id, None)) in
+        let c, p = intern_constr ist (make @@ CRef (Constrexpr_ops.ref_expr_of_ident id, None)) in
         match DAst.get c with
         | GVar id -> clear,ElimOnIdent (make ?loc:c.loc id)
         | _ -> clear,ElimOnConstr ((c, p), NoBindings)
@@ -723,7 +723,7 @@ let intern_strategy ist s =
          plug-in wants to craft a strategy by hand. *)
       if Id.Set.mem x.v stratvars then Rewrite.StratVar x.v
       else CErrors.user_err ?loc:x.loc Pp.(str "Unbound strategy" ++ spc() ++ Id.print x.v)
-    | StratConstr ({ v = CRef (qid, None) }, true) when idset_mem_qualid qid stratvars ->
+    | StratConstr ({ v = CRef ((CQualidRef,qid), None) }, true) when idset_mem_qualid qid stratvars ->
       let (_, x) = repr_qualid qid in Rewrite.StratVar x
     | StratConstr (c, b) -> StratConstr (intern_constr ist c, b)
     | StratFix (x, s) -> StratFix (x.v, aux (Id.Set.add x.v stratvars) s)

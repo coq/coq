@@ -846,6 +846,7 @@ command: [
 | "Validate" "Proof"
 | "Create" "HintDb" ident OPT "discriminated"
 | "Remove" "Hints" LIST1 qualid OPT ( ":" LIST1 ident )
+| "Hint" "Resolve" LIST1 [ qualid | one_term ] OPT hint_info OPT ( ":" LIST1 ident )
 | "Comments" LIST0 [ one_term | string | natural ]
 | "Attributes" LIST1 attribute SEP ","
 | "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
@@ -996,7 +997,6 @@ command: [
 | "Print" "Ltac2" "Signatures"      (* ltac2 plugin *)
 | "Ltac2" "Check" ltac2_expr      (* ltac2 plugin *)
 | "Ltac2" "Globalize" ltac2_expr      (* ltac2 plugin *)
-| "Hint" "Resolve" LIST1 [ qualid | one_term ] OPT hint_info OPT ( ":" LIST1 ident )
 | "Hint" "Resolve" [ "->" | "<-" ] LIST1 qualid OPT natural OPT ( ":" LIST1 ident )
 | "Hint" "Immediate" LIST1 [ qualid | one_term ] OPT ( ":" LIST1 ident )
 | "Hint" [ "Constants" | "Projections" | "Variables" ] [ "Transparent" | "Opaque" ] OPT ( ":" LIST1 ident )

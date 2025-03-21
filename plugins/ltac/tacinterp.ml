@@ -1006,7 +1006,9 @@ let interp_destruction_arg ist gl arg =
         if Tactics.is_quantified_hypothesis id gl then
           keep,ElimOnIdent (CAst.make ?loc id)
         else
-          let c = (DAst.make ?loc @@ GVar id,Some (CAst.make @@ CRef (qualid_of_ident ?loc id,None))) in
+          let c = (DAst.make ?loc @@ GVar id,
+                   Some (CAst.make @@ CRef (Constrexpr_ops.ref_expr_of_ident ?loc id,None)))
+          in
           let f env sigma =
             let (sigma,c) = interp_open_constr ist env sigma c in
             (sigma, (c,NoBindings))

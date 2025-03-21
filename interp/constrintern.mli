@@ -158,6 +158,7 @@ val intern_name_alias :
 
 (** Expands abbreviations; raise an error if not existing *)
 val interp_reference : ltac_sign -> qualid -> glob_constr
+val interp_reference_expr : ltac_sign -> reference_expr -> glob_constr
 
 (** Interpret binders *)
 

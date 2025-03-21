@@ -43,11 +43,15 @@ let () = CErrors.register_handler (function
     | NotFoundRef s -> Some Pp.(str "not found in table: " ++ str s)
     | _ -> None)
 
-let lib_ref s =
+let lib_ref ?loc s =
   try CString.Map.find s !table
-  with Not_found -> raise (NotFoundRef s)
+  with Not_found -> Loc.raise ?loc (NotFoundRef s)
+
+let lib_ref_qualid qid = lib_ref ?loc:qid.CAst.loc (Libnames.string_of_qualid qid)
 
 let lib_ref_opt s = CString.Map.find_opt s !table
+
+let lib_ref_opt_qualid qid = lib_ref_opt (Libnames.string_of_qualid qid)
 
 let add_ref s c =
   table := CString.Map.add s c !table

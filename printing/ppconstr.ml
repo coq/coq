@@ -255,8 +255,8 @@ let pr_universe_instance l =
   pr_opt_no_spc (pr_univ_annot pr_inside_universe_instance) l
 
 let pr_reference qid =
-  if qualid_is_ident qid then tag_var (pr_id @@ qualid_basename qid)
-  else pr_qualid qid
+  if ref_expr_is_ident qid then tag_var (pr_id @@ ref_expr_basename qid)
+  else Constrexpr_ops.pr_ref_expr qid
 
 let pr_cref ref us =
   pr_reference ref ++ pr_universe_instance us
@@ -324,7 +324,7 @@ let pr_record left right pr = function
       str right)
 
 let pr_record_body left right pr l =
-  let pr_defined_field (id, c) = hov 2 (pr_reference id ++ str" :=" ++ pr c) in
+  let pr_defined_field (id, c) = hov 2 (pr_reference (CQualidRef,id) ++ str" :=" ++ pr c) in
   pr_record left right pr_defined_field l
 
 let las = lapp
@@ -704,7 +704,7 @@ let pr pr sep lev_after inherited a =
     return (fun lev_after -> pr_proj (pr mt) pr_app c (CAst.make (CRef (f,us))) l) lproj
   | CAppExpl ((qid,us),[t])
   | CApp ({v = CRef(qid,us)},[t,None])
-    when qualid_is_ident qid && Id.equal (qualid_basename qid) Notation_ops.ldots_var ->
+    when ref_expr_is_ident qid && Id.equal (ref_expr_basename qid) Notation_ops.ldots_var ->
     return (fun lev_after ->
         hov 0 (str ".." ++ pr spc no_after (LevelLe latom) t ++ spc () ++ str ".."))
       larg
