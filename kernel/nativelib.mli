@@ -15,6 +15,9 @@ used by the native compiler. *)
 val output_dir : CUnix.physical_path ref
 val include_dirs : CUnix.physical_path list ref
 
+(** Default value for include dirs in non -boot mode (just the kernel). *)
+val default_include_dirs : Boot.Env.t -> CUnix.physical_path list
+
 val get_load_paths : (unit -> string list) ref
 
 val load_obj : (string -> unit) ref

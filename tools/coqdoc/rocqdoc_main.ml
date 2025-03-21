@@ -99,7 +99,7 @@ module E = Boot.Env
 
 let copy_style_file file =
   (* We give preference to coqlib in case it is overriden *)
-  let env = E.init () in
+  let env = E.init_with ~coqlib:!prefs.coqlib in
   let coqdoc = E.tool env "coqdoc" in
   let sty_file = E.Path.relative coqdoc file in
   if not (E.Path.exists sty_file) then

@@ -108,9 +108,12 @@ let guess_coqlib () =
 (* Build layout uses coqlib = coqcorelib
    XXX we should be using -boot in build layout so is that dead code? *)
 let guess_coqcorelib lib =
-  if Sys.file_exists (Path.relative lib plugins_dir)
-  then lib
-  else Path.relative lib "../rocq-runtime"
+  match Util.getenv_rocq_gen ~rocq:"ROCQRUNTIMELIB" ~coq:"COQCORELIB" with
+  | Some v -> v
+  | None ->
+    if Sys.file_exists (Path.relative lib plugins_dir)
+    then lib
+    else Path.relative lib "../rocq-runtime"
 
 let fail_lib lib =
   let open Printf in
@@ -135,29 +138,32 @@ let validate_env ({ core; lib } as env) =
   if not (Sys.file_exists plugin) then fail_core plugin;
   env
 
-(* Should we fail on double initialization? That seems a way to avoid
-   mis-use for example when we pass command line arguments *)
-let init () =
-  let lib = guess_coqlib () in
-  let core =
-    match Util.getenv_rocq_gen ~rocq:"ROCQRUNTIMELIB" ~coq:"COQCORELIB" with
-    | Some v -> v
-    | None -> guess_coqcorelib lib
-  in
-  validate_env { core ; lib }
+type maybe_env =
+  | Env of t
+  | Boot
 
 let env_ref = ref None
 
-let init () =
-  match !env_ref with
-  | None ->
-    let env = init () in
-    env_ref := Some env; env
-  | Some env -> env
-
-let set_coqlib lib =
+(* Should we fail on double initialization? That seems a way to avoid
+   mis-use for example when we pass command line arguments *)
+let init_with ~coqlib =
+  let lib = match coqlib with
+    | None -> guess_coqlib ()
+    | Some lib -> lib
+  in
   let env = validate_env { lib; core = guess_coqcorelib lib } in
-  env_ref := Some env
+  env_ref := Some (Env env);
+  env
+
+let initialized () = !env_ref
+
+let maybe_init ~boot ~coqlib =
+  match boot, coqlib with
+  | true, None -> Ok Boot
+  | false, (None | Some _ as coqlib) ->
+    Ok (Env (init_with ~coqlib))
+  | true, Some _ ->
+    Error "Command line options -boot and -coqlib are incompatible."
 
 let coqlib { lib; _ } = lib
 let corelib { core; _ } = core
@@ -208,11 +214,15 @@ let print_config ?(prefix_var_name="") env f =
      | Coq_config.NativeOff -> "no"
      | Coq_config.NativeOn {ondemand=true} -> "ondemand")
 
-let print_query usage : Usage.query -> unit = function
+let query_getenv = function
+  | Boot -> assert false
+  | Env v -> v
+
+let print_query envopt usage : Usage.query -> unit = function
   | PrintVersion -> Usage.version ()
   | PrintMachineReadableVersion -> Usage.machine_readable_version ()
   | PrintWhere ->
-    let env = init () in
+    let env = query_getenv envopt in
     let coqlib = coqlib env |> Path.to_string in
     print_endline coqlib
   | PrintHelp -> begin match usage with
@@ -220,9 +230,28 @@ let print_query usage : Usage.query -> unit = function
       | None -> assert false
     end
   | PrintConfig ->
-    let env = init() in
+    let env = query_getenv envopt in
     print_config env stdout
 
-let query_needs_env : Usage.query -> bool = function
-  | PrintVersion | PrintMachineReadableVersion | PrintHelp -> false
-  | PrintWhere | PrintConfig -> true
+let query_needs_env : Usage.query -> string option = function
+  | PrintVersion | PrintMachineReadableVersion | PrintHelp -> None
+  | PrintWhere -> Some "-where"
+  | PrintConfig -> Some "-config"
+
+let print_queries_maybe_init ~boot ~coqlib usage = function
+  | [] -> maybe_init ~boot ~coqlib
+  | _ :: _ as qs ->
+    let needs_env = CList.find_map query_needs_env qs in
+    let res = match boot, needs_env with
+    | true, Some q -> Error ("Command line option -boot is not compatible with " ^ q ^ ".")
+    | true, None ->
+      (* produces Error if coqlib and boot used together *)
+      maybe_init ~boot ~coqlib
+    | false, None -> Ok Boot
+    | false, Some _ -> Ok (Env (init_with ~coqlib))
+    in
+    let () = match res with
+      | Error _ -> ()
+      | Ok envopt -> List.iter (print_query envopt usage) qs
+    in
+    res

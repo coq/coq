@@ -17,9 +17,11 @@ open Coqargs
 let () = at_exit flush_all
 
 let get_version ~boot =
-  if boot then Coq_config.version else
+  (* XXX assert false on None? *)
+  match Boot.Env.initialized () with
+  | Some Boot | None -> Coq_config.version
+  | Some (Env env) ->
   try
-    let env = Boot.Env.init () in
     let revision = Boot.Env.revision env |> Boot.Path.to_string in
     let ch = open_in revision in
     let ver = input_line ch in
