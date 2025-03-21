@@ -233,8 +233,7 @@ type inference_flags = {
   expand_evars : bool;
   program_mode : bool;
   polymorphic : bool;
-  undeclared_evars_patvars: bool;
-  patvars_abstract : bool;
+  undeclared_evars_rr: bool;
   unconstrained_sorts : bool;
 }
 
@@ -243,8 +242,7 @@ type pretype_flags = {
   resolve_tc : bool;
   program_mode : bool;
   use_coercions : bool;
-  undeclared_evars_patvars : bool;
-  patvars_abstract : bool;
+  undeclared_evars_rr : bool;
   unconstrained_sorts : bool;
 }
 
@@ -383,19 +381,12 @@ let apply_inference_hook (hook : inference_hook) env sigma frozen = match frozen
     else
       sigma) pending sigma
 
-let allow_all_but_patvars sigma =
-  let p evk =
-    try
-      let EvarInfo evi = Evd.find sigma evk in
-      match snd (Evd.evar_source evi) with Evar_kinds.MatchingVar _ -> false | _ -> true
-    with Not_found -> true
-  in
-  Evarsolve.AllowedEvars.from_pred p
-
-let apply_heuristics ~patvars_abstract env sigma =
+let apply_heuristics env sigma =
   (* Resolve eagerly, potentially making wrong choices *)
-  let flags = default_flags_of (Conv_oracle.get_transp_state (Environ.oracle env)) in
-  let flags = if patvars_abstract then { flags with allowed_evars = allow_all_but_patvars sigma } else flags in
+  let flags = {
+    (default_flags_of (Conv_oracle.get_transp_state (Environ.oracle env)))
+    with allowed_evars = Evarsolve.allow_all_but_rrpat_evars sigma
+  } in
   try solve_unif_constraints_with_heuristics ~flags env sigma
   with e when CErrors.noncritical e -> sigma
 
@@ -465,7 +456,7 @@ let solve_remaining_evars_from ?hook (flags : inference_flags) env ?initial sigm
     apply_inference_hook hook env sigma frozen
   in
   let sigma = if flags.solve_unification_constraints
-    then apply_heuristics ~patvars_abstract:flags.patvars_abstract env sigma
+    then apply_heuristics env sigma
     else sigma
   in
   let () = if flags.fail_evar then
@@ -501,10 +492,10 @@ let adjust_evar_source sigma na c =
   | _, _ -> sigma, c
 
 (* coerce to tycon if any *)
-let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; patvars_abstract } env sigma j = function
+let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; } env sigma j = function
   | None -> sigma, j, Some Coercion.empty_coercion_trace
   | Some t ->
-    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions ~patvars_abstract !!env sigma j t
+    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions !!env sigma j t
 
 let check_instance subst = function
   | [] -> ()
@@ -601,14 +592,14 @@ let pretype_sort ?loc ~flags sigma s =
   let sigma, s = sort ?loc ~flags sigma s in
   judge_of_sort ?loc sigma s
 
-let new_typed_evar env sigma ?naming ~src tycon =
+let new_typed_evar env sigma ?naming ?rrpat ~src tycon =
   match tycon with
   | Some ty ->
-    let sigma, c = new_evar env sigma ~src ?naming ty in
+    let sigma, c = new_evar env sigma ~src ?rrpat ?naming ty in
     sigma, c, ty
   | None ->
     let sigma, ty = new_type_evar env sigma ~src in
-    let sigma, c = new_evar env sigma ~src ?naming ty in
+    let sigma, c = new_evar env sigma ~src ?rrpat ?naming ty in
     let evk = fst (destEvar sigma c) in
     let ido = Evd.evar_ident evk sigma in
     let src = (fst src,Evar_kinds.EvarType (ido,evk)) in
@@ -704,8 +695,10 @@ let pretype_instance self ~flags env sigma loc hyps evk update =
     let id = NamedDecl.get_id decl in
     let b = Option.map (replace_vars sigma subst) (NamedDecl.get_value decl) in
     let t = replace_vars sigma subst (NamedDecl.get_type decl) in
-    let uflags = default_flags_of TransparentState.full in
-    let uflags = if flags.patvars_abstract then { uflags with allowed_evars = allow_all_but_patvars sigma } else uflags in
+    let uflags = {
+      (default_flags_of TransparentState.full)
+      with allowed_evars = Evarsolve.allow_all_but_rrpat_evars sigma
+    } in
     let check_body sigma id c =
       match b, c with
       | Some b, Some c -> begin
@@ -784,9 +777,9 @@ struct
         match Evd.evar_key id sigma with
         | evk -> sigma, evk
         | exception Not_found ->
-            if flags.undeclared_evars_patvars then
-              let k = Evar_kinds.(MatchingVar (FirstOrderPatVar id)) in
-              let sigma, uj_val, _ = new_typed_evar env sigma ~naming:(IntroIdentifier id) ~src:(loc,k) tycon in
+            if flags.undeclared_evars_rr then
+              let k = Evar_kinds.(RewriteRulePattern (Name id)) in
+              let sigma, uj_val, _ = new_typed_evar env sigma ~naming:(IntroIdentifier id) ~rrpat:true ~src:(loc,k) tycon in
               sigma, fst (destEvar sigma uj_val)
             else
               error_evar_not_found ?loc:locid !!env sigma id
@@ -1320,7 +1313,7 @@ struct
       | None ->
         sigma, empty_tycon in
     let sigma, j = pretype tycon1 env sigma c1 in
-    let sigma, t = Evarsolve.refresh_universes
+    let sigma, t = Evarsolve.refresh_universes ~allowed_evars:(Evarsolve.allow_all_but_rrpat_evars sigma)
       ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma j.uj_type in
     let r = Retyping.relevance_of_term !!env sigma j.uj_val in
     let var = LocalDef (make_annot name r, j.uj_val, t) in
@@ -1696,8 +1689,7 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
     program_mode = flags.program_mode;
     use_coercions = flags.use_coercions;
     poly = flags.polymorphic;
-    undeclared_evars_patvars = flags.undeclared_evars_patvars;
-    patvars_abstract = flags.patvars_abstract;
+    undeclared_evars_rr = flags.undeclared_evars_rr;
     unconstrained_sorts = flags.unconstrained_sorts;
     resolve_tc = match flags.use_typeclasses with
       | NoUseTC -> false
@@ -1732,8 +1724,7 @@ let default_inference_flags fail = {
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
-  undeclared_evars_patvars = false;
-  patvars_abstract = false;
+  undeclared_evars_rr = false;
   unconstrained_sorts = false;
 }
 
@@ -1745,8 +1736,7 @@ let no_classes_no_fail_inference_flags = {
   expand_evars = true;
   program_mode = false;
   polymorphic = false;
-  undeclared_evars_patvars = false;
-  patvars_abstract = false;
+  undeclared_evars_rr = false;
   unconstrained_sorts = false;
 }
 
