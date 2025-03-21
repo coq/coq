@@ -360,7 +360,7 @@ type discharge = DoDischarge | NoDischarge
 type hint_info_expr = Constrexpr.constr_pattern_expr Typeclasses.hint_info_gen
 
 type reference_or_constr =
-  | HintsReference of Libnames.qualid
+  | HintsReference of reference_expr
   | HintsConstr of Constrexpr.constr_expr
 
 type hints_expr =

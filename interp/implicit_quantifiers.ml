@@ -81,6 +81,7 @@ let ungeneralizable loc id =
                (str "Unbound and ungeneralizable variable " ++ Id.print id ++ str ".")
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
+  let open Constrexpr_ops in
   let found loc id bdvars l =
     if Id.List.mem id l then l
     else if is_freevar bdvars (Global.env ()) id
@@ -90,11 +91,12 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
     else l
   in
   let rec aux bdvars l c = match CAst.(c.v) with
-    | CRef (qid,_) when qualid_is_ident qid ->
-      found c.CAst.loc (qualid_basename qid) bdvars l
-    | CNotation (_,(InConstrEntry,"{ _ : _ | _ }"), ({ CAst.v = CRef (qid,_) } :: _, [], [], [])) when
-        qualid_is_ident qid && not (Id.Set.mem (qualid_basename qid) bdvars) ->
-        Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add (qualid_basename qid) bdvars) l c
+    | CRef (qid,_) when ref_expr_is_ident qid ->
+      found c.CAst.loc (ref_expr_basename qid) bdvars l
+    | CNotation (_,(InConstrEntry,"{ _ : _ | _ }"),
+                 ({ CAst.v = CRef (qid,_) } :: _, [], [], []))
+      when ref_expr_is_ident qid && not (Id.Set.mem (ref_expr_basename qid) bdvars) ->
+        Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add (ref_expr_basename qid) bdvars) l c
     | _ -> Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
   in aux bound l c
 
@@ -168,7 +170,7 @@ let combine_params avoid applied needed =
 
         | [], false | _, true ->
           let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-          let t' = CAst.make @@ CRef (qualid_of_ident id',None) in
+          let t' = CAst.make @@ CRef ((CQualidRef, qualid_of_ident id'),None) in
           aux (t' :: ids) (Id.Set.add id' avoid) app need
       end
   in
@@ -186,9 +188,15 @@ let implicit_application env ty =
   let is_class =
     try
       let ({CAst.v=(qid, _, _)} as clapp) = destClassAppExpl ty in
-      if Libnames.idset_mem_qualid qid env then None
+      if Constrexpr_ops.(ref_expr_is_ident qid && Id.Set.mem (ref_expr_basename qid) env)
+      then None
       else
-        let gr = Nametab.locate qid in
+        let gr = match qid with
+          | CQualidRef, qid -> Nametab.locate qid
+          | CLibRef, qid -> match Rocqlib.lib_ref_opt_qualid qid with
+            | Some r -> r
+            | None -> raise Not_found
+        in
         Option.map (fun cl -> cl, clapp) (Typeclasses.class_info gr)
     with Not_found -> None
   in

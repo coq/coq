@@ -17,7 +17,6 @@ open Genarg
 open Context
 module CoqConstr = Constr
 open CoqConstr
-open Libnames
 open Tactics
 open Termops
 open Glob_term
@@ -117,10 +116,10 @@ let add_genarg tag pr =
   wit
 
 (** Constructors for constr_expr *)
-let isCVar   = function { CAst.v = CRef (qid,_) } -> qualid_is_ident qid | _ -> false
+let isCVar   = function { CAst.v = CRef (qid,_) } -> ref_expr_is_ident qid | _ -> false
 let destCVar = function
-  | { CAst.v = CRef (qid,_) } when qualid_is_ident qid ->
-    qualid_basename qid
+  | { CAst.v = CRef (qid,_) } when ref_expr_is_ident qid ->
+    ref_expr_basename qid
   | _ ->
     CErrors.anomaly (str"not a CRef.")
 let isGLambda c = match DAst.get c with GLambda (Name _, _, _, _, _) -> true | _ -> false
@@ -1012,10 +1011,10 @@ let wit_rpatternty = add_genarg "rpatternty" (fun env sigma -> pr_pattern pr_cpa
 let id_of_cpattern {pattern = (c1, c2); _} =
   let open CAst in
   match DAst.get c1, c2 with
-  | _, Some { v = CRef (qid, _) } when qualid_is_ident qid ->
-    Some (qualid_basename qid)
-  | _, Some { v = CAppExpl ((qid, _), []) } when qualid_is_ident qid ->
-    Some (qualid_basename qid)
+  | _, Some { v = CRef (qid, _) } when ref_expr_is_ident qid ->
+    Some (ref_expr_basename qid)
+  | _, Some { v = CAppExpl ((qid, _), []) } when ref_expr_is_ident qid ->
+    Some (ref_expr_basename qid)
   | GRef (GlobRef.VarRef x, _), None -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with

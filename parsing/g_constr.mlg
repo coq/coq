@@ -36,7 +36,7 @@ let binders_of_names l =
 
 let pat_of_name CAst.{loc;v} = match v with
 | Anonymous -> CAst.make ?loc @@ CPatAtom None
-| Name id -> CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident id))
+| Name id -> CAst.make ?loc @@ CPatAtom (Some (CQualidRef,qualid_of_ident id))
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
@@ -107,7 +107,7 @@ let force_quality ?loc = function
 
 (* XXX use registered ref? but currently constrexpr doesn't have a node for registered refs
    and we can't do [Rocqlib.lib_ref] at parsing time, it's only available in the interp phase. *)
-let sigref loc = Libnames.qualid_of_string ~loc "Corelib.Init.Specif.sig"
+let sigref loc = CQualidRef, Libnames.qualid_of_string ~loc "Corelib.Init.Specif.sig"
 
 }
 
@@ -125,7 +125,7 @@ GRAMMAR EXTEND Gram
     [ [ "_" -> { CAst.make ~loc Anonymous } ] ]
   ;
   global:
-    [ [ r = Prim.reference -> { r } ] ]
+    [ [ r = Prim.reference -> { CQualidRef, r } ] ]
   ;
   constr_pattern:
     [ [ c = constr -> { c } ] ]
@@ -154,7 +154,7 @@ GRAMMAR EXTEND Gram
       | -> { 0 } ] ]
   ;
   universe_name:
-    [ [ id = global -> { CType id }
+    [ [ id = Prim.reference -> { CType id }
       | "Set"  -> { CSet }
       | "Prop" -> { CProp } ] ]
   ;
@@ -191,12 +191,12 @@ GRAMMAR EXTEND Gram
       | "@"; f = global; i = univ_annot; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((f,i),args) }
       | "@"; lid = pattern_ident; args = LIST1 identref ->
         { let { CAst.loc = locid; v = id } = lid in
-          let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
+          let args = List.map (fun x -> CAst.make @@ CRef (ref_expr_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
           CAst.make ~loc @@ CApp(CAst.make ?loc:locid @@ CPatVar id,args) }
       | c = binder_constr -> { c } ]
     | "9"
       [ ".."; c = term LEVEL "0"; ".." ->
-        { CAst.make ~loc @@ CAppExpl ((qualid_of_ident ~loc ldots_var, None),[c]) } ]
+        { CAst.make ~loc @@ CAppExpl ((ref_expr_of_ident ~loc ldots_var, None),[c]) } ]
     | "8" [ ]
     | "1" LEFTA
       [ c = term; ".("; f = global; i = univ_annot; args = LIST0 arg; ")" ->
@@ -211,7 +211,7 @@ GRAMMAR EXTEND Gram
     | "0"
       [ c = atomic_constr -> { c }
       | c = term_match -> { c }
-      | id = reference; i = univ_annot ->
+      | id = global; i = univ_annot ->
         { CAst.make ~loc @@ CRef (id, i) }
       | n = NUMBER-> { CAst.make ~loc @@ CPrim (Number (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
@@ -245,7 +245,7 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   field_def:
-    [ [ id = global; bl = binders; ":="; c = lconstr ->
+    [ [ id = reference; bl = binders; ":="; c = lconstr ->
         { (id, mkLambdaCN ~loc bl c) } ] ]
   ;
   binder_constr:
@@ -328,7 +328,7 @@ GRAMMAR EXTEND Gram
       | "Prop" -> { Prop }
       | "Type" -> { Type }
       | "_" -> { Anon loc }
-      | id = global -> { Global id } ] ]
+      | id = reference -> { Global id } ] ]
   ;
   fix_decls:
     [ [ dcl = fix_decl -> { let (id,_,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
@@ -381,7 +381,7 @@ GRAMMAR EXTEND Gram
         "=>"; rhs = lconstr -> { (CAst.make ~loc (pll,rhs)) } ] ]
   ;
   record_pattern:
-    [ [ id = global; ":="; pat = pattern LEVEL "200" -> { (id, pat) } ] ]
+    [ [ id = reference; ":="; pat = pattern LEVEL "200" -> { (id, pat) } ] ]
   ;
   record_patterns:
     [ [ p = record_pattern; ";"; ps = record_patterns -> { p :: ps }
@@ -399,7 +399,7 @@ GRAMMAR EXTEND Gram
       [ p = pattern; "as"; na = name ->
         { CAst.make ~loc @@ CPatAlias (p, na) }
       | p = pattern; lp = LIST1 NEXT -> { mkAppPattern ~loc p lp }
-      | "@"; r = Prim.reference; lp = LIST0 NEXT ->
+      | "@"; r = global; lp = LIST0 NEXT ->
         { CAst.make ~loc @@ CPatCstr (r, Some lp, []) } ]
     | "1" LEFTA
       [ c = pattern; "%"; key = IDENT ->
@@ -407,7 +407,7 @@ GRAMMAR EXTEND Gram
       | c = pattern; "%_"; key = IDENT ->
         { CAst.make ~loc @@ CPatDelimiters (DelimOnlyTmpScope,key,c) } ]
     | "0"
-      [ r = Prim.reference                -> { CAst.make ~loc @@ CPatAtom (Some r) }
+      [ r = global -> { CAst.make ~loc @@ CPatAtom (Some r) }
       | "{|"; pat = record_patterns; bar_cbrace -> { CAst.make ~loc @@ CPatRecord pat }
       | "_" -> { CAst.make ~loc @@ CPatAtom None }
       | "("; p = pattern LEVEL "200"; ")" ->

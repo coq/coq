@@ -19,7 +19,6 @@ open Procq
 open Ltac_plugin
 open Stdarg
 open Tacarg
-open Libnames
 open Util
 open Locus
 open Tacexpr
@@ -1328,8 +1327,8 @@ END
 {
 
 let bvar_lname = let open CAst in function
-  | { v = CRef (qid, _) } when qualid_is_ident qid ->
-    CAst.make ?loc:qid.CAst.loc @@ Name (qualid_basename qid)
+  | { v = CRef (qid, _) } when ref_expr_is_ident qid ->
+    CAst.make ?loc:(snd qid).CAst.loc @@ Name (ref_expr_basename qid)
   | { loc = loc } -> CAst.make ?loc Anonymous
 
 let pr_ssrbinder env sigma prc _ _ (_, c) = prc env sigma c
@@ -1432,8 +1431,8 @@ END
 let pr_ssrfixfwd _ _ _ (id, fwd) = str " fix " ++ pr_id id ++ pr_fwd fwd
 
 let bvar_locid = function
-  | { CAst.v = CRef (qid, _) } when qualid_is_ident qid ->
-    CAst.make ?loc:qid.CAst.loc (qualid_basename qid)
+  | { CAst.v = CRef (qid, _) } when ref_expr_is_ident qid ->
+    CAst.make ?loc:(snd qid).CAst.loc (ref_expr_basename qid)
   | _ -> CErrors.user_err (Pp.str "Missing identifier after \"(co)fix\"")
 
 }

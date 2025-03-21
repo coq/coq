@@ -19,9 +19,9 @@ lglob: [
 ]
 
 hint: [
-| REPLACE "Resolve" "->" LIST1 global OPT natural
-| WITH "Resolve" [ "->" | "<-" ] LIST1 global OPT natural
-| DELETE "Resolve" "<-" LIST1 global OPT natural
+| REPLACE "Resolve" "->" LIST1 reference OPT natural
+| WITH "Resolve" [ "->" | "<-" ] LIST1 reference OPT natural
+| DELETE "Resolve" "<-" LIST1 reference OPT natural
 | REPLACE "Variables" "Transparent"
 | WITH [ "Constants" | "Projections" | "Variables" ] [ "Transparent" | "Opaque" ]
 | DELETE "Variables" "Opaque"
@@ -29,9 +29,9 @@ hint: [
 | DELETE "Constants" "Opaque"
 | DELETE "Projections" "Transparent"
 | DELETE "Projections" "Opaque"
-| REPLACE "Transparent" LIST1 global
-| WITH [ "Transparent" | "Opaque" ] LIST1 global
-| DELETE "Opaque" LIST1 global
+| REPLACE "Transparent" LIST1 reference
+| WITH [ "Transparent" | "Opaque" ] LIST1 reference
+| DELETE "Opaque" LIST1 reference
 
 | REPLACE "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
 | WITH "Extern" natural OPT constr_pattern "=>" tactic
@@ -108,7 +108,6 @@ RENAME: [
   (* map missing names for rhs *)
 | Constr.constr term
 | Constr.term0 term0
-| Constr.global global
 | Constr.lconstr lconstr
 | Constr.cpattern cpattern
 | G_vernac.section_subset_expr section_var_expr
@@ -382,7 +381,7 @@ term1: [
 ]
 
 term0: [
-| DELETE reference univ_annot
+| DELETE global univ_annot
 | REPLACE "{|" record_declaration bar_cbrace
 | WITH "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
 | MOVETO number_or_string NUMBER
@@ -695,9 +694,9 @@ strategy_flag: [
 ]
 
 filtered_import: [
-| REPLACE global "(" LIST1 one_import_filter_name SEP "," ")"
-| WITH global OPT [ "(" LIST1 one_import_filter_name SEP "," ")" ]
-| DELETE global
+| REPLACE reference "(" LIST1 one_import_filter_name SEP "," ")"
+| WITH reference OPT [ "(" LIST1 one_import_filter_name SEP "," ")" ]
+| DELETE reference
 ]
 
 is_module_expr: [
@@ -721,18 +720,18 @@ gallina_ext: [
    Note that smart_global is "qualid | by_notation" and that
    ident_decl is "ident OPT univ_decl"; move
  *)
-| REPLACE "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
+| REPLACE "Canonical" OPT "Structure" reference OPT [ OPT univ_decl def_body ]
 | WITH "Canonical" OPT "Structure" ident_decl def_body
 | REPLACE "Canonical" OPT "Structure" by_notation
 | WITH "Canonical" OPT "Structure" smart_global
 
-| DELETE "Coercion" global ":" coercion_class ">->" coercion_class
+| DELETE "Coercion" reference ":" coercion_class ">->" coercion_class
 | REPLACE "Coercion" by_notation ":" coercion_class ">->" coercion_class
 | WITH "Coercion" smart_global OPT [ ":" coercion_class ">->" coercion_class ]
 
 (* semantically restricted per https://github.com/coq/coq/pull/12936#discussion_r492705820 *)
-(* global OPT univ_decl is just ident_decl, the first OPT is moved to the rule above *)
-| REPLACE "Coercion" global OPT [ OPT univ_decl def_body ]
+(* reference OPT univ_decl is just ident_decl, the first OPT is moved to the rule above *)
+| REPLACE "Coercion" reference OPT [ OPT univ_decl def_body ]
 | WITH "Coercion" ident_decl def_body
 
 | REPLACE "Include" "Type" module_type_inl LIST0 ext_module_type
@@ -749,10 +748,10 @@ gallina_ext: [
 | WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
 
 | DELETE "Require" export_token LIST1 filtered_import
-| REPLACE "From" global "Require" export_token LIST1 filtered_import
+| REPLACE "From" reference "Require" export_token LIST1 filtered_import
 | WITH OPT [ "From" dirpath ] "Require" export_token LIST1 filtered_import
 
-| REPLACE "From" global "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
+| REPLACE "From" reference "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
 | WITH "From" dirpath "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
 ]
 
@@ -1669,10 +1668,10 @@ locatable: [
 ]
 
 ne_in_or_out_modules: [
-| REPLACE "inside" LIST1 global
-| WITH [ "inside" | "in" | "outside" ] LIST1 global
-| DELETE "in" LIST1 global
-| DELETE "outside" LIST1 global
+| REPLACE "inside" LIST1 reference
+| WITH [ "inside" | "in" | "outside" ] LIST1 reference
+| DELETE "in" LIST1 reference
+| DELETE "outside" LIST1 reference
 ]
 
 search_queries: [
@@ -1925,9 +1924,9 @@ simple_tactic: [
 ]
 
 tacdef_body: [
-| REPLACE global LIST1 input_fun ltac_def_kind ltac_expr5
-| WITH global LIST0 input_fun ltac_def_kind ltac_expr5
-| DELETE global ltac_def_kind ltac_expr5
+| REPLACE reference LIST1 input_fun ltac_def_kind ltac_expr5
+| WITH reference LIST0 input_fun ltac_def_kind ltac_expr5
+| DELETE reference ltac_def_kind ltac_expr5
 ]
 
 tac2def_typ: [
