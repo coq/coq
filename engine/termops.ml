@@ -178,7 +178,8 @@ let pr_evar_source env sigma = function
      | None -> str "subterm of "
      | Some Evar_kinds.Body -> str "body of "
      | Some Evar_kinds.Domain -> str "domain of "
-     | Some Evar_kinds.Codomain -> str "codomain of ") ++ Evar.print evk
+     | Some Evar_kinds.Codomain -> str "codomain of "
+     | Some Evar_kinds.EtaExpansion -> str "eta expansion of ") ++ Evar.print evk
 
 let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
   let open Evd in
