@@ -14,7 +14,7 @@ open Names
 open Vernacexpr
 
 let smart_global r =
-  let gr = Smartlocate.smart_global r in
+  let gr = Smartlocate.(smart_global r) in
   Dumpglob.add_glob ?loc:r.loc gr;
   gr
 

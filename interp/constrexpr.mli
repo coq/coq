@@ -11,6 +11,10 @@
 open Names
 open Libnames
 
+type reference_expr_kind = CQualidRef | CLibRef
+
+type reference_expr = reference_expr_kind * qualid
+
 (** {6 Concrete syntax for terms } *)
 
 (** Universes *)
@@ -112,10 +116,10 @@ type prim_token =
 (** [constr_expr] is the abstract syntax tree produced by the parser *)
 type cases_pattern_expr_r =
   | CPatAlias of cases_pattern_expr * lname
-  | CPatCstr  of qualid
+  | CPatCstr  of reference_expr
     * cases_pattern_expr list option * cases_pattern_expr list
   (** [CPatCstr (_, c, Some l1, l2)] represents [(@ c l1) l2] *)
-  | CPatAtom of qualid option
+  | CPatAtom of reference_expr option
   | CPatOr   of cases_pattern_expr list
   | CPatNotation of notation_with_optional_scope option * notation * cases_pattern_notation_substitution
     * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
@@ -135,15 +139,15 @@ and cases_pattern_notation_substitution =
     kinded_cases_pattern_expr list (* for cases_pattern subterms parsed as binders *)
 
 and constr_expr_r =
-  | CRef     of qualid * instance_expr option
+  | CRef     of reference_expr * instance_expr option
   | CFix     of lident * fix_expr list
   | CCoFix   of lident * cofix_expr list
   | CProdN   of local_binder_expr list * constr_expr
   | CLambdaN of local_binder_expr list * constr_expr
   | CLetIn   of lname * constr_expr * constr_expr option * constr_expr
-  | CAppExpl of (qualid * instance_expr option) * constr_expr list
+  | CAppExpl of (reference_expr * instance_expr option) * constr_expr list
   | CApp     of constr_expr * (constr_expr * explicitation CAst.t option) list
-  | CProj    of explicit_flag * (qualid * instance_expr option)
+  | CProj    of explicit_flag * (reference_expr * instance_expr option)
               * (constr_expr * explicitation CAst.t option) list * constr_expr
   | CRecord  of (qualid * constr_expr) list
 

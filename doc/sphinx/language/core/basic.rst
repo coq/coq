@@ -285,7 +285,9 @@ rest of the Rocq Prover manual: :term:`terms <term>` and :term:`types
         | [| {*; @term } %| @term {? : @type } |] {? @univ_annot }
         | @term_ltac
         | ( @term )
-        qualid_annotated ::= @qualid {? @univ_annot }
+        global ::= @qualid
+        | lib: @qualid
+        qualid_annotated ::= @global {? @univ_annot }
 
      .. note::
 

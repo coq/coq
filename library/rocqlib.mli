@@ -35,10 +35,14 @@ exception NotFoundRef of string
 
 (** Retrieves the reference bound to the given name (by a previous call to {!register_ref}).
     Raises [NotFoundRef] if no reference is bound to this name. *)
-val lib_ref : string -> GlobRef.t
+val lib_ref : ?loc:Loc.t -> string -> GlobRef.t
+
+val lib_ref_qualid : Libnames.qualid -> GlobRef.t
 
 (** As [lib_ref] but returns [None] instead of raising. *)
 val lib_ref_opt : string -> GlobRef.t option
+
+val lib_ref_opt_qualid : Libnames.qualid -> GlobRef.t option
 
 (** Checks whether a name refers to a registered constant.
     For any name [n], if [has_ref n] returns [true], [lib_ref n] will succeed. *)

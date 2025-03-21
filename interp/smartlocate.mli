@@ -11,6 +11,7 @@
 open Names
 open Libnames
 open Globnames
+open Constrexpr
 
 (** [locate_global_with_alias] locates global reference possibly following
    a notation if this notation has a role of aliasing; raise [Not_found]
@@ -28,6 +29,8 @@ val global_of_extended_global : extended_global_reference -> GlobRef.t option
     or a [UserError] if bound to a syntactic def that does not denote
     a reference. *)
 val global_with_alias : ?head:bool -> qualid -> GlobRef.t
+
+val ref_expr_with_alias : ?head:bool -> reference_expr -> GlobRef.t
 
 (** The same for constants *)
 val global_constant_with_alias : qualid -> Constant.t

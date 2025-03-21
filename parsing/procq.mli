@@ -11,7 +11,6 @@
 open Names
 open Genarg
 open Constrexpr
-open Libnames
 
 (** The parser of Rocq *)
 
@@ -183,7 +182,7 @@ module Constr :
     val binder_constr : constr_expr Entry.t
     val term : constr_expr Entry.t
     val ident : Id.t Entry.t
-    val global : qualid Entry.t
+    val global : reference_expr Entry.t
     val universe_name : sort_name_expr Entry.t
     val sort : sort_expr Entry.t
     val sort_family : Sorts.family Entry.t

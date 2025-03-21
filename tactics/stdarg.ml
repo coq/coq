@@ -76,7 +76,6 @@ let wit_integer = wit_int
 let wit_natural = wit_nat
 let wit_preident = wit_pre_ident
 let wit_reference = wit_ref
-let wit_global = wit_ref
 let wit_clause = wit_clause_dft_concl
 
 (** Registering grammar of generic arguments *)
