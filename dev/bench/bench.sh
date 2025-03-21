@@ -35,8 +35,8 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.14.1}"
-: "${old_ocaml_version:=4.14.1}"
+: "${new_ocaml_version:=4.14.2}"
+: "${old_ocaml_version:=4.14.2}"
 : "${new_ocaml_flambda:=0}"
 : "${old_ocaml_flambda:=0}"
 : "${new_coq_repository:=${CI_REPOSITORY_URL:-.}}"
@@ -385,6 +385,10 @@ create_opam() {
     # number of jobs available on Travis, so we set it here manually:
     opam var --global jobs=$number_of_processors >/dev/null
     if [ ! -z "$BENCH_DEBUG" ]; then opam config list; fi
+
+    if [ $RUNNER = NEW ]; then
+      opam pin add -y ocaml-base-compiler https://github.com/gadmm/ocaml.git#Marshal.static_from_channel.4.14+no_thp
+    fi
 
     opam repo add -q --this-switch coq-core-dev "$OPAM_COQ_DIR/core-dev"  # For rocq-stdlib
     opam repo add -q --this-switch coq-extra-dev "$OPAM_COQ_DIR/extra-dev"
