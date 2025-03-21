@@ -2505,14 +2505,18 @@ let w_unify_to_subterm_list ~metas env evd flags hdmeta oplist t =
   List.fold_right
     (fun op (metas,evd,l) ->
       let op = whd_meta ~metas evd op in
+      let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
       if isMeta evd op then
-        if flags.allow_K_in_toplevel_higher_order_unification then (metas,evd,op::l)
+        if allow_K then (metas,evd,op::l)
         else
           let hdname = Meta.meta_name metas hdmeta in
           let argname = Meta.meta_name metas (destMeta evd op) in
           error_abstraction_over_meta env evd hdname argname
+      else if isVar evd op then (* fast path *)
+        let id = destVar evd op in
+        if allow_K || local_occur_var evd id t then (metas, evd, op :: l)
+        else raise (PretypeError (env, evd, NoOccurrenceFound (op, None)))
       else
-        let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
         let flags =
           if is_keyed_unification () || occur_meta_or_existential evd op then
             (* This is up to delta for subterms w/o metas ... *)
