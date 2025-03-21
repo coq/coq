@@ -99,23 +99,35 @@ Ltac2 @ external check_interrupt : unit -> unit := "rocq-runtime.plugins.ltac2" 
 
 (** Assertions throwing exceptions and short form throws *)
 
-Ltac2 throw_invalid_argument (msg : string) :=
-  Control.throw (Invalid_argument (Some (Message.of_string msg))).
+Ltac2 throw_invalid_argument fmt :=
+  Message.Format.kfprintf (fun msg => Control.throw (Invalid_argument (Some msg))) fmt.
 
-Ltac2 throw_out_of_bounds (msg : string) :=
-  Control.throw (Out_of_bounds (Some (Message.of_string msg))).
+Ltac2 Notation "throw_invalid_argument" fmt(format) := throw_invalid_argument fmt.
 
-Ltac2 assert_valid_argument (msg : string) (test : bool) :=
-  match test with
-  | true => ()
-  | false => throw_invalid_argument msg
-  end.
+Ltac2 throw_out_of_bounds fmt :=
+  Message.Format.kfprintf (fun msg => Control.throw (Out_of_bounds (Some msg))) fmt.
 
-Ltac2 assert_bounds (msg : string) (test : bool) :=
-  match test with
-  | true => ()
-  | false => throw_out_of_bounds msg
-  end.
+Ltac2 Notation "throw_out_of_bounds" fmt(format) := throw_out_of_bounds fmt.
+
+Ltac2 assert_valid_argument fmt :=
+  Message.Format.kfprintf (fun msg (test : bool) =>
+    match test with
+    | true => ()
+    | false => throw_invalid_argument "%a" (fun () x => x) msg
+    end)
+    fmt.
+
+Ltac2 Notation "assert_valid_argument" fmt(format) := assert_valid_argument fmt.
+
+Ltac2 assert_bounds fmt :=
+  Message.Format.kfprintf (fun msg (test : bool) =>
+    match test with
+    | true => ()
+    | false => throw_out_of_bounds "%a" (fun () x => x) msg
+    end)
+    fmt.
+
+Ltac2 Notation "assert_bounds" fmt(format) := assert_bounds fmt.
 
 Ltac2 assert_true b :=
   if b then () else throw Assertion_failure.
@@ -125,8 +137,10 @@ Ltac2 assert_false b :=
 
 (** Short form backtracks *)
 
-Ltac2 backtrack_tactic_failure (msg : string) :=
-  Control.zero (Tactic_failure (Some (Message.of_string msg))).
+Ltac2 backtrack_tactic_failure fmt :=
+  Message.Format.kfprintf (fun msg => Control.zero (Tactic_failure (Some msg))) fmt.
+
+Ltac2 Notation "backtrack_tactic_failure" fmt(format) := backtrack_tactic_failure fmt.
 
 (** Backtraces. *)
 
