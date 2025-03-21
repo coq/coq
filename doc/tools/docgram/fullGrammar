@@ -496,6 +496,8 @@ command: [
 | "Goal" lconstr
 | "Proof"
 | "Proof" "using" G_vernac.section_subset_expr
+| "Proof" "with" generic_tactic OPT [ "using" G_vernac.section_subset_expr ]
+| "Proof" "using" G_vernac.section_subset_expr "with" generic_tactic
 | "Proof" "Mode" string
 | "Proof" lconstr
 | "Abort"
@@ -562,6 +564,23 @@ command: [
 | "Debug" "Off"
 | "Declare" "Reduction" IDENT; ":=" red_expr
 | "Declare" "Custom" "Entry" IDENT
+| "Obligation" natural "of" identref withtac
+| "Obligation" natural withtac
+| "Next" "Obligation" "of" identref withtac
+| "Next" "Obligation" withtac
+| "Final" "Obligation" "of" identref withtac
+| "Final" "Obligation" withtac
+| "Solve" "Obligations" "of" identref withtac
+| "Solve" "Obligations" withtac
+| "Solve" "All" "Obligations" withtac
+| "Admit" "Obligations" "of" identref
+| "Admit" "Obligations"
+| "Obligation" "Tactic" ":=" generic_tactic
+| "Show" "Obligation" "Tactic"
+| "Obligations" "of" identref
+| "Obligations"
+| "Preterm" "of" identref
+| "Preterm"
 | "Derive" open_binders "SuchThat" constr "As" identref      (* derive plugin *)
 | "Derive" open_binders "in" constr "as" identref      (* derive plugin *)
 | "Extraction" global      (* extraction plugin *)
@@ -589,7 +608,7 @@ command: [
 | "Extract" "Inlined" "Constant" global "=>" mlname      (* extraction plugin *)
 | "Extract" "Inductive" global "=>" mlname "[" LIST0 mlname "]" OPT string      (* extraction plugin *)
 | "Show" "Extraction"      (* extraction plugin *)
-| "Set" "Firstorder" "Solver" tactic
+| "Set" "Firstorder" "Solver" generic_tactic
 | "Print" "Firstorder" "Solver"
 | "Function" LIST1 function_fix_definition SEP "with"      (* funind plugin *)
 | "Functional" "Scheme" LIST1 fun_scheme_arg SEP "with"      (* funind plugin *)
@@ -617,33 +636,11 @@ command: [
 | "Typeclasses" "Transparent" LIST1 reference
 | "Typeclasses" "Opaque" LIST1 reference
 | "Typeclasses" "eauto" ":=" debug eauto_search_strategy OPT natural
-| "Proof" "with" Pltac.tactic OPT [ "using" G_vernac.section_subset_expr ]
-| "Proof" "using" G_vernac.section_subset_expr "with" Pltac.tactic
 | "Tactic" "Notation" OPT ltac_tactic_level LIST1 ltac_production_item ":=" tactic
 | "Print" "Ltac" reference
 | "Locate" "Ltac" reference
 | "Ltac" LIST1 ltac_tacdef_body SEP "with"
 | "Print" "Ltac" "Signatures"
-| "Obligation" natural "of" identref withtac
-| "Obligation" natural withtac
-| "Next" "Obligation" "of" identref withtac
-| "Next" "Obligation" withtac
-| "Final" "Obligation" "of" identref withtac
-| "Final" "Obligation" withtac
-| "Solve" "Obligations" "of" identref "with" tactic
-| "Solve" "Obligations" "of" identref
-| "Solve" "Obligations" "with" tactic
-| "Solve" "Obligations"
-| "Solve" "All" "Obligations" "with" tactic
-| "Solve" "All" "Obligations"
-| "Admit" "Obligations" "of" identref
-| "Admit" "Obligations"
-| "Obligation" "Tactic" ":=" tactic
-| "Show" "Obligation" "Tactic"
-| "Obligations" "of" identref
-| "Obligations"
-| "Preterm" "of" identref
-| "Preterm"
 | "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" identref
 | "Add" "Relation" constr constr "reflexivity" "proved" "by" constr "as" identref
 | "Add" "Relation" constr constr "as" identref
@@ -728,7 +725,7 @@ hint: [
 | "Mode" global mode
 | "Unfold" LIST1 global
 | "Constructors" LIST1 global
-| "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
+| "Extern" natural OPT Constr.constr_pattern "=>" generic_tactic
 ]
 
 constr_body: [
@@ -1656,6 +1653,11 @@ binder_interp: [
 | "as" "strict" "pattern"
 ]
 
+withtac: [
+|
+| "with" generic_tactic
+]
+
 simple_tactic: [
 | "btauto"
 | "congruence" OPT natural
@@ -2346,11 +2348,6 @@ ltac_production_item: [
 
 ltac_tacdef_body: [
 | tacdef_body
-]
-
-withtac: [
-|
-| "with" tactic
 ]
 
 glob_constr_with_bindings: [

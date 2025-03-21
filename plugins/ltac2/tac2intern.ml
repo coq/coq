@@ -2112,7 +2112,18 @@ let () =
   in
   Genintern.register_intern0 wit_ltac2_constr intern
 
+let () =
+  let open Genintern in
+  let intern ist tac =
+    (* XXX should we try to get an env from the ist? *)
+    let env = empty_env ~strict:ist.strict_check () in
+    let tac, _ = intern_rec env (Some (GTypRef (Tuple 0, []))) tac in
+    ist, tac
+  in
+  Genintern.register_intern0 wit_ltac2_tac intern
+
 let () = Gensubst.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
+let () = Gensubst.register_subst0 wit_ltac2_tac subst_expr
 
 let intern_var_quotation_gen ~ispat ist (kind, { CAst.v = id; loc }) =
   let open Genintern in
