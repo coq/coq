@@ -470,31 +470,30 @@ Backtracking
 Earlier, we said that "the `Proofview.tactic` monad is essentially an
 IO monad together with backtracking state representing the proof
 state." What this means is that all Ltac2 expressions of type `'a`
-implicitly return, not just a value of type `'a`, but also an exception
-handler which will be used if a computation "downstream" raises an
-exception. This additional information is suppressed from the type
-system for readability.
+either fail to evaluate to a value (and raise an exception) or
+implicitly return, not just a value of type `'a`, but also an
+exception handler which will be used if a computation "downstream"
+raises an exception. This additional information is suppressed from
+the type system for readability.
 
-The semicolon operator `;` for sequencing computations is
-fundamental to the semantics of backtracking. If `t_1` is an Ltac2
-expression of type `unit`, and `t_2` is an expression of type `'a`,
-then the expression `t_1; t_2` first evaluates `t_1` to return a value
-of unit type, a change in the proof state, and a continuation
-expressing how `t_2` should proceed in the event that it raises an
-exception. Another way to understand this is that if `t_2` fails and
-raises an exception, `t_1` can catch the exception, modify the proof
-state again in a different way, and pass control back to `t_2`, over
-and over until `t_1` has exhausted its responses to the exceptions
-raised by `t_2`. The :ref:`multi_match!
-tactic<ltac2_match_vs_multimatch_ex>` is the most basic example
-of this kind of control flow.
+For example, if `t_1` is an Ltac2 expression of type `unit`, and `t_2`
+is an expression of type `'a`, then the expression `t_1; t_2` first
+evaluates `t_1` to return a value of unit type, a change in the proof
+state, and a continuation expressing how `t_2` should proceed in the
+event that it raises an exception. Another way to understand this is
+that if `t_2` fails and raises an exception, `t_1` can catch the
+exception, modify the proof state again in a different way, and pass
+control back to `t_2`, repeatedly until `t_1` has exhausted its
+responses to the exceptions raised by `t_2`. The :ref:`multi_match!
+tactic<ltac2_match_vs_multimatch_ex>` is an example of this kind
+of control flow.
 
 Similarly, if `t_1` is an Ltac2 expression of type `'a` and `t_2[x]`
 is an Ltac2 expression of type `'b` where `x` is an Ltac2 variable of
 type `'a` which is free in `t_2`, then `let x := t_1 in t_2` will
-evaluate `t_1` to return a value of type `'a`. If `t_2` fails and
-raises an exception, `t_1` can catch the exception and return a new
-value of `'a`, passing control back to `t_2`.
+evaluate `t_1` to return a value of type `'a` and a continuation. If
+`t_2` fails and raises an exception, `t_1` can catch the exception and
+return a new value of `'a`, passing control back to `t_2`.
 
 In Ltac2, we have the following backtracking primitives, defined in the
 `Control` module::
@@ -510,10 +509,12 @@ trivial exception handler which performs no handling.
 
 `plus` takes a computation `r` and an exception handler `h`, and runs
 the computation `r` under the handler `h`. If `r ()` returns a value
-`a`, `plus` returns `a`. If `r ()` raises an exception `e`, `plus`
-tries to compute `h e`. If this raises an exception `e'`, `plus` raises
-the exception `e'`. Otherwise, if it returns a value `a`, `plus r h`
-returns `a`.
+`a`, `plus` returns `a`; if we write `h'` for the continuation
+implicitly returned by `r ()`, then the continuation associated to the
+expression `plus r h` is behaviorally equivalent to `fun e => plus
+(h' e) h`.
+Else, if `r ()` raises an exception `e`, then `plus r h` is
+behaviorally equivalent to `h e`.
 
 `case` is a "safe" exception handler which always returns a value and
 never re-raises an exception. If `r ()` would raise an exception `e`,
@@ -577,11 +578,12 @@ The relationship between `to_stream l` and the "downstream"
 computation is a naive one. The downstream computation either
 succeeds, in which case control never returns to `to_stream l`; or it
 fails, in which case `to_stream l` naively returns the next element in
-the stream. The same criticism applies to `int_seq ()`. We would like to engineer more sophisticated error
-handling; in a situation `t_1; t_2`, if `t_2` fails, it is desirable
-for `t_2` to be able to communicate the manner of failure back
-upstream to `t_1`, so that `t_1` can intelligently respond with a new
-value (and a new change in the proof state) in an appropriate way.
+the stream. The same criticism applies to `int_seq ()`. We would like
+to engineer more sophisticated error handling; in a situation `t_1;
+t_2`, if `t_2` fails, it is desirable for `t_2` to be able to
+communicate the manner of failure back upstream to `t_1`, so that
+`t_1` can intelligently respond with a new value (and a new change in
+the proof state) in an appropriate way.
 
 The most general way of doing this is to encode a state machine into `t_1`, so that a
 downstream tactic `t_2` which fails can communicate useful information back
@@ -1771,7 +1773,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
    ident_or_anti ::= @ident
    | $ @ident
 
-.. insertprodn  ltac2_destruction_arg ltac2_constr_with_bindings
+.. insertprodn ltac2_destruction_arg ltac2_constr_with_bindings
 
 .. prodn::
    ltac2_destruction_arg ::= @natural
