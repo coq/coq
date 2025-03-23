@@ -1004,6 +1004,8 @@ library:ci-stdlib_doc:
   - build:base
   - library:ci-stdlib
   stage: build-2
+  variables:
+    SAVE_BUILD_CI: "1" # for doc:refman:deploy
 
 library:ci-tlc:
   extends: .ci-template
