@@ -637,7 +637,7 @@ library:ci-bedrock2:
   extends: .ci-template-flambda
   variables:
     NJOBS: "1"
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for bedrock2_examples
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
@@ -754,7 +754,7 @@ library:ci-fiat_crypto:
   extends: .ci-template-flambda
   variables:
     COQEXTRAFLAGS: "-async-proofs-tac-j 0"
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for fiat_crypto_ocaml
   needs:
   - build:edge+flambda
   - library:ci-stdlib+flambda
@@ -865,7 +865,7 @@ library:ci-mathcomp:
   - plugin:ci-elpi_hb  # for Hierarchy Builder
   stage: build-2
   variables:
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for mathcomp_test
 
 library:ci-mathcomp_test:
   extends: .ci-template-flambda
@@ -920,7 +920,7 @@ library:ci-analysis:
   - plugin:ci-elpi_hb  # for Hierarchy Builder
   stage: build-3+
   variables:
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for analysis_stdlib
 
 library:ci-analysis_stdlib:
   extends: .ci-template-flambda
@@ -983,13 +983,13 @@ library:ci-sf:
 library:ci-stdlib:
   extends: .ci-template
   variables:
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for test suite
 
 library:ci-stdlib+flambda:
   extends: .ci-template-flambda
   variables:
     CI_TARGETS: "stdlib"
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for test suite
 
 library:ci-stdlib_test:
   extends: .ci-template
@@ -1142,7 +1142,7 @@ plugin:ci-elpi_hb:
   - build:edge+flambda
   variables:
     CI_TARGETS: "elpi hb"
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for elpi_test and hb_test
 
 plugin:ci-elpi_test:
   extends: .ci-template-flambda
@@ -1166,7 +1166,7 @@ plugin:ci-equations:
   - build:edge+flambda
   - library:ci-stdlib+flambda
   variables:
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for equations_test
 
 plugin:ci-equations_test:
   extends: .ci-template-flambda
@@ -1239,7 +1239,7 @@ plugin:ci-quickchick:
   - library:ci-mathcomp
   stage: build-3+
   variables:
-    SAVE_BUILD_CI: "1"
+    SAVE_BUILD_CI: "1" # for quickchick_test
 
 plugin:ci-quickchick_test:
   extends: .ci-template-flambda
