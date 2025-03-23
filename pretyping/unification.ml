@@ -2513,8 +2513,9 @@ let w_unify_to_subterm_list ~metas env evd flags hdmeta oplist t =
           error_abstraction_over_meta env evd hdname argname
       else
         let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
+        let is_not_ground = occur_meta_or_existential evd op in
         let flags =
-          if is_keyed_unification () || occur_meta_or_existential evd op then
+          if is_keyed_unification () || is_not_ground then
             (* This is up to delta for subterms w/o metas ... *)
             flags
           else
@@ -2526,7 +2527,7 @@ let w_unify_to_subterm_list ~metas env evd flags hdmeta oplist t =
         let t' = (strip_outer_cast evd op, AConstr.make evd t) in
         let ((metas', evd'), cl) =
           try
-            if is_keyed_unification () then
+            if is_keyed_unification () || is_not_ground then
               try (* First try finding a subterm w/o conversion on open terms *)
                 let flags = set_no_delta_open_flags flags in
                 w_unify_to_subterm ~metas env evd ~flags t'
