@@ -11,3 +11,6 @@
 Declare ML Module "rocq-runtime.plugins.ltac".
 
 #[export] Set Default Proof Mode "Classic".
+
+(** Forward declaration for ltac2. *)
+Ltac easy_forward_decl := fail "Cannot use easy: Corelib.Init.Tactics not loaded".

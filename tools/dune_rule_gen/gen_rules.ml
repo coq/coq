@@ -40,6 +40,7 @@ type args = {
   async : bool;
   rule : Coq_module.Rule_type.t;
   split : bool;
+  noinit : bool;
   user_flags : Arg.t list;
   dependencies : string list;
 }
@@ -49,12 +50,21 @@ let parse_args () : args =
   | _ :: tname :: base_dir :: args ->
     let tname = String.split_on_char '.' tname in
     let _backtrace = [Arg.A "-d"; Arg.A "backtrace"] in
-    let default = { base_dir; tname; async = false; split = false; rule = Coq_module.Rule_type.Regular { native }; user_flags = []; dependencies = [] } in
+    let default = { base_dir; tname;
+                    async = false;
+                    split = false;
+                    noinit = false;
+                    rule = Coq_module.Rule_type.Regular { native };
+                    user_flags = [];
+                    dependencies = [];
+                  }
+    in
     let rec parse a = function
       | [] -> a
       | "-async" :: rest -> parse { a with async = true; user_flags = Arg.[A "-async-proofs"; A "on"] } rest
       | "-split" :: rest -> parse { a with split = true } rest
       | "-dep" :: d :: rest -> parse { a with dependencies = d :: a.dependencies } rest
+      | "-noinit" :: rest -> parse { a with noinit = true } rest
       (* Dune will sometimes pass this option as "" *)
       | "" :: rest -> parse a rest
       | unknown :: _ -> raise (Invalid_argument unknown)
@@ -67,19 +77,21 @@ let ppi fmt = List.iter (Dune_file.Install.pp fmt)
 
 let main () =
 
-  let { tname; base_dir; async; rule; user_flags; split; dependencies } = parse_args () in
+  let { tname; base_dir; async; rule; user_flags; split; noinit; dependencies } = parse_args () in
   let root_lvl = List.length (String.split_on_char '/' base_dir) in
 
-  let init =
+  let corelib =
     let directory = Path.make "theories" in
     Coq_rules.Theory.{ directory; dirname = ["Corelib"]; implicit = true; deps = [] }
   in
 
   (* usually the else case here is Ltac2, but other libraries could be
      handled as well *)
-  let boot, implicit = if tname = ["Corelib"]
-    then Coq_rules.Boot_type.Corelib, true
-    else Coq_rules.Boot_type.Regular init, false
+  let boot, implicit = if tname = ["Corelib"] then begin
+      if noinit then CErrors.user_err Pp.(str "Corelib handles -noinit automatically.");
+      Coq_rules.Boot_type.Corelib, true
+    end
+    else Coq_rules.Boot_type.Regular { corelib; noinit }, false
   in
 
   (* Rule generation *)

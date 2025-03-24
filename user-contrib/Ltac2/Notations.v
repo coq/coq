@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import Corelib.Init.Ltac.
 Require Import Ltac2.Init.
 Require Ltac2.Control Ltac2.Fresh Ltac2.Option Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std Ltac2.Constr.
 
@@ -633,7 +634,7 @@ Ltac2 Notation f_equal := Std.f_equal ().
 
 (** now *)
 
-Ltac2 now0 t := t (); ltac1:(easy).
+Ltac2 now0 t := t (); ltac1:(easy_forward_decl).
 Ltac2 Notation "now" t(thunk(self)) : 6 := now0 t.
 
 (** profiling *)

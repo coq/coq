@@ -3,6 +3,8 @@
  (package rocq-core)
  (synopsis "Ltac2 tactic language")
  (flags -w -deprecated-native-compiler-option)
+ (stdlib no)
+ (theories Corelib)
  (plugins
    rocq-runtime.plugins.ltac2_ltac1
    rocq-runtime.plugins.ltac2))

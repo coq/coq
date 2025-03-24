@@ -30,9 +30,12 @@ module Boot_type : sig
     (** Standard library *)
     | NoInit
     (** Standalone library (without Coq's core lib, for example the prelude) *)
-    | Regular of Theory.t
-    (** Regular library, qualified with -Q, path controls where the
-        Coq init is *)
+    | Regular of { corelib : Theory.t; noinit : bool }
+    (** Regular library, qualified with -Q, [corelib] controls where
+        the Corelib is.
+
+        [noinit = true] only means there is no implicit dep on the
+        prelude, it may still depend on Corelib (unlike [NoInit]). *)
 
 end
 
