@@ -100,7 +100,7 @@ Section :ref:`typing-rules`.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
 
-   These commands also support the :attr:`universes(polymorphic)`,
+   These commands also support the :attr:`universes(polymorphic)`, :attr:`refine`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
    :attr:`warn` and :attr:`using` attributes.
@@ -116,6 +116,9 @@ Section :ref:`typing-rules`.
 
    The form :n:`Definition @ident {* @binder } : @type := @term` is equivalent to
    :n:`Definition @ident : forall {* @binder }, @type := fun {* @binder } => @term`.
+
+   With attribute :attr:`refine`, the user can leave out parts of the definition (writing `_` instead)
+   and Rocq enters proof mode to fill in the holes. :attr:`refine` is not compatible with :n:`@reduce`.
 
    .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
