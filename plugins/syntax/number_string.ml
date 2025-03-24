@@ -120,37 +120,45 @@ let has_type env sigma f ty =
   try let _ = Pretyping.understand ~flags env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 
-let q_option () = Rocqlib.lib_ref "core.option.type"
+let q_option () = Rocqlib.lib_ref_opt "core.option.type"
 
-let q_result () = Rocqlib.lib_ref "core.result.type"
+let q_result () = Rocqlib.lib_ref_opt "core.result.type"
 
 let is_to_target env sigma f cty {kind; typ} =
+  let (>>?) opt f = match opt with
+    | None -> false
+    | Some x -> f x
+  in
   let arrow x y =
     DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
   in
-  let app x y = DAst.make @@ GApp (x,[y]) in
-  let opt r = app (gref (q_option ())) r in
-  let result x = DAst.make @@ GApp (gref (q_result ()), [x; DAst.make @@ GHole GInternalHole]) in
+  let app x y = DAst.make @@ GApp (gref x,[y]) in
+  let app2 x y z = DAst.make @@ GApp (gref x,[y;z]) in
+  let ghole = DAst.make @@ GHole GInternalHole in
   if has_type env sigma f (arrow typ cty) then
     Some (kind, Direct)
-  else if has_type env sigma f (arrow typ (opt cty)) then
+  else if q_option() >>? fun q_opt -> has_type env sigma f (arrow typ (app q_opt cty)) then
     Some (kind, Option)
-  else if has_type env sigma f (arrow typ (result cty)) then
+  else if q_result() >>? fun q_result -> has_type env sigma f (arrow typ (app2 q_result cty ghole)) then
     Some (kind, Error)
   else None
 
 let is_from_target env sigma g cty {kind; typ} =
+  let (>>?) opt f = match opt with
+    | None -> false
+    | Some x -> f x
+  in
   let arrow x y =
     DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
   in
-  let app x y = DAst.make @@ GApp (x,[y]) in
-  let opt r = app (gref (q_option ())) r in
-  let result x = DAst.make @@ GApp (gref (q_result ()), [x; DAst.make @@ GHole GInternalHole]) in
+  let app x y = DAst.make @@ GApp (gref x,[y]) in
+  let app2 x y z = DAst.make @@ GApp (gref x,[y;z]) in
+  let ghole = DAst.make @@ GHole GInternalHole in
   if has_type env sigma g (arrow cty typ) then
     Some (kind, Direct)
-  else if has_type env sigma g (arrow cty (opt typ)) then
+  else if q_option() >>? fun q_opt -> has_type env sigma g (arrow cty (app q_opt typ)) then
     Some (kind, Option)
-  else if has_type env sigma g (arrow cty (result typ)) then
+  else if q_result() >>? fun q_result -> has_type env sigma g (arrow cty (app2 q_result typ ghole)) then
     Some (kind, Error)
   else None
 
@@ -446,12 +454,10 @@ let locate_global_inductive_or_int63_or_float env allow_params qid =
     let floatn = "num.float.type" in
     let floatc = "num.float.wrap_float" in
     let floatw = "num.float.float_wrapper" in
-    if allow_params && Rocqlib.has_ref int63n
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref int63n)
+    if allow_params && Rocqlib.check_ref int63n (Smartlocate.global_with_alias qid)
     then TargetPrim (Rocqlib.lib_ref int63w, [Rocqlib.lib_ref int63c],
                      (Nametab.path_of_global (Rocqlib.lib_ref int63n), []))
-    else if allow_params && Rocqlib.has_ref floatn
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref floatn)
+    else if allow_params && Rocqlib.check_ref floatn (Smartlocate.global_with_alias qid)
     then TargetPrim (Rocqlib.lib_ref floatw, [Rocqlib.lib_ref floatc],
                      (Nametab.path_of_global (Rocqlib.lib_ref floatn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
@@ -538,8 +544,7 @@ let locate_global_inductive_or_pstring env allow_params qid =
     let pstringn = "strings.pstring.type" in
     let pstringc = "strings.pstring.wrap_string" in
     let pstringw = "strings.pstring.string_wrapper" in
-    if allow_params && Rocqlib.has_ref pstringn
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref pstringn)
+    if allow_params && Rocqlib.check_ref pstringn (Smartlocate.global_with_alias qid)
     then TargetPrim (Rocqlib.lib_ref pstringw, [Rocqlib.lib_ref pstringc],
                      (Nametab.path_of_global (Rocqlib.lib_ref pstringn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
