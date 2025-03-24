@@ -2501,7 +2501,8 @@ let w_unify_to_subterm_all ~metas env evd ?(flags=default_unify_flags ()) (op,cl
   | _ ->
     List.map fst res
 
-let w_unify_to_subterm_list ~metas env evd flags hdmeta oplist t =
+let w_unify_to_subterm_list ~metas env evd0 flags hdmeta oplist t =
+  let at = lazy (AConstr.make evd0 t) in
   List.fold_right
     (fun op (metas,evd,l) ->
       let op = whd_meta ~metas evd op in
@@ -2523,7 +2524,8 @@ let w_unify_to_subterm_list ~metas env evd flags hdmeta oplist t =
                unify pre-existing non frozen evars of the goal or of the
                pattern *)
           set_no_delta_flags flags in
-        let t' = (strip_outer_cast evd op, AConstr.make evd t) in
+        let t' = if evd0 == evd then Lazy.force at else AConstr.make evd t in
+        let t' = (strip_outer_cast evd op, t') in
         let ((metas', evd'), cl) =
           try
             if is_keyed_unification () then
@@ -2549,7 +2551,7 @@ let w_unify_to_subterm_list ~metas env evd flags hdmeta oplist t =
             error_non_linear_unification env evd hdname cl
           else (metas',evd',cl::l))
     oplist
-    (metas,evd,[])
+    (metas,evd0,[])
 
 let w_unify_to_subterm env sigma ?flags (c, t) =
   w_unify_to_subterm env sigma ?flags (c, AConstr.make sigma t)
