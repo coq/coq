@@ -178,6 +178,8 @@ Ltac easy :=
   solve [ do_atom | use_hyps; do_ccl ] ||
   fail "Cannot solve this goal".
 
+Ltac Ltac.easy_forward_decl ::= easy.
+
 Tactic Notation "now" tactic(t) := t; easy.
 
 (** Slightly more than [easy]*)

@@ -112,10 +112,10 @@ module Theory = struct
 
 end
 
-(** [Regular theory] contains the info about the core theory, see
+(** [Regular _] contains the info about the core theory, see
     documentation in the .mli file *)
 module Boot_type = struct
-  type t = Corelib | NoInit | Regular of Theory.t
+  type t = Corelib | NoInit | Regular of { corelib : Theory.t; noinit : bool }
 end
 
 (* Context for a Coq theory *)
@@ -167,7 +167,7 @@ module Context = struct
       let boot_paths = match boot with
         | Boot_type.NoInit -> []
         | Corelib -> Theory.args theory
-        | Regular init -> Theory.args init @ Theory.args theory
+        | Regular { corelib; noinit = _ } -> Theory.args corelib @ Theory.args theory
       in
       let loadpath = Arg.(A "-boot") :: boot_paths in
       let native_common = native_common ~split () in
@@ -201,7 +201,9 @@ let boot_module_setup ~cctx coq_module =
      | ["Init"] -> [ Arg.A "-noinit" ], []
      | _ -> [ ], [ Path.relative (Path.make "theories") prelude_path ]
     )
-  | Regular init -> [], [ Path.relative init.directory prelude_path ]
+  | Regular { corelib; noinit } ->
+    if noinit then [ Arg.A "-noinit" ], []
+    else [], [ Path.relative corelib.directory prelude_path ]
 
 (* rule generation for a module *)
 let module_rule ~(cctx : Context.t) coq_module =
