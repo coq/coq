@@ -198,7 +198,7 @@ let qualid_of_global = function
 
 let default_extern_reference ?loc vars r =
   try Nametab.shortest_qualid_of_global ?loc vars r
-  with Not_found when GlobRef.is_bound r -> qualid_of_global r
+  with Not_found -> qualid_of_global r
 
 let my_extern_reference = ref default_extern_reference
 
