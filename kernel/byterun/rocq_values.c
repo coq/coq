@@ -106,14 +106,3 @@ value rocq_tcode_array(value tcodes) {
   }
   CAMLreturn(res);
 }
-
-CAMLprim value rocq_obj_set_tag (value arg, value new_tag)
-{
-#if OCAML_VERSION >= 50000
-// Placeholder used by native_compute
-  abort();
-#else
-  Tag_val (arg) = Int_val (new_tag);
-#endif
-  return Val_unit;
-}
