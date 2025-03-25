@@ -1823,8 +1823,8 @@ let pp_mllam fmt l =
       let prefix = annot.asw_prefix in
       let accu = string_of_accu_construct prefix ind in
       Format.fprintf fmt
-        "@[begin if Obj.tag (Obj.repr (%a)) = Obj.closure_tag then@\n%a@\nelse match Obj.magic (%a) with@\n| %s _ -> assert false@\n@\n%aend@]"
-        pp_mllam c pp_mllam accu_br pp_mllam c accu (pp_branches prefix ind) br
+        "@[begin if Obj.is_block (Obj.repr (%a)) && Char.code (String.unsafe_get (Obj.magic (%a)) (-8)) = Obj.closure_tag then@\n%a@\nelse match Obj.magic (%a) with@\n| %s _ -> assert false@\n@\n%aend@]"
+        pp_mllam c pp_mllam c pp_mllam accu_br pp_mllam c accu (pp_branches prefix ind) br
     | MLconstruct(prefix,ind,tag,args) ->
         Format.fprintf fmt "@[(Obj.magic (%s%a) : Nativevalues.t)@]"
           (string_of_construct prefix ~constant:false ind tag) pp_cargs args
@@ -1855,8 +1855,8 @@ let pp_mllam fmt l =
       end;
     | MLisaccu (_, _, c) ->
         Format.fprintf fmt
-          "@[begin Obj.tag (Obj.repr (%a)) = Obj.closure_tag end@]"
-        pp_mllam c
+          "@[begin Obj.is_block (Obj.repr (%a)) && Char.code (String.unsafe_get (Obj.magic (%a)) (-8)) = Obj.closure_tag end@]"
+        pp_mllam c pp_mllam c
 
   and pp_letrec fmt defs =
     let len = Array.length defs in
