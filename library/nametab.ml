@@ -64,7 +64,7 @@ module type UserName = sig
   type t
   val equal : t -> t -> bool
   val to_string : t -> string
-  val repr : t -> Id.t * module_ident list
+  val repr : t -> Id.t * Id.t list
 end
 
 module type EqualityType =
@@ -157,15 +157,15 @@ struct
   (* Dictionaries of short names *)
   type nametree =
       { path : path_status list;
-        map : nametree ModIdmap.t }
+        map : nametree Id.Map.t }
 
   let push_path arg path = match path with
   | [] -> [arg]
   | arg' :: _ -> if eq_path_status arg arg' then path else arg :: path
 
   let mktree p m = { path=p; map=m }
-  let empty_tree = mktree [] ModIdmap.empty
-  let is_empty_tree tree = tree.path = [] && ModIdmap.is_empty tree.map
+  let empty_tree = mktree [] Id.Map.empty
+  let is_empty_tree tree = tree.path = [] && Id.Map.is_empty tree.map
 
   type t = nametree Id.Map.t
 
@@ -194,10 +194,10 @@ struct
     | modid :: path ->
         let modify _ mc = push_until uname o (level-1) mc path in
         let map =
-          try ModIdmap.modify modid modify tree.map
+          try Id.Map.modify modid modify tree.map
           with Not_found ->
             let ptab = modify () empty_tree in
-            ModIdmap.add modid ptab tree.map
+            Id.Map.add modid ptab tree.map
         in
         let this =
           if level <= 0 then
@@ -248,10 +248,10 @@ let rec push_exactly uname o level tree = function
   else (* not right level *)
     let modify _ mc = push_exactly uname o (level-1) mc path in
     let map =
-      try ModIdmap.modify modid modify tree.map
+      try Id.Map.modify modid modify tree.map
       with Not_found ->
         let ptab = modify () empty_tree in
-        ModIdmap.add modid ptab tree.map
+        Id.Map.add modid ptab tree.map
     in
     if map == tree.map then tree
     else mktree tree.path map
@@ -279,7 +279,7 @@ let rec remove_path uname tree = function
           let mc = remove_path uname mc path in
           if is_empty_tree mc then None else Some mc
       in
-      let map = ModIdmap.update modid update tree.map in
+      let map = Id.Map.update modid update tree.map in
       let this =
         let test = function Relative (uname',_) -> not (U.equal uname uname') | _ -> true in
         List.filter test tree.path
@@ -303,12 +303,12 @@ let remove uname tab =
 let rec search coq_repl tree = function
   | [modid] when Id.equal modid coq_id ->
      let _warn, p =
-       match ModIdmap.find_opt coq_repl tree.map with
+       match Id.Map.find_opt coq_repl tree.map with
        | None -> None, None
        | Some modid -> search coq_repl modid [] in
      Some coq_repl, p
   | modid :: path ->
-     begin match ModIdmap.find_opt modid tree.map with
+     begin match Id.Map.find_opt modid tree.map with
      | None -> None, None
      | Some modid -> search coq_repl modid path end
   | [] -> None, Some tree.path
@@ -364,7 +364,7 @@ let shortest_qualid_gen ?loc hidden uname tab =
     | _ ->
         match dir with
             [] -> raise Not_found
-          | id::dir -> find_uname (id::pos) dir (ModIdmap.find id tree.map)
+          | id::dir -> find_uname (id::pos) dir (Id.Map.find id tree.map)
   in
   let ptab = Id.Map.find id tab in
   let found_dir = find_uname [] dir ptab in
@@ -381,10 +381,10 @@ let push_node node l =
 
 let rec flatten_tree tree l =
   let f _ tree l = flatten_tree tree l in
-  ModIdmap.fold f tree.map (push_node tree.path l)
+  Id.Map.fold f tree.map (push_node tree.path l)
 
 let rec search_prefixes tree = function
-  | modid :: path -> search_prefixes (ModIdmap.find modid tree.map) path
+  | modid :: path -> search_prefixes (Id.Map.find modid tree.map) path
   | [] -> List.rev (flatten_tree tree [])
 
 let find_prefixes qid tab =

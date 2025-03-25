@@ -234,7 +234,7 @@ module type UserName = sig
   type t
   val equal : t -> t -> bool
   val to_string : t -> string
-  val repr : t -> Id.t * module_ident list
+  val repr : t -> Id.t * Id.t list
 end
 
 module type EqualityType =

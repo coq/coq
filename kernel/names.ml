@@ -139,11 +139,6 @@ type name = Name.t = Anonymous | Name of Id.t
 
 type variable = Id.t
 
-type module_ident = Id.t
-
-module ModIdset = Id.Set
-module ModIdmap = Id.Map
-
 (** {6 Directory paths = section names paths } *)
 
 (** Dirpaths are lists of module identifiers.
@@ -154,7 +149,7 @@ let dummy_module_name = "If you see this, it's a bug"
 
 module DirPath =
 struct
-  type t = module_ident list
+  type t = Id.t list
 
   let compare = List.compare Id.compare
   let equal = List.equal Id.equal

@@ -22,8 +22,8 @@ val pop_dirpath_n : int -> DirPath.t -> DirPath.t
 (** Immediate prefix and basename of a [DirPath.t]. May raise [Failure] *)
 val split_dirpath : DirPath.t -> DirPath.t * Id.t
 
-val add_dirpath_suffix : DirPath.t -> module_ident -> DirPath.t
-val add_dirpath_prefix : module_ident -> DirPath.t -> DirPath.t
+val add_dirpath_suffix : DirPath.t -> Id.t -> DirPath.t
+val add_dirpath_prefix : Id.t -> DirPath.t -> DirPath.t
 
 val chop_dirpath : int -> DirPath.t -> DirPath.t * DirPath.t
 val append_dirpath : DirPath.t -> DirPath.t -> DirPath.t
@@ -91,7 +91,7 @@ val idset_mem_qualid : qualid -> Id.Set.t -> bool
 (** {6 ... } *)
 
 (** This is the root of the rocq-core library *)
-val rocq_init_root : module_ident (* "Corelib" *)
+val rocq_init_root : Id.t (* "Corelib" *)
 val rocq_init_string : string (* "Corelib" *)
 
 (** This is the default root prefix for developments which doesn't

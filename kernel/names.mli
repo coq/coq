@@ -118,10 +118,6 @@ type name = Name.t = Anonymous | Name of Id.t
 [@@ocaml.deprecated "(8.8) Use Name.t"]
 
 type variable = Id.t
-type module_ident = Id.t
-
-module ModIdset : Set.ExtS with type elt = module_ident
-module ModIdmap : Map.ExtS with type key = module_ident and module Set := ModIdset
 
 (** {6 Directory paths = section names paths } *)
 
@@ -140,10 +136,10 @@ sig
   val hash : t -> int
   (** Hash over directory paths. *)
 
-  val make : module_ident list -> t
+  val make : Id.t list -> t
   (** Create a directory path. (The list must be reversed). *)
 
-  val repr : t -> module_ident list
+  val repr : t -> Id.t list
   (** Represent a directory path. (The result list is reversed). *)
 
   val empty : t

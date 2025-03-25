@@ -124,11 +124,11 @@ module type StagedLibS = sig
   (** {6 Modules and module types } *)
 
   val start_module :
-    export -> module_ident -> ModPath.t ->
+    export -> Id.t -> ModPath.t ->
     summary -> Nametab.object_prefix
 
   val start_modtype :
-    module_ident -> ModPath.t ->
+    Id.t -> ModPath.t ->
     summary -> Nametab.object_prefix
 
   val end_module :
