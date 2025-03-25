@@ -345,7 +345,7 @@ let init ~make_separator_hack args =
     if args.Args.boot then ml_path
     else
       let env = Boot.Env.init () in
-      Boot.Env.Path.(to_string @@ relative (Boot.Env.corelib env) "..") :: ml_path
+       ml_path @ Boot.Env.Path.[to_string @@ relative (Boot.Env.corelib env) ".."]
   in
   findlib_init ml_path;
   List.iter (add_include loadpath) args.Args.vo_path;

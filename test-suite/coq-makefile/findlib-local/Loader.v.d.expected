@@ -1,0 +1,2 @@
+Loader.vo Loader.glob Loader.v.beautified Loader.required_vo: Loader.v ltac/fake.cma ltac/fake.cmxs @ROCQWORKER@ META.rocq-runtime
+Loader.vo Loader.glob Loader.v.beautified Loader.required_vo: Loader.v ltac/fake.cma ltac/fake.cmxs @ROCQWORKER@ META.rocq-runtime
