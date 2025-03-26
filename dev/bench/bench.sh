@@ -267,7 +267,7 @@ On packages $coq_opam_packages
 "
 
     # 24008 is the "github notifications" stream
-    resp=$(curl -sSX POST https://coq.zulipchat.com/api/v1/messages \
+    resp=$(curl -sSX POST https://rocq-prover.zulipchat.com/api/v1/messages \
     -u "$ZULIP_BENCH_BOT" \
     --data-urlencode type=stream \
     --data-urlencode to='240008' \
@@ -301,7 +301,7 @@ $ending
 $ending
 "
     fi
-    curl -sSX PATCH https://coq.zulipchat.com/api/v1/messages/"$zulip_post" \
+    curl -sSX PATCH https://rocq-prover.zulipchat.com/api/v1/messages/"$zulip_post" \
          -u "$ZULIP_BENCH_BOT" \
          --data-urlencode content="$msg" >/dev/null || echo "Failed to edit zulip post" >&2
 }
