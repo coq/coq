@@ -82,10 +82,13 @@
     --refman-custom-secondary-orange-2: #ffe9df;
 }
 
-.highlight,
-.wy-side-nav-search{
+.highlight {
+         background: var(--refman-custom-secondary-orange-2) !important;
+}
+
+.wy-side-nav-search {
          background: var(--refman-custom-secondary-orange) !important;
- }
+}
 
 .wy-side-nav-search>div.version {
     color: #dedede !important;
