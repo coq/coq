@@ -581,12 +581,12 @@ let onAllHypsAndConcl tac =
 let elimination_sort_of_goal gl =
   (* Retyping will expand evars anyway. *)
   let c = Proofview.Goal.concl gl in
-  pf_apply Retyping.get_sort_family_of gl c
+  pf_apply Retyping.get_sort_quality_of gl c
 
 let elimination_sort_of_hyp id gl =
   (* Retyping will expand evars anyway. *)
   let c = pf_get_hyp_typ id gl in
-  pf_apply Retyping.get_sort_family_of gl c
+  pf_apply Retyping.get_sort_quality_of gl c
 
 let elimination_sort_of_clause id gl = match id with
 | None -> elimination_sort_of_goal gl

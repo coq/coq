@@ -98,8 +98,8 @@ let make_inv_predicate env evd indf realargs id status concl =
             match dflt_concl with
               | Some concl -> concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
               | None ->
-                let sort = get_sort_family_of env !evd concl in
-                let sort = evd_comb1 Evd.fresh_sort_in_family evd sort in
+                let sort = get_sort_quality_of env !evd concl in
+                let sort = evd_comb1 Evd.fresh_sort_quality evd sort in
                 let p = make_arity env !evd true indf sort in
                 let evd',(p,ptyp) = Unification.abstract_list_all env
                   !evd p concl (realargs@[mkVar id])

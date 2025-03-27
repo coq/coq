@@ -43,7 +43,7 @@ let type_of env sg c =
 
 let sort_of env sg c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_sort_family_of ~polyprop env sg (Termops.strip_outer_cast sg c)
+  Retyping.get_sort_quality_of ~polyprop env sg (Termops.strip_outer_cast sg c)
 
 (*S Generation of flags and signatures. *)
 
@@ -70,18 +70,18 @@ type flag = info * scheme
 (*s [flag_of_type] transforms a type [t] into a [flag].
   Really important function. *)
 
-let info_of_family = function
-  | InSProp | InProp -> Logic
-  | InSet | InType | InQSort -> Info
+let info_of_quality = let open Sorts.Quality in function
+  | QConstant (QSProp | QProp) -> Logic
+  | QConstant QType | QVar _ -> Info
 
-let info_of_sort s = info_of_family (Sorts.family s)
+let info_of_sort s = info_of_quality (Sorts.quality s)
 
 let rec flag_of_type env sg t : flag =
   let t = whd_all env sg t in
   match EConstr.kind sg t with
     | Prod (x,t,c) -> flag_of_type (EConstr.push_rel (LocalAssum (x,t)) env) sg c
     | Sort s -> (info_of_sort (EConstr.ESorts.kind sg s),TypeScheme)
-    | _ -> (info_of_family (sort_of env sg t),Default)
+    | _ -> (info_of_quality (sort_of env sg t),Default)
 
 (*s Two particular cases of [flag_of_type]. *)
 
@@ -367,7 +367,7 @@ let rec extract_type env sg db j c args =
                       let reason = if lvl == TypeScheme then Ktype else Kprop in
                       Tarr (Tdummy reason, mld)))
     | Sort _ -> Tdummy Ktype (* The two logical cases. *)
-    | _ when info_of_family (sort_of env sg (applistc c args)) == Logic -> Tdummy Kprop
+    | _ when info_of_quality (sort_of env sg (applistc c args)) == Logic -> Tdummy Kprop
     | Rel n ->
         (match EConstr.lookup_rel n env with
            | LocalDef (_,t,_) ->
@@ -928,7 +928,7 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
     (* [c] has an inductive type, and is not a type scheme type. *)
     let t = type_of env sg c in
     (* The only non-informative case: [c] is of sort [Prop]/[SProp] *)
-    if info_of_family (sort_of env sg t) == Logic then
+    if info_of_quality (sort_of env sg t) == Logic then
       begin
         add_recursors env kn; (* May have passed unseen if logical ... *)
         (* Logical singleton case: *)
@@ -1094,7 +1094,7 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
       (List.rev kns)
   in
   for i = 0 to n-1 do
-    if info_of_family (sort_of env sg ti.(i)) != Logic then
+    if info_of_quality (sort_of env sg ti.(i)) != Logic then
       try
         let e,t = extract_std_constant env sg vkn.(i)
                    (EConstr.Vars.substl sub ci.(i)) ti.(i) in

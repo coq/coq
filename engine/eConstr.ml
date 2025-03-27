@@ -50,8 +50,6 @@ module ESorts = struct
     let r = Sorts.relevance_of_sort (unsafe_to_sorts s) in
     ERelevance.make r
 
-  let family sigma s = Sorts.family (kind sigma s)
-
   let quality sigma s = Sorts.quality (kind sigma s)
 
 end

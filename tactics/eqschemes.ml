@@ -67,7 +67,9 @@ module RelDecl = Context.Rel.Declaration
 
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
-let default_id_of_sort = function InSProp | InProp | InSet -> hid | InType | InQSort -> xid
+let default_id_of_sort = let open Sorts.Quality in function
+    | QConstant QSProp | QConstant QProp -> hid
+    | QConstant QType | QVar _ -> xid
 let fresh env id avoid =
   let freshid = next_global_ident_away (Global.safe_env ()) id avoid in
   freshid, Id.Set.add freshid avoid
@@ -200,7 +202,7 @@ let build_sym_scheme env _handle ind =
     get_sym_eq_data env indu in
   let cstr n =
     mkApp (mkConstructUi(indu,1),Context.Rel.instance mkRel n mib.mind_params_ctxt) in
-  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
+  let inds = Indrec.pseudo_sort_quality_for_elim ind mip in
   let varH,_ = fresh env (default_id_of_sort inds) Id.Set.empty in
   let applied_ind = build_dependent_inductive indu specif in
   let indr = UVars.subst_instance_relevance u mip.mind_relevance in
@@ -263,7 +265,7 @@ let build_sym_involutive_scheme env handle ind =
   let eq,eqrefl,ctx = get_rocq_eq env ctx in
   let sym, ctx = const_of_scheme sym_scheme_kind env handle ind ctx in
   let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.instance mkRel n paramsctxt) in
-  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
+  let inds = Indrec.pseudo_sort_quality_for_elim ind mip in
   let indr = UVars.subst_instance_relevance u mip.mind_relevance in
   let varH,_ = fresh env (default_id_of_sort inds) Id.Set.empty in
   let applied_ind = build_dependent_inductive indu specif in
@@ -379,7 +381,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.instance mkRel n paramsctxt1;
                     rel_vect p nrealargs]) in
-  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
+  let inds = Indrec.pseudo_sort_quality_for_elim ind mip in
   let indr = UVars.subst_instance_relevance u mip.mind_relevance in
   let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
   let varHC,avoid = fresh env (Id.of_string "HC") avoid in
@@ -410,7 +412,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
                      rel_vect (nrealargs+4) nrealargs;
                      rel_vect 1 nrealargs;
                      [|mkRel 1|]]) in
-  let s, ctx' = UnivGen.fresh_sort_in_family kind in
+  let s, ctx' = UnivGen.fresh_sort_quality kind in
   let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in (* TODO relevance *)
@@ -497,7 +499,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.instance mkRel n paramsctxt1;
                     rel_vect p nrealargs]) in
-  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
+  let inds = Indrec.pseudo_sort_quality_for_elim ind mip in
   let indr = UVars.subst_instance_relevance u mip.mind_relevance in
   let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
   let varHC,avoid = fresh env (Id.of_string "HC") avoid in
@@ -518,7 +520,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
   let realsign_ind_P n aP =
     name_context env ((LocalAssum (make_annot (Name varH) indr,aP))::realsign_P n) in
-  let s, ctx' = UnivGen.fresh_sort_in_family kind in
+  let s, ctx' = UnivGen.fresh_sort_quality kind in
   let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in
@@ -592,7 +594,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let cstr n =
     mkApp (mkConstructUi(indu,1),Context.Rel.instance mkRel n mib.mind_params_ctxt) in
   let constrargs_cstr = constrargs@[cstr 0] in
-  let inds = Indrec.pseudo_sort_family_for_elim ind mip in
+  let inds = Indrec.pseudo_sort_quality_for_elim ind mip in
   let indr = Inductive.relevance_of_ind_body mip u in
   let varH,avoid = fresh env (default_id_of_sort inds) Id.Set.empty in
   let varHC,avoid = fresh env (Id.of_string "HC") avoid in
@@ -600,7 +602,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
     name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
-  let s, ctx' = UnivGen.fresh_sort_in_family kind in
+  let s, ctx' = UnivGen.fresh_sort_quality kind in
   let ctx = UnivGen.sort_context_union ctx ctx' in
   let s = mkSort s in
   let rci = Sorts.Relevant in (* TODO relevance *)
@@ -691,7 +693,7 @@ let build_r2l_rew_scheme dep env ind k =
   let sigma = Evd.from_env env in
   let (sigma, indu) = Evd.fresh_inductive_instance env sigma ind in
   let indu = on_snd EConstr.EInstance.make indu in
-  let sigma, k = Evd.fresh_sort_in_family ~rigid:UnivRigid sigma k in
+  let sigma, k = Evd.fresh_sort_quality ~rigid:UnivRigid sigma k in
   let (sigma, c) = build_case_analysis_scheme env sigma indu dep k in
   let (c, _) = Indrec.eval_case_analysis c in
   EConstr.Unsafe.to_constr c, Evd.ustate sigma
@@ -712,7 +714,7 @@ let rew_l2r_dep_scheme_kind =
     SchemeIndividualDep (ind, sym_scheme_kind);
     SchemeIndividualDep (ind, sym_involutive_scheme_kind);
   ])
-  (fun env handle ind -> build_l2r_rew_scheme true env handle ind InType)
+  (fun env handle ind -> build_l2r_rew_scheme true env handle ind Sorts.Quality.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in conclusion                 *)
@@ -722,7 +724,7 @@ let rew_l2r_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_dep_scheme_kind =
   declare_individual_scheme_object "rew_dep"
-  (fun env _ ind -> build_r2l_rew_scheme true env ind InType)
+  (fun env _ ind -> build_r2l_rew_scheme true env ind Sorts.Quality.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in hypotheses                 *)
@@ -732,7 +734,7 @@ let rew_r2l_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_forward_dep_scheme_kind =
   declare_individual_scheme_object "rew_fwd_dep"
-  (fun env _ ind -> build_r2l_forward_rew_scheme true env ind InType)
+  (fun env _ ind -> build_r2l_forward_rew_scheme true env ind Sorts.Quality.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from left-to-right in hypotheses                 *)
@@ -742,7 +744,7 @@ let rew_r2l_forward_dep_scheme_kind =
 (**********************************************************************)
 let rew_l2r_forward_dep_scheme_kind =
   declare_individual_scheme_object "rew_fwd_r_dep"
-  (fun env _ ind -> build_l2r_forward_rew_scheme true env ind InType)
+  (fun env _ ind -> build_l2r_forward_rew_scheme true env ind Sorts.Quality.qtype)
 
 (**********************************************************************)
 (* Non-dependent rewrite from either left-to-right in conclusion or   *)
@@ -756,7 +758,7 @@ let rew_l2r_forward_dep_scheme_kind =
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "rew_r"
   (fun env _ ind -> fix_r2l_forward_rew_scheme env
-     (build_r2l_forward_rew_scheme false env ind InType))
+     (build_r2l_forward_rew_scheme false env ind Sorts.Quality.qtype))
 
 (**********************************************************************)
 (* Non-dependent rewrite from either right-to-left in conclusion or   *)
@@ -766,7 +768,7 @@ let rew_l2r_scheme_kind =
 (**********************************************************************)
 let rew_r2l_scheme_kind =
   declare_individual_scheme_object "rew"
-  (fun env _ ind -> build_r2l_rew_scheme false env ind InType)
+  (fun env _ ind -> build_r2l_rew_scheme false env ind Sorts.Quality.qtype)
 
 (* End of rewriting schemes *)
 

@@ -134,13 +134,14 @@ let constr_of_monomorphic_global env gr =
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
 
-let fresh_sort_in_family = function
-  | InSProp -> Sorts.sprop, empty_sort_context
-  | InProp -> Sorts.prop, empty_sort_context
-  | InSet -> Sorts.set, empty_sort_context
-  | InType | InQSort (* Treat as Type *) ->
-    let u = fresh_level () in
-      sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u),Constraints.empty)
+let fresh_sort_quality =
+  let open Quality in
+  function
+  | QConstant QSProp -> Sorts.sprop, empty_sort_context
+  | QConstant QProp -> Sorts.prop, empty_sort_context
+  | QConstant QType | QVar _ (* Treat as Type *) ->
+     let u = fresh_level () in
+     sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u), Constraints.empty)
 
 let new_global_univ () =
   let u = fresh_level () in

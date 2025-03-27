@@ -24,7 +24,7 @@ type 'constr pfix_guard_error =
   | RecursionNotOnInductiveType of 'constr
   | RecursionOnIllegalTerm of int * (env * 'constr) * (int list * int list) Lazy.t
   | NotEnoughArgumentsForFixCall of int
-  | FixpointOnIrrelevantInductive
+  | FixpointOnNonEliminable of Sorts.t * Sorts.t
 
 type 'constr pcofix_guard_error =
   (* CoFixpoints *)
