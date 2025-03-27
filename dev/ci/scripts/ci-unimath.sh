@@ -17,4 +17,5 @@ export COQEXTRAFLAGS='-native-compiler no'
       sed -i.bak "s|PACKAGES += $p||" Makefile
   done
   make BUILD_COQ=no
+  make BUILD_COQ=no install
 )
