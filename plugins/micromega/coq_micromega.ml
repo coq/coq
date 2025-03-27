@@ -2141,21 +2141,6 @@ let rzdomain =
       ; nformula_eq = eformula_eq Mc.qeq_bool
       }
 
-let rqdomain =
-    lazy
-      { typ = Lazy.force rocq_R
-      ; coeff = Lazy.force rocq_Rcst
-      ; vars_of_formula = vars_of_eformula
-      ; undump_formula =  undump_eformula (undump_cstr undump_rconstant)
-      ; dump_formula =   dump_eformula (EConstr.mkApp(Lazy.force rocq_Cstr,[| Lazy.force rocq_Rcst|]))
-                         (dump_cstr (Lazy.force rocq_Rcst) dump_Rcst)
-      ; unreify_formula = unreify_eformula (Lazy.force dump_rexpr)
-      ; proof_typ = Lazy.force rocq_QWitness
-      ; dump_proof = dump_psatz rocq_Q dump_q
-      ; nformula_eq = eformula_eq Mc.qeq_bool
-      }
-
-
 
 let micromega_genr spec prover tac =
   let parse_arith = parse_rarith_ext in
@@ -2362,6 +2347,19 @@ let call_csdpcert_q provername poly =
     else (
       print_string "buggy certificate";
       Unknown )
+
+let call_csdpcert_r provername poly =
+  let poly = List.filter_map
+               (fun x -> match x with
+                         | Mc.IsZ _ -> None
+                         | Mc.IsF f -> Some f) poly  in
+  match call_csdpcert provername poly with
+  | None -> Unknown
+  | Some cert ->
+       let cert = Mc.RatProof (Certificate.z_cert_of_pos cert, Mc.DoneProof) in
+       Prf cert
+
+
 
 let call_csdpcert_z provername poly =
   let l = List.map (fun (e, o) -> (z_to_q_pol e, o)) poly in
@@ -2592,11 +2590,6 @@ let rebuild_proof_index_proof_r =
 
 
 
-let rprover_compat p (o,l) =
-  p o (List.filter_map (fun x -> match x with
-                          | Mc.IsZ _ -> assert false
-                          | Mc.IsF f -> Some f) l)
-
 let linear_prover_Q =
   { name = "linear prover"
   ; get_option = lra_proof_depth
@@ -2654,11 +2647,11 @@ let non_linear_prover_Q str o =
 let non_linear_prover_R str o =
   { name = "real nonlinear prover"
   ; get_option = (fun () -> (str, o))
-  ; prover = rprover_compat call_csdpcert_q
-  ; hyps = (fun _ -> hyps_of_cone)
-  ; compact = compact_cone
+  ; prover = (fun (o,l) ->  call_csdpcert_r o l)
+  ; hyps = (fun _ -> hyps_of_pt)
+  ; compact = compact_pt
   ; rebuild_proof_index = rebuild_proof_index_proof_r
-  ; pp_prf = pp_psatz pp_q
+  ; pp_prf = pp_proof_term
   ; pp_f = (fun o x -> pp_eformula (fun o x -> pp_pol pp_q o (fst x)) o x) }
 
 let non_linear_prover_Z str o =
@@ -2756,7 +2749,7 @@ let wsos_Q =
     Mc.cnfQ qq_domain_spec
     (non_linear_prover_Q "pure_sos" None)
 
-let xsos_R = micromega_genr rqdomain (non_linear_prover_R "pure_sos" None)
+let xsos_R = micromega_genr rzdomain (non_linear_prover_R "pure_sos" None)
 
 let xsos_Z =
   micromega_gen parse_zarith
@@ -2779,7 +2772,7 @@ let wpsatz_Q i =
     (non_linear_prover_Q "real_nonlinear_prover" (Some i))
 
 let xpsatz_R i =
-  micromega_genr rqdomain (non_linear_prover_R "real_nonlinear_prover" (Some i))
+  micromega_genr rzdomain (non_linear_prover_R "real_nonlinear_prover" (Some i))
 
 let xpsatz_Z i =
   micromega_gen parse_zarith
