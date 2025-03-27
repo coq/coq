@@ -645,9 +645,9 @@ same value. ::
   case (fun () => plus (fun () => t) f) ≡ Val (t,f)
 
   let x := zero e in u ≡ zero e
-  let x := plus t f in u ≡ plus (fun () => let x := t in u) (fun e => let x := f e in u)
+  let x := plus t f in u ≡ plus (fun () => let x := t () in u) (fun e => let x := f e in u)
 
-  (t, u, f, g, e values)
+  (t, f, g, e values)
 
 Goals
 +++++
