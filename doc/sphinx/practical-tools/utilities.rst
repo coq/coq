@@ -973,13 +973,13 @@ line timing data:
     .. note::
       This target requires python to build the table.
 
-+ ``PROFILE=1``
++ ``PROFILING=1``
   passing this variable or setting it in the environment will cause
-  ``make`` to use ``rocq c -profile`` to write to a ``.v.prof.json``
+  ``make`` to use ``rocq c -profile`` to write to a ``.vo.prof.json``
   file for each ``.v`` file compiled, which contains :ref:`profiling`
   information.
 
-  The ``.v.prof.json`` is then compressed by ``gzip`` to a ``.v.prof.json.gz``.
+  The ``.vo.prof.json`` is then compressed by ``gzip`` to a ``.vo.prof.json.gz``.
 
 Building a subset of the targets with ``-j``
 ++++++++++++++++++++++++++++++++++++++++++++
