@@ -427,7 +427,7 @@ let pr_onescheme (idop, {sch_type; sch_qualid; sch_sort}) =
     | SchemeElimination ->  keyword "Elimination for"
     | SchemeCase -> keyword "Case for" in
   hov 0 str_identifier ++ spc () ++ hov 0 (str_scheme ++ spc() ++ pr_smart_global sch_qualid)
-    ++ spc () ++ hov 0 (keyword "Sort" ++ spc() ++ Sorts.Quality.pr Sorts.QVar.raw_pr sch_sort)
+    ++ spc () ++ hov 0 (keyword "Sort" ++ spc() ++ UnivGen.QualityOrSet.pr Sorts.QVar.raw_pr sch_sort)
 
 let pr_equality_scheme_type sch id =
   let str_scheme = match sch with

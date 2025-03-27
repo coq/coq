@@ -35,6 +35,13 @@ module QualityOrSet = struct
     in Quality.eliminates_to (to_qual a) (to_qual b)
 
   let of_quality q = Qual q
+  let of_sort s = match s with
+    | Sorts.Set -> Set
+    | s -> of_quality (Sorts.quality s)
+  let quality q = match q with
+    | Set -> Quality.qtype
+    | Qual q -> q
+
   let set = Set
 
   let qtype = Qual Quality.qtype
@@ -189,11 +196,12 @@ let constr_of_monomorphic_global env gr =
           str " would forget universes.")
 
 let fresh_sort_quality =
-  let open Quality in
+  let open QualityOrSet in
   function
-  | QConstant QSProp -> Sorts.sprop, empty_sort_context
-  | QConstant QProp -> Sorts.prop, empty_sort_context
-  | QConstant QType | QVar _ (* Treat as Type *) ->
+  | Qual (QConstant QSProp) -> Sorts.sprop, empty_sort_context
+  | Qual (QConstant QProp) -> Sorts.prop, empty_sort_context
+  | Set -> Sorts.set, empty_sort_context
+  | Qual (QConstant QType | QVar _ (* Treat as Type *)) ->
      let u = fresh_level () in
      sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u), Constraints.empty)
 

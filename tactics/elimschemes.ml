@@ -19,6 +19,7 @@ open Constr
 open Indrec
 open Declarations
 open Ind_tables
+open UnivGen
 
 (* Induction/recursion schemes *)
 
@@ -104,45 +105,50 @@ let optimize_non_type_induction_scheme kind dep sort env _handle ind =
 
 let rect_dep =
   declare_individual_scheme_object "rect_dep"
-    (fun env _ x -> build_induction_scheme_in_type env true Sorts.Quality.qtype x)
+    (fun env _ x -> build_induction_scheme_in_type env true QualityOrSet.qtype x)
 
-(* let rec_dep = *)
-(*   declare_individual_scheme_object "rec_dep" *)
-(*     (optimize_non_type_induction_scheme rect_dep true InSet) *)
+let rec_dep =
+  declare_individual_scheme_object "rec_dep"
+    (optimize_non_type_induction_scheme rect_dep true QualityOrSet.set)
 
 let ind_dep =
   declare_individual_scheme_object "ind_dep"
-    (optimize_non_type_induction_scheme rect_dep true Sorts.Quality.qprop)
+    (optimize_non_type_induction_scheme rec_dep true QualityOrSet.prop)
 
 let sind_dep =
   declare_individual_scheme_object "sind_dep"
-    (fun env _ x -> build_induction_scheme_in_type env true Sorts.Quality.qsprop x)
+    (fun env _ x -> build_induction_scheme_in_type env true QualityOrSet.sprop x)
 
 let rect_nodep =
   declare_individual_scheme_object "rect_nodep"
-    (fun env _ x -> build_induction_scheme_in_type env false Sorts.Quality.qtype x)
+    (fun env _ x -> build_induction_scheme_in_type env false QualityOrSet.qtype x)
 
-(* let rec_nodep = *)
-(*   declare_individual_scheme_object "rec_nodep" *)
-(*     (optimize_non_type_induction_scheme rect_nodep false InSet) *)
+let rec_nodep =
+  declare_individual_scheme_object "rec_nodep"
+    (optimize_non_type_induction_scheme rect_nodep false QualityOrSet.set)
 
 let ind_nodep =
   declare_individual_scheme_object "ind_nodep"
-    (optimize_non_type_induction_scheme rect_nodep false Sorts.Quality.qprop)
+    (optimize_non_type_induction_scheme rec_nodep false QualityOrSet.prop)
 
 let sind_nodep =
   declare_individual_scheme_object "sind_nodep"
-    (fun env _ x -> build_induction_scheme_in_type env false Sorts.Quality.qsprop x)
+    (fun env _ x -> build_induction_scheme_in_type env false QualityOrSet.sprop x)
 
 let elim_scheme ~dep ~to_kind =
-  let open Sorts.Quality in
-  match dep, to_kind with
-  | false, QConstant QSProp -> sind_nodep
-  | false, QConstant QProp -> ind_nodep
-  | false, (QConstant QType | QVar _) -> rect_nodep
-  | true, QConstant QSProp -> sind_dep
-  | true, QConstant QProp -> ind_dep
-  | true, (QConstant QType | QVar _) -> rect_dep
+  let open QualityOrSet in
+  match to_kind with
+  | Qual q ->
+     begin
+       match q with
+       | QConstant QSProp when dep -> sind_dep
+       | QConstant QProp when dep -> ind_dep
+       | (QConstant QType | QVar _) when dep -> rect_dep
+       | QConstant QSProp -> sind_nodep
+       | QConstant QProp -> ind_nodep
+       | QConstant QType | QVar _ -> rect_nodep
+     end
+  | Set -> if dep then rec_dep else rec_nodep
 
 (* Case analysis *)
 
@@ -157,16 +163,16 @@ let build_case_analysis_scheme_in_type env dep sort ind =
 
 let case_dep =
   declare_individual_scheme_object "case_dep"
-    (fun env _ x -> build_case_analysis_scheme_in_type env true Sorts.Quality.qtype x)
+    (fun env _ x -> build_case_analysis_scheme_in_type env true QualityOrSet.qtype x)
 
 let case_nodep =
   declare_individual_scheme_object "case_nodep"
-    (fun env _ x -> build_case_analysis_scheme_in_type env false Sorts.Quality.qtype x)
+    (fun env _ x -> build_case_analysis_scheme_in_type env false QualityOrSet.qtype x)
 
 let casep_dep =
   declare_individual_scheme_object "casep_dep"
-    (fun env _ x -> build_case_analysis_scheme_in_type env true Sorts.Quality.qprop x)
+    (fun env _ x -> build_case_analysis_scheme_in_type env true QualityOrSet.prop x)
 
 let casep_nodep =
   declare_individual_scheme_object "casep_nodep"
-    (fun env _ x -> build_case_analysis_scheme_in_type env false Sorts.Quality.qprop x)
+    (fun env _ x -> build_case_analysis_scheme_in_type env false QualityOrSet.prop x)

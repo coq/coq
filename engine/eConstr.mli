@@ -66,7 +66,7 @@ sig
   val relevance_of_sort : t -> ERelevance.t
 
   val quality : Evd.evar_map -> t -> Sorts.Quality.t
-
+  val quality_or_set : Evd.evar_map -> t -> UnivGen.QualityOrSet.t
 end
 
 module EInstance :

@@ -350,9 +350,10 @@ let top_allowed_sort env (kn,i as ind) =
   elim_sort specif
 
 let constant_sorts_below top =
+  let top = UnivGen.QualityOrSet.of_quality top in
   List.filter
-    (Sorts.Quality.eliminates_to top)
-    (Sorts.Quality.all_constants)
+    (UnivGen.QualityOrSet.eliminates_to top)
+    (UnivGen.QualityOrSet.all_constants)
 
 let sorts_for_schemes specif =
   constant_sorts_below (elim_sort specif)

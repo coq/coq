@@ -268,7 +268,7 @@ type equality_scheme_type =
 type scheme = {
   sch_type : scheme_type ;
   sch_qualid : Libnames.qualid Constrexpr.or_by_notation ;
-  sch_sort : Sorts.Quality.t ;
+  sch_sort : UnivGen.QualityOrSet.t ;
 }
 
 type section_subset_expr =

@@ -529,7 +529,7 @@ GRAMMAR EXTEND Gram
       | id = identref; ":="; kind = scheme_kind -> { (Some id,kind) } ] ]
   ;
   scheme_kind:
-    [ [sch_type = scheme_type; "for"; sch_qualid = smart_global; IDENT "Sort"; sch_sort = sort_quality
+    [ [sch_type = scheme_type; "for"; sch_qualid = smart_global; IDENT "Sort"; sch_sort = sort_quality_or_set
       -> { {sch_type; sch_qualid; sch_sort} }
     ] ]
   ;

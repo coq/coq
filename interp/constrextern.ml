@@ -1608,9 +1608,10 @@ let rec glob_of_pat
           Array.map (fun (bl,_,_) -> bl) v,
           Array.map (fun (_,_,ty) -> ty) v,
           Array.map (fun (_,bd,_) -> bd) v)
-  | PSort (QConstant QSProp) -> GSort Glob_ops.glob_SProp_sort
-  | PSort (QConstant QProp) -> GSort Glob_ops.glob_Prop_sort
-  | PSort (QConstant QType | QVar _) -> GSort Glob_ops.glob_Type_sort
+  | PSort (Qual (QConstant QSProp)) -> GSort Glob_ops.glob_SProp_sort
+  | PSort (Qual (QConstant QProp)) -> GSort Glob_ops.glob_Prop_sort
+  | PSort (Qual (QConstant QType | QVar _)) -> GSort Glob_ops.glob_Type_sort
+  | PSort Set -> GSort Glob_ops.glob_Set_sort
   | PInt i -> GInt i
   | PFloat f -> GFloat f
   | PString s -> GString s

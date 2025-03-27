@@ -52,6 +52,10 @@ module ESorts = struct
 
   let quality sigma s = Sorts.quality (kind sigma s)
 
+  let quality_or_set sigma s =
+    if is_set sigma s then UnivGen.QualityOrSet.set
+    else UnivGen.QualityOrSet.of_quality @@ Sorts.quality (kind sigma s)
+
 end
 
 module EInstance = struct

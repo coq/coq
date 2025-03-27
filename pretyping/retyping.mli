@@ -39,7 +39,7 @@ val get_sort_of :
   ?polyprop:bool -> env -> evar_map -> types -> ESorts.t
 
 val get_sort_quality_of :
-  ?polyprop:bool -> env -> evar_map -> types -> Sorts.Quality.t
+  ?polyprop:bool -> env -> evar_map -> types -> UnivGen.QualityOrSet.t
 
 (** Makes an unsafe judgment from a constr *)
 val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment

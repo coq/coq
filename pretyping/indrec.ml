@@ -719,10 +719,15 @@ let build_induction_scheme env sigma pind dep kind =
 
 (*s Eliminations. *)
 
-let elimination_suffix = let open Sorts.Quality in function
-  | QConstant QSProp -> "_sind"
-  | QConstant QProp -> "_ind"
-  | QConstant QType | QVar _ -> "_rect"
+let elimination_suffix =
+  let open UnivGen.QualityOrSet in
+  let open Sorts.Quality in
+  function
+  | Qual (QConstant QSProp) -> "_sind"
+  | Qual (QConstant QProp) -> "_ind"
+  | Qual (QConstant QType) -> "_rect"
+  | Qual (QVar _) -> "_elim"
+  | Set -> "_rec"
 
 let case_suffix = "_case"
 
@@ -752,5 +757,5 @@ let lookup_eliminator env ind_sp s =
         (strbrk "Cannot find the elimination combinator " ++
          Id.print id ++ strbrk ", the elimination of the inductive definition " ++
          Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind_sp) ++
-         strbrk " on sort " ++ Sorts.Quality.pr Sorts.QVar.raw_pr s ++
+         strbrk " on sort " ++ UnivGen.QualityOrSet.pr Sorts.QVar.raw_pr s ++
          strbrk " is probably not allowed.")

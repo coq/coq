@@ -205,9 +205,10 @@ let is_correct_arity env sigma c pj ind specif params =
         sigma, s
       end
     | Evar (ev,_), [] ->
-        let sigma, s = Evd.fresh_sort_quality sigma (elim_sort specif) in
-        let sigma = Evd.define ev (mkSort s) sigma in
-        sigma, s
+       let sigma, s = Evd.fresh_sort_quality sigma
+                            (UnivGen.QualityOrSet.of_quality @@ elim_sort specif) in
+       let sigma = Evd.define ev (mkSort s) sigma in
+       sigma, s
     | _, (LocalDef _ as d)::ar' ->
         srec (push_rel d env) sigma (lift 1 pt') ar'
     | _ ->
