@@ -66,6 +66,8 @@ val push_private_constants : Environ.env -> private_constants -> Environ.env
 
 val universes_of_private : private_constants -> Univ.ContextSet.t
 
+val constants_of_private : private_constants -> Constant.t list
+
 val is_curmod_library : safe_environment -> bool
 
 val is_joined_environment : safe_environment -> bool

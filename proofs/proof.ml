@@ -425,6 +425,17 @@ let solve_constraints =
   Proofview.tclOR Refine.solve_constraints
     (fun (e,info) -> Proofview.tclZERO ~info (FailedConstraints e))
 
+let register_side_effects eff =
+  let open Names in
+  let cst = Safe_typing.constants_of_private eff.Evd.seff_private in
+  let iter kn =
+    let gr = GlobRef.ConstRef kn in
+    let id = Label.to_id (Constant.label kn) in
+    let sp = Lib.make_path id in
+    Nametab.push (Nametab.Until 1) sp gr
+  in
+  List.iter iter cst
+
 let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match with_end_tac with
       | None -> tac
@@ -446,6 +457,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     let env = Global.env () in
     let env = Environ.update_typing_flags ?typing_flags:pr.typing_flags env in
     let (p,(status,info),()) = run_tactic env tac pr in
+    let () = register_side_effects (Evd.eval_side_effects (Proofview.return p.proofview)) in
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let () =
