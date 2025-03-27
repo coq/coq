@@ -1193,7 +1193,7 @@ plugin:ci-lean_importer:
 plugin:ci-ltac2_compiler:
   extends: .ci-template
 
-plugin:ci-metacoq:
+plugin:ci-metarocq:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda

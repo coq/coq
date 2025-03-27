@@ -448,9 +448,9 @@ project perennial "https://github.com/mit-pdos/perennial" "coq/tested"
 # when Perennial CI breaks.
 
 ########################################################################
-# metacoq
+# metarocq
 ########################################################################
-project metacoq "https://github.com/MetaCoq/metacoq" "main"
+project metarocq "https://github.com/MetaRocq/metarocq" "main"
 # Contact @mattam82, @yforster on github
 
 ########################################################################
