@@ -137,8 +137,13 @@ type 'a option_sig = {
 (** The [preprocess] function is triggered before setting the option. It can be
     used to emit a warning on certain values, and clean-up the final value.
 
+    By default [no_summary:false], and declare_option declares a
+    summary entry to synchronize the backing state by calling read and write.
+    If you pass [no_summary:true] you must handle synchronization separately.
+
     [StringOptKind] should be preferred to [StringKind] because it supports "Unset". *)
-val declare_option   : ?preprocess:('a -> 'a) -> kind:'a option_kind -> 'a option_sig -> unit
+val declare_option   : ?preprocess:('a -> 'a) -> ?no_summary:bool ->
+  kind:'a option_kind -> 'a option_sig -> unit
 
 val declare_append_only_option : ?preprocess:(string -> string) -> sep:string ->
   string option_sig -> unit
