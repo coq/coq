@@ -14,6 +14,60 @@ open Constr
 open Univ
 open UVars
 
+module QualityOrSet = struct
+  type t = Qual of Quality.t | Set
+
+  let equal a b = match a, b with
+    | Qual a, Qual b -> Quality.equal a b
+    | Set, Set -> true
+    | Qual _, Set | Set, Qual _ -> false
+
+  let compare a b = match a, b with
+    | Qual a, Qual b -> Quality.compare a b
+    | Set, Set -> 0
+    | Qual _, Set -> 1
+    | Set, Qual _ -> -1
+
+  let eliminates_to a b =
+    let to_qual = function
+      | Set -> Quality.qtype
+      | Qual q -> q
+    in Quality.eliminates_to (to_qual a) (to_qual b)
+
+  let of_quality q = Qual q
+  let set = Set
+
+  let qtype = Qual Quality.qtype
+  let prop = Qual Quality.qprop
+  let sprop = Qual Quality.qsprop
+
+  let is_type q = match q with
+    | Set -> false
+    | Qual q -> Quality.is_qtype q
+
+  let is_set q = match q with
+    | Set -> true
+    | Qual _ -> false
+
+  let is_prop q = match q with
+    | Set -> false
+    | Qual q -> Quality.is_qprop q
+
+  let is_sprop q = match q with
+    | Set -> false
+    | Qual q -> Quality.is_qsprop q
+
+  let pr prv q = match q with
+    | Set -> Pp.str"Set"
+    | Qual q -> Quality.pr prv q
+
+  let raw_pr = pr Sorts.QVar.raw_pr
+
+  let all_constants = Set :: List.map (fun q -> Qual q) Quality.all_constants
+  let all = Set :: List.map (fun q -> Qual q) Quality.all
+end
+
+
 type sort_context_set = (Sorts.QVar.Set.t * Univ.Level.Set.t) * Univ.Constraints.t
 
 type 'a in_sort_context_set = 'a * sort_context_set

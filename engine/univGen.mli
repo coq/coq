@@ -14,6 +14,33 @@ open Environ
 open Univ
 open UVars
 
+module QualityOrSet : sig
+  type t = Qual of Sorts.Quality.t | Set
+
+  val equal : t -> t -> bool
+  val compare : t -> t -> int
+  val of_quality : Sorts.Quality.t -> t
+
+  val eliminates_to : t -> t -> bool
+
+  val set : t
+
+  val qtype : t
+  val prop : t
+  val sprop : t
+
+  val is_type : t -> bool
+  val is_set : t -> bool
+  val is_prop : t -> bool
+  val is_sprop : t -> bool
+
+  val pr : (Sorts.QVar.t -> Pp.t) -> t -> Pp.t
+  val raw_pr : t -> Pp.t
+
+  val all_constants : t list
+  val all : t list
+end
+
 type univ_length_mismatch = {
   gref : GlobRef.t;
   actual : int * int;
