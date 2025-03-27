@@ -46,4 +46,5 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+export ROCQLIB=$PWD/_build/install/default/lib/coq
 ocamldebug "${opts[@]}" $(ocamlfind query -recursive -i-format rocq-runtime.dev) $(ocamlfind query -i-format -descendants rocq-runtime.vernac) -I +threads -I dev $exe "$@"
