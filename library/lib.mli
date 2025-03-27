@@ -20,19 +20,18 @@ type is_type = bool (* Module Type or just Module *)
 type export_flag = Export | Import
 type export = (export_flag * Libobject.open_filter) option (* None for a Module Type *)
 
-val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
+val make_oname : Libobject.object_prefix -> Names.Id.t -> Libobject.object_name
 val make_foname : Names.Id.t -> Libobject.object_name
-val oname_prefix : Libobject.object_name -> Nametab.object_prefix
 
 type 'summary node =
-  | CompilingLibrary of Nametab.object_prefix
-  | OpenedModule of is_type * export * Nametab.object_prefix * 'summary
-  | OpenedSection of Nametab.object_prefix * 'summary
+  | CompilingLibrary of Libobject.object_prefix
+  | OpenedModule of is_type * export * Libobject.object_prefix * 'summary
+  | OpenedSection of Libobject.object_prefix * 'summary
 
 (** Extract the [object_prefix] component. Note that it is the prefix
    of the objects *inside* this node, eg in [Module M.] we have
    [OpenedModule] with prefix containing [M]. *)
-val node_prefix : 'summary node -> Nametab.object_prefix
+val node_prefix : 'summary node -> Libobject.object_prefix
 
 type 'summary library_segment = ('summary node * Libobject.t list) list
 
@@ -62,15 +61,15 @@ val contents : unit -> Summary.Interp.frozen library_segment
     - cwd = A.B.M.S
     - cwd_except_section = A.B.M
     - current_dirpath true = M.S
-    - current_dirpath false = S
+    - current_dirpath false = M
     - current_mp = MPdot(MPfile A.B, M)
 
     make_path (resp make_path_except_section) uses cwd (resp cwd_except_section)
     make_kn uses current_mp
 *)
-val prefix : unit -> Nametab.object_prefix
-val cwd : unit -> DirPath.t
-val cwd_except_section : unit -> DirPath.t
+val prefix : unit -> Libobject.object_prefix
+val cwd : unit -> Libnames.full_path
+val cwd_except_section : unit -> Libnames.full_path
 val current_dirpath : bool -> DirPath.t (* false = except sections *)
 val make_path : Id.t -> Libnames.full_path
 val make_path_except_section : Id.t -> Libnames.full_path
@@ -125,19 +124,19 @@ module type StagedLibS = sig
 
   val start_module :
     export -> Id.t -> ModPath.t ->
-    summary -> Nametab.object_prefix
+    summary -> Libobject.object_prefix
 
   val start_modtype :
     Id.t -> ModPath.t ->
-    summary -> Nametab.object_prefix
+    summary -> Libobject.object_prefix
 
   val end_module :
     unit ->
-    Nametab.object_prefix * summary * classified_objects
+    Libobject.object_prefix * summary * classified_objects
 
   val end_modtype :
     unit ->
-    Nametab.object_prefix * summary * classified_objects
+    Libobject.object_prefix * summary * classified_objects
 
   type frozen
 

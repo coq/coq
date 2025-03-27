@@ -503,10 +503,6 @@ let register_ltac atts = function
       CErrors.user_err Pp.(str "Ltac redefinitions not supported in a mutual block.")
   in
   let rfun = List.map map tacl in
-  let recvars =
-    let fold accu (id, _) = (Lib.make_path id, Lib.make_kn id) :: accu in
-    List.fold_left fold [] rfun
-  in
   let ist = Tacintern.make_empty_glob_sign ~strict:true in
   let map (name, body) =
     let body = Tacintern.intern_tactic_or_tacarg ist body in
@@ -516,8 +512,11 @@ let register_ltac atts = function
     (* Register locally the tactic to handle recursivity. This
        function affects the whole environment, so that we transactify
        it afterwards. *)
-    let iter_rec (sp, kn) = Tacenv.push_tactic (Nametab.Until 1) sp kn in
-    let () = List.iter iter_rec recvars in
+    let iter_rec (id, _) =
+      let sp, kn = Lib.make_foname id in
+      Tacenv.push_tactic (Nametab.Until 1) sp kn
+    in
+    let () = List.iter iter_rec rfun in
     List.map map rfun
   in
   let defs = Vernacstate.System.protect defs () in

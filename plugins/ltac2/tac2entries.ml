@@ -234,7 +234,7 @@ type typext = {
 
 let push_typext vis prefix def =
   let iter data =
-    let spc = Libnames.make_path prefix.obj_dir data.edata_name in
+    let spc = Libnames.add_path_suffix prefix.obj_path data.edata_name in
     let knc = KerName.make prefix.obj_mp (Label.of_id data.edata_name) in
     Tac2env.push_constructor vis spc knc
   in

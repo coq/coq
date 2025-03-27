@@ -146,7 +146,7 @@ let type_of_global_ref gr =
     | ConstructRef _ -> "constr"
 
 let remove_sections dir =
-  let cwd = Lib.cwd_except_section () in
+  let cwd = Libnames.dirpath_of_path @@ Lib.cwd_except_section () in
   if Libnames.is_dirpath_prefix_of cwd dir then
     (* Not yet (fully) discharged *)
     cwd

@@ -23,9 +23,7 @@ val pop_dirpath_n : int -> DirPath.t -> DirPath.t
 val split_dirpath : DirPath.t -> DirPath.t * Id.t
 
 val add_dirpath_suffix : DirPath.t -> Id.t -> DirPath.t
-val add_dirpath_prefix : Id.t -> DirPath.t -> DirPath.t
 
-val chop_dirpath : int -> DirPath.t -> DirPath.t * DirPath.t
 val append_dirpath : DirPath.t -> DirPath.t -> DirPath.t
 
 val drop_dirpath_prefix : DirPath.t -> DirPath.t -> DirPath.t
@@ -41,11 +39,28 @@ val eq_full_path : full_path -> full_path -> bool
 (** Constructors of [full_path] *)
 val make_path : DirPath.t -> Id.t -> full_path
 
+val add_path_suffix : full_path -> Id.t -> full_path
+
+val append_path : full_path -> DirPath.t -> full_path
+
 (** Destructors of [full_path] *)
 val repr_path : full_path -> DirPath.t * Id.t
-val dirpath : full_path -> DirPath.t
+
+(** [path_pop_n_suffixes n p] removes the last [n] elements of [p].
+    Raises [Failure] if [p] is not long enough. *)
+val path_pop_n_suffixes : int -> full_path -> full_path
+
+(** [path_pop_suffix p] is [path_pop_n_suffixes 1 p]. *)
+val path_pop_suffix : full_path -> full_path
+
+(** The prefix of the path *)
+val dirpath : full_path -> DirPath.t [@@deprecated "Compose [dirpath_of_path] and [pop_dirpath]"]
 val basename : full_path -> Id.t
-val full_path_is_ident : full_path -> bool
+
+(** The full path as a [DirPath.t]. *)
+val dirpath_of_path : full_path -> DirPath.t
+
+val is_path_prefix_of : full_path -> DirPath.t -> bool
 
 (** Parsing and printing of section path as ["root.module.id"] *)
 val path_of_string : string -> full_path
@@ -97,3 +112,6 @@ val rocq_init_string : string (* "Corelib" *)
 (** This is the default root prefix for developments which doesn't
    mention a root *)
 val default_root_prefix : DirPath.t
+
+(** For uninitialized data, cf [DirPath.dummy] *)
+val dummy_full_path : full_path

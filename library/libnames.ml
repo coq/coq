@@ -35,10 +35,6 @@ let is_dirpath_suffix_of dir1 dir2 =
   let dir2 = DirPath.repr dir2 in
   List.prefix_of Id.equal dir1 dir2
 
-let chop_dirpath n d =
-  let d1,d2 = List.chop n (List.rev (DirPath.repr d)) in
-  DirPath.make (List.rev d1), DirPath.make (List.rev d2)
-
 let drop_dirpath_prefix d1 d2 =
   let d =
     List.drop_prefix Id.equal
@@ -47,8 +43,6 @@ let drop_dirpath_prefix d1 d2 =
   DirPath.make (List.rev d)
 
 let append_dirpath d1 d2 = DirPath.make (DirPath.repr d2 @ DirPath.repr d1)
-
-let add_dirpath_prefix id d = DirPath.make (DirPath.repr d @ [id])
 
 let add_dirpath_suffix p id = DirPath.make (id :: DirPath.repr p)
 
@@ -78,18 +72,45 @@ let dirpath_of_string s =
   in
   DirPath.make path
 
-(*s Section paths are absolute names *)
+(** Absolute paths *)
 
 type full_path = {
-  dirpath : DirPath.t ;
-  basename : Id.t }
+  dirpath : DirPath.t;
+  basename : Id.t;
+}
 
 let dirpath sp = sp.dirpath
 let basename sp = sp.basename
 
-let full_path_is_ident sp = DirPath.is_empty (dirpath sp)
+let dirpath_of_path { dirpath; basename } =
+  add_dirpath_suffix dirpath basename
+
+let is_path_prefix_of p dp = is_dirpath_prefix_of (dirpath_of_path p) dp
 
 let make_path pa id = { dirpath = pa; basename = id }
+
+let make_path0 dp =
+  let dp, id = split_dirpath dp in
+  make_path dp id
+
+let dummy_full_path = make_path0 DirPath.dummy
+
+let add_path_suffix { dirpath = pa0; basename = id0 } id =
+  { dirpath = add_dirpath_suffix pa0 id0; basename = id }
+
+let append_path ({ dirpath = dp; basename = id0 } as p) dp' =
+  if DirPath.is_empty dp' then p
+  else
+    let dp', id = split_dirpath dp' in
+    { dirpath = append_dirpath (add_dirpath_suffix dp id0) dp'; basename = id }
+
+let path_pop_n_suffixes n ({ dirpath = dp; } as path) =
+  if n = 0 then path
+  else
+    let dp = pop_dirpath_n (n-1) dp in
+    make_path0 dp
+
+let path_pop_suffix p = path_pop_n_suffixes 1 p
 
 let repr_path { dirpath = pa; basename = id } = (pa,id)
 
@@ -155,8 +176,7 @@ let qualid_of_dirpath ?loc dir =
 
 let qualid_of_lident lid = qualid_of_ident ?loc:lid.CAst.loc lid.CAst.v
 
-let qualid_is_ident qid =
-  full_path_is_ident qid.CAst.v
+let qualid_is_ident qid = DirPath.is_empty (dirpath qid.CAst.v)
 
 let qualid_basename qid =
   qid.CAst.v.basename
