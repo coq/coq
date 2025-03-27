@@ -346,18 +346,23 @@ let retype ?metas ?(polyprop=true) sigma =
 let get_sort_quality_of ?(polyprop=true) env sigma t =
   let type_of,_,type_of_global_reference_knowing_parameters = retype ~polyprop sigma in
   let rec sort_quality_of env t =
+    let open UnivGen in
     match EConstr.kind sigma t with
-    | Cast (c,_, s) when isSort sigma s -> ESorts.quality sigma (destSort sigma s)
-    | Sort _ -> Sorts.Quality.qtype
-    | Prod (name,t,c2) -> sort_quality_of (push_rel (LocalAssum (name,t)) env) c2
+    | Cast (c,_, s) when isSort sigma s -> ESorts.quality_or_set sigma (destSort sigma s)
+    | Sort _ -> QualityOrSet.qtype
+    | Prod (name,t,c2) ->
+        let s2 = sort_quality_of (push_rel (LocalAssum (name,t)) env) c2 in
+        if not (is_impredicative_set env) &&
+             QualityOrSet.is_set s2 && QualityOrSet.is_type (sort_quality_of env t)
+        then QualityOrSet.qtype else s2
     | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
         let t = type_of_global_reference_knowing_parameters env f args in
-        ESorts.quality sigma (sort_of_atomic_type env sigma t args)
+        ESorts.quality_or_set sigma (sort_of_atomic_type env sigma t args)
     | App(f,args) ->
-        ESorts.quality sigma (sort_of_atomic_type env sigma (type_of env f) args)
+        ESorts.quality_or_set sigma (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ ->
-      ESorts.quality sigma (decomp_sort env sigma (type_of env t))
+      ESorts.quality_or_set sigma (decomp_sort env sigma (type_of env t))
   in sort_quality_of env t
 
 let get_sort_of ?(polyprop=true) env sigma t =

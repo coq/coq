@@ -714,7 +714,8 @@ let rew_l2r_dep_scheme_kind =
     SchemeIndividualDep (ind, sym_scheme_kind);
     SchemeIndividualDep (ind, sym_involutive_scheme_kind);
   ])
-  (fun env handle ind -> build_l2r_rew_scheme true env handle ind Sorts.Quality.qtype)
+  (fun env handle ind ->
+    build_l2r_rew_scheme true env handle ind UnivGen.QualityOrSet.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in conclusion                 *)
@@ -724,7 +725,7 @@ let rew_l2r_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_dep_scheme_kind =
   declare_individual_scheme_object "rew_dep"
-  (fun env _ ind -> build_r2l_rew_scheme true env ind Sorts.Quality.qtype)
+  (fun env _ ind -> build_r2l_rew_scheme true env ind UnivGen.QualityOrSet.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in hypotheses                 *)
@@ -734,7 +735,7 @@ let rew_r2l_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_forward_dep_scheme_kind =
   declare_individual_scheme_object "rew_fwd_dep"
-  (fun env _ ind -> build_r2l_forward_rew_scheme true env ind Sorts.Quality.qtype)
+  (fun env _ ind -> build_r2l_forward_rew_scheme true env ind UnivGen.QualityOrSet.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from left-to-right in hypotheses                 *)
@@ -744,7 +745,7 @@ let rew_r2l_forward_dep_scheme_kind =
 (**********************************************************************)
 let rew_l2r_forward_dep_scheme_kind =
   declare_individual_scheme_object "rew_fwd_r_dep"
-  (fun env _ ind -> build_l2r_forward_rew_scheme true env ind Sorts.Quality.qtype)
+  (fun env _ ind -> build_l2r_forward_rew_scheme true env ind UnivGen.QualityOrSet.qtype)
 
 (**********************************************************************)
 (* Non-dependent rewrite from either left-to-right in conclusion or   *)
@@ -758,7 +759,7 @@ let rew_l2r_forward_dep_scheme_kind =
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "rew_r"
   (fun env _ ind -> fix_r2l_forward_rew_scheme env
-     (build_r2l_forward_rew_scheme false env ind Sorts.Quality.qtype))
+     (build_r2l_forward_rew_scheme false env ind UnivGen.QualityOrSet.qtype))
 
 (**********************************************************************)
 (* Non-dependent rewrite from either right-to-left in conclusion or   *)
@@ -768,7 +769,7 @@ let rew_l2r_scheme_kind =
 (**********************************************************************)
 let rew_r2l_scheme_kind =
   declare_individual_scheme_object "rew"
-  (fun env _ ind -> build_r2l_rew_scheme false env ind Sorts.Quality.qtype)
+  (fun env _ ind -> build_r2l_rew_scheme false env ind UnivGen.QualityOrSet.qtype)
 
 (* End of rewriting schemes *)
 

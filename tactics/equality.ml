@@ -321,18 +321,18 @@ let jmeq_same_dom env sigma (rels, eq, args) =
     | _ -> false
 
 let eq_elimination_ref l2r sort =
-  let open Sorts.Quality in
+  let open UnivGen.QualityOrSet in
   let name =
     if l2r then
       match sort with
-      | QConstant QProp -> "core.eq.ind_r"
-      | QConstant QSProp -> "core.eq.sind_r"
-      | QConstant QType | QVar _ -> "core.eq.rect_r"
+      | Qual (QConstant QProp) -> "core.eq.ind_r"
+      | Qual (QConstant QSProp) -> "core.eq.sind_r"
+      | Set | Qual (QConstant QType | QVar _) -> "core.eq.rect_r"
     else
       match sort with
-      | QConstant QProp -> "core.eq.ind"
-      | QConstant QSProp -> "core.eq.sind"
-      | QConstant QType | QVar _ -> "core.eq.rect"
+      | Qual (QConstant QProp) -> "core.eq.ind"
+      | Qual (QConstant QSProp) -> "core.eq.sind"
+      | Set | Qual (QConstant QType | QVar _) -> "core.eq.rect"
   in
   Rocqlib.lib_ref_opt name
 
@@ -362,20 +362,20 @@ let find_elim lft2rgt dep cls ((_, hdcncl, _) as t) =
           begin match if is_eq then eq_elimination_ref true sort else None with
           | Some r -> destConstRef r
           | None ->
-            let c1 = destConstRef (lookup_eliminator env ind_sp sort) in
-            let mp,l = KerName.repr (Constant.canonical c1) in
-            let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
-            let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
-            if not (Environ.mem_constant c1' (Global.env ())) then
-              user_err
-                (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".");
-            c1'
+             let c1 = destConstRef (lookup_eliminator env ind_sp sort) in
+             let mp,l = KerName.repr (Constant.canonical c1) in
+             let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
+             let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
+             if not (Environ.mem_constant c1' (Global.env ())) then
+               user_err
+                 (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".");
+             c1'
           end
         | _ ->
-          begin match if is_eq then eq_elimination_ref false sort else None with
-          | Some r -> destConstRef r
-          | None -> destConstRef (lookup_eliminator env ind_sp sort)
-          end
+           begin match if is_eq then eq_elimination_ref false sort else None with
+           | Some r -> destConstRef r
+           | None -> destConstRef (lookup_eliminator env ind_sp sort)
+           end
         end
       | _ ->
           (* cannot occur since we checked that we are in presence of
@@ -773,7 +773,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
       if keep_head_inductive sigma ty1 then true
       else
         let s = get_sort_quality_of env sigma ty1 in
-        List.mem_f Sorts.Quality.equal s sorts
+        List.mem_f UnivGen.QualityOrSet.equal s sorts
     in
     if keep then [(List.rev posn,t1,t2)] else []
   in
@@ -785,7 +785,8 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
           when Int.equal (List.length args1) (constructor_nallargs env sp1)
             ->
           let sorts' =
-            CList.intersect Sorts.Quality.equal sorts (constant_sorts_below (top_allowed_sort env (fst sp1)))
+            CList.intersect UnivGen.QualityOrSet.equal sorts
+              (constant_sorts_below (top_allowed_sort env (fst sp1)))
           in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
@@ -799,7 +800,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
             List.flatten
               (List.map2_i (fun i -> findrec sorts' ((sp1,adjust i)::posn))
                 0 rargs1 rargs2)
-          else if List.mem_f Sorts.Quality.equal Sorts.Quality.qtype sorts' && not no_discr
+          else if List.mem_f UnivGen.QualityOrSet.equal (UnivGen.QualityOrSet.qtype) sorts' && not no_discr
           then (* see build_discriminator *)
             raise (DiscrFound (List.rev posn,sp1,sp2))
           else
@@ -815,7 +816,9 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
             project env sorts posn t1_0 t2_0
   in
   try
-    let sorts = if keep_proofs then [Sorts.Quality.qtype;Sorts.Quality.qprop] else [Sorts.Quality.qtype] in
+    let sorts = if keep_proofs
+                then UnivGen.QualityOrSet.[prop;set;qtype]
+                else UnivGen.QualityOrSet.[set;qtype] in
     Inr (findrec sorts [] t1 t2)
   with DiscrFound (path,c1,c2) ->
     Inl (path,c1,c2)

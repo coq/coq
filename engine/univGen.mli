@@ -20,6 +20,8 @@ module QualityOrSet : sig
   val equal : t -> t -> bool
   val compare : t -> t -> int
   val of_quality : Sorts.Quality.t -> t
+  val of_sort : Sorts.t -> t
+  val quality : t -> Sorts.Quality.t
 
   val eliminates_to : t -> t -> bool
 
@@ -79,7 +81,7 @@ val fresh_instance : AbstractContext.t -> Instance.t in_sort_context_set
 val fresh_instance_from : ?loc:Loc.t -> AbstractContext.t -> (GlobRef.t * Instance.t) option ->
   Instance.t in_sort_context_set
 
-val fresh_sort_quality : Sorts.Quality.t -> Sorts.t in_sort_context_set
+val fresh_sort_quality : QualityOrSet.t -> Sorts.t in_sort_context_set
 (** NB: QSort is treated as QType *)
 
 val fresh_constant_instance : env -> Constant.t ->

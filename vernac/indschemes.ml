@@ -26,9 +26,10 @@ open Ind_tables
 open Auto_ind_decl
 open Eqschemes
 open Elimschemes
+open Sorts
 
 (** Data of an inductive scheme with name resolved *)
-type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * Sorts.Quality.t
+type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * UnivGen.QualityOrSet.t
 
 (** flag for internal message display *)
 type internal_flag =
@@ -225,16 +226,16 @@ let declare_one_induction_scheme ?loc ind =
   let kelim =
     if Global.sprop_allowed ()
     then kelim
-    else List.filter (fun s -> not (Sorts.Quality.is_qsprop s)) kelim
+    else List.filter (fun s -> not (UnivGen.QualityOrSet.is_sprop s)) kelim
   in
   let elims =
-    List.filter (fun (sort,_) -> List.mem_f Sorts.Quality.equal sort kelim)
+    List.filter (fun (sort,_) -> List.mem_f UnivGen.QualityOrSet.equal sort kelim)
       (* NB: the order is important, it makes it so that _rec is
          defined using _rect but _ind is not. *)
-      [(Sorts.Quality.qtype, "rect");
-       (Sorts.Quality.qprop, "ind");
-       (Sorts.Quality.qtype, "rec");
-       (Sorts.Quality.qsprop, "sind")]
+      [(UnivGen.QualityOrSet.qtype, "rect");
+       (UnivGen.QualityOrSet.prop, "ind");
+       (UnivGen.QualityOrSet.set, "rec");
+       (UnivGen.QualityOrSet.sprop, "sind")]
   in
   let elims = List.map (fun (to_kind,dflt_suff) ->
       if from_prop then elim_scheme ~dep:false ~to_kind, Some dflt_suff
@@ -335,24 +336,23 @@ let sch_isrec = function
 
 (* Generate suffix for scheme given a target sort *)
 let scheme_suffix_gen {sch_type; sch_sort} sort =
-  let open Sorts.Quality in
+  let open Quality in
   (* The _ind/_rec_/case suffix *)
   let ind_suffix = match sch_isrec sch_type, sch_sort with
-    | true  , QConstant QSProp
-    | true  , QConstant QProp   -> "_ind"
-    | true  , _       -> "_rec"
-    | false , _       -> "_case" in
+    | true  , Qual (QConstant QSProp | QConstant QProp) -> "_ind"
+    | true  , _ -> "_rec"
+    | false , _ -> "_case" in
   (* SProp and Type have an auxillary ending to the _ind suffix *)
   let aux_suffix = match sch_sort with
-    | QConstant QSProp -> "s"
-    | QConstant QType  -> "t"
-    | _      -> "" in
+    | Qual (QConstant QSProp) -> "s"
+    | Qual (QConstant QType) -> "t"
+    | _ -> "" in
   (* Some schemes are deliminated with _dep or no_dep *)
   let dep_suffix = match sch_isdep sch_type , sort with
-    | true  , QConstant QProp   -> "_dep"
+    | true  , QConstant QProp  -> "_dep"
     | false , QConstant QType
-    | false , QConstant QSProp  -> "_nodep"
-    | _ , _           -> "" in
+    | false , QConstant QSProp -> "_nodep"
+    | _ , _                    -> "" in
   ind_suffix ^ aux_suffix ^ dep_suffix
 
 let smart_ind qid =
@@ -409,18 +409,19 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
     let _,_,ind,_ = List.hd l in
     Global.is_polymorphic (Names.GlobRef.IndRef ind)
   in
-  let declare decl ({CAst.v=fi; loc},dep,ind,sort) =
+  let declare decl ({CAst.v=fi; loc},dep,ind, sort) =
     let decltype = Retyping.get_type_of env sigma decl in
     let decltype = EConstr.to_constr sigma decltype in
     let decl = EConstr.to_constr sigma decl in
     let cst = define ?loc ~poly fi sigma decl (Some decltype) in
     let kind =
       let open Elimschemes in
+      let open UnivGen.QualityOrSet in
       if isrec then Some (elim_scheme ~dep ~to_kind:sort)
       else match sort with
-        | QConstant QType -> Some (if dep then case_dep else case_nodep)
-        | QConstant QProp -> Some (if dep then casep_dep else casep_nodep)
-        | QConstant QSProp | QVar _ ->
+        | Qual (QConstant QType) -> Some (if dep then case_dep else case_nodep)
+        | Qual (QConstant QProp) -> Some (if dep then casep_dep else casep_nodep)
+        | Set | Qual (QConstant QSProp | QVar _) ->
           (* currently we don't have standard scheme kinds for this *)
           None
     in
@@ -494,7 +495,7 @@ let build_combined_scheme env schemes =
   *)
   let inprop =
     let inprop (_,t) =
-      Sorts.Quality.is_qprop
+      UnivGen.QualityOrSet.is_prop
         (Retyping.get_sort_quality_of env sigma (EConstr.of_constr t))
     in
     List.for_all inprop defs

@@ -126,9 +126,9 @@ val constructor_alltags : env -> constructor -> bool list
 val constructor_has_local_defs : env -> constructor -> bool
 val inductive_has_local_defs : env -> inductive -> bool
 
-val constant_sorts_below : Sorts.Quality.t -> Sorts.Quality.t list
+val constant_sorts_below : Sorts.Quality.t -> UnivGen.QualityOrSet.t list
 
-val sorts_for_schemes : mind_specif -> Sorts.Quality.t list
+val sorts_for_schemes : mind_specif -> UnivGen.QualityOrSet.t list
 
 val is_squashed : evar_map -> (mind_specif * EInstance.t) -> Inductive.squash option
 

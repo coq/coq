@@ -60,9 +60,10 @@ let functional_induction with_clean c princl pat =
                   ++ Termops.pr_global_env (pf_env gl) (ConstRef c') )
             in
             match elimination_sort_of_goal gl with
-            | QConstant QSProp -> finfo.sprop_lemma
-            | QConstant QProp -> finfo.prop_lemma
-            | QConstant QType | QVar _ -> finfo.rect_lemma
+            | Qual (QConstant QSProp) -> finfo.sprop_lemma
+            | Qual (QConstant QProp) -> finfo.prop_lemma
+            | Set -> finfo.rec_lemma
+            | Qual (QConstant QType | QVar _) -> finfo.rect_lemma
           in
           let sigma, princ =
             (* then we get the principle *)

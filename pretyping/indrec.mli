@@ -65,9 +65,9 @@ val build_mutual_induction_scheme :
 
 (** Recursor names utilities *)
 
-val lookup_eliminator : env -> inductive -> Sorts.Quality.t -> GlobRef.t
-val elimination_suffix : Sorts.Quality.t -> string
-val make_elimination_ident : Id.t -> Sorts.Quality.t -> Id.t
+val lookup_eliminator : env -> inductive -> UnivGen.QualityOrSet.t -> GlobRef.t
+val elimination_suffix : UnivGen.QualityOrSet.t -> string
+val make_elimination_ident : Id.t -> UnivGen.QualityOrSet.t -> Id.t
 
 val case_suffix : string
 

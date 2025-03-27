@@ -81,7 +81,7 @@ let telescope env sigma ctx =
   let ctx, _ = List.fold_right_map (fun d env ->
       let s = Retyping.get_sort_quality_of env sigma (RelDecl.get_type d) in
       let env = EConstr.push_rel d env in
-      (d, s), env) ctx env
+      (d, UnivGen.QualityOrSet.quality s), env) ctx env
   in
   let sigma, telescope_type, letcontext, telescope_value = telescope sigma ctx in
   sigma, letcontext, { telescope_type; telescope_value }
