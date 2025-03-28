@@ -6,7 +6,7 @@ How to write plugins in Coq
   Before writing a plugin, you should consider whether easier approaches
   can achieve your goal. It is often easier to use an
   extension language such as Ltac2 or Elpi. Ltac2 is documented in the
-  [refman](https://coq.inria.fr/refman/proof-engine/ltac2.html)
+  [refman](https://rocq-prover.org/refman/proof-engine/ltac2.html)
   and Elpi comes with excellent
   [tutorials](https://github.com/LPCIC/coq-elpi/#tutorials). Plugin
   development is harder due to the lower level OCaml API it uses.

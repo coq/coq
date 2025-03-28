@@ -16,9 +16,9 @@ features that are not tactics.
 
 In addition, Rocq has a rich ecosystem of external libraries and
 plugins.  These libraries and plugins can be browsed online through
-the `Coq Package Index <https://coq.inria.fr/opam/www/>`_ and
+the `Rocq Package Index <https://rocq-prover.org/packages>`_ and
 installed with the `opam package manager
-<https://coq.inria.fr/opam-using.html>`_.
+<https://rocq-prover.org/docs/using-opam>`_.
 
 :gdef:`Libraries <library>` contain only compiled Rocq scripts.
 :gdef:`Plugins <plugin>` can also include compiled OCaml code that can change

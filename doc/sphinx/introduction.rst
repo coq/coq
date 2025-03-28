@@ -34,7 +34,7 @@ software libraries.
 
 To learn Rocq, beginners are advised to first start with a tutorial /
 book.  Several such tutorials / books are listed at
-https://coq.inria.fr/documentation.
+https://rocq-prover.org/docs.
 
 This manual is organized in three main parts, plus an appendix:
 

@@ -116,7 +116,7 @@ stdenv.mkDerivation rec {
   buildFlags = [ "world" ] ++ optional buildIde "rocqide";
 
   # TODO, building of documentation package when not in dev mode
-  # https://github.com/coq/coq/issues/16198
+  # https://github.com/rocq-prover/rocq/issues/16198
   # buildFlags = [ "world" ] ++ optional buildDoc "refman-html";
 
   # From https://github.com/NixOS/nixpkgs/blob/master/pkgs/build-support/ocaml/dune.nix
@@ -168,7 +168,7 @@ stdenv.mkDerivation rec {
       together with an environment for semi-interactive development of
       machine-checked proofs.
     '';
-    homepage = http://coq.inria.fr;
+    homepage = https://rocq-prover.org;
     license = licenses.lgpl21;
     platforms = platforms.unix;
   };
