@@ -22,6 +22,10 @@ module type Point = sig
   val compare : t -> t -> int
 
   val raw_pr : t -> Pp.t
+
+  (* Parameters of the anomaly raised when repr node not found. *)
+  val anomaly_label : string
+  val anomaly_err : t -> Pp.t
 end
 
 module Make (Point:Point) : sig

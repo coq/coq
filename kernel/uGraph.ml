@@ -20,6 +20,9 @@ module G = AcyclicGraph.Make(struct
     let compare = Level.compare
 
     let raw_pr = Level.raw_pr
+
+    let anomaly_label = "Univ.repr"
+    let anomaly_err u = Pp.(str"Universe " ++ Level.raw_pr u ++ str" undefined.")
   end)
 (* Do not include G to make it easier to control universe specific
    code (eg add_universe with a constraint vs G.add with no

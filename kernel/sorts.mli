@@ -59,6 +59,8 @@ module Quality : sig
   val is_qprop : t -> bool
   val is_qsprop : t -> bool
   val is_qtype : t -> bool
+  val is_qvar : t -> bool
+  val is_qconst : t -> bool
 
   val var : int -> t
   (** [var i] is [QVar (QVar.make_var i)] *)

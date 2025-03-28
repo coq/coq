@@ -388,7 +388,7 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 (** Elimination functions *)
 
-let eliminates_to = Quality.eliminates_to
+let eliminates_to = QGraph.eliminates_to QGraph.initial_graph
 
 type squash = SquashToSet | SquashToQuality of Quality.t
 
