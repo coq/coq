@@ -50,8 +50,6 @@ let of_fun (f:t->t) : t =
 
 let eta_expand f = of_fun (fun x -> apply f x)
 
-type accumulator (* = t (* a block [0:code;atom;arguments] *) *)
-
 type tag = int
 
 type arity = int
@@ -96,6 +94,8 @@ type atom =
   | Aevar of Evar.t * t array
   | Aproj of (inductive * int) * accumulator
 
+and accumulator = { acc_sig : Obj.t; mutable acc_atm : atom; acc_arg : t list }
+
 type symbol =
   | SymbValue of t
   | SymbSort of Sorts.t
@@ -114,33 +114,19 @@ type symbols = symbol array
 let empty_symbols = [| |]
 
 
-let accumulate_tag = 0
-
-(** Unique pointer used to drive the accumulator function *)
-let ret_accu = Obj.repr (ref ())
-
-type accu_val = { mutable acc_atm : atom; acc_arg : t list }
-
-external set_tag : Obj.t -> int -> unit = "rocq_obj_set_tag"
+(** Unique pointer used to distinguish an accumulator *)
+let sig_accu = Obj.repr (ref ())
 
 let mk_accu (a : atom) : t =
   let rec accumulate data x =
-    if Obj.repr x == ret_accu then Obj.repr data
-    else
-      let data = { data with acc_arg = x :: data.acc_arg } in
-      let ans = Obj.repr (accumulate data) in
-      let () = set_tag ans accumulate_tag in
-      ans
+    let data = { data with acc_arg = x :: data.acc_arg } in
+    assert (data.acc_sig == sig_accu);
+    let ans = Obj.repr (accumulate data) in
+    ans
   in
-  let acc = { acc_atm = a; acc_arg = [] } in
+  let acc = { acc_sig = sig_accu; acc_atm = a; acc_arg = [] } in
   let ans = Obj.repr (accumulate acc) in
-  (** FIXME: use another representation for accumulators, this causes naked
-      pointers. *)
-  let () = set_tag ans accumulate_tag in
   (Obj.obj ans : t)
-
-let get_accu (k : accumulator) =
-  (Obj.magic k : Obj.t -> accu_val) ret_accu
 
 let mk_rel_accu i =
   mk_accu (Arel i)
@@ -162,6 +148,12 @@ let mk_rel_accu i =
     in
     rel_tbl.(i)
   else mk_rel_accu i
+
+let cast_accu (v:t): accumulator =
+  let o = Obj.repr v in
+  assert (Int.equal (Obj.magic (Obj.field o 1) land 0x3FFFFF) 2);
+  Obj.magic (Obj.field o 2)
+[@@ocaml.inline always]
 
 let mk_rels_accu lvl len =
   Array.init len (fun i -> mk_rel_accu (lvl + i))
@@ -202,17 +194,17 @@ let mk_evar_accu ev args =
 let mk_proj_accu kn c =
   mk_accu (Aproj (kn,c))
 
-let atom_of_accu (k:accumulator) =
-  (get_accu k).acc_atm
+let atom_of_accu k =
+  k.acc_atm
 
-let set_atom_of_accu (k:accumulator) (a:atom) =
-  (get_accu k).acc_atm <- a
+let set_atom_of_accu k a =
+  k.acc_atm <- a
 
-let accu_nargs (k:accumulator) =
-  List.length (get_accu k).acc_arg
+let accu_nargs k =
+  List.length k.acc_arg
 
-let args_of_accu (k:accumulator) =
-  (get_accu k).acc_arg
+let args_of_accu k =
+  k.acc_arg
 
 let mk_fix_accu rec_pos pos types bodies =
   mk_accu (Afix(types,bodies,rec_pos, pos))
@@ -220,15 +212,16 @@ let mk_fix_accu rec_pos pos types bodies =
 let mk_cofix_accu pos types norm =
   mk_accu (Acofix (types, norm, pos, CofixLazy (Obj.magic 0 : t)))
 
-let upd_cofix (cofix :t) (cofix_fun : t) =
-  let atom = atom_of_accu (Obj.magic cofix) in
+let upd_cofix cofix cofix_fun =
+  let accu = cast_accu cofix in
+  let atom = atom_of_accu accu in
   match atom with
   | Acofix (typ,norm,pos,_) ->
-    set_atom_of_accu (Obj.magic cofix) (Acofix (typ, norm, pos, CofixLazy cofix_fun))
+    set_atom_of_accu accu (Acofix (typ, norm, pos, CofixLazy cofix_fun))
   | _ -> assert false
 
-let force_cofix (cofix : t) =
-  let accu = (Obj.magic cofix : accumulator) in
+let force_cofix cofix =
+  let accu = cast_accu cofix in
   let atom = atom_of_accu accu in
   match atom with
   | Acofix (typ, norm, pos, CofixLazy f) ->
@@ -246,7 +239,7 @@ let mk_block tag args =
   let nargs = Array.length args in
   let r = Obj.new_block tag nargs in
   for i = 0 to nargs - 1 do
-    Obj.set_field r i (Obj.magic args.(i))
+    Obj.set_field r i (Obj.repr args.(i))
   done;
   (Obj.magic r : t)
 
@@ -254,9 +247,6 @@ let mk_block tag args =
  comparing them as terms would succeed *)
 let dummy_value : unit -> t =
   fun () -> of_fun (fun _ -> anomaly ~label:"native" (Pp.str "Evaluation failed."))
-
-let cast_accu v = (Obj.magic v:accumulator)
-[@@ocaml.inline always]
 
 let mk_int (x : int) = (Obj.magic x : t)
 [@@ocaml.inline always]
@@ -275,12 +265,12 @@ let mk_string (x : Pstring.t) = (Obj.magic x : t)
 [@@ocaml.inline always]
 
 let block_size (b:block) =
-  Obj.size (Obj.magic b)
+  Obj.size (Obj.repr b)
 
-let block_field (b:block) i = (Obj.magic (Obj.field (Obj.magic b) i) : t)
+let block_field (b:block) i = (Obj.magic (Obj.field (Obj.repr b) i) : t)
 
 let block_tag (b:block) =
-  Obj.tag (Obj.magic b)
+  Obj.tag (Obj.repr b)
 
 type kind = (t, accumulator, t -> t, Name.t * t * t, Empty.t, Empty.t, block) Values.kind
 
@@ -289,18 +279,23 @@ let kind_of_value (v:t) =
   if Obj.is_int o then Vconst (Obj.magic v)
   else
     let tag = Obj.tag o in
-    if Int.equal tag accumulate_tag then
-      if Int.equal (Obj.size o) 1 then
-        let w = Obj.field o 0 in
-        let tag = Obj.tag w in
-        if Int.equal tag prod_tag then Obj.magic w
-        else Varray (Obj.magic v)
-      else Vaccu (Obj.magic v)
+    if Int.equal tag 0 then
+      let () = assert (Int.equal (Obj.size o) 1) in
+      let w = Obj.field o 0 in
+      if Int.equal (Obj.tag w) prod_tag then Obj.magic w
+      else Varray (Obj.magic v)
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
     else if Int.equal tag Obj.string_tag then Vstring (Obj.magic v)
     else if (tag < Obj.lazy_tag) then Vblock (Obj.magic v)
-      else
+    else if Int.equal tag Obj.closure_tag then
+      if Obj.size o >= 3 && Int.equal (Obj.magic (Obj.field o 1) land 0x3FFFFF) 2 then
+        let w = Obj.field o 2 in
+        if Obj.is_block w && Int.equal (Obj.size w) 3 && Obj.field w 0 == Obj.repr sig_accu then
+          Vaccu (Obj.magic w)
+        else Vfun (apply v)
+      else Vfun (apply v)
+    else
         (* assert (tag = Obj.closure_tag || tag = Obj.infix_tag);
            or ??? what is 1002*)
         Vfun (apply v)
