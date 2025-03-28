@@ -15,7 +15,7 @@ There are several Rocq commands:
 Many of the parameters to start these tools are shared and are described below.
 Passing the `-help` option on the command line will print a summary of the
 available command line parameters.  There are also man pages for each of these,
-but they are probably less current than `-help` or this document).
+but they are probably less current than `-help` or this document.
 
 .. _interactive-use:
 
@@ -91,7 +91,7 @@ arguments and environment variables.
 
 Let `$root` be the parent directory of the directory of the `rocq`
 executable (typically `rocq` is `$root/bin/rocq`, or
-`$root\bin\rocq.exe` on Windows).
+`$root\\bin\\rocq.exe` on Windows).
 
 Let `$libdirconf` be the value passed to `configure -libdir`, or
 `coq/lib` if `libdir` was not used.
@@ -146,7 +146,7 @@ Let `$runtimelib` be
 If `-boot` was not passed, Rocq will add `$runtimelib/..` to the
 OCamlfind search path (as though `-I $runtimelib/..` was passed).
 
-Then regardless of `-boot` Rocq will search for OCamlfind package `rocq-runtime`.
+Then, regardless of `-boot`, Rocq will search for OCamlfind package `rocq-runtime`.
 
 .. exn:: Could not find package rocq-runtime.
 
