@@ -28,14 +28,14 @@ esac
 printf "Fixes? (space separated list of bug numbers)\n"
 read -r fixes_list
 
-fixes_string="$(echo $fixes_list | sed 's/ /~  and /g; s,\([0-9][0-9]*\),`#\1 <https://github.com/coq/coq/issues/\1>`_,g' | tr '~' '\n')"
+fixes_string="$(echo $fixes_list | sed 's/ /~  and /g; s,\([0-9][0-9]*\),`#\1 <https://github.com/rocq-prover/rocq/issues/\1>`_,g' | tr '~' '\n')"
 if [ ! -z "$fixes_string" ]; then fixes_string="$(printf '\n  fixes %s,' "$fixes_string")"; fi
 
 # shellcheck disable=SC2016
 # the ` are regular strings, this is intended
 # use %s for the leading - to avoid looking like an option (not sure
 # if necessary but doesn't hurt)
-printf '%s **%s:**\n  Describe your change here but do not end with a period\n  (`#%s <https://github.com/coq/coq/pull/%s>`_,%s\n  by %s).\n' - "$type_full" "$PR" "$PR" "$fixes_string" "$(git config user.name)" > "$where"
+printf '%s **%s:**\n  Describe your change here but do not end with a period\n  (`#%s <https://github.com/rocq-prover/rocq/pull/%s>`_,%s\n  by %s).\n' - "$type_full" "$PR" "$PR" "$fixes_string" "$(git config user.name)" > "$where"
 
 printf 'Name of created changelog file:\n'
 printf '%s\n' "$where"

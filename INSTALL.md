@@ -5,8 +5,8 @@ To install and use Rocq, we recommend relying on [the Rocq
 platform](https://github.com/coq/platform/) or on a package manager
 (e.g. opam or Nix).
 
-See https://coq.inria.fr/download and
-https://github.com/coq/coq/wiki#coq-installation to learn more.
+See https://rocq-prover.org/install and
+https://github.com/rocq-prover/rocq/wiki#coq-installation to learn more.
 
 If you need to build Rocq from sources manually (e.g. to
 contribute to Rocq or to write a Rocq package), the remainder of this

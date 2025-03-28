@@ -7,7 +7,7 @@ The Coq documentation includes
 - A document presenting the Coq standard library
 
 The documentation of the latest released version is available on the Coq
-web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
+web site at [rocq-prover.org/docs](https://rocq-prover.org/docs).
 
 Additionally, you can view the reference manual for the development version
 at <https://coq.github.io/doc/master/refman/>, and the documentation of the

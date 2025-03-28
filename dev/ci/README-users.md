@@ -84,7 +84,7 @@ Add a new `ci-mydev.sh` script to [`dev/ci/scripts`](scripts); set the correspon
 variables in [`ci-basic-overlay.sh`](ci-basic-overlay.sh); add the
 corresponding target to [`Makefile.ci`](../../Makefile.ci) and a new job to
 [`.gitlab-ci.yml`](../../.gitlab-ci.yml) so that this new target is run.
-Have a look at [#17241](https://github.com/coq/coq/pull/17241/files) for an
+Have a look at [#17241](https://github.com/rocq-prover/rocq/pull/17241/files) for an
 example. **Do not hesitate to submit an incomplete pull request if you need
 help to finish it.**
 
@@ -150,7 +150,7 @@ Some important points:
 You may also be interested in having your project tested in our
 performance benchmark. Currently this is done by providing a `.dev` OPAM package
 in https://github.com/coq/opam-coq-archive and opening an issue at
-https://github.com/coq/coq/issues.
+https://github.com/rocq-prover/rocq/issues.
 
 ### Recommended branching policy.
 

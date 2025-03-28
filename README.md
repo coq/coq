@@ -10,11 +10,11 @@
 [gitlab-badge]: https://gitlab.inria.fr/coq/coq/badges/master/pipeline.svg
 [gitlab-link]: https://gitlab.inria.fr/coq/coq/commits/master
 
-[gh-macos-badge]: https://github.com/coq/coq/actions/workflows/ci-macos.yml/badge.svg
-[gh-macos-link]: https://github.com/coq/coq/actions/workflows/ci-macos.yml
+[gh-macos-badge]: https://github.com/rocq-prover/rocq/actions/workflows/ci-macos.yml/badge.svg
+[gh-macos-link]: https://github.com/rocq-prover/rocq/actions/workflows/ci-macos.yml
 
-[gh-win-badge]: https://github.com/coq/coq/actions/workflows/ci-windows.yml/badge.svg
-[gh-win-link]: https://github.com/coq/coq/actions/workflows/ci-windows.yml
+[gh-win-badge]: https://github.com/rocq-prover/rocq/actions/workflows/ci-windows.yml/badge.svg
+[gh-win-link]: https://github.com/rocq-prover/rocq/actions/workflows/ci-windows.yml
 
 [discourse-badge]: https://img.shields.io/badge/Discourse-forum-informational.svg
 [discourse-link]: https://coq.discourse.group/
@@ -43,9 +43,9 @@ environment for semi-interactive development of machine-checked proofs.
 [dockerhub-link]: https://hub.docker.com/r/coqorg/coq#supported-tags "Supported tags on Docker Hub"
 
 [coqorg-badge]: https://img.shields.io/docker/v/coqorg/coq/latest
-[coqorg-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "coqorg/coq:latest"
+[coqorg-link]: https://github.com/rocq-community/docker-coq/wiki#docker-coq-images "coqorg/coq:latest"
 
-Please see https://coq.inria.fr/download.
+Please see https://rocq-prover.org/install.
 Information on how to build and install from sources can be found in
 [`INSTALL.md`](INSTALL.md).
 
@@ -55,9 +55,9 @@ The sources of the documentation can be found in directory [`doc`](doc).
 See [`doc/README.md`](/doc/README.md) to learn more about the documentation,
 in particular how to build it. The
 documentation of the last released version is available on the Rocq
-web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
-See also [the Rocq wiki](https://github.com/coq/coq/wiki),
-and the [Rocq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ),
+web site at [rocq-prover.org/docs](https://rocq-prover.org/docs).
+See also [the Rocq wiki](https://github.com/rocq-prover/rocq/wiki),
+and the [Rocq FAQ](https://github.com/rocq-prover/rocq/wiki/The-Coq-FAQ),
 for additional user-contributed documentation.
 
 The documentation of the master branch is continuously deployed.  See:
@@ -87,12 +87,12 @@ development team:
 - Our [Discourse forum][discourse-link], for more structured and easily browsable discussions and Q&A.
 - Our historical mailing list, the [Coq-Club](https://sympa.inria.fr/sympa/info/coq-club).
 
-See also [coq.inria.fr/community](https://coq.inria.fr/community.html), which
+See also [rocq-prover.org/community](https://rocq-prover.org/community), which
 lists several other active platforms.
 
 ## Bug reports
 
-Please report any bug / feature request in [our issue tracker](https://github.com/coq/coq/issues).
+Please report any bug / feature request in [our issue tracker](https://github.com/rocq-prover/rocq/issues).
 
 To be effective, bug reports should mention the OCaml version used
 to compile and run Rocq, the Rocq version (`coqtop -v` or `rocq -v`), the configuration
@@ -102,7 +102,7 @@ used, and include a complete source example leading to the bug.
 
 Guidelines for contributing to Rocq in various ways are listed in the [contributor's guide](CONTRIBUTING.md).
 
-Information about release plans is at https://github.com/coq/coq/wiki/Release-Plan
+Information about release plans is at https://github.com/rocq-prover/rocq/wiki/Release-Plan
 
 ## Supporting Rocq
 

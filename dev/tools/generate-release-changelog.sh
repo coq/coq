@@ -43,8 +43,8 @@ else
         ask_confirmation
     fi
 
-    official_remote_git_url="git@github.com:coq/coq"
-    official_remote_https_url="github.com/coq/coq"
+    official_remote_git_url="git@github.com:rocq-prover/rocq"
+    official_remote_https_url="github.com/rocq-prover/rocq"
     remote_url=$(git remote get-url "$remote" --all)
 
     if [ "$remote_url" != "${official_remote_git_url}" ] && \
