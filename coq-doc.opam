@@ -12,9 +12,9 @@ This package provides the Rocq Reference Manual."""
 maintainer: ["The Rocq development team <coqdev@inria.fr>"]
 authors: ["The Rocq development team, INRIA, CNRS, and contributors"]
 license: "OPUBL-1.0"
-homepage: "https://coq.inria.fr/"
-doc: "https://coq.github.io/doc/"
-bug-reports: "https://github.com/coq/coq/issues"
+homepage: "https://rocq-prover.org/"
+doc: "https://rocq-prover.org/docs/"
+bug-reports: "https://github.com/rocq-prover/rocq/issues"
 depends: [
   "dune" {>= "3.8"}
   "conf-python-3" {build}
@@ -35,4 +35,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/coq/coq.git"
+dev-repo: "git+https://github.com/rocq-prover/rocq.git"

@@ -226,7 +226,7 @@ for name resolutions in the file ``file`` (it will look in ``file.glob``
 by default).
 
 Identifiers from the Rocq standard library are linked to the Coq website
-`<http://coq.inria.fr/library/>`_. This behavior can be changed
+`<https://rocq-prover.org/stdlib>`_. This behavior can be changed
 using command line options ``--no-externals`` and ``--coqlib_url``; see below.
 
 
@@ -373,7 +373,7 @@ Command line options
   :--external url coqdir: Use given URL for linking references whose
     name starts with prefix ``coqdir``.
   :--coqlib_url url: Set base URL for the Rocq standard library (default is
-    `<http://coq.inria.fr/library/>`_). This is equivalent to ``--external url
+    `<https://rocq-prover.org/stdlib>`_). This is equivalent to ``--external url
     Stdlib``.
   :-R dir coqdir: Recursively map physical directory dir to Rocq logical
     directory  ``coqdir`` (similarly to Rocq option ``-R``).

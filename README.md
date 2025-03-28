@@ -43,7 +43,7 @@ environment for semi-interactive development of machine-checked proofs.
 [dockerhub-link]: https://hub.docker.com/r/rocq/rocq-prover#supported-tags "Supported tags on Docker Hub"
 
 [docker-rocq-badge]: https://img.shields.io/docker/v/rocq/rocq-prover/latest
-[docker-rocq-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "rocq/rocq-prover:latest"
+[docker-rocq-link]: https://github.com/rocq-community/docker-coq/wiki#docker-coq-images "rocq/rocq-prover:latest"
 
 Please see https://rocq-prover.org/install.
 Information on how to build and install from sources can be found in

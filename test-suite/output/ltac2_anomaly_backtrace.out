@@ -1,6 +1,6 @@
 File "./output/ltac2_anomaly_backtrace.v", line 9, characters 0-18:
 Error: Anomaly "Uncaught exception Not_found."
-Please report at http://coq.inria.fr/bugs/.
+Please report at http://rocq-prover.org/bugs/.
 Backtrace:
 Call foo
 Prim <rocq-runtime.plugins.ltac2:eval_hnf>

@@ -23,7 +23,7 @@ well.
       - [Distribution of Rocq packages](#distribution-of-rocq-packages)
       - [Support for plugin and library authors](#support-for-plugin-and-library-authors)
       - [Standard libraries](#standard-libraries)
-      - [Maintaining existing packages in coq-community](#maintaining-existing-packages-in-coq-community)
+      - [Maintaining existing packages in Rocq-community](#maintaining-existing-packages-in-rocq-community)
     - [Contributing to the editor support packages](#contributing-to-the-editor-support-packages)
     - [Contributing to the website or the package archive](#contributing-to-the-website-or-the-package-archive)
     - [Other ways of creating content](#other-ways-of-creating-content)
@@ -107,10 +107,10 @@ problem-oriented, additional documentation.
 
 There are many platforms for this purpose:
 
-- Our [Zulip chat][Zulip], which contains a main "#Coq users" stream,
+- Our [Zulip chat][Zulip], which contains a main "#Rocq users" stream,
   but also many other streams dedicated to specific Rocq packages, such
   as Equations, MathComp, etc.
-- Our [Discourse forum][Discourse], which contains a main "Using Coq"
+- Our [Discourse forum][Discourse], which contains a main "Using Rocq"
   category, but also categories dedicated to asking questions in other
   languages than English. They have yet to find their public, so do not
   hesitate to advertise them to people you know who might not be at
@@ -186,14 +186,14 @@ the Platform's charter if you consider adding your package to it.
 #### Support for plugin and library authors ####
 
 You can find advice and best practices about maintaining a Rocq project
-on the [coq-community wiki][coq-community-wiki].
+on the [Rocq-community wiki][rocq-community-wiki].
 
 Learn how to write a Rocq plugin, and about best practices, in the Rocq
 [plugin tutorial][plugin-tutorial].  This tutorial is still a work in
 progress, so do not hesitate to expand it, or ask questions.
 
 If you want quick feedback on best practices, or how to talk to the
-Rocq API, a good place to hang out is the [Coq devs & plugin devs
+Rocq API, a good place to hang out is the [Rocq devs & plugin devs
 stream][Zulip-dev] of our Zulip chat.
 
 Finally, we strongly encourage authors of plugins to submit their
@@ -214,18 +214,18 @@ instead (either the official [standard
 library][standard-library], or one of the many
 [alternative standard libraries][other-standard-libraries]).
 
-#### Maintaining existing packages in coq-community ####
+#### Maintaining existing packages in Rocq-community ####
 
 Some Rocq packages are not maintained by their initial authors anymore
 (for instance if they've moved on to new jobs or new projects) even if
-they were useful, or interesting.  The coq-community organization is a
+they were useful, or interesting.  The Rocq-community organization is a
 place for volunteers to take over the maintenance of such packages.
 
 If you want to contribute by becoming a maintainer, there is [a list
 of packages waiting for a
-maintainer][coq-community-maintainer-wanted].  You can also propose a
-package that is not listed.  Find out more about coq-community in [the
-manifesto's README][coq-community-manifesto].
+maintainer][rocq-community-maintainer-wanted].  You can also propose a
+package that is not listed.  Find out more about Rocq-community in [the
+manifesto's README][rocq-community-manifesto].
 
 ### Contributing to the editor support packages ###
 
@@ -239,7 +239,7 @@ packages:
 - Proof-General (Emacs major mode) <https://github.com/ProofGeneral/PG>
 - Company-coq (Emacs minor mode) <https://github.com/cpitclaudel/company-coq>
 - Coqtail (Vim) <https://github.com/whonore/Coqtail>
-- VsCoq Reloaded (VsCode) <https://github.com/coq-community/vscoq>
+- VsCoq (VsCode) <https://github.com/rocq-prover/vscoq>
 
 And here are alternative user interfaces to be run in the web browser:
 
@@ -252,8 +252,8 @@ Each of them has their own contribution process.
 
 The website and the package archive have their own repositories:
 
-- <https://github.com/coq/www>
-- <https://github.com/coq/opam-coq-archive>
+- <https://github.com/rocq-prover/rocq-prover.org>
+- <https://github.com/rocq-prover/opam>
 
 You can contribute to them by using issues and pull requests on these
 repositories.  These repositories should get their own contributing
@@ -339,7 +339,7 @@ You can go even further by using the development version (`master`
 branch) of Rocq on a day by day basis, and report problems as soon as
 you notice them.  If you wish to do so, the easiest way to install Rocq
 is through opam (using the `dev` version of the Rocq package, available
-in the <https://coq.inria.fr/opam/core-dev> repository) or through
+in the <https://rocq-prover.org/opam/core-dev> repository) or through
 [Nix][].  The documentation of the development version is [available
 online][master-doc], including the [unreleased
 changelog][unreleased-changelog].
@@ -367,8 +367,8 @@ You can help a lot by:
   [following section](#code-changes)).
 
 Once you have some experience with the Rocq issue tracker, you can
-request to join the **@coq/contributors** team (any member of the
-**@coq/core** team can give you access using [this link][add-contributor]).
+request to join the **@rocq-prover/contributors** team (any member of the
+**@rocq-prover/core** team can give you access using [this link][add-contributor]).
 Being in this team will grant you the following access:
 
 - **Updating labels:** every open issue and pull request should
@@ -423,7 +423,7 @@ projects.
 
 If you want to contribute a documentation update, bug fix or feature
 yourself, pull requests (PRs) on the [GitHub
-repository][coq-repository] are the way to contribute directly to the
+repository][rocq-repository] are the way to contribute directly to the
 Rocq Prover implementation (all changes, even the smallest changes from core
 developers, go through PRs).  You will need to create a fork of the
 repository on GitHub and push your changes to a new "topic branch" in
@@ -545,7 +545,7 @@ additional tests on GitHub Actions for Windows and macOS compatibility.
 The complete suite of tests is no longer run by default to save
 resources. But it is still required before merging a PR, so this is why
 the bot will put a `needs: full CI` label if it has only run the
-lightweight tests. If you are a member of **@coq/contributors**, you can
+lightweight tests. If you are a member of **@rocq-prover/contributors**, you can
 request a full run of the CI by putting the `request: full CI` label
 before pushing to your PR branch, or by commenting
 `@coqbot: run full CI` after having pushed. (In case you need to re-run
@@ -565,7 +565,7 @@ transient issue and you shouldn't have to worry about it.  In case of
 doubt, ask the reviewers.
 
 To re-run a specific failed job, you can use the Re-run jobs button
-in the GitHub interface (if you are a member of **@coq/contributors**).
+in the GitHub interface (if you are a member of **@rocq-prover/contributors**).
 This won't create a new merge commits with the base branch, so if you
 need this, you can use the `@coqbot: run ... CI` commands instead.
 
@@ -737,7 +737,7 @@ edits to the documentation are more than changing the textual content,
 we strongly encourage you to read this document.
 
 The documentation of the prelude is generated with
-[coqdoc][coqdoc-documentation] from the comments in the sources of the
+[rocq doc][rocqdoc-documentation] from the comments in the sources of the
 standard library.
 
 The [README in the `doc` directory][doc-README] contains more
@@ -803,7 +803,7 @@ changes, and pushing them.  There are two main ways of doing this:
   them, push to your fork, and open a new PR on the PR author's fork.
 - **Pushing to the PR branch:** If the PR author has not unchecked the
   "Allow edit from maintainers" checkbox, and you have write-access to
-  the repository (i.e. you are in the **@coq/contributors** team),
+  the repository (i.e. you are in the **@rocq-prover/contributors** team),
   then you can also push (and even force-push) directly to the PR
   branch, on the main author's fork.  Obviously, don't do it without
   coordinating with the PR author first (in particular, in case you
@@ -836,16 +836,17 @@ depending on how large or controversial the changes to these components
 are. It is also admissible to have an assignee who is not a maintainer
 of any of the affected components, in case relevant maintainers are not
 available, and as long as the assignee is a member of the
-**@coq/pushers** team and is able to understand the changes in the PR.
+**@rocq-prover/pushers** team and is able to understand the changes in the PR.
 
 *If you have already frequently contributed to a component, we would
 be happy to have you join one of the maintainer teams.* See the
 [section below](#joining--leaving-maintainer-teams) on joining /
 leaving maintainer teams.
 
-The complete list of maintainer teams is available [here][coq-pushers]
-(link only accessible to people who are already members of the Coq
-organization, because of a limitation of GitHub).
+The complete list of maintainer teams is available [here][rocq-pushers]
+(link only accessible to people who are already members of the Rocq
+Prover organization, however, this list is also used to [generate](https://github.com/rocq-prover/rocq-prover.org/tree/main/data#github-teams)
+the various [Rocq team][rocq-team] subpages on the website).
 
 #### Additional notes for pull request reviewers and assignees ####
 
@@ -888,7 +889,7 @@ organization, because of a limitation of GitHub).
 - Only PRs targetting the `master` branch can be merged by a
   maintainer.  For PRs targetting an actively maintained release
   branch, the assignee should always be the release manager. For older
-  release branches, any **@coq/core** member can merge any PR (but such
+  release branches, any **@rocq-prover/core** member can merge any PR (but such
   PRs should be limited to fixing build issues).
 
 - Before merging, the assignee must also select a milestone for the PR
@@ -930,17 +931,17 @@ announce it to other maintainers when you do join or leave a team.
 
 The core developers are the active developers with a lengthy and
 significant contribution track record.  They are the ones with admin
-powers over the Coq organization, and the ones who take part in
+powers over the Rocq organization, and the ones who take part in
 [votes][voting-process]
 in case of conflicts to take a decision (rare).  One of them is
 designated as a development coordinator, and has to approve the
 changes in the core team membership (until we get a more formal
 joining and leaving process).
 
-The core developers are the members of the **@coq/core** team ([member
-list][coq-core] only visible to the Coq organization members because
+The core developers are the members of the **@rocq-prover/core** team ([member
+list][rocq-core] only visible to the Rocq organization members because
 of a limitation of GitHub). They are also listed on the
-[Coq Team page][coq-team].
+[Rocq Team page][rocq-team].
 
 ## Release management ##
 
@@ -1134,9 +1135,9 @@ Rocq repository, called `upstream`, and one for your fork, called
 `origin`.  Here is a way to do this for a clean clone:
 
 ``` shell
-git clone https://github.com/coq/coq -o upstream
-cd coq
-git remote add origin git@github.com:$YOURNAME/coq
+git clone https://github.com/rocq-prover/rocq -o upstream
+cd rocq
+git remote add origin git@github.com:$YOURNAME/rocq
 # Make sure you click the fork button on GitHub so that this repository exists
 cp dev/tools/pre-commit .git/hooks/ # Setup the pre-commit hook
 ```
@@ -1255,14 +1256,14 @@ correctly (see also this [Stack Overflow Q-and-A][pinentry-mac]).
 
 #### Coqbot ####
 
-Our bot sources can be found at <https://github.com/coq/bot>.  Its
+Our bot sources can be found at <https://github.com/rocq-prover/bot>.  Its
 documentation is still a work-in-progress.
 
 ### Online forum and chat to talk to developers ###
 
 We have a [Discourse forum][Discourse] (see in particular the [Rocq
 development][Discourse-development-category] category) and a [Zulip
-chat][Zulip] (see in particular the [Coq devs & plugin devs][Zulip-dev]
+chat][Zulip] (see in particular the [Rocq devs & plugin devs][Zulip-dev]
 stream).  Feel free to join any of them and ask questions.
 People are generally happy to help and very reactive.
 
@@ -1299,45 +1300,45 @@ and library authors, and more generally have fun together.
 The list of past (and upcoming, when it's already planned) workshops
 can be found [on the wiki][wiki-CUDW].
 
-[add-contributor]: https://github.com/orgs/coq/teams/contributors/members?add=true
-[api-doc]: https://coq.github.io/doc/master/api/
-[Awesome-Coq]: https://github.com/coq-community/awesome-coq
-[Benchmarking]: https://github.com/coq/coq/wiki/Benchmarking
-[RFCs]: https://github.com/coq/rfcs
+[add-contributor]: https://github.com/orgs/rocq-prover/teams/contributors/members?add=true
+[api-doc]: https://rocq-prover.org/doc/master/api/
+[Awesome-Coq]: https://github.com/rocq-community/awesome-coq
+[Benchmarking]: https://github.com/rocq-prover/rocq/wiki/Benchmarking
+[RFCs]: https://github.com/rocq-prover/rfcs
 [CI-README-developers]: dev/ci/README-developers.md
 [CI-README-users]: dev/ci/README-users.md
 [Code-of-Conduct]: CODE_OF_CONDUCT.md
 [CODEOWNERS]: .github/CODEOWNERS
 [Codewars]: https://www.codewars.com/?language=coq
 [company-coq-issues]: https://github.com/cpitclaudel/company-coq/issues
-[coqbot-minimize]: https://github.com/coq/coq/wiki/Coqbot-minimize-feature
+[coqbot-minimize]: https://github.com/rocq-prover/rocq/wiki/Coqbot-minimize-feature
 [Coq-Club]: https://sympa.inria.fr/sympa/arc/coq-club
-[coq-community-maintainer-wanted]: https://github.com/coq-community/manifesto/issues?q=is%3Aissue+is%3Aopen+label%3Amaintainer-wanted
-[coq-community-manifesto]: https://github.com/coq-community/manifesto
-[coq-community-wiki]: https://github.com/coq-community/manifesto/wiki
-[coq-core]: https://github.com/orgs/coq/teams/core/members
-[coqdoc-documentation]: https://coq.inria.fr/refman/practical-tools/utilities.html#documenting-coq-files-with-coqdoc
+[rocq-community-maintainer-wanted]: https://github.com/rocq-community/manifesto/issues?q=is%3Aissue+is%3Aopen+label%3Amaintainer-wanted
+[rocq-community-manifesto]: https://github.com/rocq-community/manifesto
+[rocq-community-wiki]: https://github.com/rocq-community/manifesto/wiki
+[rocq-core]: https://github.com/orgs/rocq-prover/teams/core/members
+[rocqdoc-documentation]: https://rocq-prover.org/refman/using/tools/coqdoc.html
 [Rocq-books]: https://rocq-prover.org/books
-[Rocq-issue-tracker]: https://github.com/coq/coq/issues
+[Rocq-issue-tracker]: https://github.com/rocq-prover/rocq/issues
 [Rocq-package-index]: https://rocq-prover.org/packages
-[Rocq-Platform]: https://github.com/coq/platform
-[coq-pushers]: https://github.com/orgs/coq/teams/pushers/teams
-[coq-repository]: https://github.com/coq/coq
-[coq-team]: https://coq.inria.fr/coq-team.html
-[Rocq-website-repository]: https://github.com/coq/rocq-prover.org
+[Rocq-Platform]: https://github.com/rocq-prover/platform
+[rocq-pushers]: https://github.com/orgs/rocq-prover/teams/pushers/teams
+[rocq-repository]: https://github.com/rocq-prover/rocq
+[rocq-team]: https://rocq-prover.org/rocq-team
+[Rocq-website-repository]: https://github.com/rocq-prover/rocq-prover.org
 [debugging-doc]: dev/doc/debugging.md
 [dev-ci-nix]: dev/ci/nix/README.md
 [dev-doc-README]: dev/doc/README.md
 [dev-doc-dune]: dev/doc/build-system.dune.md
 [dev-README]: dev/README.md
 [dev-tools-create_overlays.sh]: dev/tools/create_overlays.sh
-[Discourse]: https://coq.discourse.group/
-[Discourse-development-category]: https://coq.discourse.group/c/coq-development
+[Discourse]: https://discourse.rocq-prover.org/
+[Discourse-development-category]: https://discourse.rocq-prover.org/c/rocq-development
 [doc_gram]: doc/tools/docgram/README.md
 [doc-README]: doc/README.md
-[documentation-github-project]: https://github.com/orgs/coq/projects/6
+[documentation-github-project]: https://github.com/orgs/rocq-prover/projects/6
 [dune-doc]: https://dune.readthedocs.io/en/latest/
-[FAQ]: https://github.com/coq/coq/wiki/The-Coq-FAQ
+[FAQ]: https://github.com/rocq-prover/rocq/wiki/The-Rocq-FAQ
 [git]: https://git-scm.com/
 [git-hook]: dev/tools/pre-commit
 [GitHub-co-authored-by]: https://github.blog/2018-01-29-commit-together-with-co-authors/
@@ -1348,59 +1349,59 @@ can be found [on the wiki][wiki-CUDW].
 [GitHub-notification-settings]: https://github.com/settings/notifications
 [GitHub-PR-from-fork]: https://help.github.com/en/articles/creating-a-pull-request-from-a-fork
 [GitHub-rebase]: https://help.github.com/articles/about-git-rebase/
-[GitHub-watching]: https://github.com/coq/coq/subscription
+[GitHub-watching]: https://github.com/rocq-prover/rocq/subscription
 [GitHub-wiki-extensions]: https://help.github.com/en/articles/editing-wiki-content
 [GitLab-coq]: https://gitlab.com/coq
 [GitLab-doc]: https://docs.gitlab.com/
 [IRC]: irc://irc.libera.chat:6697/#coq
 [GitLab-organization]: https://gitlab.com/coq
 [JasonGross-coq-tools]: https://github.com/JasonGross/coq-tools
-[kind-documentation]: https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22
-[master-doc]: https://coq.github.io/doc/master/refman/
+[kind-documentation]: https://github.com/rocq-prover/rocq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22
+[master-doc]: https://rocq-prover.org/doc/master/refman/
 [merge-pr]: dev/tools/merge-pr.sh
-[needs-benchmarking]: https://github.com/coq/coq/labels/needs%3A%20benchmarking
-[needs-changelog]: https://github.com/coq/coq/labels/needs%3A%20changelog%20entry
-[needs-documentation]: https://github.com/coq/coq/labels/needs%3A%20documentation
-[needs-fixing]: https://github.com/coq/coq/labels/needs%3A%20fixing
-[needs-rebase]: https://github.com/coq/coq/labels/needs%3A%20rebase
-[needs-testing]: https://github.com/coq/coq/labels/needs%3A%20testing
-[needs-test-suite]: https://github.com/coq/coq/labels/needs%3A%20test-suite%20update
-[Nix]: https://github.com/coq/coq/wiki/Nix
+[needs-benchmarking]: https://github.com/rocq-prover/rocq/labels/needs%3A%20benchmarking
+[needs-changelog]: https://github.com/rocq-prover/rocq/labels/needs%3A%20changelog%20entry
+[needs-documentation]: https://github.com/rocq-prover/rocq/labels/needs%3A%20documentation
+[needs-fixing]: https://github.com/rocq-prover/rocq/labels/needs%3A%20fixing
+[needs-rebase]: https://github.com/rocq-prover/rocq/labels/needs%3A%20rebase
+[needs-testing]: https://github.com/rocq-prover/rocq/labels/needs%3A%20testing
+[needs-test-suite]: https://github.com/rocq-prover/rocq/labels/needs%3A%20test-suite%20update
+[Nix]: https://github.com/rocq-prover/rocq/wiki/Nix
 [notification-email]: https://blog.github.com/2017-07-18-managing-large-numbers-of-github-notifications/#prioritize-the-notifications-you-receive
 [OCaml-planet]: http://ocaml.org/community/planet/
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 [ocamlverse-community]: https://ocamlverse.github.io/content/community.html
 [old-style-guide]: dev/doc/style.txt
-[standard-library]: https://github.com/coq/stdlib
-[other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
+[standard-library]: https://github.com/rocq-prover/stdlib
+[other-standard-libraries]: https://github.com/rocq-archive/stdlib2/wiki/Other-%22standard%22-libraries
 [pinentry-mac]: https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0
-[Platform-docs]: https://github.com/coq/platform-docs
+[Platform-docs]: https://github.com/rocq-prover/platform-docs
 [plugin-tutorial]: doc/plugin_tutorial
 [Proof-Assistants-SE]: https://proofassistants.stackexchange.com/
 [ProofGeneral-issues]: https://github.com/ProofGeneral/PG/issues
 [Reddit]: https://www.reddit.com/r/Coq/
-[refman]: https://coq.inria.fr/distrib/current/refman/
+[refman]: https://rocq-prover.org/refman/
 [refman-sources]: doc/sphinx
 [refman-README]: doc/sphinx/README.rst
-[release-plan]: https://github.com/coq/coq/wiki/Release-Plan
+[release-plan]: https://github.com/rocq-prover/rocq/wiki/Release-Plan
 [repology-coq]: https://repology.org/project/coq/versions
 [Rocq-planet]: https://rocq-prover.org/rocq-planet
 [RM-checklist]: dev/doc/release-process.md
 [Stack-Exchange]: https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites
-[Stack-Exchange-to-Zulip]: https://coq.zulipchat.com/#narrow/stream/237977-Coq-users/topic/New.20Stack.20Exchange.20question
+[Stack-Exchange-to-Zulip]: https://rocq-prover.zulipchat.com/#narrow/stream/237977-Rocq-users/topic/New.20Stack.20Exchange.20question
 [Stack-Overflow]: https://stackoverflow.com/questions/tagged/coq
-[stdlib-doc]: https://coq.inria.fr/stdlib/
+[stdlib-doc]: https://rocq-prover.org/stdlib/
 [test-suite-README]: test-suite/README.md
-[tools-website]: https://coq.inria.fr/related-tools.html
-[tools-wiki]: https://github.com/coq/coq/wiki/Tools
-[unreleased-changelog]: https://coq.github.io/doc/master/refman/changes.html#unreleased-changes
+[tools-website]: https://github.com/rocq-community/awesome-coq?tab=readme-ov-file#tools
+[tools-wiki]: https://github.com/rocq-prover/rocq/wiki/Tools
+[unreleased-changelog]: https://rocq-prover.org/doc/master/refman/changes.html#unreleased-changes
 [user-changelog]: doc/changelog
 [user-overlays]: dev/ci/user-overlays
-[voting-process]: https://github.com/coq/coq/wiki/Core-Team-Voting-Process
-[wiki]: https://github.com/coq/coq/wiki
-[wiki-calls]: https://github.com/coq/coq/wiki/Coq-Calls
-[wiki-CUDW]: https://github.com/coq/coq/wiki/CoqImplementorsWorkshop
-[wiki-WG]: https://github.com/coq/coq/wiki/Coq-Working-Groups
+[voting-process]: https://github.com/rocq-prover/rocq/wiki/Core-Team-Voting-Process
+[wiki]: https://github.com/rocq-prover/rocq/wiki
+[wiki-calls]: https://github.com/rocq-prover/rocq/wiki/Rocq-Calls
+[wiki-CUDW]: https://github.com/rocq-prover/rocq/wiki/CoqImplementorsWorkshop
+[wiki-WG]: https://github.com/rocq-prover/rocq/wiki/Coq-Working-Groups
 [YouTube]: https://www.youtube.com/channel/UCbJo6gYYr0OF18x01M4THdQ
-[Zulip]:  https://coq.zulipchat.com
-[Zulip-dev]: https://coq.zulipchat.com/#narrow/stream/237656-Coq-devs.20.26.20plugin.20devs
+[Zulip]:  https://rocq-prover.zulipchat.com
+[Zulip-dev]: https://rocq-prover.zulipchat.com/#narrow/stream/237656-Rocq-devs.20.26.20plugin.20devs

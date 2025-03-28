@@ -3498,7 +3498,7 @@ let evarconv_unify ?(state=TransparentState.full) ?(with_ho=true) x y =
     succuess, and once more around the final failure). *)
 (* We should probably export this somewhere, but it's not clear
    where. As per
-   https://github.com/coq/coq/pull/12197#discussion_r418480525 and
+   https://github.com/rocq-prover/rocq/pull/12197#discussion_r418480525 and
    https://gitter.im/coq/coq?at=5ead5c35347bd616304e83ef, we don't
    export it from Proofview, because it seems somehow not primitive
    enough.  We don't export it from this file because it is more of a

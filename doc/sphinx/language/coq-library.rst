@@ -9,17 +9,17 @@ The Coq libraries
 The :gdef:`prelude` contains definitions and theorems for
 the most commonly used elementary logical notions and
 data types. Coq loads many of these files automatically when it starts.
-The content of the prelude can be browsed at https://coq.inria.fr/prelude/.
+The content of the prelude can be browsed at https://rocq-prover.org/corelib.
 
 Other libraries like the :gdef:`standard library` are general-purpose
 libraries with definitions and theorems for sets, lists, sorting,
 arithmetic, etc. To use these files, users must load them explicitly
 with the ``Require`` command (see :ref:`compiled-files`)
-The content of the standard library can be browsed at https://coq.inria.fr/stdlib/.
+The content of the standard library can be browsed at https://rocq-prover.org/stdlib.
 
 There are also many libraries provided by Coq users' community.
 These libraries and developments are available
-for download at https://coq.inria.fr/ (see :ref:`userscontributions`).
+for download at https://rocq-prover.org/ (see :ref:`userscontributions`).
 
 This chapter briefly reviews the Coq prelude
 
@@ -702,7 +702,7 @@ Tactics
 
 A few tactics defined at the user level are provided in the initial
 state, in module ``Tactics.v``. They are listed at
-https://coq.inria.fr/prelude/, in paragraph ``Init``, link ``Tactics``.
+https://rocq-prover.org/corelib, in paragraph ``Init``, link ``Tactics``.
 
 .. _userscontributions:
 
@@ -710,7 +710,7 @@ Users’ contributions
 --------------------
 
 Numerous users' contributions have been collected and are available at
-URL https://coq.inria.fr/opam/www/.  On this web page, you have a list
+URL https://rocq-prover.org/packages.  On this web page, you have a list
 of all contributions with informations (author, institution, quick
 description, etc.) and the possibility to download them one by one.
 You will also find informations on how to submit a new

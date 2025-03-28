@@ -351,7 +351,7 @@ end
    registered in plugins, such as string and ascii syntax.  It is
    essential that only plugins add to these tables, and that
    vernacular commands do not.  See
-   https://github.com/coq/coq/issues/8401 for details of what goes
+   https://github.com/rocq-prover/rocq/issues/8401 for details of what goes
    wrong when vernacular commands add to these tables. *)
 let prim_token_interpreters =
   (Hashtbl.create 7 : (prim_token_uid, InnerPrimToken.interpreter) Hashtbl.t)
@@ -498,7 +498,7 @@ module PrimTokenNotation = struct
 
     It is important to fully normalize the term, *including inductive
     parameters of constructors*; see
-    https://github.com/coq/coq/issues/9840 for details on what goes
+    https://github.com/rocq-prover/rocq/issues/9840 for details on what goes
     wrong if this does not happen, e.g., from using the vm rather than
     cbv.
 *)
