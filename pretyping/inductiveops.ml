@@ -248,7 +248,7 @@ let inductive_has_local_defs env ind =
 let squash_elim_sort sigma squash rtnsort =
   let open Inductive in
   let add_unif_if_cannot_elim_into starget =
-    if Sorts.eliminates_to starget @@ ESorts.kind sigma rtnsort
+    if Inductive.sort_eliminates_to starget @@ ESorts.kind sigma rtnsort
     then sigma
     else Evd.set_eq_sort sigma rtnsort @@ ESorts.make starget in
   match squash with

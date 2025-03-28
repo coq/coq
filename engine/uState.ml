@@ -755,7 +755,7 @@ let check_elim_constraints uctx csts =
       else match l,k,r with
         | _, Equal, _ -> false
         | QVar q, ElimTo, QConstant QProp -> QState.is_above_prop q uctx.sort_variables
-        | _, ElimTo, _ -> Sorts.Quality.eliminates_to l r)
+        | _, ElimTo, _ -> Inductive.eliminates_to l r)
     csts
 
 let check_universe_constraint uctx (c:UnivProblem.t) =
@@ -772,7 +772,7 @@ let check_universe_constraint uctx (c:UnivProblem.t) =
       begin
         match a, b with
         | QVar q, QConstant QProp -> QState.is_above_prop q uctx.sort_variables
-        | _ -> Sorts.Quality.eliminates_to a b
+        | _ -> Inductive.eliminates_to a b
       end
   | ULe (u,v) -> UGraph.check_leq_sort uctx.universes u v
   | UEq (u,v) -> UGraph.check_eq_sort uctx.universes u v

@@ -12,6 +12,16 @@ open Sorts
 
 (** {6 Graphs of quality elimination constraints. } *)
 
+(* *********************************************** *)
+(* "Raw" elimination table between constants.
+    Used to specify the elimination rules between constant sorts. *)
+
+module ElimTable : sig
+  val eliminates_to : Quality.t -> Quality.t -> bool
+end
+
+(* ************************************************ *)
+
 type t
 
 type path_explanation

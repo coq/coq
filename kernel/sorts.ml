@@ -107,12 +107,6 @@ module Quality = struct
       | _, QSProp -> 1
       | QType, QType -> 0
 
-    let eliminates_to a b = match a, b with
-      | _, QSProp -> true
-      | (QType | QProp), QProp -> true
-      | QType, _  -> true
-      | _, _ -> false
-
     let pr = function
       | QProp -> Pp.str "Prop"
       | QSProp -> Pp.str "SProp"
@@ -136,12 +130,6 @@ module Quality = struct
     | QVar _, _ -> -1
     | _, QVar _ -> 1
     | QConstant a, QConstant b -> Constants.compare a b
-
-  let eliminates_to a b = match a, b with
-    | QConstant QType, _ -> true
-    | QVar q, QVar q' -> QVar.equal q q' (* "trivial" check *)
-    | QConstant a, QConstant b -> Constants.eliminates_to a b
-    | _, (QVar _ | QConstant _) -> false
 
   let pr prv = function
     | QVar v -> prv v
@@ -236,10 +224,7 @@ module ElimConstraint = struct
       if c <> 0 then c
       else Quality.compare b b'
 
-  let trivial (a,k,b) =
-    match k with
-    | Equal -> Quality.equal a b
-    | ElimTo -> Quality.eliminates_to a b
+  let trivial (a,_,b) = Quality.equal a b
 
   let pr prq (a,k,b) =
     let open Pp in
@@ -327,15 +312,6 @@ let compare s1 s2 =
       let c = QVar.compare q1 q2 in
       if Int.equal c 0 then Universe.compare u1 u2 else c
     | QSort _, (Prop | Set | Type _) -> 1
-
-let quality s =
-  match s with
-  | SProp -> Quality.qsprop
-  | Prop -> Quality.qprop
-  | Set | Type _ -> Quality.qtype
-  | QSort (q,_) -> Quality.QVar q
-
-let eliminates_to s1 s2 = Quality.eliminates_to (quality s1) (quality s2)
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 

@@ -9,6 +9,24 @@
 (************************************************************************)
 open Sorts
 
+module ElimTable = struct
+  open Quality
+
+  let const_eliminates_to q q' =
+    match q, q' with
+    | QType, _ -> true
+    | QProp, (QProp | QSProp) -> true
+    | QSProp, QSProp -> true
+    | (QProp | QSProp), _ -> false
+
+  let eliminates_to q q' =
+    match q, q' with
+    | QConstant QType, _ -> true
+    | QConstant q, QConstant q' -> const_eliminates_to q q'
+    | QVar q, QVar q' -> QVar.equal q q'
+    | (QConstant _ | QVar _), _ -> false
+end
+
 module G = AcyclicGraph.Make(struct
     type t = Quality.t
     module Set = Quality.Set
@@ -94,7 +112,7 @@ let initial_graph =
   List.fold_left
     (fun g q ->
       List.fold_left
-        (fun g q' -> if Quality.eliminates_to q q'
+        (fun g q' -> if ElimTable.eliminates_to q q'
                   then Option.get @@ G.enforce_lt q q' g
                   else g) g
         (List.filter (fun q' -> not @@ Quality.equal q q') Quality.all_constants))

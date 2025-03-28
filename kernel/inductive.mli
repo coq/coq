@@ -78,9 +78,16 @@ val type_of_inductive_knowing_parameters :
 
 (** Elimination operations.
     These functions handle the internals of elimination.
-    Call them instead of the lower-level ones like Sorts.eliminates_to. *)
+    Call them instead of the lower-level ones like [QGraph.eliminates_to]. *)
+
+val raw_eliminates_to : Sorts.Quality.t -> Sorts.Quality.t -> bool
+(* Warning: this function does not handle [QVar]s properly: it only allows
+   elimination on the same [QVar]. Use [eliminates_to] for a proper handling of
+   variables. *)
 
 val eliminates_to : Sorts.Quality.t -> Sorts.Quality.t -> bool
+
+val sort_eliminates_to : Sorts.t -> Sorts.t -> bool
 
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
