@@ -275,7 +275,7 @@ Generation of induction principles with ``Functional`` ``Scheme``
    .. insertprodn func_scheme_def func_scheme_def
 
    .. prodn::
-      func_scheme_def ::= @ident := Induction for @qualid Sort @sort_family
+      func_scheme_def ::= @ident := Induction for @qualid Sort @sort_quality_or_set
 
    An experimental high-level tool that
    automatically generates induction principles corresponding to functions that

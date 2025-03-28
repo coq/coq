@@ -31,10 +31,10 @@ sort: [
 | "Type" "@{" universe "}"
 ]
 
-sort_family: [
-| "Set"
+sort_quality_or_set: [
 | "Prop"
 | "SProp"
+| "Set"
 | "Type"
 ]
 
@@ -599,12 +599,12 @@ command: [
 | "Hint" "Rewrite" orient LIST1 constr "using" tactic ":" LIST1 preident
 | "Hint" "Rewrite" orient LIST1 constr
 | "Hint" "Rewrite" orient LIST1 constr "using" tactic
-| "Derive" "Inversion_clear" identref "with" constr "Sort" sort_family
+| "Derive" "Inversion_clear" identref "with" constr "Sort" sort_quality_or_set
 | "Derive" "Inversion_clear" identref "with" constr
-| "Derive" "Inversion" identref "with" constr "Sort" sort_family
+| "Derive" "Inversion" identref "with" constr "Sort" sort_quality_or_set
 | "Derive" "Inversion" identref "with" constr
-| "Derive" "Dependent" "Inversion" identref "with" constr "Sort" sort_family
-| "Derive" "Dependent" "Inversion_clear" identref "with" constr "Sort" sort_family
+| "Derive" "Dependent" "Inversion" identref "with" constr "Sort" sort_quality_or_set
+| "Derive" "Dependent" "Inversion_clear" identref "with" constr "Sort" sort_quality_or_set
 | "Declare" "Left" "Step" constr
 | "Declare" "Right" "Step" constr
 | "Unshelve"
@@ -1078,7 +1078,7 @@ scheme: [
 ]
 
 scheme_kind: [
-| scheme_type "for" smart_global "Sort" sort_family
+| scheme_type "for" smart_global "Sort" sort_quality_or_set
 ]
 
 scheme_type: [
@@ -2011,7 +2011,7 @@ function_fix_definition: [
 ]
 
 fun_scheme_arg: [
-| identref ":=" "Induction" "for" reference "Sort" sort_family      (* funind plugin *)
+| identref ":=" "Induction" "for" reference "Sort" sort_quality_or_set      (* funind plugin *)
 ]
 
 orient: [
