@@ -536,7 +536,7 @@ let process_universe_constraints uctx cstrs =
     Sorts.subst_fn ((qnormalize sorts), subst_univs_universe normalize) s
   in
   let nf_constraint sorts = function
-    | QLeq (a, b) -> QLeq (Quality.subst (qnormalize sorts) a, Quality.subst (qnormalize sorts) b)
+    | QElimTo (a, b) -> QElimTo (Quality.subst (qnormalize sorts) a, Quality.subst (qnormalize sorts) b)
     | QEq (a, b) -> QEq (Quality.subst (qnormalize sorts) a, Quality.subst (qnormalize sorts) b)
     | ULub (u, v) -> ULub (level_subst_of normalize u, level_subst_of normalize v)
     | UWeak (u, v) -> UWeak (level_subst_of normalize u, level_subst_of normalize v)
@@ -613,17 +613,13 @@ let process_universe_constraints uctx cstrs =
   let unify_universes cst local =
     let cst = nf_constraint local.local_sorts cst in
     if UnivProblem.is_trivial cst then local
-    else match cst with
-    | QEq (a, b) ->
+    else
       (* TODO sort_inconsistency should be able to handle raw
          qualities instead of having to make a dummy sort *)
       let mk q = Sorts.make q Universe.type0 in
-      unify_quality univs CONV (mk a) (mk b) local
-    | QLeq (a, b) ->
-      (* TODO sort_inconsistency should be able to handle raw
-         qualities instead of having to make a dummy sort *)
-      let mk q = Sorts.make q Universe.type0 in
-      unify_quality univs CUMUL (mk a) (mk b) local
+      match cst with
+    | QEq (a, b) -> unify_quality univs CONV (mk a) (mk b) local
+    | QElimTo (a, b) -> unify_quality univs CUMUL (mk b) (mk a) local
     | ULe (l, r) ->
       let local = unify_quality univs CUMUL l r local in
       let l = normalize_sort local.local_sorts l in
@@ -746,7 +742,7 @@ let add_quconstraints uctx (qcstrs,ucstrs) =
   let cstrs = ElimConstraints.fold (fun (l,d,r) cstrs ->
       match d with
       | Equal -> UnivProblem.Set.add (QEq (l,r)) cstrs
-      | ElimTo -> UnivProblem.Set.add (QLeq (r,l)) cstrs)
+      | ElimTo -> UnivProblem.Set.add (QElimTo (l,r)) cstrs)
       qcstrs cstrs
   in
   add_universe_constraints uctx cstrs
@@ -768,15 +764,16 @@ let check_universe_constraint uctx (c:UnivProblem.t) =
     let a = nf_quality uctx a in
     let b = nf_quality uctx b in
     Quality.equal a b
-  | QLeq (a,b) ->
+  | QElimTo (a,b) ->
     let a = nf_quality uctx a in
     let b = nf_quality uctx b in
     if Quality.equal a b then true
-    else begin match a, b with
-      | QConstant QProp, QConstant QType -> true
-      | QConstant QProp, QVar q -> QState.is_above_prop q uctx.sort_variables
-      | _ -> false
-    end
+    else
+      begin
+        match a, b with
+        | QVar q, QConstant QProp -> QState.is_above_prop q uctx.sort_variables
+        | _ -> Sorts.Quality.eliminates_to a b
+      end
   | ULe (u,v) -> UGraph.check_leq_sort uctx.universes u v
   | UEq (u,v) -> UGraph.check_eq_sort uctx.universes u v
   | ULub (u,v) -> UGraph.check_eq_level uctx.universes u v

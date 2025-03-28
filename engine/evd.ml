@@ -1177,15 +1177,17 @@ let set_leq_sort evd s1 s2 =
   match is_eq_sort s1 s2 with
   | None -> evd
   | Some (u1, u2) ->
-    if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
-       add_universe_constraints evd (UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)))
+     if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
+       add_universe_constraints evd @@
+         UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2))
      else evd
 
 let set_eq_qualities evd q1 q2 =
-  add_universe_constraints evd (UnivProblem.Set.singleton (QEq (q1, q2)))
+  add_universe_constraints evd @@ UnivProblem.Set.singleton (QEq (q1, q2))
 
 let set_above_prop evd q =
-  add_universe_constraints evd (UnivProblem.Set.singleton (QLeq (Sorts.Quality.qprop, q)))
+  add_universe_constraints evd @@
+    UnivProblem.Set.singleton (QElimTo (q, Sorts.Quality.qprop))
 
 let check_eq evd s s' =
   let ustate = evd.universes in

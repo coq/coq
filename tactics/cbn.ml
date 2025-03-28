@@ -449,7 +449,7 @@ let magically_constant_of_fixbody env sigma (reference, params) bd = function
             let addus l r (qs,us) = qs, Univ.Level.Map.add l r us in
             let subst = Set.fold (fun cst acc ->
                 match cst with
-                | QEq (a,b) | QLeq (a,b) ->
+                | QEq (a,b) | QElimTo (a,b) ->
                   let a = match a with
                     | QVar q -> q
                     | _ -> assert false
