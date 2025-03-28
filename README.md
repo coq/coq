@@ -10,17 +10,17 @@
 [gitlab-badge]: https://gitlab.inria.fr/coq/coq/badges/master/pipeline.svg
 [gitlab-link]: https://gitlab.inria.fr/coq/coq/commits/master
 
-[gh-macos-badge]: https://github.com/coq/coq/actions/workflows/ci-macos.yml/badge.svg
-[gh-macos-link]: https://github.com/coq/coq/actions/workflows/ci-macos.yml
+[gh-macos-badge]: https://github.com/rocq-prover/rocq/actions/workflows/ci-macos.yml/badge.svg
+[gh-macos-link]: https://github.com/rocq-prover/rocq/actions/workflows/ci-macos.yml
 
-[gh-win-badge]: https://github.com/coq/coq/actions/workflows/ci-windows.yml/badge.svg
-[gh-win-link]: https://github.com/coq/coq/actions/workflows/ci-windows.yml
+[gh-win-badge]: https://github.com/rocq-prover/rocq/actions/workflows/ci-windows.yml/badge.svg
+[gh-win-link]: https://github.com/rocq-prover/rocq/actions/workflows/ci-windows.yml
 
 [discourse-badge]: https://img.shields.io/badge/Discourse-forum-informational.svg
-[discourse-link]: https://coq.discourse.group/
+[discourse-link]: https://discourse.rocq-prover.org/
 
 [zulip-badge]: https://img.shields.io/badge/Zulip-chat-informational.svg
-[zulip-link]: https://coq.zulipchat.com/
+[zulip-link]: https://rocq-prover.zulipchat.com/
 
 [doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg
 [doi-link]: https://doi.org/10.5281/zenodo.1003420
@@ -34,18 +34,18 @@ environment for semi-interactive development of machine-checked proofs.
 [![latest packaged version(s)][repology-badge]][repology-link]
 
 [![Docker Hub package][dockerhub-badge]][dockerhub-link]
-[![latest dockerized version][coqorg-badge]][coqorg-link]
+[![latest dockerized version][docker-rocq-badge]][docker-rocq-link]
 
 [repology-badge]: https://repology.org/badge/latest-versions/coq.svg
 [repology-link]: https://repology.org/metapackage/coq/versions
 
 [dockerhub-badge]: https://img.shields.io/badge/images%20on-Docker%20Hub-blue.svg
-[dockerhub-link]: https://hub.docker.com/r/coqorg/coq#supported-tags "Supported tags on Docker Hub"
+[dockerhub-link]: https://hub.docker.com/r/rocq/rocq-prover#supported-tags "Supported tags on Docker Hub"
 
-[coqorg-badge]: https://img.shields.io/docker/v/coqorg/coq/latest
-[coqorg-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "coqorg/coq:latest"
+[docker-rocq-badge]: https://img.shields.io/docker/v/rocq/rocq-prover/latest
+[docker-rocq-link]: https://github.com/coq-community/docker-coq/wiki#docker-coq-images "rocq/rocq-prover:latest"
 
-Please see https://coq.inria.fr/download.
+Please see https://rocq-prover.org/install.
 Information on how to build and install from sources can be found in
 [`INSTALL.md`](INSTALL.md).
 
@@ -55,9 +55,9 @@ The sources of the documentation can be found in directory [`doc`](doc).
 See [`doc/README.md`](/doc/README.md) to learn more about the documentation,
 in particular how to build it. The
 documentation of the last released version is available on the Rocq
-web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
-See also [the Rocq wiki](https://github.com/coq/coq/wiki),
-and the [Rocq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ),
+web site at [rocq-prover.org/docs](https://rocq-prover.org/docs).
+See also [the Rocq wiki](https://github.com/rocq-prover/rocq/wiki),
+and the [Rocq FAQ](https://github.com/rocq-prover/rocq/wiki/The-Coq-FAQ),
 for additional user-contributed documentation.
 
 The documentation of the master branch is continuously deployed.  See:
@@ -65,14 +65,14 @@ The documentation of the master branch is continuously deployed.  See:
 - [Documentation of the standard library (master)][stdlib-master]
 - [Documentation of the ML API (master)][api-master]
 
-[api-master]: https://coq.github.io/doc/master/api/
-[refman-master]: https://coq.github.io/doc/master/refman/
-[stdlib-master]: https://coq.github.io/doc/master/stdlib/
+[api-master]: https://rocq-prover.org/doc/master/api/
+[refman-master]: https://rocq-prover.org/doc/master/refman/
+[stdlib-master]: https://rocq-prover.org/doc/master/stdlib/
 
 ## Changes
 
 The [Recent
-changes](https://coq.github.io/doc/master/refman/changes.html) chapter
+changes](https://rocq-prover.org/doc/master/refman/changes.html) chapter
 of the reference manual explains the differences and the
 incompatibilities of each new version of the Rocq Prover. If you upgrade Rocq,
 please read it carefully as it contains important advice on how to
@@ -85,14 +85,13 @@ development team:
 
 - Our [Zulip chat][zulip-link], for casual and high traffic discussions.
 - Our [Discourse forum][discourse-link], for more structured and easily browsable discussions and Q&A.
-- Our historical mailing list, the [Coq-Club](https://sympa.inria.fr/sympa/info/coq-club).
 
-See also [coq.inria.fr/community](https://coq.inria.fr/community.html), which
+See also [rocq-prover.org/community](https://rocq-prover.org/community), which
 lists several other active platforms.
 
 ## Bug reports
 
-Please report any bug / feature request in [our issue tracker](https://github.com/coq/coq/issues).
+Please report any bug / feature request in [our issue tracker](https://github.com/rocq-prover/rocq/issues).
 
 To be effective, bug reports should mention the OCaml version used
 to compile and run Rocq, the Rocq version (`coqtop -v` or `rocq -v`), the configuration
@@ -102,7 +101,7 @@ used, and include a complete source example leading to the bug.
 
 Guidelines for contributing to Rocq in various ways are listed in the [contributor's guide](CONTRIBUTING.md).
 
-Information about release plans is at https://github.com/coq/coq/wiki/Release-Plan
+Information about release plans is at https://github.com/rocq-prover/rocq/wiki/Release-Plan
 
 ## Supporting Rocq
 
