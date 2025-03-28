@@ -2491,14 +2491,14 @@ end)
 
 let memo_lia =
   CacheZ.memo_opt use_lia_cache ".lia.cache" (fun ((_, _, b), s) ->
-      lift_pexpr_prover (Certificate.lia b None) s)
+      lift_pexpr_prover (Certificate.lia b ~isZ:None) s)
 
 let memo_nlia =
   CacheZ.memo_opt use_nia_cache ".nia.cache" (fun ((_, _, b) , s) ->
-      lift_pexpr_prover (Certificate.nlia b None) s)
+      lift_pexpr_prover (Certificate.nlia b ~isZ:None) s)
 
 
-let rprover p (o,l) =
+let rprover (p:?isZ:ISet.t option -> int -> (Mc.z Mc.pExpr * Mc.op1) list -> zres) ((o:int),l) : Certificate.zres =
   let pexpr_form f = let (f,o) = Mc.nformulaZ f in
                      (Mc.denorm f, o) in
 
@@ -2510,7 +2510,7 @@ let rprover p (o,l) =
            xcollect_isZ (if b then ISet.add (Mutils.CoqToCaml.positive x) s else s) acc l0
         | Mc.IsF f -> xcollect_isZ s ((pexpr_form f)::acc) l0) in
   let (s, l') = xcollect_isZ ISet.empty [] l in
-  p o (Some s) l'
+  p ~isZ:(Some s) o  l'
 
 
 let memo_lra =

@@ -270,7 +270,9 @@ let elim_simple_linear_equality sys0 =
 
 let subst sys = tr_sys "subst" WithProof.subst sys
 
-let subst_simple b = tr_sys "subst_simple" (WithProof.subst_simple b)
+(*let subst_simple b = tr_sys "subst_simple" (WithProof.subst_simple b)*)
+
+let subst_constant b = tr_sys "subst_constant" (WithProof.subst_constant b)
 
 (** [saturate_linear_equality sys] generate new constraints
     obtained by eliminating linear equalities by pivoting.
@@ -885,8 +887,8 @@ let rev_concat l =
 
 let pre_process isZ sys =
   let sys = normalise isZ sys in
-  let sys = subst_simple (isZ = None) sys in
   let bnd1 = bound_monomials sys in
+  let sys = subst_constant (isZ = None) sys in
   let sys1 = normalise isZ (subst (List.rev_append sys bnd1)) in
   let pbnd1 = fourier_small isZ sys1 in
   let sys2 = elim_redundant (List.rev_append pbnd1 sys1) in
@@ -940,8 +942,8 @@ let nlia prfdepth isZ sys =
 
 (* For regression testing, if bench = true generate a Rocq goal *)
 
-let lia  prfdepth isZ sys = gen_bench ((if isZ=None then "lia" else "lra"), lia)  prfdepth isZ sys
-let nlia  prfdepth isZ sys = gen_bench ((if isZ=None then "nia" else "nra"), nlia)  prfdepth isZ sys
+let lia  ?(isZ=None) prfdepth sys = gen_bench ((if isZ=None then "lia" else "lra"), lia)  prfdepth isZ sys
+let nlia ?(isZ=None) prfdepth sys = gen_bench ((if isZ=None then "nia" else "nra"), nlia)  prfdepth isZ sys
 
 (* Local Variables: *)
 (* coding: utf-8 *)
