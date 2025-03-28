@@ -510,6 +510,8 @@ Ltac2 Notation "revert" ids(list1(ident)) := Std.revert ids.
 
 Ltac2 Notation assumption := Std.assumption ().
 
+Ltac2 Notation eassumption := Std.eassumption ().
+
 Ltac2 Notation etransitivity := Std.etransitivity ().
 
 Ltac2 Notation admit := Std.admit ().

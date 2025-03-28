@@ -188,6 +188,7 @@ Ltac2 @ external setoid_rewrite : orientation -> (unit -> constr_with_bindings) 
 Ltac2 @ external reflexivity : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_reflexivity".
 
 Ltac2 @ external assumption : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_assumption".
+Ltac2 @ external eassumption : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_eassumption".
 
 Ltac2 @ external transitivity : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_transitivity".
 

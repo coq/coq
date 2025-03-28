@@ -466,6 +466,9 @@ let () =
   define "tac_assumption" (unit @-> tac unit) (fun _ -> Tactics.assumption)
 
 let () =
+  define "tac_eassumption" (unit @-> tac unit) (fun _ -> Eauto.e_assumption)
+
+let () =
   define "tac_transitivity" (constr @-> tac unit)
     (fun c -> Tactics.intros_transitivity (Some c))
 

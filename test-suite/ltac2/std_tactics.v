@@ -147,3 +147,9 @@ Goal forall (x : nat), x = x.
   rename x into y.
   exact (@eq_refl _ y).
 Qed.
+
+(* eassumption *)
+Goal forall (x : nat) y z, x = y -> y = z -> x = z.
+  intros **.
+  etransitivity; eassumption.
+Qed.
