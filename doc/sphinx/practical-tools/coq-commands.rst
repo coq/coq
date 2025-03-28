@@ -73,6 +73,8 @@ See :ref:`rocq_makefile` and :ref:`building_dune`.
       .. rocqdoc::
          -R <PATH> Mod1
 
+.. _system_config:
+
 System configuration
 --------------------
 
