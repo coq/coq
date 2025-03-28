@@ -16,6 +16,8 @@ open Libnames
 open Constrexpr
 open Names
 
+val pr_reference : reference_expr -> Pp.t
+
 val pr_tight_coma : unit -> Pp.t
 
 val pr_with_comments : ?loc:Loc.t -> Pp.t -> Pp.t

@@ -18,6 +18,7 @@ open Ring
 open Stdarg
 open Tacarg
 open Procq.Constr
+open Procq.Prim
 open Pltac
 
 }
@@ -58,12 +59,12 @@ VERNAC ARGUMENT EXTEND ring_mod
   | [ "abstract" ] -> { Ring_kind Abstract }
   | [ "morphism" constr(morph) ] -> { Ring_kind(Morphism morph) }
   | [ "constants" "[" tactic(cst_tac) "]" ] -> { Const_tac(CstTac cst_tac) }
-  | [ "closed" "[" ne_global_list(l) "]" ] -> { Const_tac(Closed l) }
+  | [ "closed" "[" ne_reference_list(l) "]" ] -> { Const_tac(Closed l) }
   | [ "preprocess" "[" tactic(pre) "]" ] -> { Pre_tac pre }
   | [ "postprocess" "[" tactic(post) "]" ] -> { Post_tac post }
   | [ "setoid" constr(sth) constr(ext) ] -> { Setoid(sth,ext) }
   | [ "sign" constr(sign_spec) ] -> { Sign_spec sign_spec }
-  | [ "power" constr(pow_spec) "[" ne_global_list(l) "]" ] ->
+  | [ "power" constr(pow_spec) "[" ne_reference_list(l) "]" ] ->
            { Pow_spec (Closed l, pow_spec) }
   | [ "power_tac" constr(pow_spec) "[" tactic(cst_tac) "]" ] ->
            { Pow_spec (CstTac cst_tac, pow_spec) }

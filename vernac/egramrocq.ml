@@ -255,7 +255,7 @@ type prod_info = production_level * production_position
 type (_, _) entry =
 | TTIdent : ('self, lident) entry
 | TTName : ('self, lname) entry
-| TTGlobal : ('r, qualid) entry
+| TTGlobal : ('r, reference_expr) entry
 | TTBigint : ('r, string) entry
 | TTBinder : bool -> ('self, kinded_cases_pattern_expr) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
@@ -411,11 +411,11 @@ let rec interp_entry forpat e = match e with
   let TTAny e = interp_entry forpat e in TTAny (TTClosedBinderListOther (e, tkl))
 
 let cases_pattern_expr_of_id { CAst.loc; v = id } =
-  CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident ?loc id))
+  CAst.make ?loc @@ CPatAtom (Some (CQualidRef,qualid_of_ident ?loc id))
 
 let cases_pattern_expr_of_name { CAst.loc; v = na } = CAst.make ?loc @@ match na with
   | Anonymous -> CPatAtom None
-  | Name id   -> CPatAtom (Some (qualid_of_ident ?loc id))
+  | Name id   -> CPatAtom (Some (CQualidRef,qualid_of_ident ?loc id))
 
 type 'r env = {
   constrs : 'r list;

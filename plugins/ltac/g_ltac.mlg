@@ -163,7 +163,7 @@ GRAMMAR EXTEND Gram
   (* Tactic arguments to the right of an application *)
   tactic_arg:
     [ [ a = tactic_value -> { a }
-      | c = Constr.constr -> { (match c with { CAst.v = CRef (r,None) } -> Reference r | c -> ConstrMayEval (ConstrTerm c)) }
+      | c = Constr.constr -> { (match c with { CAst.v = CRef ((CQualidRef,r),None) } -> Reference r | c -> ConstrMayEval (ConstrTerm c)) }
       (* Unambiguous entries: tolerated w/o "ltac:" modifier *)
       | "()" -> { TacGeneric (None, genarg_of_unit ()) } ] ]
   ;
@@ -262,13 +262,13 @@ GRAMMAR EXTEND Gram
 
   (* Definitions for tactics *)
   tacdef_body:
-    [ [ name = Constr.global; it=LIST1 input_fun;
+    [ [ name = Prim.reference; it=LIST1 input_fun;
         redef = ltac_def_kind; body = ltac_expr ->
         { if redef then Tacexpr.TacticRedefinition (name, CAst.make ~loc (TacFun (it, body)))
           else
             let id = reference_to_id name in
             Tacexpr.TacticDefinition (id, CAst.make ~loc (TacFun (it, body))) }
-      | name = Constr.global; redef = ltac_def_kind;
+      | name = Prim.reference; redef = ltac_def_kind;
         body = ltac_expr ->
         { if redef then Tacexpr.TacticRedefinition (name, body)
           else

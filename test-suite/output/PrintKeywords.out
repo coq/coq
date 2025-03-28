@@ -82,6 +82,7 @@ fun
 if
 in
 let
+lib:
 match
 return
 then

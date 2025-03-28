@@ -59,11 +59,11 @@ end
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
-let mkappc s l = CAst.make @@ CAppExpl ((qualid_of_ident (Id.of_string s),None),l)
+let mkappc s l = CAst.make @@ CAppExpl ((Constrexpr_ops.ref_expr_of_ident (Id.of_string s),None),l)
 
 let declare_an_instance {CAst.v=n; loc} s args =
   (((CAst.make ?loc @@ Name n),None),
-   CAst.make @@ CAppExpl ((qualid_of_string s,None), args))
+   CAst.make @@ CAppExpl (((CQualidRef,qualid_of_string s),None), args))
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
@@ -236,7 +236,7 @@ let add_morphism atts ~tactic binders m s n =
   let instance_name = (CAst.make ?loc:instance_id.loc @@ Name instance_id.v),None in
   let instance_t =
     CAst.make @@ CAppExpl
-      ((Libnames.qualid_of_string "Corelib.Classes.Morphisms.Proper",None),
+      (((CQualidRef,Libnames.qualid_of_string "Corelib.Classes.Morphisms.Proper"),None),
        [cHole; s; m])
   in
   let _id, lemma = Classes.new_instance_interactive

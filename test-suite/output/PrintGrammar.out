@@ -140,7 +140,7 @@ Entry term is
   | NUMBER
   | atomic_constr
   | term_match
-  | reference; univ_annot
+  | global; univ_annot
   | string
   | test_array_opening; "["; "|"; array_elems; "|"; lconstr; type_cstr;
     test_array_closing; "|"; "]"; univ_annot ] ]

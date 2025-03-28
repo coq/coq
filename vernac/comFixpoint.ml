@@ -268,8 +268,9 @@ let build_wellfounded env sigma poly udecl {CAst.v=recname; loc} ctx body ccl im
 (*********************************)
 (* Interpretation of Co/Fixpoint *)
 
+(* XXX use CLibRef *)
 let make_qref s = Libnames.qualid_of_string s
-let lt_ref = make_qref "Init.Peano.lt"
+let lt_ref = CQualidRef, make_qref "Init.Peano.lt"
 
 let position_of_argument ctx binders na =
   let exception Found of int in
@@ -316,7 +317,7 @@ let find_rec_annot ~program_mode ~function_mode env sigma Vernacexpr.{fname={CAs
         let r = match na, rfel with
           | Some id, None ->
             let loc = id.CAst.loc in
-            CAst.make ?loc @@ CRef (Libnames.qualid_of_ident ?loc id.CAst.v,None)
+            CAst.make ?loc @@ CRef (Constrexpr_ops.ref_expr_of_ident ?loc id.CAst.v,None)
           | Some _, Some _ -> CErrors.user_err ?loc Pp.(str"Measure takes three arguments only in Function.")
           | None, rfel -> default_order rfel in
         Some (r, mes), [] (* useless: will use Fix_sub *)
