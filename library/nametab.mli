@@ -210,13 +210,6 @@ val pr_depr_xref : Globnames.extended_global_reference -> Pp.t
 
 (** NOT FOR PUBLIC USE YET. Plugin writers, please do not rely on this API. *)
 
-module type UserName = sig
-  type t
-  val equal : t -> t -> bool
-  val to_string : t -> string
-  val repr : t -> Id.t * Id.t list
-end
-
 module type EqualityType =
 sig
   type t
@@ -226,20 +219,19 @@ end
 module type NAMETREE = sig
   type elt
   type t
-  type user_name
 
   val empty : t
-  val push : visibility -> user_name -> elt -> t -> t
+  val push : visibility -> full_path -> elt -> t -> t
   val locate : qualid -> t -> elt
-  val find : user_name -> t -> elt
-  val remove : user_name -> t -> t
-  val exists : user_name -> t -> bool
-  val user_name : qualid -> t -> user_name
-  val shortest_qualid_gen : ?loc:Loc.t -> (Id.t -> bool) -> user_name -> t -> qualid
-  val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
+  val find : full_path -> t -> elt
+  val remove : full_path -> t -> t
+  val exists : full_path -> t -> bool
+  val full_path : qualid -> t -> full_path
+  val shortest_qualid_gen : ?loc:Loc.t -> (Id.t -> bool) -> full_path -> t -> qualid
+  val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> full_path -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
   val match_prefixes : qualid -> t -> elt list
 end
 
-module Make (U : UserName) (E : EqualityType) :
-  NAMETREE with type user_name = U.t and type elt = E.t
+module Make (E : EqualityType) :
+  NAMETREE with type elt = E.t

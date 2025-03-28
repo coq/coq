@@ -48,16 +48,6 @@ let map_visibility f = function
 
 (* Data structure for nametabs *******************************************)
 
-
-(* This module type will be instantiated by [full_path] of [DirPath.t] *)
-(* The [repr] function is assumed to return the reversed list of idents. *)
-module type UserName = sig
-  type t
-  val equal : t -> t -> bool
-  val to_string : t -> string
-  val repr : t -> Id.t * Id.t list
-end
-
 module type EqualityType =
 sig
   type t
@@ -76,17 +66,16 @@ end
 module type NAMETREE = sig
   type elt
   type t
-  type user_name
 
   val empty : t
-  val push : visibility -> user_name -> elt -> t -> t
+  val push : visibility -> full_path -> elt -> t -> t
   val locate : qualid -> t -> elt
-  val find : user_name -> t -> elt
-  val remove : user_name -> t -> t
-  val exists : user_name -> t -> bool
-  val user_name : qualid -> t -> user_name
-  val shortest_qualid_gen : ?loc:Loc.t -> (Id.t -> bool) -> user_name -> t -> qualid
-  val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
+  val find : full_path -> t -> elt
+  val remove : full_path -> t -> t
+  val exists : full_path -> t -> bool
+  val full_path : qualid -> t -> full_path
+  val shortest_qualid_gen : ?loc:Loc.t -> (Id.t -> bool) -> full_path -> t -> qualid
+  val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> full_path -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
 
   (** Matches a prefix of [qualid], useful for completion *)
@@ -120,8 +109,8 @@ let warn_deprecated_dirpath_Coq ?loc (coq_repl, l, id) =
   let quickfix = Option.map (fun loc -> [ Quickfix.make ~loc new_id ]) loc in
   warn_deprecated_dirpath_Coq ?loc ?quickfix (old_id, new_id)
 
-module Make (U : UserName) (E : EqualityType) : NAMETREE
-  with type user_name = U.t and type elt = E.t =
+module Make (E : EqualityType) : NAMETREE
+  with type elt = E.t =
 struct
   type elt = E.t
 
@@ -132,17 +121,15 @@ struct
    *)
   let warn_masking_absolute =
     CWarnings.create_in masking_absolute
-      (fun n -> Pp.str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
-
-  type user_name = U.t
+      Pp.(fun n -> str "Trying to mask the absolute name \"" ++ pr_path n  ++ str "\"!")
 
   type path_status =
-    | Relative of user_name * elt
-    | Absolute of user_name * elt
+    | Relative of full_path * elt
+    | Absolute of full_path * elt
 
   let eq_path_status p q = match p, q with
-  | Relative (u1, o1), Relative (u2, o2) -> U.equal u1 u2 && E.equal o1 o2
-  | Absolute (u1, o1), Absolute (u2, o2) -> U.equal u1 u2 && E.equal o1 o2
+  | Relative (u1, o1), Relative (u2, o2) -> eq_full_path u1 u2 && E.equal o1 o2
+  | Absolute (u1, o1), Absolute (u2, o2) -> eq_full_path u1 u2 && E.equal o1 o2
   | (Absolute _ | Relative _), _ -> false
 
   (* Dictionaries of short names *)
@@ -206,7 +193,7 @@ struct
         match tree.path with
           | Absolute (uname',o') :: _ ->
               if E.equal o' o then begin
-                assert (U.equal uname uname');
+                assert (eq_full_path uname uname');
                 tree
                   (* we are putting the same thing for the second time :) *)
               end
@@ -214,8 +201,8 @@ struct
                 (* This is an absolute name, we must keep it otherwise it may
                    become unaccessible forever *)
                 (* But ours is also absolute! This is an error! *)
-                CErrors.user_err Pp.(str @@ "Cannot mask the absolute name \""
-                                   ^ U.to_string uname' ^ "\"!")
+                CErrors.user_err
+                  Pp.(str "Cannot mask the absolute name \"" ++ pr_path uname' ++ str "\"!")
           | current ->
             let this = push_path (Absolute (uname, o)) current in
             if this == tree.path then tree
@@ -248,7 +235,8 @@ let rec push_exactly uname o level tree = function
     else mktree tree.path map
 
 let push visibility uname o tab =
-  let id,dir = U.repr uname in
+  let dir,id = repr_path uname in
+  let dir = DirPath.repr dir in
   let modify _ ptab = match visibility with
     | Until i -> push_until uname o (i-1) ptab dir
     | Exactly i -> push_exactly uname o (i-1) ptab dir
@@ -272,13 +260,13 @@ let rec remove_path uname tree = function
       in
       let map = Id.Map.update modid update tree.map in
       let this =
-        let test = function Relative (uname',_) -> not (U.equal uname uname') | _ -> true in
+        let test = function Relative (uname',_) -> not (eq_full_path uname uname') | _ -> true in
         List.filter test tree.path
       in
       mktree this map
   | [] ->
       let this =
-        let test = function Absolute (uname',_) -> not (U.equal uname uname') | _ -> true in
+        let test = function Absolute (uname',_) -> not (eq_full_path uname uname') | _ -> true in
         List.filter test tree.path
       in
       mktree this tree.map
@@ -286,7 +274,8 @@ let rec remove_path uname tree = function
 (** Remove all bindings pointing to [uname] in [tab] *)
 
 let remove uname tab =
-  let id,dir = U.repr uname in
+  let dir,id = repr_path uname in
+  let dir = DirPath.repr dir in
   let modify _ ptab = remove_path uname ptab dir in
   try Id.Map.modify id modify tab
   with Not_found -> tab
@@ -324,7 +313,7 @@ let locate qid tab =
   in
     o
 
-let user_name qid tab =
+let full_path qid tab =
   let uname = match find_node qid tab with
     | (Absolute (uname,o) | Relative (uname,o)) :: _ -> uname
     | [] -> raise Not_found
@@ -332,10 +321,11 @@ let user_name qid tab =
     uname
 
 let find uname tab =
-  let id,l = U.repr uname in
-    match search id (Id.Map.find id tab) l with
-        Absolute (_,o) :: _ -> o
-      | _ -> raise Not_found
+  let l,id = repr_path uname in
+  let l = DirPath.repr l in
+  match search id (Id.Map.find id tab) l with
+  | Absolute (_,o) :: _ -> o
+  | _ -> raise Not_found
 
 let exists uname tab =
   try
@@ -345,13 +335,14 @@ let exists uname tab =
       Not_found -> false
 
 let shortest_qualid_gen ?loc hidden uname tab =
-  let id,dir = U.repr uname in
+  let dir,id = repr_path uname in
+  let dir = DirPath.repr dir in
   let hidden = hidden id in
   let rec find_uname pos dir tree =
     let is_empty = match pos with [] -> true | _ -> false in
     match tree.path with
     | (Absolute (u,_) | Relative (u,_)) :: _
-          when U.equal u uname && not (is_empty && hidden) -> List.rev pos
+          when eq_full_path u uname && not (is_empty && hidden) -> List.rev pos
     | _ ->
         match dir with
             [] -> raise Not_found
@@ -400,29 +391,19 @@ end
 
 (* Global name tables *************************************************)
 
-module FullPath =
-struct
-  type t = full_path
-  let equal = eq_full_path
-  let to_string = string_of_path
-  let repr sp =
-    let dir,id = repr_path sp in
-      id, (DirPath.repr dir)
-end
-
 module ExtRefEqual = ExtRefOrdered
 module MPEqual = Names.ModPath
 
-module ExtRefTab = Make(FullPath)(ExtRefEqual)
-module MPTab = Make(FullPath)(MPEqual)
+module ExtRefTab = Make(ExtRefEqual)
+module MPTab = Make(MPEqual)
 
 type ccitab = ExtRefTab.t
 let the_ccitab = Summary.ref ~name:"ccitab" (ExtRefTab.empty : ccitab)
 
-module MPDTab = Make(FullPath)(MPEqual)
-module DirTab = Make(FullPath)(GlobDirRef)
+module MPDTab = Make(MPEqual)
+module DirTab = Make(GlobDirRef)
 
-module UnivTab = Make(FullPath)(Univ.UGlobal)
+module UnivTab = Make(Univ.UGlobal)
 type univtab = UnivTab.t
 let the_univtab = Summary.ref ~name:"univtab" (UnivTab.empty : univtab)
 
@@ -648,7 +629,7 @@ let locate_abbreviation qid = match locate_extended qid with
   | Abbrev kn -> kn
 
 let locate_modtype qid = MPTab.locate qid Modules.(!nametab.modtypetab)
-let full_name_modtype qid = MPTab.user_name qid Modules.(!nametab.modtypetab)
+let full_name_modtype qid = MPTab.full_path qid Modules.(!nametab.modtypetab)
 
 let locate_universe qid = UnivTab.locate qid !the_univtab
 
@@ -656,7 +637,7 @@ let locate_dir qid = DirTab.locate qid Modules.(!nametab.dirtab)
 
 let locate_module qid = MPDTab.locate qid Modules.(!nametab.modtab)
 
-let full_name_module qid = MPDTab.user_name qid Modules.(!nametab.modtab)
+let full_name_module qid = MPDTab.full_path qid Modules.(!nametab.modtab)
 
 let locate_section qid =
   match locate_dir qid with
