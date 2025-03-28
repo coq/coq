@@ -15,19 +15,7 @@ open Tacexpr
 
 (** Nametab for tactics *)
 
-(** TODO: Share me somewhere *)
-module FullPath =
-struct
-  open Libnames
-  type t = full_path
-  let equal = eq_full_path
-  let to_string = string_of_path
-  let repr sp =
-    let dir,id = repr_path sp in
-      id, (DirPath.repr dir)
-end
-
-module KnTab = Nametab.Make(FullPath)(KerName)
+module KnTab = Nametab.Make(KerName)
 
 let tactic_tab = Summary.ref ~name:"LTAC-NAMETAB" (KnTab.empty, KNmap.empty)
 
