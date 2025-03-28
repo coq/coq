@@ -161,3 +161,10 @@ Goal nat * bool.
   - exact true.
   - exact 0.
 Qed.
+
+(* only *)
+Goal bool * nat * nat.
+  repeat split.
+  all: only 2 - 3: exact 0.
+  exact true.
+Qed.
