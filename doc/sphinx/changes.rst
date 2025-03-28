@@ -641,7 +641,7 @@ Standard library
   Stdlib moved to its own repository, look for
   `Stdlib own changelog <https://rocq-prover.org/doc/v9.0/refman-stdlib/changes.html>`_
   for other changes there
-  (`#19975 <https://github.com/coq/coq/pull/19686>`_,
+  (`#19975 <https://github.com/coq/coq/pull/19975>`_,
   by Pierre Roux).
 - **Added:**
   a new `rocq-core` package for users who don't want to depend on Stdlib.
