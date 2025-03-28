@@ -84,7 +84,7 @@ CI_TARGETS= \
     ci-lean_importer \
     ci-ltac2_compiler \
     ci-mathcomp_test \
-    ci-metacoq \
+    ci-metarocq \
     ci-neural_net_interp \
     ci-oddorder \
     ci-paco \
@@ -221,7 +221,7 @@ ci-flocq: ci-stdlib
 
 ci-menhir: ci-stdlib
 
-ci-metacoq: ci-equations
+ci-metarocq: ci-equations
 
 ci-neural_net_interp: ci-stdlib
 
