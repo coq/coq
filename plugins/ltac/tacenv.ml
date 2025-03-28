@@ -168,7 +168,7 @@ let open_md i (prefix, {local; id; for_ml=b; expr=t; depr}) =
   (* todo: generate a warning when non-unique, record choices for non-unique mappings *)
   let sp, kn = Lib.make_oname prefix id in
   let () = if not local then push_tactic (Nametab.Exactly i) sp kn in
-  add ~depr kn b t
+  ()
 
 let cache_md (prefix, {local; id; for_ml=b; expr=t; depr}) =
   let sp, kn = Lib.make_oname prefix id in
