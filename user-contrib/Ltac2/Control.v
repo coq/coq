@@ -36,6 +36,7 @@ Ltac2 @ external extend : (unit -> unit) list -> (unit -> unit) -> (unit -> unit
 Ltac2 @ external enter : (unit -> unit) -> unit := "rocq-runtime.plugins.ltac2" "enter".
 
 Ltac2 @ external focus : int -> int -> (unit -> 'a) -> 'a := "rocq-runtime.plugins.ltac2" "focus".
+Ltac2 @ external cycle : int -> unit := "rocq-runtime.plugins.ltac2" "cycle".
 Ltac2 @ external shelve : unit -> unit := "rocq-runtime.plugins.ltac2" "shelve".
 Ltac2 @ external shelve_unifiable : unit -> unit := "rocq-runtime.plugins.ltac2" "shelve_unifiable".
 

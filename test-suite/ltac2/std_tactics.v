@@ -153,3 +153,11 @@ Goal forall (x : nat) y z, x = y -> y = z -> x = z.
   intros **.
   etransitivity; eassumption.
 Qed.
+
+(* cycle *)
+Goal nat * bool.
+  split.
+  all: cycle 1.
+  - exact true.
+  - exact 0.
+Qed.
