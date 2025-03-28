@@ -85,6 +85,7 @@ install_printer Top_printers.ppqvar_subst
 install_printer Top_printers.ppuniverse_level_subst
 install_printer Top_printers.ppustate
 install_printer Top_printers.ppconstraints
+install_printer Top_printers.ppqconstraints
 install_printer Top_printers.ppuniverseconstraints
 install_printer Top_printers.ppuniverse_context_future
 install_printer Top_printers.ppuniverses

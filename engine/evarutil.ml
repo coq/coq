@@ -395,7 +395,7 @@ let next_evar_name sigma naming = match naming with
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?relevance ?abstract_arguments ?candidates ?(naming = IntroAnonymous) ?typeclass_candidate
-    ?hypnaming env evd typ =
+    ?rrpat ?hypnaming env evd typ =
   let name = next_evar_name evd naming in
   let hypnaming = match hypnaming with
   | Some n -> n
@@ -412,7 +412,7 @@ let new_evar ?src ?filter ?relevance ?abstract_arguments ?candidates ?(naming = 
   | Some r -> r
   | None -> ERelevance.relevant (* FIXME: relevant_of_type not defined yet *)
   in
-  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ~relevance ?abstract_arguments ?candidates ?name
+  let (evd, evk) = new_pure_evar sign evd typ' ?src ?rrpat ?filter ~relevance ?abstract_arguments ?candidates ?name
     ?typeclass_candidate in
   (evd, EConstr.mkEvar (evk, instance))
 

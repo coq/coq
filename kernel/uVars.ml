@@ -89,9 +89,9 @@ module Instance : sig
     val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
     val levels : t -> Quality.Set.t * Level.Set.t
 
-    type mask = Quality.pattern array * int option array
+    type ('q, 'u) mask = 'q Quality.pattern array * 'u array
 
-    val pattern_match : mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
+    val pattern_match : (int option, int option) mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
 end =
 struct
   type t = Quality.t array * Level.t array
@@ -181,7 +181,7 @@ struct
     CArray.equal Quality.equal xq yq
     && CArray.equal Level.equal xu yu
 
-  type mask = Quality.pattern array * int option array
+  type ('q, 'u) mask = 'q Quality.pattern array * 'u array
 
   let pattern_match (qmask, umask) (qs, us) tqus =
     let tqus = Array.fold_left2 (fun tqus mask u -> Partial_subst.maybe_add_univ mask u tqus) tqus umask us in
