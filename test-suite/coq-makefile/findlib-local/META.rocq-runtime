@@ -1,0 +1,12 @@
+directory = "."
+package "plugins" (
+package "ltac" (
+directory = "ltac"
+version = "dev"
+requires = ""
+archive(byte) = "fake.cma"
+archive(native) = "fake.cmxa"
+plugin(byte) = "fake.cma"
+plugin(native) = "fake.cmxs"
+)
+)
