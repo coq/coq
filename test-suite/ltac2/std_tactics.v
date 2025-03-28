@@ -168,3 +168,10 @@ Goal bool * nat * nat.
   all: only 2 - 3: exact 0.
   exact true.
 Qed.
+
+(* exfalso *)
+Goal False -> nat * nat.
+  intros oops.
+  split.
+  all: exfalso; assumption.
+Qed.

@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Control Ltac2.Option Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std Ltac2.Constr.
+Require Ltac2.Control Ltac2.Fresh Ltac2.Option Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std Ltac2.Constr.
 
 (** Constr matching *)
 
@@ -357,6 +357,11 @@ Ltac2 Notation "inversion_clear"
   pat(opt(seq("as", intropattern)))
   ids(opt(seq("in", list1(ident)))) :=
   Std.inversion Std.FullInversionClear arg pat ids.
+
+Ltac2 exfalso0 () := Control.enter (fun () =>
+  unshelve (let f := '(_ :> False) in induction $f)).
+
+Ltac2 Notation exfalso := exfalso0 ().
 
 Ltac2 Notation "red" cl(opt(clause)) :=
   Std.red (default_on_concl cl).
