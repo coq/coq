@@ -96,7 +96,7 @@ let args_options = Arg.align [
   "-prefix", arg_string (fun p prefix -> { p with prefix = Some (make_prefix prefix) }),
     "<dir> Set installation directory to <dir>";
   "-relocatable", arg_set (fun p -> { p with prefix = Some RelocatableInstall } ),
-    "Make a relocatable installation";
+    " Make a relocatable installation";
   "-quiet", arg_set (fun p -> { p with quiet = true }),
     " Don't print variables during configure";
   "-no-ask", arg_set (fun p -> { p with interactive = false }),
@@ -125,7 +125,7 @@ let args_options = Arg.align [
      no (default): no native compilation available at all
      ondemand: -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
   "-warn-error", arg_bool (fun p _warn_error -> warn_warn_error (); p),
-    "Deprecated option: warnings are now adjusted in the corresponding build tool.";
+    " Deprecated option: warnings are now adjusted in the corresponding build tool.";
   "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
     " URL of the rocq website";
   "-debug", arg_set (fun p -> { p with debug = true }), " Enable debug information for package detection"
