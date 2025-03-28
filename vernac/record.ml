@@ -437,13 +437,11 @@ let warn_cannot_define_projection =
 
 type arity_error =
   | NonInformativeToInformative
-  | StrongEliminationOnNonSmallType
 
 let error_elim_explain kp ki =
-  let open Sorts in
+  let open Sorts.Quality in
   match kp,ki with
-  | (InType | InSet), InProp -> Some NonInformativeToInformative
-  | InType, InSet -> Some StrongEliminationOnNonSmallType (* if Set impredicative *)
+  | QConstant QType, QConstant QProp -> Some NonInformativeToInformative
   | _ -> None
 
 (* If a projection is not definable, we throw an error if the user
@@ -460,7 +458,7 @@ let warning_or_error ?loc ~info flags indsp err =
     | BadTypedProj (fi,env,te) ->
       let err = match te with
         | ElimArity (_, _, Some s) ->
-          error_elim_explain (Sorts.family s)
+          error_elim_explain (Sorts.quality s)
             (Inductiveops.elim_sort (Global.lookup_inductive indsp))
         | _ -> None
       in
@@ -468,11 +466,6 @@ let warning_or_error ?loc ~info flags indsp err =
           | Some NonInformativeToInformative ->
               (Id.print fi ++
                 strbrk" cannot be defined because it is informative and " ++
-                Printer.pr_inductive (Global.env()) indsp ++
-                strbrk " is not.")
-          | Some StrongEliminationOnNonSmallType ->
-              (Id.print fi ++
-                strbrk" cannot be defined because it is large and " ++
                 Printer.pr_inductive (Global.env()) indsp ++
                 strbrk " is not.")
           | None ->

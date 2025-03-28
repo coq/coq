@@ -12,7 +12,6 @@ open Pp
 open Util
 open CErrors
 open Names
-open Sorts
 open Constr
 open EConstr
 open Tacmach
@@ -61,10 +60,9 @@ let functional_induction with_clean c princl pat =
                   ++ Termops.pr_global_env (pf_env gl) (ConstRef c') )
             in
             match elimination_sort_of_goal gl with
-            | InSProp -> finfo.sprop_lemma
-            | InProp -> finfo.prop_lemma
-            | InSet -> finfo.rec_lemma
-            | InType | InQSort -> finfo.rect_lemma
+            | QConstant QSProp -> finfo.sprop_lemma
+            | QConstant QProp -> finfo.prop_lemma
+            | QConstant QType | QVar _ -> finfo.rect_lemma
           in
           let sigma, princ =
             (* then we get the principle *)
@@ -78,7 +76,7 @@ let functional_induction with_clean c princl pat =
               let princ_name =
                 Indrec.make_elimination_ident
                   (Label.to_id (Constant.label c'))
-                  (elimination_sort_of_goal gl)
+                  (UnivGen.QualityOrSet.of_quality @@ elimination_sort_of_goal gl)
               in
               let princ_ref =
                 match

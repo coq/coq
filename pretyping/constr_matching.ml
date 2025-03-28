@@ -315,7 +315,7 @@ let matches_core env sigma allow_bound_rels
       | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
 
       | PSort ps, Sort s ->
-        if Sorts.family_equal ps (ESorts.family sigma s)
+        if UnivGen.QualityOrSet.equal ps (ESorts.quality_or_set sigma s)
         then subst else raise PatternMatchingFailure
 
       | PApp (p, [||]), _ -> sorec ctx env subst p t

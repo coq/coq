@@ -67,7 +67,6 @@ let mind_check_names env mie =
 (************************** Type checking *******************************)
 (************************************************************************)
 
-
 type record_arg_info =
   | NoRelevantArg
   | HasRelevantArg
@@ -90,8 +89,7 @@ let add_squash q info =
     (* XXX dedup insertion *)
     { info with ind_squashed = Some (SometimesSquashed (Sorts.Quality.Set.add q qs)) }
 
-(* This code can probably be simplified but I can't quite see how right now. *)
-let check_univ_leq ?(is_real_arg=false) env u info =
+let compute_elim_squash ?(is_real_arg=false) env u info =
   let open Sorts.Quality in
   let info = if not is_real_arg then info
     else match info.record_arg_info with
@@ -99,71 +97,40 @@ let check_univ_leq ?(is_real_arg=false) env u info =
       | NoRelevantArg -> match u with
         | Sorts.SProp -> info
         | QSort (q,_) ->
-          if Environ.Internal.is_above_prop env q
-          || Sorts.Quality.equal (QVar q) (Sorts.quality info.ind_univ)
+           if Environ.Internal.is_above_prop env q
+              || equal (QVar q) (Sorts.quality info.ind_univ)
           then { info with record_arg_info = HasRelevantArg }
           else info
         | Prop | Set | Type _ -> { info with record_arg_info = HasRelevantArg }
   in
   if (Environ.type_in_type env) then info
-  else match u, info.ind_univ with
-  | SProp, (SProp | Prop | Set | Type _) ->
-    (* Inductive types provide explicit lifting from SProp to other universes,
-       so allow SProp <= any. *)
-    info
-
-  | Prop, SProp -> { info with ind_squashed = Some AlwaysSquashed }
-  | (SProp|Prop), QSort (q,_) ->
-    if Environ.Internal.is_above_prop env q then info
-    else add_squash (Sorts.quality u) info
-  | Prop, (Prop | Set | Type _) -> info
-
-  | Set, (SProp | Prop) -> { info with ind_squashed = Some AlwaysSquashed }
-  | Set, QSort (q, indu) ->
-    if Environ.Internal.is_above_prop env q then info
-    else if UGraph.check_leq (universes env) Universe.type0 indu (* XXX always true *)
-    then add_squash qtype info
-    else { info with missing = u :: info.missing }
-  | Set, Set -> info
-  | Set, Type indu ->
-    if UGraph.check_leq (universes env) Universe.type0 indu
-    then info
-    else { info with missing = u :: info.missing }
-
-  | QSort (q,_), (SProp | Prop) -> add_squash (QVar q) info
-  | QSort (cq, uu), QSort (indq, indu) ->
-    if UGraph.check_leq (universes env) uu indu
-    then begin if Sorts.QVar.equal cq indq then info
-      else add_squash (QVar cq) info
-    end
-    else { info with missing = u :: info.missing }
-  | QSort (_, uu), Set ->
-    if UGraph.check_leq (universes env) uu Universe.type0
-    then info
-    else if is_impredicative_set env
-    then (* imprecise but we don't handle complex impredicative set squashings  *)
-      { info with ind_squashed = Some AlwaysSquashed }
-    else { info with missing = u :: info.missing }
-  | QSort (_,uu), Type indu ->
-    if UGraph.check_leq (universes env) uu indu
-    then info
-    else { info with missing = u :: info.missing }
-
-  | Type _, (SProp | Prop) -> { info with ind_squashed = Some AlwaysSquashed }
-  | Type uu, Set ->
-    if UGraph.check_leq (universes env) uu Universe.type0
-    then info
-    else if is_impredicative_set env
-    then { info with ind_squashed = Some AlwaysSquashed }
-    else { info with missing = u :: info.missing }
-  | Type uu, QSort (_, indu) ->
-    if UGraph.check_leq (universes env) uu indu
-    then add_squash qtype info
-    else { info with missing = u :: info.missing }
-  | Type uu, Type indu ->
-    if UGraph.check_leq (universes env) uu indu
-    then info
-    else { info with missing = u :: info.missing }
+  else
+    let indu = info.ind_univ
+    and check_univ_consistency f induu uu =
+      if UGraph.check_leq (universes env) uu induu
+      then f info
+      else { info with missing = u :: info.missing } in
+    if Inductive.eliminates_to (Sorts.quality indu) (Sorts.quality u) then
+      check_univ_consistency (fun x -> x)
+	(Sorts.univ_of_sort indu)
+	(Sorts.univ_of_sort u)
+    else
+      let check_univ_consistency_squash quality =
+	check_univ_consistency (add_squash quality) in
+      match indu, u with
+      | QSort (_, indu), Type uu ->
+	 check_univ_consistency_squash qtype indu uu
+      | QSort (_, indu), QSort (cq, uu) ->
+	 check_univ_consistency_squash (QVar cq) indu uu
+      | QSort (q, indu), Set ->
+         if Environ.Internal.is_above_prop env q then info
+         else check_univ_consistency_squash qtype indu Universe.type0
+      | (SProp | Prop), QSort (q, _) ->
+	 add_squash (QVar q) info
+      | QSort (q, _), (SProp | Prop) ->
+         if Environ.Internal.is_above_prop env q then info
+         else add_squash (Sorts.quality u) info
+      | _, _ -> { info with ind_squashed = Some AlwaysSquashed }
 
 let check_context_univs ~ctor env info ctx =
   let check_one d (info,env) =
@@ -171,7 +138,7 @@ let check_context_univs ~ctor env info ctx =
       | LocalAssum (_,t) ->
         (* could be retyping if it becomes available in the kernel *)
         let tj = Typeops.infer_type env t in
-        check_univ_leq ~is_real_arg:ctor env tj.utj_type info
+        compute_elim_squash ~is_real_arg:ctor env tj.utj_type info
       | LocalDef _ -> info
     in
     info, push_rel d env
@@ -211,27 +178,28 @@ let check_constructor_univs env_ar_par info (args,_) =
 let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
   let lc = Array.map_of_list (fun c -> (Typeops.infer_type env_ar_par c).utj_val) lc in
   let splayed_lc = Array.map (Reduction.whd_decompose_prod_decls env_ar_par) lc in
-  let univ_info = match Array.length lc with
+  let univ_info =
+    (* SProp and sort poly primitive records are OK, if we squash and become fakerecord also OK *)
+    if isrecord then univ_info
+    else match Array.length lc with
     (* Empty type: sort poly must squash *)
-    | 0 -> check_univ_leq env_ar_par Sorts.sprop univ_info
+    | 0 -> compute_elim_squash env_ar_par Sorts.sprop univ_info
 
     | 1 ->
-      (* SProp and sort poly primitive records are OK, if we squash and become fakerecord also OK *)
-      if isrecord then univ_info
       (* 1 constructor with no arguments also OK in SProp (to make
          things easier on ourselves when reducing we forbid letins)
          unless ind_univ is sort polymorphic (for ease of implementation) *)
-      else if (Environ.typing_flags env_ar_par).allow_uip
+      if (Environ.typing_flags env_ar_par).allow_uip
            && fst (splayed_lc.(0)) = []
            && List.for_all Context.Rel.Declaration.is_local_assum params
            && Sorts.is_sprop univ_info.ind_univ
       then univ_info
       (* 1 constructor with arguments must squash if SProp / sort poly
          (we could allow arguments in SProp but the reduction rule is a pain) *)
-      else check_univ_leq env_ar_par Sorts.prop univ_info
+      else compute_elim_squash env_ar_par Sorts.prop univ_info
 
     (* More than 1 constructor: must squash if Prop/SProp *)
-    | _ -> check_univ_leq env_ar_par Sorts.set univ_info
+    | _ -> compute_elim_squash env_ar_par Sorts.set univ_info
   in
   let univ_info = Array.fold_left (check_constructor_univs env_ar_par) univ_info splayed_lc in
   let () = if univ_info.ind_template then match univ_info.ind_squashed with
@@ -597,7 +565,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         (* if someone tried to declare a record as SProp but it can't
            be primitive we must squash. *)
         let data = List.map (fun (a,b,univs) ->
-            a,b,check_univ_leq env_ar_par Sorts.prop univs)
+            a,b,compute_elim_squash env_ar_par Sorts.prop univs)
             data
         in
         data, Some None, reason

@@ -113,7 +113,7 @@ let sigref loc = Libnames.qualid_of_string ~loc "Corelib.Init.Specif.sig"
 
 GRAMMAR EXTEND Gram
   GLOBAL: binder_constr lconstr constr term
-  universe_name sort sort_family
+  universe_name sort sort_quality_or_set
   global constr_pattern cpattern Constr.ident
   closed_binder open_binders binder binders binders_fixannot
   record_declaration typeclass_constraint pattern arg type_cstr
@@ -143,11 +143,11 @@ GRAMMAR EXTEND Gram
         { Some (CQVar q), u }
       | "Type"; "@{"; u = universe; "}" -> { None, u } ] ]
   ;
-  sort_family:
-    [ [ "Set"  -> { Sorts.InSet }
-      | "Prop" -> { Sorts.InProp }
-      | "SProp" -> { Sorts.InSProp }
-      | "Type" -> { Sorts.InType } ] ]
+  sort_quality_or_set:
+    [ [ "Prop" -> { UnivGen.QualityOrSet.prop }
+      | "SProp" -> { UnivGen.QualityOrSet.sprop }
+      | "Set" -> { UnivGen.QualityOrSet.Set }
+      | "Type" -> { UnivGen.QualityOrSet.qtype } ] ]
   ;
   universe_increment:
     [ [ "+"; n = natural -> { n }

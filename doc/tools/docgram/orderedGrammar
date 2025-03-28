@@ -583,7 +583,7 @@ rewrite_rule: [
 ]
 
 scheme_kind: [
-| scheme_type "for" reference "Sort" sort_family
+| scheme_type "for" reference "Sort" sort_quality_or_set
 ]
 
 scheme_type: [
@@ -593,7 +593,7 @@ scheme_type: [
 | "Case"
 ]
 
-sort_family: [
+sort_quality_or_set: [
 | "Prop"
 | "SProp"
 | "Set"
@@ -898,10 +898,10 @@ command: [
 | "Functional" "Case" func_scheme_def      (* funind plugin *)
 | "Generate" "graph" "for" qualid      (* funind plugin *)
 | "Hint" "Rewrite" OPT [ "->" | "<-" ] LIST1 one_term OPT ( "using" ltac_expr ) OPT ( ":" LIST1 ident )
-| "Derive" "Inversion_clear" ident "with" one_term OPT ( "Sort" sort_family )
-| "Derive" "Inversion" ident "with" one_term OPT ( "Sort" sort_family )
-| "Derive" "Dependent" "Inversion" ident "with" one_term "Sort" sort_family
-| "Derive" "Dependent" "Inversion_clear" ident "with" one_term "Sort" sort_family
+| "Derive" "Inversion_clear" ident "with" one_term OPT ( "Sort" sort_quality_or_set )
+| "Derive" "Inversion" ident "with" one_term OPT ( "Sort" sort_quality_or_set )
+| "Derive" "Dependent" "Inversion" ident "with" one_term "Sort" sort_quality_or_set
+| "Derive" "Dependent" "Inversion_clear" ident "with" one_term "Sort" sort_quality_or_set
 | "Declare" "Left" "Step" one_term
 | "Declare" "Right" "Step" one_term
 | "Number" "Notation" qualid qualid qualid OPT ( "(" LIST1 number_modifier SEP "," ")" ) ":" scope_name
@@ -2157,7 +2157,7 @@ atomic_tac2pat: [
 ]
 
 func_scheme_def: [
-| ident ":=" "Induction" "for" qualid "Sort" sort_family      (* funind plugin *)
+| ident ":=" "Induction" "for" qualid "Sort" sort_quality_or_set      (* funind plugin *)
 ]
 
 rewrite_occs: [

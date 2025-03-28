@@ -198,13 +198,13 @@ END
 let pr_fun_scheme_arg (princ_name,fun_name,s) =
   Names.Id.print princ_name.CAst.v ++ str " :=" ++ spc() ++ str "Induction for " ++
   Libnames.pr_qualid fun_name ++ spc() ++ str "Sort " ++
-  Sorts.pr_sort_family s
+  UnivGen.QualityOrSet.pr Sorts.QVar.raw_pr s
 
 }
 
 VERNAC ARGUMENT EXTEND fun_scheme_arg
 PRINTED BY { pr_fun_scheme_arg }
-| [ identref(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort_family(s) ] -> { (princ_name,fun_name,s) }
+| [ identref(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort_quality_or_set(s) ] -> { (princ_name,fun_name,s) }
 END
 
 {

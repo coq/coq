@@ -16,6 +16,7 @@ open Constr
 open Context
 open Proof_search
 open Context.Named.Declaration
+open Sorts
 
 module Search = struct
 
@@ -120,51 +121,50 @@ let rec make_form env sigma atom_env term =
   let cciterm = special_whd env sigma term  in
   match EConstr.kind sigma cciterm with
     Prod(_,a,b) ->
-    if noccurn sigma 1 b &&
-       Retyping.get_sort_family_of env sigma a == InProp
-    then
-      let fa = make_form env sigma atom_env a in
-      let fb = make_form env sigma atom_env b in
-      Arrow (fa,fb)
-    else
-      make_atom atom_env (normalize term)
+     if noccurn sigma 1 b &&
+	  Quality.is_qprop (Retyping.get_sort_quality_of env sigma a)
+     then
+       let fa = make_form env sigma atom_env a in
+       let fb = make_form env sigma atom_env b in
+       Arrow (fa,fb)
+     else
+       make_atom atom_env (normalize term)
   | Cast(a,_,_) ->
-    make_form env sigma atom_env a
+     make_form env sigma atom_env a
   | Ind (ind, _) ->
-    if Environ.QInd.equal env ind (fst (Lazy.force li_False)) then
-      Bot
-    else
-      make_atom atom_env (normalize term)
+     if Environ.QInd.equal env ind (fst (Lazy.force li_False))
+     then Bot
+     else make_atom atom_env (normalize term)
   | App(hd,argv) when Int.equal (Array.length argv) 2 ->
-    begin
-      try
-        let ind, _ = destInd sigma hd in
-        if Environ.QInd.equal env ind (fst (Lazy.force li_and)) then
-          let fa = make_form env sigma atom_env argv.(0) in
-          let fb = make_form env sigma atom_env argv.(1) in
-          Conjunct (fa,fb)
-        else if Environ.QInd.equal env ind (fst (Lazy.force li_or)) then
-          let fa = make_form env sigma atom_env argv.(0) in
-          let fb = make_form env sigma atom_env argv.(1) in
-          Disjunct (fa,fb)
-        else make_atom atom_env (normalize term)
-      with DestKO -> make_atom atom_env (normalize term)
-    end
+     begin
+       try
+         let ind, _ = destInd sigma hd in
+         if Environ.QInd.equal env ind (fst (Lazy.force li_and)) then
+           let fa = make_form env sigma atom_env argv.(0) in
+           let fb = make_form env sigma atom_env argv.(1) in
+           Conjunct (fa,fb)
+         else if Environ.QInd.equal env ind (fst (Lazy.force li_or)) then
+           let fa = make_form env sigma atom_env argv.(0) in
+           let fb = make_form env sigma atom_env argv.(1) in
+           Disjunct (fa,fb)
+         else make_atom atom_env (normalize term)
+       with DestKO -> make_atom atom_env (normalize term)
+     end
   | _ -> make_atom atom_env (normalize term)
 
 let rec make_hyps env sigma atom_env lenv = function
     [] -> []
   | LocalDef (_,body,typ)::rest ->
-    make_hyps env sigma atom_env (typ::body::lenv) rest
+     make_hyps env sigma atom_env (typ::body::lenv) rest
   | LocalAssum (id,typ)::rest ->
-    let hrec=
-      make_hyps env sigma atom_env (typ::lenv) rest in
-    if List.exists (fun c -> Termops.local_occur_var sigma id.binder_name c) lenv ||
-       (Retyping.get_sort_family_of env sigma typ != InProp)
-    then
-      hrec
-    else
-      (id,make_form env sigma atom_env typ)::hrec
+     let hrec=
+       make_hyps env sigma atom_env (typ::lenv) rest in
+     if List.exists (fun c -> Termops.local_occur_var sigma id.binder_name c) lenv ||
+	  (not (Quality.is_qprop (Retyping.get_sort_quality_of env sigma typ)))
+     then
+       hrec
+     else
+       (id,make_form env sigma atom_env typ)::hrec
 
 let rec build_pos n =
   if n<=1 then force node_count l_xH
@@ -275,7 +275,7 @@ let rtauto_tac =
     Rocqlib.check_required_library ["Stdlib";"rtauto";"Rtauto"];
     let gamma={next=1;env=[]} in
     let () =
-      if Retyping.get_sort_family_of env sigma concl != InProp
+      if not (Quality.is_qprop (Retyping.get_sort_quality_of env sigma concl))
       then user_err (Pp.str "Goal should be in Prop.") in
     let glf = make_form env sigma gamma concl in
     let hyps = make_hyps env sigma gamma [concl] hyps in

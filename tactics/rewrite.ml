@@ -933,16 +933,16 @@ let fold_match ?(force=false) env sigma c =
       let env' = push_rel_context ctx env in
         env', ctx, pred
     in
-    let sortp = Retyping.get_sort_family_of env' sigma body in
-    let sortc = Retyping.get_sort_family_of env sigma cty in
+    let sortp = Retyping.get_sort_quality_of env' sigma body in
+    let sortc = Retyping.get_sort_quality_of env sigma cty in
     let dep = not (noccurn sigma 1 body) in
     let pred = if dep then p else
         it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
     in
     let sk =
       (* not sure how correct this is *)
-      if sortp == Sorts.InProp then
-        if sortc == Sorts.InProp then
+      if Sorts.Quality.is_qprop sortp then
+        if Sorts.Quality.is_qprop sortc then
           if dep then case_dep
           else case_nodep
         else (

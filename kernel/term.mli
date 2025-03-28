@@ -190,8 +190,6 @@ val destArity : types -> arity
 val isArity : types -> bool
 
 (* Deprecated *)
-type sorts_family = Sorts.family = InSProp | InProp | InSet | InType | InQSort
-[@@ocaml.deprecated "(8.8) Alias for Sorts.family"]
 
 type sorts = Sorts.t = private
   | SProp | Prop | Set

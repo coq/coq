@@ -19,6 +19,7 @@ open Locus
 open Printer
 open Termops
 open Tacinterp
+open Sorts
 
 open Ssrmatching_plugin
 open Ssrmatching
@@ -394,7 +395,8 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
     | Some r -> Evd.fresh_global env sigma r
     | None ->
       let ((kn, i) as ind, _) = Tacred.eval_to_quantified_ind env sigma c_ty in
-      let sort = Tacticals.elimination_sort_of_goal gl in
+      let sort = UnivGen.QualityOrSet.of_quality @@
+		   Tacticals.elimination_sort_of_goal gl in
       let sigma, elim = Evd.fresh_global env sigma (Indrec.lookup_eliminator env ind sort) in
       if dir = R2L then sigma, elim else
       let elim, _ = EConstr.destConst sigma elim in
@@ -457,8 +459,8 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
          let miss = Util.List.map_filter (fun (t, name) ->
              let evs = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma t) in
              let open_evs = List.filter (fun k ->
-                 Sorts.InProp <> Retyping.get_sort_family_of
-                   env sigma (Evd.evar_concl (Evd.find_undefined sigma k)))
+                 not @@ Quality.is_qprop (Retyping.get_sort_quality_of
+                   env sigma (Evd.evar_concl (Evd.find_undefined sigma k))))
                  evs in
              if open_evs <> [] then Some name else None)
              (List.combine (Array.to_list args) names) in
