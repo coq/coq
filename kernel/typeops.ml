@@ -44,9 +44,9 @@ let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
-let check_qconstraints qcst env =
-  if Sorts.QConstraints.trivial qcst then ()
-  else error_unsatisfied_qconstraints env qcst
+let check_elim_constraints qcst env =
+  if Sorts.ElimConstraints.trivial qcst then ()
+  else error_unsatisfied_elim_constraints env qcst
 
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =
@@ -516,7 +516,7 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   | None -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
   | Some variance -> UVars.enforce_leq_variance_instances variance u' u Sorts.QUConstraints.empty
   in
-  let () = check_qconstraints qcst env in
+  let () = check_elim_constraints qcst env in
   let () = check_constraints ucst env in
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
   Vars.substl subst p

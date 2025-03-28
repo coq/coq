@@ -32,7 +32,7 @@ type explanation =
   | Other of Pp.t
 
 type quality_inconsistency =
-  ((QVar.t -> Pp.t) option) * (QConstraint.kind * Quality.t * Quality.t * explanation option)
+  ((QVar.t -> Pp.t) option) * (ElimConstraint.kind * Quality.t * Quality.t * explanation option)
 
 exception QualityInconsistency of quality_inconsistency
 
@@ -40,9 +40,9 @@ exception QualityInconsistency of quality_inconsistency
    In the acyclic graph, it means setting s to be lower or equal than s'.
    This function ensures a uniform behaviour between [check] and [enforce]. *)
 let to_graph_cstr k =
-  let open QConstraint in
+  let open ElimConstraint in
   match k with
-    | Leq -> AcyclicGraph.Le
+    | ElimTo -> AcyclicGraph.Le
     | Equal -> AcyclicGraph.Eq
 
 let check_func k =
@@ -66,22 +66,22 @@ let enforce_constraint (q1,k,q2) g =
      raise @@ QualityInconsistency (None, (k, q1, q2, Some (Path e)))
   | Some g -> g
 
-let merge_constraints csts g = QConstraints.fold enforce_constraint csts g
+let merge_constraints csts g = ElimConstraints.fold enforce_constraint csts g
 
 let check_constraint g (q1, k, q2) = check_func k g q1 q2
 
-let check_constraints csts g = QConstraints.for_all (check_constraint g) csts
+let check_constraints csts g = ElimConstraints.for_all (check_constraint g) csts
 
 exception AlreadyDeclared = G.AlreadyDeclared
 let add_quality q g =
   let g = G.add q g in
-  enforce_constraint (Quality.qtype, QConstraint.Leq, q) g
+  enforce_constraint (Quality.qtype, ElimConstraint.ElimTo, q) g
 
 let enforce_eliminates_to s1 s2 g =
-  enforce_constraint (s1, QConstraint.Leq, s2) g
+  enforce_constraint (s1, ElimConstraint.ElimTo, s2) g
 
 let enforce_eq s1 s2 g =
-  enforce_constraint (s1, QConstraint.Equal, s2) g
+  enforce_constraint (s1, ElimConstraint.Equal, s2) g
 
 (* let add_qvar q g = add_quality g (QVar q) *)
 
@@ -106,7 +106,7 @@ let eliminates_to g q q' =
   then true
   else
     (* FIXME: temporary try-with until the [QVar]s are added to the graph *)
-    try check_func QConstraint.Leq g q q'
+    try check_func ElimConstraint.ElimTo g q q'
     with _ -> false
 
 let sort_eliminates_to g s1 s2 =
@@ -151,7 +151,7 @@ let explain_quality_inconsistency defprv (prv, (k, q1, q2, r)) =
           prlist (fun (r,v) -> spc() ++ pr_cst r ++ str" " ++ Quality.pr prv v) p
   in
   str "Cannot enforce" ++ spc() ++ Quality.pr prv q1 ++ spc() ++
-    QConstraint.pr_kind k ++ spc() ++ Quality.pr prv q2 ++ spc() ++ reason
+    ElimConstraint.pr_kind k ++ spc() ++ Quality.pr prv q2 ++ spc() ++ reason
 
 module Internal = struct
   let add_template_qvars =

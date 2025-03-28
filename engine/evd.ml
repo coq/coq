@@ -1198,11 +1198,11 @@ let check_leq evd s s' =
 let check_constraints evd csts =
   UGraph.check_constraints csts (UState.ugraph evd.universes)
 
-let check_qconstraints evd csts =
-  UState.check_qconstraints evd.universes csts
+let check_elim_constraints evd csts =
+  UState.check_elim_constraints evd.universes csts
 
 let check_quconstraints evd (qcsts,ucsts) =
-  check_qconstraints evd qcsts && check_constraints evd ucsts
+  check_elim_constraints evd qcsts && check_constraints evd ucsts
 
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }

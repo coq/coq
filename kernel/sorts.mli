@@ -100,8 +100,8 @@ module Quality : sig
   val pattern_match : pattern -> t -> ('t, t, 'u) Partial_subst.t -> ('t, t, 'u) Partial_subst.t option
 end
 
-module QConstraint : sig
-  type kind = Equal | Leq
+module ElimConstraint : sig
+  type kind = Equal | ElimTo
 
   val pr_kind : kind -> Pp.t
 
@@ -118,20 +118,20 @@ module QConstraint : sig
   val raw_pr : t -> Pp.t
 end
 
-module QConstraints : sig include CSig.SetS with type elt = QConstraint.t
+module ElimConstraints : sig include CSig.SetS with type elt = ElimConstraint.t
 
   val trivial : t -> bool
 
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
 end
 
-val enforce_eq_quality : Quality.t -> Quality.t -> QConstraints.t -> QConstraints.t
+val enforce_eq_quality : Quality.t -> Quality.t -> ElimConstraints.t -> ElimConstraints.t
 
-val enforce_leq_quality : Quality.t -> Quality.t -> QConstraints.t -> QConstraints.t
+val enforce_elim_to_quality : Quality.t -> Quality.t -> ElimConstraints.t -> ElimConstraints.t
 
 module QUConstraints : sig
 
-  type t = QConstraints.t * Univ.Constraints.t
+  type t = ElimConstraints.t * Univ.Constraints.t
 
   val union : t -> t -> t
 

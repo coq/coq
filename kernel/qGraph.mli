@@ -21,7 +21,7 @@ type explanation =
   | Other of Pp.t
 
 type quality_inconsistency =
-  ((QVar.t -> Pp.t) option) * (QConstraint.kind * Quality.t * Quality.t * explanation option)
+  ((QVar.t -> Pp.t) option) * (ElimConstraint.kind * Quality.t * Quality.t * explanation option)
 
 exception QualityInconsistency of quality_inconsistency
 
@@ -31,10 +31,10 @@ val add_quality : Quality.t -> t -> t
     a constraint or calling [eliminates_to].
     Forces [Type] to eliminate to this quality. *)
 
-val merge_constraints : QConstraints.t -> t -> t
+val merge_constraints : ElimConstraints.t -> t -> t
 
-val check_constraint : t -> QConstraint.t -> bool
-val check_constraints : QConstraints.t -> t -> bool
+val check_constraint : t -> ElimConstraint.t -> bool
+val check_constraints : ElimConstraints.t -> t -> bool
 
 val enforce_eliminates_to : Quality.t -> Quality.t -> t -> t
 (** Set the first quality to eliminate to the second one in the graph.

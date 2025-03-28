@@ -860,9 +860,9 @@ let explain_unsatisfied_constraints env sigma cst =
     Univ.Constraints.pr (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
 
-let explain_unsatisfied_qconstraints env sigma cst =
-  strbrk "Unsatisfied quality constraints: " ++
-  Sorts.QConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
+let explain_unsatisfied_elim_constraints env sigma cst =
+  strbrk "Unsatisfied elimination constraints: " ++
+  Sorts.ElimConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
   spc() ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_universes env sigma l =
@@ -982,8 +982,8 @@ let explain_type_error env sigma err =
       explain_wrong_case_info env ind ci
   | UnsatisfiedConstraints cst ->
     explain_unsatisfied_constraints env sigma cst
-  | UnsatisfiedQConstraints cst ->
-    explain_unsatisfied_qconstraints env sigma cst
+  | UnsatisfiedElimConstraints cst ->
+    explain_unsatisfied_elim_constraints env sigma cst
   | UndeclaredUniverses l ->
     explain_undeclared_universes env sigma l
   | UndeclaredQualities l ->

@@ -125,7 +125,7 @@ val add_universe_constraints : t -> UnivProblem.Set.t -> t
   @raise UniversesDiffer when universes differ
 *)
 
-val check_qconstraints : t -> QConstraints.t -> bool
+val check_elim_constraints : t -> ElimConstraints.t -> bool
 
 val check_universe_constraints : t -> UnivProblem.Set.t -> bool
 

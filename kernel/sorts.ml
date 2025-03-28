@@ -213,15 +213,15 @@ module Quality = struct
     | PQConstant _, QVar _ -> None
 end
 
-module QConstraint = struct
-  type kind = Equal | Leq
+module ElimConstraint = struct
+  type kind = Equal | ElimTo
 
   let eq_kind : kind -> kind -> bool = (=)
   let compare_kind : kind -> kind -> int = compare
 
   let pr_kind = function
     | Equal -> Pp.str "="
-    | Leq -> Pp.str "->"
+    | ElimTo -> Pp.str "->"
 
   type t = Quality.t * kind * Quality.t
 
@@ -236,7 +236,10 @@ module QConstraint = struct
       if c <> 0 then c
       else Quality.compare b b'
 
-  let trivial (a,(Equal|Leq),b) = Quality.equal a b
+  let trivial (a,k,b) =
+    match k with
+    | Equal -> Quality.equal a b
+    | ElimTo -> Quality.eliminates_to a b
 
   let pr prq (a,k,b) =
     let open Pp in
@@ -246,35 +249,35 @@ module QConstraint = struct
 
 end
 
-module QConstraints = struct include CSet.Make(QConstraint)
-  let trivial = for_all QConstraint.trivial
+module ElimConstraints = struct include CSet.Make(ElimConstraint)
+  let trivial = for_all ElimConstraint.trivial
 
   let pr prq c =
     let open Pp in
     v 0 (prlist_with_sep spc (fun (u1,op,u2) ->
-      hov 0 (Quality.pr prq u1 ++ QConstraint.pr_kind op ++ Quality.pr prq u2))
+      hov 0 (Quality.pr prq u1 ++ ElimConstraint.pr_kind op ++ Quality.pr prq u2))
        (elements c))
 
 end
 
 let enforce_eq_quality a b csts =
   if Quality.equal a b then csts
-  else QConstraints.add (a,QConstraint.Equal,b) csts
+  else ElimConstraints.add (a,ElimConstraint.Equal,b) csts
 
-let enforce_leq_quality a b csts =
+let enforce_elim_to_quality a b csts =
   if Quality.equal a b then csts
   else match a, b with
     | Quality.(QConstant QProp), Quality.(QConstant QType) -> csts
-    | _ -> QConstraints.add (a,QConstraint.Leq,b) csts
+    | _ -> ElimConstraints.add (a,ElimConstraint.ElimTo,b) csts
 
 module QUConstraints = struct
 
-  type t = QConstraints.t * Univ.Constraints.t
+  type t = ElimConstraints.t * Univ.Constraints.t
 
-  let empty = QConstraints.empty, Univ.Constraints.empty
+  let empty = ElimConstraints.empty, Univ.Constraints.empty
 
   let union (qcsts,ucsts) (qcsts',ucsts') =
-    QConstraints.union qcsts qcsts', Constraints.union ucsts ucsts'
+    ElimConstraints.union qcsts qcsts', Constraints.union ucsts ucsts'
 end
 
 type t =

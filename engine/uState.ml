@@ -743,24 +743,23 @@ let add_constraints uctx cstrs =
 
 let add_quconstraints uctx (qcstrs,ucstrs) =
   let cstrs = problem_of_constraints ucstrs in
-  let cstrs = QConstraints.fold (fun (l,d,r) cstrs ->
+  let cstrs = ElimConstraints.fold (fun (l,d,r) cstrs ->
       match d with
       | Equal -> UnivProblem.Set.add (QEq (l,r)) cstrs
-      | Leq -> UnivProblem.Set.add (QLeq (l,r)) cstrs)
+      | ElimTo -> UnivProblem.Set.add (QLeq (r,l)) cstrs)
       qcstrs cstrs
   in
   add_universe_constraints uctx cstrs
 
-let check_qconstraints uctx csts =
-  Sorts.QConstraints.for_all (fun (l,k,r) ->
+let check_elim_constraints uctx csts =
+  Sorts.ElimConstraints.for_all (fun (l,k,r) ->
       let l = nf_quality uctx l in
       let r = nf_quality uctx r in
       if Quality.equal l r then true
       else match l,k,r with
         | _, Equal, _ -> false
-        | QConstant QProp, Leq, QConstant QType -> true
-        | QConstant QProp, Leq, QVar q -> QState.is_above_prop q uctx.sort_variables
-        | _, Leq, _ -> false)
+        | QVar q, ElimTo, QConstant QProp -> QState.is_above_prop q uctx.sort_variables
+        | _, ElimTo, _ -> Sorts.Quality.eliminates_to l r)
     csts
 
 let check_universe_constraint uctx (c:UnivProblem.t) =
