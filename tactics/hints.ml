@@ -105,7 +105,7 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of Evaluable.t (* Hint Unfold *)
-  | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument (* Hint Extern *)
+  | Extern of Pattern.constr_pattern option * Gentactic.glob_generic_tactic (* Hint Extern *)
 
 
 type 'a hints_path_atom_gen =
@@ -1280,7 +1280,7 @@ let subst_autohint (subst, obj) =
           if ref==ref' then data.code.obj else Unfold_nth ref'
       | Extern (pat, tac) ->
           let pat' = Option.Smart.map (subst_pattern env sigma subst) pat in
-          let tac' = Gensubst.generic_substitute subst tac in
+          let tac' = Gentactic.subst subst tac in
           if pat==pat' && tac==tac' then data.code.obj else Extern (pat', tac')
     in
     let name' = Option.Smart.map (subst_global_reference subst) data.name in
@@ -1499,7 +1499,7 @@ type hints_entry =
   | HintsUnfoldEntry of Evaluable.t list
   | HintsTransparencyEntry of Evaluable.t hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * Genarg.glob_generic_argument
+  | HintsExternEntry of hint_info * Gentactic.glob_generic_tactic
 
 let default_prepare_hint_ident = Id.of_string "H"
 
@@ -1655,7 +1655,7 @@ let pr_hint env sigma h = match h.obj with
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
   | Extern (_, tac) ->
-    str "(*external*) " ++ Pputils.pr_glb_generic env sigma ~level:(LevelLe 0) tac
+    str "(*external*) " ++ Gentactic.print_glob env sigma ~level:(LevelLe 0) tac
 
 let pr_id_hint env sigma (id, v) =
   let pr_pat p = match p.pat with

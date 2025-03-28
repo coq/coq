@@ -764,7 +764,7 @@ let intern_ident' ist id =
   (ist, intern_ident lf ist id)
 
 let intern_ltac ist tac =
-  intern_pure_tactic { ist with strict_check = true } tac
+  intern_pure_tactic ist tac
 
 let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);

@@ -12,6 +12,11 @@
 
 DOC_GRAMMAR
 
+(* defined in ml *)
+generic_tactic: [
+| tactic
+]
+
 (* first, fixup symbols duplicated across files *)
 lglob: [
 | lconstr
@@ -33,8 +38,8 @@ hint: [
 | WITH [ "Transparent" | "Opaque" ] LIST1 global
 | DELETE "Opaque" LIST1 global
 
-| REPLACE "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
-| WITH "Extern" natural OPT constr_pattern "=>" tactic
+| REPLACE "Extern" natural OPT Constr.constr_pattern "=>" generic_tactic
+| WITH "Extern" natural OPT constr_pattern "=>" generic_tactic
 | INSERTALL "Hint"
 | APPENDALL opt_hintbases
 ]
@@ -1320,8 +1325,8 @@ command: [
 | REPLACE "Preterm" "of" identref
 | WITH "Preterm" OPT ( "of" identref )
 | DELETE "Preterm"
-| REPLACE "Proof" "using" section_var_expr "with" Pltac.tactic
-| WITH "Proof" "using" section_subset_expr OPT [ "with" ltac_expr5 ]
+| REPLACE "Proof" "using" section_var_expr "with" generic_tactic
+| WITH "Proof" "using" section_subset_expr OPT [ "with" generic_tactic ]
 | DELETE "Proof" "using" section_var_expr
 
 (* hide the fact that table names are limited to 2 IDENTs *)
@@ -1330,7 +1335,7 @@ command: [
 | DELETE "Remove" IDENT LIST1 table_value
 
 (* hide special case command that looks like a "Set" command *)
-| DELETE "Set" "Firstorder" "Solver" tactic
+| DELETE "Set" "Firstorder" "Solver" generic_tactic
 
 | DELETE "Show"
 | DELETE "Show" natural
@@ -1341,14 +1346,11 @@ command: [
 | WITH "Show" "Ltac" "Profile" OPT [ "CutOff" integer | string ]
 | DELETE "Show" "Ltac" "Profile" string
 | DELETE "Show" "Proof"  (* combined with Show Proof Diffs in vernac_toplevel *)
-| REPLACE "Solve" "All" "Obligations" "with" tactic
+| REPLACE "Solve" "All" "Obligations" withtac
 | WITH "Solve" "All" "Obligations" OPT ( "with" tactic )
-| DELETE "Solve" "All" "Obligations"
-| DELETE "Solve" "Obligations" "of" identref "with" tactic
-| DELETE "Solve" "Obligations" "of" identref
-| DELETE "Solve" "Obligations" "with" tactic
-| DELETE "Solve" "Obligations"
-| "Solve" "Obligations" OPT ( "of" identref ) OPT ( "with" tactic )
+| REPLACE "Solve" "Obligations" "of" identref withtac
+| WITH "Solve" "Obligations" OPT ( "of" identref ) OPT ( "with" tactic )
+| DELETE "Solve" "Obligations" withtac
 | DELETE "Undo"
 | DELETE "Undo" natural
 | REPLACE "Undo" "To" natural
@@ -2471,7 +2473,6 @@ RENAME: [
 (*
 | searchabout_query search_item
 *)
-| Pltac.tactic ltac_expr  (* many uses in EXTENDs *)
 | ltac2_type5 ltac2_type
 | ltac2_expr6 ltac2_expr
 | starredidentref starred_ident_ref
