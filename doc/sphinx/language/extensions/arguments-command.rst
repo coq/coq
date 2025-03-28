@@ -448,7 +448,7 @@ applications of :n:`@qualid`, to first type check the arguments in
 :n:`@arg_specs__1` and then propagate information from the typing context to
 type check the remaining arguments (in :n:`@arg_specs__2`).
 
-.. example:: Bidirectionality hints
+.. example:: Bidirectionality hints, example with coercion
 
    In a context where a coercion was declared from ``bool`` to ``nat``:
 
@@ -471,6 +471,43 @@ type check the remaining arguments (in :n:`@arg_specs__2`).
 
       Arguments ex_intro _ _ & _ _.
       Check (ex_intro _ true _ : exists n : nat, n > 0).
+
+   Note that ``Coercion``   has an effect on all applications involving bools,
+   while ``Arguments`` is limited to the applications of the given function.
+
+   Also note that bidirectionality hints are not limited to coercions,
+   as the next example shows.
+
+.. example:: Bidirectionality hints, example with number comparison
+
+   One could provide arguments with simpler types than expected
+   (or even fully implicit), and let Rocq infer the correct one.
+   For instance, consider the following definition:
+
+   .. rocqtop:: in reset extra-stdlib
+
+      From Stdlib Require Import PeanoNat.
+
+      Definition blt_implies_lt {n m} (H : (n <? m) = true) : n < m.
+      Proof. eapply Bool.reflect_iff; [apply Nat.ltb_spec0 | exact H]. Qed.
+
+   One could use blt_implies_lt to prove ``3 < 4`` without providing
+   an explicit proof of ``3 <? 4 = true``, by using eq_refl in H's place.
+
+   Rocq is able to infer the types of ``n`` and ``m`` by using ``3 < 4``,
+   but cannot use it to infer H's type from eq_refl :
+
+   .. rocqtop:: all extra-stdlib
+
+      Fail Check blt_implies_lt (eq_refl _) : 3 < 4.
+
+   However, a bidirectionality hint makes type information infered from ``n`` and ``m``
+   propagate to ``H``, allowing ``(?n <? ?m)`` to be reduced to ``true``:
+
+   .. rocqtop:: all extra-stdlib
+
+      Arguments blt_implies_lt n m & H.
+      Check blt_implies_lt (eq_refl _) : 3 < 4.
 
 Rocq will attempt to produce a term which uses the arguments you
 provided, but in some cases involving Program mode the arguments after
