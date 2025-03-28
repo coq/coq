@@ -25,7 +25,7 @@ let coqdep args =
   let v_files = args.Args.files in
   (* We are in makefile hack mode *)
   let make_separator_hack = true in
-  let st = init ~make_separator_hack args in
+  let rocqenv, st = init ~make_separator_hack args in
   let lst = Common.State.loadpath st in
   let st = List.fold_left treat_file_command_line st v_files in
 
@@ -35,8 +35,9 @@ let coqdep args =
   (try ignore (Loadpath.find_dir_logpath (Sys.getcwd()))
    with Not_found -> Loadpath.add_norec_dir_import (Loadpath.add_known lst) "." []);
   (* We don't setup any loadpath if the -boot is passed *)
-  if not args.Args.boot then begin
-    let env = Boot.Env.init () in
+  let () = match rocqenv with
+    | Boot -> ()
+    | Env env ->
     let stdlib = Boot.Env.(stdlib env |> Path.to_string) in
     let plugins = Boot.Env.(plugins env |> Path.to_string) in
     let user_contrib = Boot.Env.(user_contrib env |> Path.to_string) in
@@ -47,7 +48,7 @@ let coqdep args =
     let add_dir s = Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s [] in
     List.iter add_dir (Envars.xdg_dirs ~warn:warn_home_dir);
     List.iter add_dir (Envars.coqpath())
-  end;
+  in
   if args.Args.sort then
     sort st
   else

@@ -4,10 +4,6 @@ open Util
 open Names
 open Pp
 
-let fatal_error info anomaly =
-  flush_all (); Format.eprintf "@[Fatal Error: @[%a@]@]@\n%!" Pp.pp_with info; flush_all ();
-  exit (if anomaly then 129 else 1)
-
 module Loadpath :
 sig
   val add_load_path : string * DirPath.t -> unit
@@ -230,12 +226,12 @@ let add_rec_path ~unix_path ~rocq_root =
   else
     Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
-let init_load_path_std () =
-  let env = Boot.Env.init () in
+let init_load_path_std env ~default_ml () =
   let stdlib = Boot.Env.stdlib env |> Boot.Path.to_string in
   let user_contrib = Boot.Env.user_contrib env |> Boot.Path.to_string in
   let xdg_dirs = Envars.xdg_dirs in
   let rocqpath = Envars.coqpath in
+  let () = if default_ml then Nativelib.(include_dirs := default_include_dirs env) in
   (* NOTE: These directories are searched from last to first *)
   (* first standard library *)
   add_rec_path ~unix_path:stdlib ~rocq_root:(Names.DirPath.make[rocq_root]);
@@ -248,8 +244,16 @@ let init_load_path_std () =
   (* then directories in ROCQPATH *)
   List.iter (fun s -> add_rec_path ~unix_path:s ~rocq_root:Loadpath.default_root_prefix) (rocqpath())
 
-let init_load_path ~boot ~vo_path =
-  if not boot then init_load_path_std ();
+let init_load_path ~boot ~coqlib ~vo_path ~ml_path =
+  let default_ml = CList.is_empty ml_path in
+  let coqenv = Boot.Env.maybe_init ~boot ~coqlib in
+  let () = match coqenv with
+    | Ok Boot -> ()
+    | Ok (Env env) ->
+      init_load_path_std env ~default_ml:(CList.is_empty ml_path) ()
+    | Error msg -> CErrors.user_err (Pp.str msg)
+  in
+  let () = if not default_ml then Nativelib.include_dirs := ml_path in
   (* always add current directory *)
   add_path ~unix_path:"." ~rocq_root:Loadpath.default_root_prefix;
   (* additional loadpath, given with -R/-Q options *)
@@ -322,6 +326,7 @@ end
 
 type opts = {
   boot : bool;
+  coqlib : string option;
   vo_path : (string * DirPath.t) list;
   ml_path : string list;
 }
@@ -351,11 +356,7 @@ let rec parse_args (args : string list) accu =
   |"-native-output-dir" :: dir :: rem ->
     Nativelib.output_dir := dir;
     parse_args rem accu
-  | "-coqlib" :: s :: rem ->
-    if not (System.exists_dir s) then
-      fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
-    Boot.Env.set_coqlib s;
-    parse_args rem accu
+  | "-coqlib" :: s :: rem -> parse_args rem { accu with coqlib = Some s }
   | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> Usage.usage ()
   | [file] ->
     accu, file
@@ -366,10 +367,13 @@ let rec parse_args (args : string list) accu =
 let () =
   let _ = Feedback.add_feeder fb_handler in
   try
-    let opts = { boot = false; vo_path = []; ml_path = [] } in
+    let opts = { boot = false; coqlib = None; vo_path = []; ml_path = [] } in
     let opts, in_file = parse_args (List.tl @@ Array.to_list Sys.argv) opts in
-    let () = init_load_path ~boot:opts.boot ~vo_path:(List.rev opts.vo_path) in
-    let () = Nativelib.include_dirs := List.rev opts.ml_path in
+    let () = init_load_path ~boot:opts.boot
+        ~coqlib:opts.coqlib
+        ~vo_path:(List.rev opts.vo_path)
+        ~ml_path:(List.rev opts.ml_path)
+    in
     let senv = init_rocq () in
     compile senv ~in_file
   with exn ->

@@ -188,7 +188,7 @@ let args_options = Arg.align [
   "<url>+<d> set URL for external library <d>";
   "--coqlib_url", arg_string (fun p u -> { p with coqlib_url = u }),
   "<url> Set URL for Rocq standard library (default: " ^ Coq_config.wwwstdlib ^ ")";
-  "--coqlib", Arg.String (fun d -> Boot.Env.set_coqlib d),
+  "--coqlib", arg_string (fun p d -> { p with coqlib = Some d }),
   "<dir> Set the path where Rocq files are installed";
   "-R", arg_path (fun p l -> { p with paths = l :: !prefs.paths }),
   "<dir>+<coqdir> map physical dir to Rocq dir";

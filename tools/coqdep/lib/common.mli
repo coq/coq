@@ -14,7 +14,7 @@ module State : sig
 end
 
 (** [init args] Init coqdep, setting arguments from [args]. *)
-val init : make_separator_hack:bool -> Args.t -> State.t
+val init : make_separator_hack:bool -> Args.t -> Boot.Env.maybe_env * State.t
 
 (** [treat_file_command_line file] Add an input file to be considered  *)
 val treat_file_command_line : State.t -> string -> State.t
