@@ -117,6 +117,7 @@ Proof.
   vm_compute. Fail check.
   native_compute. Fail check.
   cbv. Fail check.
+  Unset CbnIsKred.
   cbn. Fail check.
   simpl. Fail check.
 Abort.

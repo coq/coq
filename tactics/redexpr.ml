@@ -55,6 +55,12 @@ let { Goptions.get = simplIsCbn } =
     ~value:false
     ()
 
+let { Goptions.get = cbnIsKred } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["CbnIsKred"]
+    ~value:true
+    ()
+
 let set_strategy_one ref l =
   Global.set_strategy (Evaluable.to_kevaluable ref) l
 
@@ -238,7 +244,8 @@ let rec eval_red_expr env = function
   let f = if simplIsCbn () then make_flag env f else f.rStrength, RedFlags.all (* dummy *) in
   Simpl (f, o)
 | Cbv f -> Cbv (make_flag env f)
-| Cbn f -> Cbn (make_flag env f)
+| Cbn f -> if cbnIsKred () then Kred (make_flag env f) else Cbn (make_flag env f)
+| Kred f -> Kred (make_flag env f)
 | Lazy f -> Lazy (make_flag env f)
 | ExtraRedExpr s ->
   begin match String.Map.find s !red_expr_tab with
@@ -269,8 +276,15 @@ let reduction_of_red_expr_val = function
   | Cbv (Norm, f) -> (e_red (cbv_norm_flags ~strong:true f),DEFAULTcast)
   | Cbv (Head, f) -> (e_red (cbv_norm_flags ~strong:false f),DEFAULTcast)
   | Cbn (w,f) ->
-    let cbn = match w with Norm -> Cbn.norm_cbn | Head -> Cbn.whd_cbn in
-     (e_red (cbn f), DEFAULTcast)
+    if cbnIsKred () then
+      let kred = match w with Norm -> Kred.norm | Head -> Kred.whd in
+      (e_red (kred f),DEFAULTcast)
+    else
+      let cbn = match w with Norm -> Cbn.norm_cbn | Head -> Cbn.whd_cbn in
+      (e_red (cbn f), DEFAULTcast)
+  | Kred(w,f) ->
+    let kred = match w with Norm -> Kred.norm | Head -> Kred.whd in
+    (e_red (kred f),DEFAULTcast)
   | Lazy (w,f) ->
     let redf = match w with Norm -> clos_norm_flags | Head -> clos_whd_flags in
     (e_red (redf f),DEFAULTcast)
@@ -346,7 +360,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
           error_illegal_clause ()
         else
           CbvNative (Some (occs,c))
-    | Red | Hnf | Cbv _ | Lazy _ | Cbn _
+    | Red | Hnf | Cbv _ | Lazy _ | Cbn _ | Kred _
     | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None ->
         error_at_in_occurrences_not_supported ()
     | Unfold [] | Pattern [] ->
@@ -494,6 +508,7 @@ module Intern = struct
     | Fold l -> Fold (List.map ist.intern_constr l)
     | Cbv f -> Cbv (intern_flag ist f)
     | Cbn f -> Cbn (intern_flag ist f)
+    | Kred f -> Kred (intern_flag ist f)
     | Lazy f -> Lazy (intern_flag ist f)
     | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
     | Simpl (f,o) ->
@@ -568,6 +583,7 @@ module Interp = struct
       sigma , Fold (List.flatten l_interp)
     | Cbv f -> sigma , Cbv (interp_flag ist env sigma f)
     | Cbn f -> sigma , Cbn (interp_flag ist env sigma f)
+    | Kred f -> sigma , Kred (interp_flag ist env sigma f)
     | Lazy f -> sigma , Lazy (interp_flag ist env sigma f)
     | Pattern l ->
       let (sigma,l_interp) =
