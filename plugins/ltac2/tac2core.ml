@@ -1061,6 +1061,11 @@ let () =
   define "focus" (int @-> int @-> closure @-> tac valexpr) @@ fun i j tac ->
   Proofview.tclFOCUS i j (thaw tac)
 
+(** int -> unit **)
+let () =
+  define "cycle" (int @-> tac unit) @@ fun i ->
+  Proofview.cycle i
+
 (** unit -> unit *)
 let () = define "shelve" (unit @-> tac unit) @@ fun _ -> Proofview.shelve
 
