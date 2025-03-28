@@ -25,7 +25,7 @@ open Context.Rel.Declaration
 
 module GR = Names.GlobRef
 
-let fresh_template_context env0 sigma ind (mib, _ as spec) args =
+let fresh_template_context env0 sigma ind (mib, _ as spec) ?(refresh_all=false) args =
   let templ = match mib.Declarations.mind_template with
   | None -> assert false
   | Some t -> Array.of_list t.template_param_arguments
@@ -42,6 +42,7 @@ let fresh_template_context env0 sigma ind (mib, _ as spec) args =
           if i < Array.length args then match Reductionops.sort_of_arity env sigma args.(i).uj_type with
           | s -> sigma, s
           | exception Reduction.NotArity -> Evd.new_sort_variable Evd.univ_flexible sigma
+          else if refresh_all then Evd.new_sort_variable Evd.univ_flexible sigma
           else sigma, s0
         in
         let t = EConstr.it_mkProd_or_LetIn (mkSort s) decls in
@@ -68,9 +69,9 @@ let fresh_template_context env0 sigma ind (mib, _ as spec) args =
   in
   freshen 0 env0 sigma [] [] ctx
 
-let get_template_parameters env sigma ind args =
+let get_template_parameters env sigma ind ?refresh_all args =
   let spec = Inductive.lookup_mind_specif env ind in
-  fresh_template_context env sigma ind spec args
+  fresh_template_context env sigma ind spec ?refresh_all args
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
