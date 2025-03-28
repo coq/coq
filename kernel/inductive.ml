@@ -1327,7 +1327,7 @@ let check_one_fix ?evars renv recpos trees def =
             end
 
         | Rel p ->
-            begin
+            let rs =
               (* Test if [p] is a fixpoint (recursive call) *)
               if renv.rel_min <= p && p < renv.rel_min+nfi then
                 (* the position of the invoked fixpoint: *)
@@ -1343,12 +1343,12 @@ let check_one_fix ?evars renv recpos trees def =
                   match check_is_subterm (stack_element_specif ?evars z) trees.(glob) with
                   | NeedReduceSubterm l -> set_need_reduce renv.env l (illegal_rec_call renv glob z) rs
                   | InvalidSubterm -> raise (FixGuardError (renv.env, illegal_rec_call renv glob z))
-              else
-                check_rec_call_state renv NoNeedReduce stack rs (fun () ->
-                    match lookup_rel p renv.env with
-                    | LocalAssum _ -> None
-                    | LocalDef (_,c,_) -> Some (lift p c, []))
-            end
+              else rs
+            in
+            check_rec_call_state renv NoNeedReduce stack rs (fun () ->
+                match lookup_rel p renv.env with
+                | LocalAssum _ -> None
+                | LocalDef (_,c,_) -> Some (lift p c, []))
 
         | Case (ci, u, pms, ret, iv, c_0, br) -> (* iv ignored: it's just a cache *)
             let (ci, (p,_), _iv, c_0, brs) = expand_case renv.env (ci, u, pms, ret, iv, c_0, br) in
