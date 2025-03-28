@@ -3,266 +3,266 @@
 
 ########## Contributing process ##########
 
-/.github/                   @coq/contributing-process-maintainers
+/.github/                   @rocq-prover/contributing-process-maintainers
 
-/CONTRIBUTING.md            @coq/contributing-process-maintainers
+/CONTRIBUTING.md            @rocq-prover/contributing-process-maintainers
 
 ########## Build system ##########
 
-/Makefile                       @coq/build-maintainers
-/dev/tools/make_git_revision.sh @coq/build-maintainers
+/Makefile                       @rocq-prover/build-maintainers
+/dev/tools/make_git_revision.sh @rocq-prover/build-maintainers
 
-/configure                      @coq/build-maintainers
-/tools/configure/*              @coq/build-maintainers
+/configure                      @rocq-prover/build-maintainers
+/tools/configure/*              @rocq-prover/build-maintainers
 
-/tools/coqdep/                  @coq/build-maintainers
+/tools/coqdep/                  @rocq-prover/build-maintainers
 
-/boot/                          @coq/build-maintainers
+/boot/                          @rocq-prover/build-maintainers
 
 ########## CI infrastructure ##########
 
-/dev/ci/             @coq/ci-maintainers
-/dev/lint-*.sh       @coq/ci-maintainers
-/.travis.yml         @coq/ci-maintainers
-/.gitlab-ci.yml      @coq/ci-maintainers
-/.github/workflows   @coq/ci-maintainers
-/dev/ci/platform/    @coq/windows-build-maintainers
-/Makefile.ci         @coq/ci-maintainers
+/dev/ci/             @rocq-prover/ci-maintainers
+/dev/lint-*.sh       @rocq-prover/ci-maintainers
+/.travis.yml         @rocq-prover/ci-maintainers
+/.gitlab-ci.yml      @rocq-prover/ci-maintainers
+/.github/workflows   @rocq-prover/ci-maintainers
+/dev/ci/platform/    @rocq-prover/windows-build-maintainers
+/Makefile.ci         @rocq-prover/ci-maintainers
 
-/dev/ci/nix          @coq/nix-maintainers
-*.nix                @coq/nix-maintainers
-/flake.lock          @coq/nix-maintainers
+/dev/ci/nix          @rocq-prover/nix-maintainers
+*.nix                @rocq-prover/nix-maintainers
+/flake.lock          @rocq-prover/nix-maintainers
 
 /dev/ci/user-overlays/*.sh
 # Trick to avoid getting review requests
 # each time someone adds an overlay
 
-/dev/bench/            @coq/bench-maintainers
+/dev/bench/            @rocq-prover/bench-maintainers
 
 ########## Documentation ##########
 
-/README.md             @coq/doc-maintainers
-/INSTALL.md            @coq/doc-maintainers
+/README.md             @rocq-prover/doc-maintainers
+/INSTALL.md            @rocq-prover/doc-maintainers
 
-/CODE_OF_CONDUCT.md    @coq/code-of-conduct-team
+/CODE_OF_CONDUCT.md    @rocq-prover/code-of-conduct-team
 
-/doc/                  @coq/doc-maintainers
-/dev/doc/              @coq/doc-maintainers
+/doc/                  @rocq-prover/doc-maintainers
+/dev/doc/              @rocq-prover/doc-maintainers
 
 /doc/changelog/*/*.rst
 /dev/doc/changes.md
 # Trick to avoid getting review requests
 # each time someone modifies the changelog
 
-/dev/doc/build-system.dune.md @coq/build-maintainers
-/dev/doc/critical-bugs        @coq/kernel-maintainers
-/dev/doc/econstr.md           @coq/engine-maintainers
-/dev/doc/proof-engine.md      @coq/engine-maintainers
-/dev/doc/release-process.md   @coq/contributing-process-maintainers
-/dev/doc/shield-icon.png      @coq/contributing-process-maintainers
-/dev/doc/SProp.md             @coq/universes-maintainers
-/dev/doc/style.md             @coq/contributing-process-maintainers
-/dev/doc/unification.txt      @coq/pretyper-maintainers
-/dev/doc/universes.md         @coq/universes-maintainers
-/dev/doc/xml-protocol.md      @coq/stm-maintainers
+/dev/doc/build-system.dune.md @rocq-prover/build-maintainers
+/dev/doc/critical-bugs        @rocq-prover/kernel-maintainers
+/dev/doc/econstr.md           @rocq-prover/engine-maintainers
+/dev/doc/proof-engine.md      @rocq-prover/engine-maintainers
+/dev/doc/release-process.md   @rocq-prover/contributing-process-maintainers
+/dev/doc/shield-icon.png      @rocq-prover/contributing-process-maintainers
+/dev/doc/SProp.md             @rocq-prover/universes-maintainers
+/dev/doc/style.md             @rocq-prover/contributing-process-maintainers
+/dev/doc/unification.txt      @rocq-prover/pretyper-maintainers
+/dev/doc/universes.md         @rocq-prover/universes-maintainers
+/dev/doc/xml-protocol.md      @rocq-prover/stm-maintainers
 
-/man/                  @coq/doc-maintainers
+/man/                  @rocq-prover/doc-maintainers
 
-/doc/plugin_tutorial/  @coq/plugin-tutorial-maintainers
+/doc/plugin_tutorial/  @rocq-prover/plugin-tutorial-maintainers
 
 ########## Coqchk ##########
 
-/checker/              @coq/kernel-maintainers
-/test-suite/coqchk/    @coq/kernel-maintainers
+/checker/              @rocq-prover/kernel-maintainers
+/test-suite/coqchk/    @rocq-prover/kernel-maintainers
 
 ########## Coq lib ##########
 
-/clib/                       @coq/lib-maintainers
-/test-suite/unit-tests/clib/ @coq/lib-maintainers
-/lib/                        @coq/lib-maintainers
+/clib/                       @rocq-prover/lib-maintainers
+/test-suite/unit-tests/clib/ @rocq-prover/lib-maintainers
+/lib/                        @rocq-prover/lib-maintainers
 
 ########## Proof engine ##########
 
-/engine/          @coq/engine-maintainers
+/engine/          @rocq-prover/engine-maintainers
 
-/engine/univ*     @coq/universes-maintainers
-/engine/uState.*  @coq/universes-maintainers
+/engine/univ*     @rocq-prover/universes-maintainers
+/engine/uState.*  @rocq-prover/universes-maintainers
 
 ########## CoqIDE ##########
 
-/ide/             @coq/coqide-maintainers
-/ide/protocol/    @coq/stm-maintainers
-/test-suite/ide/  @coq/stm-maintainers
+/ide/             @rocq-prover/coqide-maintainers
+/ide/protocol/    @rocq-prover/stm-maintainers
+/test-suite/ide/  @rocq-prover/stm-maintainers
 
 ########## Desugaring ##########
 
-/interp/          @coq/extensible-syntax-maintainers
+/interp/          @rocq-prover/extensible-syntax-maintainers
 
 ########## Kernel ##########
 
-/kernel/          @coq/kernel-maintainers
+/kernel/          @rocq-prover/kernel-maintainers
 
-/kernel/byterun/  @coq/vm-native-maintainers
-/kernel/native*   @coq/vm-native-maintainers
-/kernel/vm*       @coq/vm-native-maintainers
-/kernel/vconv.*   @coq/vm-native-maintainers
-/kernel/genOpcodeFiles.* @coq/vm-native-maintainers
+/kernel/byterun/  @rocq-prover/vm-native-maintainers
+/kernel/native*   @rocq-prover/vm-native-maintainers
+/kernel/vm*       @rocq-prover/vm-native-maintainers
+/kernel/vconv.*   @rocq-prover/vm-native-maintainers
+/kernel/genOpcodeFiles.* @rocq-prover/vm-native-maintainers
 
-/kernel/sorts.*   @coq/universes-maintainers
-/kernel/uGraph.*  @coq/universes-maintainers
-/kernel/univ.*    @coq/universes-maintainers
+/kernel/sorts.*   @rocq-prover/universes-maintainers
+/kernel/uGraph.*  @rocq-prover/universes-maintainers
+/kernel/univ.*    @rocq-prover/universes-maintainers
 
 ########## Library ##########
 
-/library/         @coq/library-maintainers
+/library/         @rocq-prover/library-maintainers
 
 ########## Parser ##########
 
-/coqpp/           @coq/parsing-maintainers
-/gramlib/         @coq/parsing-maintainers
-/parsing/         @coq/parsing-maintainers
+/coqpp/           @rocq-prover/parsing-maintainers
+/gramlib/         @rocq-prover/parsing-maintainers
+/parsing/         @rocq-prover/parsing-maintainers
 
 ########## Standard library and plugins ##########
 
-/theories/         @coq/stdlib-maintainers
+/theories/         @rocq-prover/stdlib-maintainers
 
-/theories/Classes/        @coq/typeclasses-maintainers
+/theories/Classes/        @rocq-prover/typeclasses-maintainers
 
 
-/theories/Compat/  @coq/compat-maintainers
+/theories/Compat/  @rocq-prover/compat-maintainers
 
-/plugins/btauto/          @coq/btauto-maintainers
+/plugins/btauto/          @rocq-prover/btauto-maintainers
 
-/plugins/cc/           @coq/cc-maintainers
+/plugins/cc/           @rocq-prover/cc-maintainers
 
-/plugins/derive/       @coq/derive-maintainers
-/theories/derive/      @coq/derive-maintainers
+/plugins/derive/       @rocq-prover/derive-maintainers
+/theories/derive/      @rocq-prover/derive-maintainers
 
-/plugins/extraction/         @coq/extraction-maintainers
-/theories/extraction/        @coq/extraction-maintainers
+/plugins/extraction/         @rocq-prover/extraction-maintainers
+/theories/extraction/        @rocq-prover/extraction-maintainers
 
-/plugins/firstorder/          @coq/firstorder-maintainers
+/plugins/firstorder/          @rocq-prover/firstorder-maintainers
 
-/plugins/funind/       @coq/funind-maintainers
+/plugins/funind/       @rocq-prover/funind-maintainers
 
-/plugins/ltac/         @coq/ltac-maintainers
+/plugins/ltac/         @rocq-prover/ltac-maintainers
 
-/plugins/micromega/    @coq/micromega-maintainers
+/plugins/micromega/    @rocq-prover/micromega-maintainers
 
-/plugins/nsatz/        @coq/nsatz-maintainers
+/plugins/nsatz/        @rocq-prover/nsatz-maintainers
 
-/plugins/ring/  @coq/ring-maintainers
+/plugins/ring/  @rocq-prover/ring-maintainers
 
-/plugins/ssrmatching/  @coq/ssreflect-maintainers
-/theories/ssrmatching/ @coq/ssreflect-maintainers
+/plugins/ssrmatching/  @rocq-prover/ssreflect-maintainers
+/theories/ssrmatching/ @rocq-prover/ssreflect-maintainers
 
-/plugins/ssr/          @coq/ssreflect-maintainers
-/theories/ssr/         @coq/ssreflect-maintainers
+/plugins/ssr/          @rocq-prover/ssreflect-maintainers
+/theories/ssr/         @rocq-prover/ssreflect-maintainers
 
-/test-suite/ssr/       @coq/ssreflect-maintainers
+/test-suite/ssr/       @rocq-prover/ssreflect-maintainers
 
-/plugins/syntax/       @coq/parsing-maintainers
+/plugins/syntax/       @rocq-prover/parsing-maintainers
 
-/plugins/rtauto/       @coq/rtauto-maintainers
+/plugins/rtauto/       @rocq-prover/rtauto-maintainers
 
-/plugins/ltac2/        @coq/ltac2-maintainers
-/user-contrib/Ltac2    @coq/ltac2-maintainers
+/plugins/ltac2/        @rocq-prover/ltac2-maintainers
+/user-contrib/Ltac2    @rocq-prover/ltac2-maintainers
 
 ########## Pretyper ##########
 
-/pretyping/             @coq/pretyper-maintainers
+/pretyping/             @rocq-prover/pretyper-maintainers
 
-/pretyping/vnorm.*      @coq/vm-native-maintainers
-/pretyping/nativenorm.* @coq/vm-native-maintainers
+/pretyping/vnorm.*      @rocq-prover/vm-native-maintainers
+/pretyping/nativenorm.* @rocq-prover/vm-native-maintainers
 
 ########## Pretty printer ##########
 
-/printing/        @coq/extensible-syntax-maintainers
+/printing/        @rocq-prover/extensible-syntax-maintainers
 
 ########## Proof infrastructure ##########
 
-/proofs/          @coq/engine-maintainers
+/proofs/          @rocq-prover/engine-maintainers
 
 ########## STM ##########
 
-/stm/                    @coq/stm-maintainers
-/test-suite/interactive/ @coq/stm-maintainers
-/test-suite/stm/         @coq/stm-maintainers
-/test-suite/vio/         @coq/stm-maintainers
+/stm/                    @rocq-prover/stm-maintainers
+/test-suite/interactive/ @rocq-prover/stm-maintainers
+/test-suite/stm/         @rocq-prover/stm-maintainers
+/test-suite/vio/         @rocq-prover/stm-maintainers
 
 ########## Tactics ##########
 
-/tactics/         @coq/tactics-maintainers
+/tactics/         @rocq-prover/tactics-maintainers
 
-/tactics/class_tactics.* @coq/typeclasses-maintainers
+/tactics/class_tactics.* @rocq-prover/typeclasses-maintainers
 
 ########## Number ##########
 
-/interp/numTok.*                     @coq/number-maintainers
-/kernel/float64*                     @coq/number-maintainers
-/kernel/uint63*                      @coq/number-maintainers
-/plugins/syntax/g_number_string.mlg  @coq/number-maintainers
-/plugins/syntax/int63_syntax_plugin.mllib  @coq/number-maintainers
-/plugins/syntax/number.ml            @coq/number-maintainers
-/plugins/syntax/number_string_notation_plugin.mllib  @coq/number-maintainers
-/user-contrib/Ltac2/Int.v            @coq/number-maintainers
-/test-suite/output/*Number*          @coq/number-maintainers
-/test-suite/primitive/float/         @coq/number-maintainers
-/test-suite/primitive/sint63/        @coq/number-maintainers
-/test-suite/primitive/uint63/        @coq/number-maintainers
-/theories/Init/Decimal.v             @coq/number-maintainers
-/theories/Init/Hexadecimal.v         @coq/number-maintainers
-/theories/Init/Nat.v                 @coq/number-maintainers
-/theories/Init/Number.v              @coq/number-maintainers
-/theories/Numbers/                   @coq/number-maintainers
-/theories/Floats/                    @coq/number-maintainers
+/interp/numTok.*                     @rocq-prover/number-maintainers
+/kernel/float64*                     @rocq-prover/number-maintainers
+/kernel/uint63*                      @rocq-prover/number-maintainers
+/plugins/syntax/g_number_string.mlg  @rocq-prover/number-maintainers
+/plugins/syntax/int63_syntax_plugin.mllib  @rocq-prover/number-maintainers
+/plugins/syntax/number.ml            @rocq-prover/number-maintainers
+/plugins/syntax/number_string_notation_plugin.mllib  @rocq-prover/number-maintainers
+/user-contrib/Ltac2/Int.v            @rocq-prover/number-maintainers
+/test-suite/output/*Number*          @rocq-prover/number-maintainers
+/test-suite/primitive/float/         @rocq-prover/number-maintainers
+/test-suite/primitive/sint63/        @rocq-prover/number-maintainers
+/test-suite/primitive/uint63/        @rocq-prover/number-maintainers
+/theories/Init/Decimal.v             @rocq-prover/number-maintainers
+/theories/Init/Hexadecimal.v         @rocq-prover/number-maintainers
+/theories/Init/Nat.v                 @rocq-prover/number-maintainers
+/theories/Init/Number.v              @rocq-prover/number-maintainers
+/theories/Numbers/                   @rocq-prover/number-maintainers
+/theories/Floats/                    @rocq-prover/number-maintainers
 
 ########## Tools ##########
 
-/tools/coqdoc/            @coq/coqdoc-maintainers
-/test-suite/coqdoc/       @coq/coqdoc-maintainers
-/tools/coqwc*             @coq/coqdoc-maintainers
-/test-suite/coqwc/        @coq/coqdoc-maintainers
+/tools/coqdoc/            @rocq-prover/coqdoc-maintainers
+/test-suite/coqdoc/       @rocq-prover/coqdoc-maintainers
+/tools/coqwc*             @rocq-prover/coqdoc-maintainers
+/test-suite/coqwc/        @rocq-prover/coqdoc-maintainers
 
-/tools/coq_makefile*      @coq/coq-makefile-maintainers
-/tools/CoqMakefile*       @coq/coq-makefile-maintainers
-/test-suite/coq-makefile/ @coq/coq-makefile-maintainers
+/tools/coq_makefile*      @rocq-prover/coq-makefile-maintainers
+/tools/CoqMakefile*       @rocq-prover/coq-makefile-maintainers
+/test-suite/coq-makefile/ @rocq-prover/coq-makefile-maintainers
 
-/tools/TimeFileMaker.py   @coq/coq-makefile-maintainers
-/tools/make-*-tim*.py     @coq/coq-makefile-maintainers
+/tools/TimeFileMaker.py   @rocq-prover/coq-makefile-maintainers
+/tools/make-*-tim*.py     @rocq-prover/coq-makefile-maintainers
 
 /tools/coq_tex*        @silene
 # Secondary maintainer @gares
 
 ########## Toplevel ##########
 
-/toplevel/   @coq/toplevel-maintainers
-/topbin/     @coq/toplevel-maintainers
-/sysinit/    @coq/toplevel-maintainers
+/toplevel/   @rocq-prover/toplevel-maintainers
+/topbin/     @rocq-prover/toplevel-maintainers
+/sysinit/    @rocq-prover/toplevel-maintainers
 
 ########## Vernacular ##########
 
-/vernac/              @coq/vernac-maintainers
+/vernac/              @rocq-prover/vernac-maintainers
 
-/vernac/metasyntax.*  @coq/parsing-maintainers
+/vernac/metasyntax.*  @rocq-prover/parsing-maintainers
 
-/vernac/classes.*     @coq/typeclasses-maintainers
+/vernac/classes.*     @rocq-prover/typeclasses-maintainers
 
 ########## Test suite ##########
 
-/test-suite/Makefile        @coq/test-suite-maintainers
-/test-suite/README.md       @coq/test-suite-maintainers
-/test-suite/report.sh       @coq/test-suite-maintainers
-/test-suite/unit-tests/src/ @coq/test-suite-maintainers
+/test-suite/Makefile        @rocq-prover/test-suite-maintainers
+/test-suite/README.md       @rocq-prover/test-suite-maintainers
+/test-suite/report.sh       @rocq-prover/test-suite-maintainers
+/test-suite/unit-tests/src/ @rocq-prover/test-suite-maintainers
 
-/test-suite/success/Compat*.v @coq/compat-maintainers
+/test-suite/success/Compat*.v @rocq-prover/compat-maintainers
 
 ########## Developer tools ##########
 
-/dev/tools/ @coq/dev-tools-maintainers
+/dev/tools/ @rocq-prover/dev-tools-maintainers
 
 ########## Dune  ##########
 
-/.ocamlinit  @coq/build-maintainers
-*dune*       @coq/build-maintainers
-*.opam       @coq/build-maintainers @erikmd
+/.ocamlinit  @rocq-prover/build-maintainers
+*dune*       @rocq-prover/build-maintainers
+*.opam       @rocq-prover/build-maintainers @erikmd
