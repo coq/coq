@@ -26,7 +26,8 @@ module BinOpSpec : S
 module UnOpSpec : S
 module Saturate : S
 
-val zify_tac : unit Proofview.tactic
+val tify_op : Names.GlobRef.t -> unit Proofview.tactic
+val zify_op : unit -> unit Proofview.tactic
 val saturate : unit Proofview.tactic
 val iter_specs : unit Proofview.tactic
 val iter_let : Ltac_plugin.Tacinterp.Value.t -> unit Proofview.tactic
