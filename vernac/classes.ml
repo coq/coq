@@ -576,7 +576,7 @@ let new_instance_common ~program_mode env instid ctx cl =
       | Name id -> id
       | Anonymous ->
         let i = Nameops.add_suffix (id_of_class env k.clu_impl) "_instance_0" in
-        Namegen.next_global_ident_away i (Termops.vars_of_env env))
+        Namegen.next_global_ident_away (Global.safe_env ()) i (Termops.vars_of_env env))
   in
   let env' = push_rel_context ctx env in
   id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl

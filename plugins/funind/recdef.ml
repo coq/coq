@@ -93,7 +93,7 @@ let pf_get_new_ids idl g =
   let ids = Id.Set.of_list ids in
   List.fold_right
     (fun id acc ->
-      next_global_ident_away id (Id.Set.union (Id.Set.of_list acc) ids) :: acc)
+      next_global_ident_away (Global.safe_env ()) id (Id.Set.union (Id.Set.of_list acc) ids) :: acc)
     idl []
 
 let next_ident_away_in_goal ids avoid =
@@ -1400,7 +1400,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
       with e when CErrors.noncritical e ->
         anomaly (Pp.str "open_new_goal with an unnamed theorem.") )
   in
-  let na = next_global_ident_away name Id.Set.empty in
+  let na = next_global_ident_away (Global.safe_env ()) name Id.Set.empty in
   if Termops.occur_existential sigma gls_type then
     CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials");
   let hook _ =

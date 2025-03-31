@@ -69,7 +69,7 @@ let hid = Id.of_string "H"
 let xid = Id.of_string "X"
 let default_id_of_sort = function InSProp | InProp | InSet -> hid | InType | InQSort -> xid
 let fresh env id avoid =
-  let freshid = next_global_ident_away id avoid in
+  let freshid = next_global_ident_away (Global.safe_env ()) id avoid in
   freshid, Id.Set.add freshid avoid
 let with_context_set ctx (b, ctx') =
   (b, UnivGen.sort_context_union ctx ctx')

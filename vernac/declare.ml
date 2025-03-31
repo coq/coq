@@ -750,7 +750,7 @@ let declare_variable ~name ~kind ~typing_flags d =
       in
       let se = if opaque then
           let cname = Id.of_string (Id.to_string name ^ "_subproof") in
-          let cname = Namegen.next_global_ident_away cname Id.Set.empty in
+          let cname = Namegen.next_global_ident_away (Global.safe_env ()) cname Id.Set.empty in
           let de = {
             proof_entry_body = DeferredOpaque { body = Future.from_val ((body, Univ.ContextSet.empty), Evd.empty_side_effects); feedback_id };
             proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)

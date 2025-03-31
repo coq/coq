@@ -190,7 +190,7 @@ let decl_constant name univs c =
        (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c)))
 
 let decl_constant na suff univs c =
-  let na = Namegen.next_global_ident_away (Nameops.add_suffix na suff) Id.Set.empty in
+  let na = Namegen.next_global_ident_away (Global.safe_env ()) (Nameops.add_suffix na suff) Id.Set.empty in
   decl_constant na univs c
 
 (* Calling a global tactic *)

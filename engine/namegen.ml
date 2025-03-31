@@ -419,9 +419,9 @@ let next_name_away_in_goal (type a) (gen : a Generator.t) env na (avoid : a) =
    used globally, one looks for a name of same base with lower subscript
    beyond the current subscript *)
 
-let next_global_ident_away id avoid =
+let next_global_ident_away senv id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || Global.exists_objlabel (Label.of_id id) in
+  let bad id = Id.Set.mem id avoid || Safe_typing.exists_objlabel (Label.of_id id) senv in
   next_ident_away_from id bad
 
 (* 4- Looks for next fresh name outside a list; if name already used,

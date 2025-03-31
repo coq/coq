@@ -92,7 +92,7 @@ val next_ident_away_in_goal : Environ.env -> Id.t -> Id.Set.t -> Id.t
 
 (** Avoid clashing with a name already used in current module
    but tolerate overwriting section variables, as in goals *)
-val next_global_ident_away : Id.t -> Id.Set.t -> Id.t
+val next_global_ident_away : Safe_typing.safe_environment -> Id.t -> Id.Set.t -> Id.t
 
 (** Default is [default_non_dependent_ident] *)
 val next_name_away  : Name.t -> Id.Set.t -> Id.t
