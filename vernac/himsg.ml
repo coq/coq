@@ -921,9 +921,10 @@ let explain_bad_invert env =
   strbrk "Bad case inversion (maybe a bugged tactic)."
 
 let explain_bad_variance env sigma ~lev ~expected ~actual =
-  str "Incorrect variance for universe " ++ Termops.pr_evd_level sigma lev ++
-  str": expected " ++ UVars.Variance.pr expected ++
-  str " but cannot be less restrictive than " ++ UVars.Variance.pr actual ++ str "."
+  fmt "Incorrect variance for universe %t:@ expected %t@ but cannot be less restrictive than %t."
+    (fun () -> Termops.pr_evd_level sigma lev)
+    (fun () -> UVars.Variance.pr expected)
+    (fun () -> UVars.Variance.pr actual)
 
 let explain_undeclared_used_variables env sigma ~declared_vars ~inferred_vars =
   let l = Id.Set.elements (Id.Set.diff inferred_vars declared_vars) in
