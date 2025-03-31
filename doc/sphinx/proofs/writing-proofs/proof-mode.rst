@@ -885,8 +885,14 @@ Proving a subgoal as a separate lemma: abstract
 
    .. warning::
 
-      Provide :n:`@ident__name` at your own risk; explicitly named and reused subterms
-      don’t play well with asynchronous proofs.
+      There are no guarantees with fresh name generation. In particular,
+      you should not rely on the generated constant being available in your
+      proof script. Even when providing an explicit :n:`@ident__name`, do it at
+      your own risk. Explicitly named and reused subterms don't play well with
+      asynchronous proofs. Furthermore the binding is only made available when
+      exiting the current tactic block, i.e. after a dot. The only guarantee
+      with explicit naming is that the subproof will be accessible with this
+      name after the :cmd:`Defined` command.
 
    .. tacn:: transparent_abstract @ltac_expr3 {? using @ident }
 
