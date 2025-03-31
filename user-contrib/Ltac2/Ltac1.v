@@ -64,4 +64,4 @@ Ltac2 @ external to_intro_pattern : t -> intro_pattern option := "rocq-runtime.p
 
 Ltac2 @ external tag_name : t -> string :=  "rocq-runtime.plugins.ltac2_ltac1" "ltac1_tag_name".
 (** Name of the ltac1 value class the argument belongs to. Should be
-    used only for error printing, typically "expected a constr but got a $tag_name". *)
+    used only for error printing, typically "expected a constr but got a tag_name". *)
