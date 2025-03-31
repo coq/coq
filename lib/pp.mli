@@ -53,6 +53,7 @@ type block_type =
 type doc_view =
   | Ppcmd_empty
   | Ppcmd_string of string
+  | Ppcmd_sized_string of int * string
   | Ppcmd_glue of t list
   | Ppcmd_box  of block_type * t
   | Ppcmd_tag  of pp_tag * t
@@ -74,6 +75,9 @@ val mt    : unit -> t
 val ismt  : t -> bool
 
 val comment  : string list -> t
+
+val fmt : ('a, unit, t) format -> 'a
+(** complex formatting *)
 
 (** {6 Manipulation commands} *)
 

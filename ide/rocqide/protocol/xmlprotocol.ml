@@ -120,6 +120,7 @@ let to_box = let open Pp in
 let rec of_pp (pp : Pp.t) = let open Pp in match Pp.repr pp with
     | Ppcmd_empty         -> constructor "ppdoc" "empty"  []
     | Ppcmd_string s      -> constructor "ppdoc" "string" [of_string s]
+    | Ppcmd_sized_string (n,s) -> constructor "ppdoc" "string" [of_string s] (* XXX handle size? *)
     | Ppcmd_glue sl       -> constructor "ppdoc" "glue"   [of_list of_pp sl]
     | Ppcmd_box (bt,s)    -> constructor "ppdoc" "box"    [of_pair of_box of_pp (bt,s)]
     | Ppcmd_tag (t,s)     -> constructor "ppdoc" "tag"    [of_pair of_string of_pp (t,s)]
