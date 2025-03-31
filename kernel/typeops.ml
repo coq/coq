@@ -65,7 +65,7 @@ let infer_assumption env t ty =
 
 let nf_relevance env = function
   | Sorts.RelevanceVar q as r ->
-    if Environ.Internal.is_above_prop env q then Sorts.Relevant
+    if Environ.Internal.is_above_prop ~cheat:true env q then Sorts.Relevant
     else r
   | (Sorts.Irrelevant | Sorts.Relevant) as r -> r
 
@@ -407,7 +407,7 @@ let make_param_univs env indu spec args argtys =
       | Set -> TemplateUniv Universe.type0
       | Type u -> TemplateUniv u
       | QSort (q,u) ->
-        assert (Environ.Internal.is_above_prop env q);
+        assert (Environ.Internal.is_above_prop ~cheat:false env q);
         TemplateAboveProp (q,u))
     argtys
 
@@ -547,7 +547,7 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, rp, pt) iv c 
     if not (is_inversion = should_invert_case env rp ci)
     then error_bad_invert env
   in
-  let () = if not (is_allowed_elimination (specif,u) sp) then begin
+  let () = if not (is_allowed_elimination env (specif,u) sp) then begin
     let kinds = Some sp in
     error_elim_arity env (ind, u') c kinds
   end
@@ -859,7 +859,7 @@ let execute env c =
 
 let check_declared_qualities env qualities =
   let module S = Sorts.QVar.Set in
-  let unknown = S.diff qualities (Environ.qualities env) in
+  let unknown = S.diff qualities (Environ.qvars env) in
   if S.is_empty unknown then ()
   else error_undeclared_qualities env unknown
 

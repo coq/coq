@@ -307,12 +307,3 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason
-
-module Internal = struct
-
-  let add_template_qvars qvars g =
-    assert (Sorts.QVar.Set.is_empty g.above_prop_qvars);
-    {g with above_prop_qvars=qvars}
-
-  let is_above_prop = is_above_prop
-end

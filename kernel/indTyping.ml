@@ -97,7 +97,7 @@ let compute_elim_squash ?(is_real_arg=false) env u info =
       | NoRelevantArg -> match u with
         | Sorts.SProp -> info
         | QSort (q,_) ->
-           if Environ.Internal.is_above_prop env q
+           if Environ.Internal.is_above_prop ~cheat:false env q
               || equal (QVar q) (Sorts.quality info.ind_univ)
           then { info with record_arg_info = HasRelevantArg }
           else info
@@ -110,7 +110,7 @@ let compute_elim_squash ?(is_real_arg=false) env u info =
       if UGraph.check_leq (universes env) uu induu
       then f info
       else { info with missing = u :: info.missing } in
-    if Inductive.eliminates_to (Sorts.quality indu) (Sorts.quality u) then
+    if Inductive.eliminates_to (Environ.qualities env) (Sorts.quality indu) (Sorts.quality u) then
       check_univ_consistency (fun x -> x)
         (Sorts.univ_of_sort indu)
         (Sorts.univ_of_sort u)
@@ -123,12 +123,12 @@ let compute_elim_squash ?(is_real_arg=false) env u info =
       | QSort (_, indu), QSort (cq, uu) ->
          check_univ_consistency_squash (QVar cq) indu uu
       | QSort (q, indu), Set ->
-         if Environ.Internal.is_above_prop env q then info
+         if Environ.Internal.is_above_prop ~cheat:false env q then info
          else check_univ_consistency_squash qtype indu Universe.type0
       | (SProp | Prop), QSort (q, _) ->
          add_squash (QVar q) info
       | QSort (q, _), (SProp | Prop) ->
-         if Environ.Internal.is_above_prop env q then info
+         if Environ.Internal.is_above_prop ~cheat:false env q then info
          else add_squash (Sorts.quality u) info
       | _, _ -> { info with ind_squashed = Some AlwaysSquashed }
 

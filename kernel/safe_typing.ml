@@ -1461,7 +1461,7 @@ let start_library dir senv =
 let export ~output_native_objects senv dir =
   let () = check_current_library dir senv in
   (* qualities are in the senv only during sections *)
-  let () = assert (Sorts.QVar.Set.is_empty @@ Environ.qualities senv.env) in
+  let () = assert (Sorts.QVar.Set.is_empty @@ Environ.qvars senv.env) in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
   let mb = Mod_declarations.make_module_body str senv.modresolver senv.local_retroknowledge in

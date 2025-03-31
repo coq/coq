@@ -69,7 +69,7 @@ type env = {
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_universes : UGraph.t;
-  env_qualities : Sorts.QVar.Set.t;
+  env_qualities : QGraph.t;
   symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   vm_library : Vmlibrary.t;
@@ -109,7 +109,7 @@ let empty_env = {
   env_rel_context = empty_rel_context_val;
   env_nb_rel = 0;
   env_universes = UGraph.initial_universes;
-  env_qualities = Sorts.QVar.Set.empty;
+  env_qualities = QGraph.initial_graph;
   irr_constants = Cmap_env.empty;
   irr_inds = Indmap_env.empty;
   symb_pats = Cmap_env.empty;
@@ -338,6 +338,7 @@ let set_universes g env =
   {env with env_universes=g}
 
 let qualities env = env.env_qualities
+let qvars env = QGraph.qvar_domain @@ qualities env
 
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
@@ -458,21 +459,16 @@ let add_universes ~strict ctx g =
   in
   UGraph.merge_constraints (UVars.UContext.constraints ctx) g
 
-let add_qualities qs known =
-  let open Sorts.Quality in
-  Array.fold_left (fun known q ->
-      match q with
-      | QVar q ->
-        let known' = Sorts.QVar.Set.add q known in
-        let () = if known == known' then CErrors.anomaly Pp.(str"multiply bound sort quality") in
-        known'
-      | QConstant _ -> CErrors.anomaly Pp.(str "constant quality in ucontext"))
-    known
-    qs
+let set_qualities g env = {env with env_qualities = g}
+
+let map_qualities f env = set_qualities (f env.env_qualities) env
+
+let add_qualities qs g =
+  Array.fold_right QGraph.add_quality qs g
 
 let push_context ?(strict=false) ctx env =
   let qs, _us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
-  let env = { env with env_qualities = add_qualities qs env.env_qualities } in
+  let env = map_qualities (add_qualities qs) env in
   map_universes (add_universes ~strict ctx) env
 
 let add_universes_set ~strict ctx g =
@@ -485,8 +481,9 @@ let add_universes_set ~strict ctx g =
 let push_context_set ?(strict=false) ctx env =
   map_universes (add_universes_set ~strict ctx) env
 
-let push_qualities ctx env =
-  { env with env_qualities = Sorts.QVar.Set.union env.env_qualities ctx }
+let push_qualities qs env =
+  let g = Sorts.QVar.Set.fold (fun v -> QGraph.add_quality (Sorts.Quality.QVar v)) qs env.env_qualities in
+  set_qualities g env
 
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
@@ -1034,10 +1031,11 @@ module Internal = struct
   let push_template_context uctx env =
     let env = push_context ~strict:false uctx env in
     let qvars, _ = UVars.UContext.to_context_set uctx in
-    let env = map_universes (UGraph.Internal.add_template_qvars qvars) env in
+    let env = map_qualities (QGraph.Internal.add_template_qvars qvars) env in
     env
 
-  let is_above_prop env q = UGraph.Internal.is_above_prop env.env_universes q
+  let is_above_prop ~cheat env q =
+    QGraph.eliminates_to_prop ~cheat env.env_qualities (Sorts.Quality.QVar q)
 
   module View =
   struct
@@ -1062,7 +1060,7 @@ module Internal = struct
       env_named_context = env.env_named_context;
       env_rel_context = env.env_rel_context;
       env_universes = env.env_universes;
-      env_qualities = env.env_qualities;
+      env_qualities = QGraph.qvar_domain env.env_qualities;
       env_symb_pats = env.symb_pats;
       env_typing_flags = env.env_typing_flags;
     } [@@ocaml.warning "-42"]

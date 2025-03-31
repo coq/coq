@@ -241,7 +241,7 @@ let explain_elim_arity env sigma ind c okinds =
         if ppunivs then Flags.with_option Constrextern.print_universes pp ()
         else pp ()
       in
-      let squash = Option.get (Inductive.is_squashed (specif, snd ind)) in
+      let squash = Option.get (Inductive.is_squashed env (specif, snd ind)) in
       match squash with
       | SquashToSet ->
         let ppt = ppt () in

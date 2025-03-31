@@ -118,23 +118,23 @@ let initial_graph =
         (List.filter (fun q' -> not @@ Quality.equal q q') Quality.all_constants))
     g Quality.all_constants
 
-let eliminates_to g q q' =
-  (* FIXME: temporary condition until the [QVar]s are added to the graph *)
-  if Quality.is_qtype q || Quality.equal q q'
-  then true
-  else
-    (* FIXME: temporary try-with until the [QVar]s are added to the graph *)
-    try check_func ElimConstraint.ElimTo g q q'
-    with _ -> false
+let cheat_eliminates_to g q q' =
+  if Quality.is_qtype q || Quality.equal q q' then true
+  else try check_func ElimConstraint.ElimTo g q q'
+       with _ -> false
+
+let eliminates_to ~cheat g q q' =
+  if cheat then cheat_eliminates_to g q q'
+  else check_func ElimConstraint.ElimTo g q q'
 
 let sort_eliminates_to g s1 s2 =
-  eliminates_to g (quality s1) (quality s2)
+  eliminates_to ~cheat:false g (quality s1) (quality s2)
 
 let check_eq = G.check_eq
 
 let check_eq_sort g s s' = check_eq g (quality s) (quality s')
 
-let eliminates_to_prop g q = eliminates_to g q Quality.qprop
+let eliminates_to_prop ~cheat g q = eliminates_to ~cheat g q Quality.qprop
 
 let domain = G.domain
 
@@ -172,7 +172,7 @@ let explain_quality_inconsistency defprv (prv, (k, q1, q2, r)) =
     ElimConstraint.pr_kind k ++ spc() ++ Quality.pr prv q2 ++ spc() ++ reason
 
 module Internal = struct
-  let add_template_qvars =
-    QVar.Set.fold @@
-      fun v -> enforce_eliminates_to (Quality.QVar v) Quality.qprop
+  let add_template_qvars qvs =
+    let set_elim_to_prop v = enforce_eliminates_to (Quality.QVar v) Quality.qprop in
+    QVar.Set.fold set_elim_to_prop qvs
 end

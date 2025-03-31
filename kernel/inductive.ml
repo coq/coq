@@ -390,9 +390,9 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 let raw_eliminates_to = QGraph.ElimTable.eliminates_to
 
-let eliminates_to = QGraph.eliminates_to QGraph.initial_graph
+let eliminates_to ?(cheat=false) g = QGraph.eliminates_to ~cheat g
 
-let sort_eliminates_to s s' = eliminates_to (Sorts.quality s) (Sorts.quality s')
+let sort_eliminates_to g s s' = eliminates_to g (Sorts.quality s) (Sorts.quality s')
 
 type squash = SquashToSet | SquashToQuality of Quality.t
 
@@ -402,7 +402,7 @@ type 'a allow_elimination_actions =
   ; squashed_to_set_above : 'a
   ; squashed_to_quality : Quality.t -> 'a }
 
-let is_squashed_gen indsort_to_quality squashed_to_quality ((_,mip),u) =
+let is_squashed_gen g indsort_to_quality squashed_to_quality ((_,mip),u) =
   let s = mip.mind_sort in
   match mip.mind_squashed with
   | None -> None
@@ -417,13 +417,13 @@ let is_squashed_gen indsort_to_quality squashed_to_quality ((_,mip),u) =
         (* impredicative set squashes are always quashed,
            so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
         if Quality.Set.for_all
-             (fun q -> eliminates_to indq (squashed_to_quality u q))
+             (fun q -> eliminates_to ~cheat:true g indq (squashed_to_quality u q))
              squash
         then None
         else Some (SquashToQuality indq)
 
-let allowed_elimination_gen indsort_to_quality squashed_to_quality actions specifu s =
-  match is_squashed_gen indsort_to_quality squashed_to_quality specifu with
+let allowed_elimination_gen g indsort_to_quality squashed_to_quality actions specifu s =
+  match is_squashed_gen g indsort_to_quality squashed_to_quality specifu with
   | None -> actions.not_squashed
   | Some SquashToSet ->
     begin match s with
@@ -435,30 +435,32 @@ let allowed_elimination_gen indsort_to_quality squashed_to_quality actions speci
 let loc_indsort_to_quality u s = Sorts.quality (UVars.subst_instance_sort u s)
 let loc_squashed_to_quality = UVars.subst_instance_quality
 
-let is_squashed =
+let is_squashed env =
   is_squashed_gen
+    (Environ.qualities env)
     loc_indsort_to_quality
     loc_squashed_to_quality
 
-let is_allowed_elimination_actions s =
+let is_allowed_elimination_actions g s =
   { not_squashed = true
   ; squashed_to_set_below = true
   (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
   ; squashed_to_set_above = false
   ; squashed_to_quality
-    = fun indq -> eliminates_to indq (Sorts.quality s)}
+    = fun indq -> eliminates_to g indq (Sorts.quality s)}
 
-let is_allowed_elimination specifu s =
-  allowed_elimination_gen
+let is_allowed_elimination env specifu s =
+  let g = Environ.qualities env in
+  allowed_elimination_gen g
     loc_indsort_to_quality
     loc_squashed_to_quality
-    (is_allowed_elimination_actions s)
+    (is_allowed_elimination_actions g s)
     specifu s
 
 (* We always allow fixpoints on values in Prop (for the accessibility predicate for instance). *)
-let is_allowed_fixpoint sind star =
+let is_allowed_fixpoint g sind star =
   Sorts.equal sind Sorts.prop ||
-    eliminates_to
+    eliminates_to ~cheat:true g
       (Sorts.quality sind)
       (Sorts.quality star)
 
@@ -1653,7 +1655,7 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
           | Relevant when Universe.is_type0 u -> Sorts.set
           | Relevant -> Sorts.make Sorts.Quality.qtype u
           | RelevanceVar q -> Sorts.qsort q u in
-        if not (is_allowed_fixpoint sind bsort) then
+        if not (is_allowed_fixpoint (Environ.qualities env) sind bsort) then
           raise_err env i @@ FixpointOnNonEliminable (sind, bsort)
     in
     res

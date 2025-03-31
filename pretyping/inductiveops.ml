@@ -248,7 +248,9 @@ let inductive_has_local_defs env ind =
 let squash_elim_sort sigma squash rtnsort =
   let open Inductive in
   let add_unif_if_cannot_elim_into starget =
-    if Inductive.sort_eliminates_to starget @@ ESorts.kind sigma rtnsort
+    let q = Sorts.quality starget in
+    let q' = ESorts.quality sigma rtnsort in
+    if Inductive.eliminates_to ~cheat:true QGraph.initial_graph q q'
     then sigma
     else Evd.set_eq_sort sigma rtnsort @@ ESorts.make starget in
   match squash with
@@ -280,6 +282,7 @@ let loc_squashed_to_quality sigma u q =
 
 let is_squashed sigma specifu =
   Inductive.is_squashed_gen
+    QGraph.initial_graph
     (loc_indsort_to_quality sigma)
     (loc_squashed_to_quality sigma)
     specifu
@@ -289,10 +292,11 @@ let is_allowed_elimination sigma (((mib,_),_) as specifu) s =
   | PrimRecord _ -> true
   | NotRecord | FakeRecord ->
      let s = EConstr.ESorts.kind sigma s in
-     Inductive.allowed_elimination_gen
+     let g = QGraph.initial_graph in
+     Inductive.allowed_elimination_gen g
         (loc_indsort_to_quality sigma)
         (loc_squashed_to_quality sigma)
-        (Inductive.is_allowed_elimination_actions s)
+        (Inductive.is_allowed_elimination_actions g s)
         specifu s
 
 let make_allowed_elimination_actions sigma s =
@@ -304,7 +308,7 @@ let make_allowed_elimination_actions sigma s =
     with UGraph.UniverseInconsistency _ -> None)
   ; squashed_to_quality =
       fun indq -> let sq = EConstr.ESorts.quality sigma s in
-               if Inductive.eliminates_to indq sq
+               if Inductive.eliminates_to ~cheat:true QGraph.initial_graph indq sq
                then Some sigma
                else
                  let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
@@ -316,6 +320,7 @@ let make_allowed_elimination sigma ((mib,_),_ as specifu) s =
   | PrimRecord _ -> Some sigma
   | NotRecord | FakeRecord ->
      Inductive.allowed_elimination_gen
+        QGraph.initial_graph
         (loc_indsort_to_quality sigma)
         (loc_squashed_to_quality sigma)
         (make_allowed_elimination_actions sigma s)
