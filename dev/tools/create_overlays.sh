@@ -21,6 +21,15 @@ setup_contrib_git() {
     ( cd $_DIR
       git checkout -b $OVERLAY_BRANCH         || true # allow the branch to exist already
       git remote add $DEVELOPER_NAME $_GITURL || true # allow the remote to exist already
+      if [ -d .git ]; then # TODO handle submodules
+        template_file=.git/OVERLAY_COMMIT_TEMPLATE
+        printf 'Adapt to rocq-prover/rocq#%s (short decription here)\n' "$PR_NUMBER" > "$template_file"
+
+        # don't override config if already set, maybe the user prefers something else
+        if ! git config get --local commit.template; then
+          git config set --local commit.template "$template_file"
+        fi
+      fi
     )
 
 }
