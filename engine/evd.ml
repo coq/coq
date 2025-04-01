@@ -1192,12 +1192,16 @@ let set_elim_to_prop evd q =
     UnivProblem.Set.singleton (QElimTo (q, Sorts.Quality.qprop))
 
 let check_eq evd s s' =
+  let quals = elim_graph evd in
   let ustate = evd.universes in
-  UGraph.check_eq_sort (UState.ugraph ustate) (UState.nf_sort ustate s) (UState.nf_sort ustate s')
+  let univs = UState.ugraph ustate in
+  UGraph.check_eq_sort quals univs (UState.nf_sort ustate s) (UState.nf_sort ustate s')
 
 let check_leq evd s s' =
+  let quals = elim_graph evd in
   let ustate = evd.universes in
-  UGraph.check_leq_sort (UState.ugraph ustate) (UState.nf_sort ustate s) (UState.nf_sort ustate s')
+  let univs = UState.ugraph ustate in
+  UGraph.check_leq_sort quals univs (UState.nf_sort ustate s) (UState.nf_sort ustate s')
 
 let check_constraints evd csts =
   UGraph.check_constraints csts (UState.ugraph evd.universes)

@@ -61,8 +61,16 @@ val merge_constraints : Constraints.t -> t -> t
 
 val check_constraint  : t -> univ_constraint -> bool
 val check_constraints : Constraints.t -> t -> bool
-val check_eq_sort : t -> Sorts.t  -> Sorts.t -> bool
-val check_leq_sort : t -> Sorts.t -> Sorts.t -> bool
+
+val check_eq_sort : QGraph.t -> t -> Sorts.t -> Sorts.t -> bool
+(** Checks whether (i) the first quality is equal to the second and (ii)
+    that the universe of the first one is equal to the universe of the second one.
+    When [type_in_type], only checks relevance. *)
+
+val check_leq_sort : QGraph.t -> t -> Sorts.t -> Sorts.t -> bool
+(** Checks whether (i) the second quality eliminates into the first and (ii)
+    that the universe of the first one is below the universe of the second one.
+    When [type_in_type], only checks relevance. *)
 
 val enforce_leq_alg : Univ.Universe.t -> Univ.Universe.t -> t -> Univ.Constraints.t * t
 

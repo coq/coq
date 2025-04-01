@@ -994,23 +994,23 @@ let rec eq_constr nargs m n =
 
 let equal n m = eq_constr 0 m n (* to avoid tracing a recursive fun *)
 
-let eq_constr_univs univs m n =
+let eq_constr_univs quals univs m n =
   if m == n then true
   else
     let eq_universes _ = UGraph.check_eq_instances univs in
-    let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq_sort univs s1 s2 in
+    let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq_sort quals univs s1 s2 in
     let rec eq_constr' nargs m n =
       m == n ||	compare_head_gen eq_universes eq_sorts (eq_existential (eq_constr' 0)) eq_constr' nargs m n
     in compare_head_gen eq_universes eq_sorts (eq_existential (eq_constr' 0)) eq_constr' 0 m n
 
-let leq_constr_univs univs m n =
+let leq_constr_univs quals univs m n =
   if m == n then true
   else
     let eq_universes _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 ||
-      UGraph.check_eq_sort univs s1 s2 in
+      UGraph.check_eq_sort quals univs s1 s2 in
     let leq_sorts s1 s2 = s1 == s2 ||
-      UGraph.check_leq_sort univs s1 s2 in
+      UGraph.check_leq_sort quals univs s1 s2 in
     let rec eq_constr' nargs m n =
       m == n || compare_head_gen eq_universes eq_sorts (eq_existential (eq_constr' 0)) eq_constr' nargs m n
     in

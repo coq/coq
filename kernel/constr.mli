@@ -418,11 +418,11 @@ val equal : constr -> constr -> bool
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
-val eq_constr_univs : constr UGraph.check_function
+val eq_constr_univs : QGraph.t -> UGraph.t -> constr -> constr -> bool
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe inequalities in [u]. *)
-val leq_constr_univs : constr UGraph.check_function
+val leq_constr_univs : QGraph.t -> UGraph.t -> constr -> constr -> bool
 
 (** [eq_constr_univs a b] [true, c] if [a] equals [b] modulo alpha, casts,
    application grouping and ignoring universe instances. *)

@@ -571,6 +571,7 @@ let process_universe_constraints uctx cstrs =
   let open UnivSubst in
   let open UnivProblem in
   let univs = uctx.universes in
+  let quals = elim_graph uctx in
   let vars = ref uctx.univ_variables in
   let normalize u = UnivFlex.normalize_univ_variable !vars u in
   let qnormalize sorts q = QState.repr q sorts in
@@ -592,7 +593,7 @@ let process_universe_constraints uctx cstrs =
     | UProp -> prop
     | USet -> set
     in
-    if UGraph.check_eq_sort univs ls s then local
+    if UGraph.check_eq_sort quals univs ls s then local
     else if is_uset l then match classify s with
     | USmall _ -> sort_inconsistency Eq set s
     | ULevel r ->
@@ -649,7 +650,7 @@ let process_universe_constraints uctx cstrs =
     equalize_algebraic l' r local
   | (UAlgebraic _ | UMax _), (UAlgebraic _ | UMax _) ->
     (* both are algebraic *)
-    if UGraph.check_eq_sort univs l r then local
+    if UGraph.check_eq_sort quals univs l r then local
     else sort_inconsistency Eq l r
   in
   let unify_universes cst local =
@@ -668,7 +669,7 @@ let process_universe_constraints uctx cstrs =
       let r = normalize_sort local.local_sorts r in
       begin match classify r with
       | UAlgebraic _ | UMax _ ->
-        if UGraph.check_leq_sort univs l r then local
+        if UGraph.check_leq_sort quals univs l r then local
         else
           sort_inconsistency Le l r
             ~explain:(Pp.str "(cannot handle algebraic on the right)")
@@ -682,7 +683,7 @@ let process_universe_constraints uctx cstrs =
           (* l contains a +1 and r=r' small so l <= r impossible *)
           sort_inconsistency Le l r
         | USmall l' ->
-          if UGraph.check_leq_sort univs l r then local
+          if UGraph.check_leq_sort quals univs l r then local
           else sort_inconsistency Le l r
         | ULevel l' ->
           if is_uset r' && is_local l' then
@@ -809,8 +810,8 @@ let check_universe_constraint uctx (c:UnivProblem.t) =
     let b = nf_quality uctx b in
     Quality.equal a b ||
       Inductive.eliminates_to (QState.elims uctx.sort_variables) a b
-  | ULe (u,v) -> UGraph.check_leq_sort uctx.universes u v
-  | UEq (u,v) -> UGraph.check_eq_sort uctx.universes u v
+  | ULe (u,v) -> UGraph.check_leq_sort (elim_graph uctx) uctx.universes u v
+  | UEq (u,v) -> UGraph.check_eq_sort (elim_graph uctx) uctx.universes u v
   | ULub (u,v) -> UGraph.check_eq_level uctx.universes u v
   | UWeak _ -> true
 

@@ -31,8 +31,6 @@ module G = AcyclicGraph.Make(struct
 type t = {
   graph: G.t;
   type_in_type : bool;
-  (* above_prop only for checking template poly! *)
-  above_prop_qvars : Sorts.QVar.Set.t;
 }
 
 (* Universe inconsistency: error raised when trying to enforce a relation
@@ -83,7 +81,6 @@ let check_eq_level g u v =
 let empty_universes = {
   graph=G.empty;
   type_in_type=false;
-  above_prop_qvars=Sorts.QVar.Set.empty;
 }
 
 let initial_universes =
@@ -118,7 +115,7 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
 
 let merge_constraints csts g = Constraints.fold enforce_constraint csts g
 
-let check_constraint { graph = g; type_in_type; _ } (u,d,v) =
+let check_constraint { graph = g; type_in_type } (u,d,v) =
   type_in_type
   || match d with
   | Le -> G.check_leq g u v
@@ -126,6 +123,34 @@ let check_constraint { graph = g; type_in_type; _ } (u,d,v) =
   | Eq -> G.check_eq g u v
 
 let check_constraints csts g = Constraints.for_all (check_constraint g) csts
+
+let check_eq_sort quals univs s1 s2 =
+  (* if type_in_type, we only care about relevance *)
+  if type_in_type univs then
+    let r1 = Sorts.relevance_of_sort s1 in
+    let r2 = Sorts.relevance_of_sort s2 in
+    Sorts.relevance_equal r1 r2
+  else
+    let u1 = Sorts.univ_of_sort s1 in
+    let u2 = Sorts.univ_of_sort s2 in
+    QGraph.check_eq_sort quals s1 s2 &&
+      check_eq univs u1 u2
+
+let check_leq_sort quals univs s1 s2 =
+  (* FIXME: how do we compare relevances in this case? *)
+  if type_in_type univs then true
+  else
+    let u1 = Sorts.univ_of_sort s1 in
+    let u2 = Sorts.univ_of_sort s2 in
+    let r1 = Sorts.relevance_of_sort s1 in
+    let r2 = Sorts.relevance_of_sort s2 in
+    let open Sorts in
+    let elim_prop q = QGraph.eliminates_to_prop quals (Quality.QVar q) in
+    (Sorts.relevance_equal r1 r2 && check_leq univs u1 u2) ||
+      match s1, s2 with
+      | Prop, QSort (q, _) | QSort (q, _), Set -> elim_prop q
+      | QSort (q, _), Type _ -> elim_prop q && check_leq univs u1 u2
+      | _ -> false
 
 let leq_expr (u,m) (v,n) =
   let d = match m - n with
@@ -208,47 +233,6 @@ let domain g = G.domain g.graph
 let choose p g u = G.choose p g.graph u
 
 let check_universes_invariants g = G.check_invariants ~required_canonical:Level.is_set g.graph
-
-(** Sort comparison *)
-
-(* The functions below rely on the invariant that no universe in the graph
-   can be unified with Prop / SProp. This is ensured by UGraph, which only
-   contains Set as a "small" level. *)
-
-open Sorts
-
-let get_algebraic = function
-| Prop | SProp -> assert false
-| Set -> Universe.type0
-| Type u | QSort (_, u) -> u
-
-let check_eq_sort ugraph s1 s2 = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
-| (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) ->
-  type_in_type ugraph
-| (Type _ | Set), (Type _ | Set) ->
-  check_eq ugraph (get_algebraic s1) (get_algebraic s2)
-| QSort (q1, u1), QSort (q2, u2) ->
-  QVar.equal q1 q2 && check_eq ugraph u1 u2
-| (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
-
-let eliminates_to_prop ugraph q =
-  Sorts.QVar.Set.mem q ugraph.above_prop_qvars
-
-let check_leq_sort ugraph s1 s2 = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
-| (SProp, _) -> type_in_type ugraph
-| (Prop, SProp) -> type_in_type ugraph
-| (Prop, (Set | Type _)) -> true
-| (Prop, QSort (q,_)) -> eliminates_to_prop ugraph q
-| (_, (SProp | Prop)) -> type_in_type ugraph
-| (Type _ | Set), (Type _ | Set) ->
-  check_leq ugraph (get_algebraic s1) (get_algebraic s2)
-| QSort (q1, u1), QSort (q2, u2) ->
-  QVar.equal q1 q2 && check_leq ugraph u1 u2
-| QSort (q, _), Set -> eliminates_to_prop ugraph q
-| QSort (q, u1), Type u2 -> eliminates_to_prop ugraph q && check_leq ugraph u1 u2
-| ((Type _ | Set), QSort _) -> false
 
 (** Pretty-printing *)
 

@@ -240,9 +240,10 @@ let vm_conv_gen (type err) cv_pb sigma env univs t1 t2 =
 
 let vm_conv cv_pb env t1 t2 =
   let univs = Environ.universes env in
+  let quals = Environ.qualities env in
   let b =
-    if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
-    else Constr.eq_constr_univs univs t1 t2
+    if cv_pb = CUMUL then Constr.leq_constr_univs quals univs t1 t2
+    else Constr.eq_constr_univs quals univs t1 t2
   in
   if b then Result.Ok ()
   else
