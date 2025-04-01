@@ -9,7 +9,7 @@ build their Rocq project, the documentation of the RocqIDE graphical
 user interface and the documentation of the parallel proof processing
 feature that is supported by RocqIDE and several other GUIs.
 A list of available user interfaces to interact with Rocq is available
-on the `Coq website <https://coq.inria.fr/user-interfaces.html>`_.
+on the `Rocq website <https://rocq-prover.org/install>`_.
 
 .. toctree::
    :maxdepth: 1

@@ -9,15 +9,15 @@ algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
 
 This package provides the `coqidetop` language server, an
-implementation of Rocq's [XML protocol](https://github.com/coq/coq/blob/master/dev/doc/xml-protocol.md)
+implementation of Rocq's [XML protocol](https://github.com/rocq-prover/rocq/blob/master/dev/doc/xml-protocol.md)
 which allows clients, such as RocqIDE, to interact with the Rocq Prover in a
 structured way."""
 maintainer: ["The Rocq development team <coqdev@inria.fr>"]
 authors: ["The Rocq development team, INRIA, CNRS, and contributors"]
 license: "LGPL-2.1-only"
-homepage: "https://coq.inria.fr/"
-doc: "https://coq.github.io/doc/"
-bug-reports: "https://github.com/coq/coq/issues"
+homepage: "https://rocq-prover.org/"
+doc: "https://rocq-prover.org/docs/"
+bug-reports: "https://github.com/rocq-prover/rocq/issues"
 depends: [
   "dune" {>= "3.8"}
   "rocq-runtime" {= version}
@@ -37,4 +37,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/coq/coq.git"
+dev-repo: "git+https://github.com/rocq-prover/rocq.git"

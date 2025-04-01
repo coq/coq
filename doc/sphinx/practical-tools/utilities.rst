@@ -19,7 +19,7 @@ Installing the Rocq Prover and Rocq packages with opam
 
 The easiest way to install the Rocq Prover is with the
 `Coq Platform <https://github.com/coq/platform>`_, which relies
-on the `opam package manager <https://coq.inria.fr/opam-using.html>`_.
+on the `opam package manager <https://rocq-prover.org/using-opam>`_.
 
 The Coq platform installation process provides options to automatically install
 some of the most frequently used packages at the
@@ -29,7 +29,7 @@ that Coq platform installs should compile without difficulty--this is part of
 the Coq platform release process.
 
 Once you've installed Rocq, you can search for additional user-developed packages
-from the `package list <https://coq.inria.fr/opam/www/>`_ or other opam repositories.
+from the `package list <https://rocq-prover.org/packages>`_ or other opam repositories.
 These commands may be helpful:
 
 - `opam list "coq-*"` to see the list of available and installed packages
@@ -48,7 +48,7 @@ than those marked `extra-dev`.  To install `extra-dev` packages,
 first add the `coq-extra-dev` opam repository to your local opam installation
 with this command::
 
-  opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+  opam repo add coq-extra-dev https://rocq-prover.org/opam/extra-dev
 
 While this is the easiest way to install packages, it is not the only way.
 

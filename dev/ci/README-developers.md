@@ -59,7 +59,7 @@ When your PR breaks external projects we test in our CI, you must:
 2. Some breakages can be accepted, for instance to remove something
    already deprecated for long. Less obvious cases are to be
    determined with the PR assignee and reviewers, or discussed
-   during a [weekly Call](https://github.com/coq/coq/wiki/Coq-Calls)
+   during a [weekly Call](https://github.com/rocq-prover/rocq/wiki/Rocq-Calls)
    when doubts remain.
 3. For intentional breakages, you must then write porting instructions
    (typically the PR changelog), based on your previous assesment.
@@ -101,7 +101,7 @@ are the steps to manually prepare a patch:
 
    We recommend that the commit message mention your PR's number and a
    short explanation of what changed, eg
-   `Adapt to coq/coq#XXXXX (changed order of arguments of foo)`.
+   `Adapt to rocq-prover/rocq#XXXXX (changed order of arguments of foo)`.
 
    The explanation makes it possible to understand what's going on
    without having to dereference github PR numbers.
@@ -134,7 +134,7 @@ above steps. In order to do so:
 
 - determine the list of failing projects:
 IDs can be found as ci-XXX1 ci-XXX2 ci-XXX3 in the list of GitLab CI failures;
-- for each project XXXi, look in [ci-basic-overlay.sh](https://github.com/coq/coq/blob/master/dev/ci/ci-basic-overlay.sh)
+- for each project XXXi, look in [ci-basic-overlay.sh](https://github.com/rocq-prover/rocq/blob/master/dev/ci/ci-basic-overlay.sh)
 to see if the corresponding `XXXi_CI_GITURL` is hosted on GitHub;
 - log on GitHub and fork all the XXXi projects hosted there;
 - call the script as:
@@ -177,10 +177,10 @@ way, see [GitLab's documentation](https://docs.gitlab.com/ce/user/project/pipeli
 for more information. For example, to access the documentation of the
 `master` branch, you can do:
 
-https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=doc:refman
+https://gitlab.com/rocq-prover/rocq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=doc:refman
 
 Browsing artifacts is also possible:
-https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_install_ci/?job=build:base
+https://gitlab.com/rocq-prover/rocq/-/jobs/artifacts/master/browse/_install_ci/?job=build:base
 
 Above, you can replace `master` and `job` by the desired GitLab branch and job name.
 
@@ -188,10 +188,10 @@ Currently available artifacts are:
 
 - the Rocq executables and stdlib, in four copies varying in
   architecture and OCaml version used to build Rocq:
-  https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_install_ci/?job=build:base
+  https://gitlab.com/rocq-prover/rocq/-/jobs/artifacts/master/browse/_install_ci/?job=build:base
 
   Additionally, an experimental Dune build is provided:
-  https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_build/?job=build:edge:dune:dev
+  https://gitlab.com/rocq-prover/rocq/-/jobs/artifacts/master/browse/_build/?job=build:edge:dune:dev
 
 - the Rocq documentation, built in the `doc:*` jobs. When submitting a
   documentation PR, this can help reviewers checking the rendered

@@ -3,7 +3,7 @@
 TODO: Put the relevant info in the doc and delete this file.
 
 Q0) What is RocqIDE?
-R0: A powerful graphical interface for Coq. See http://coq.inria.fr. for more informations.
+R0: A powerful graphical interface for Coq. See https://rocq-prover.org/refman/practical-tools/coqide.html. for more information.
 
 Q1) How to enable Emacs keybindings?
 R1: Insert 

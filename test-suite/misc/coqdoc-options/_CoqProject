@@ -1,5 +1,5 @@
 -R theories Coqdoc
 
-COQDOCFLAGS = "--index indexpage -g -coqlib_url http://coq.inria.fr/stdlib --utf8"
+COQDOCFLAGS = "--index indexpage -g -coqlib_url http://rocq-prover.org/stdlib --utf8"
 
 theories/test.v

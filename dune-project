@@ -16,12 +16,12 @@
 (maintainers "The Rocq development team <coqdev@inria.fr>")
 (authors "The Rocq development team, INRIA, CNRS, and contributors")
 ; This generates bug-reports and dev-repo
-(source (github coq/coq))
-(homepage https://coq.inria.fr/)
-(documentation "https://coq.github.io/doc/")
+(source (github rocq-prover/rocq))
+(homepage https://rocq-prover.org/)
+(documentation "https://rocq-prover.org/docs/")
 (version dev)
 
-; Note that we use coq.opam.template to have dune add the correct opam
+; Note that we use rocq-runtime.opam.template to have dune add the correct opam
 ; prefix for configure
 (package
  (name rocq-runtime)
@@ -124,7 +124,7 @@ algorithms and theorems together with an environment for
 semi-interactive development of machine-checked proofs.
 
 This package provides the `coqidetop` language server, an
-implementation of Rocq's [XML protocol](https://github.com/coq/coq/blob/master/dev/doc/xml-protocol.md)
+implementation of Rocq's [XML protocol](https://github.com/rocq-prover/rocq/blob/master/dev/doc/xml-protocol.md)
 which allows clients, such as RocqIDE, to interact with the Rocq Prover in a
 structured way."))
 
