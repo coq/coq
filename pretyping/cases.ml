@@ -416,7 +416,7 @@ let coerce_row ~program_mode typing_fun env sigma pats (tomatch,(na,indopt)) =
   let loc = loc_of_glob_constr tomatch in
   let sigma, tycon, realnames = find_tomatch_tycon !!env sigma loc indopt in
   let sigma, j = typing_fun tycon env sigma tomatch in
-  let sigma, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) ~program_mode !!env sigma j in
+  let sigma, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) ~program_mode env sigma j in
   let typ = nf_evar sigma j.uj_type in
   let env = make_return_predicate_ltac_lvar env sigma na tomatch j.uj_val in
   let sigma, t =
@@ -471,7 +471,7 @@ let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
                   raise (PretypeError (!!(pb.env), sigma, CannotUnify (indt, typ, Some e)))
                 | sigma -> sigma, current
               else
-                let sigma, j, _trace = Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc:true !!(pb.env) sigma (make_judge current typ) indt in
+                let sigma, j, _trace = Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc:true pb.env sigma (make_judge current typ) indt in
                 sigma, j.uj_val
             in
             sigma, (current, try_find_ind !!(pb.env) sigma indt names))
@@ -2879,7 +2879,7 @@ let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predop
     let used, sigma, j = compile ~program_mode sigma pb in
 
     (* We coerce to the tycon (if an elim predicate was provided) *)
-    let sigma, j = inh_conv_coerce_to_tycon ?loc ~program_mode !!env sigma j tycon in
+    let sigma, j = inh_conv_coerce_to_tycon ?loc ~program_mode env sigma j tycon in
     used, sigma, j
   in
 

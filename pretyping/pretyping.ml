@@ -504,7 +504,7 @@ let adjust_evar_source sigma na c =
 let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions; patvars_abstract } env sigma j = function
   | None -> sigma, j, Some Coercion.empty_coercion_trace
   | Some t ->
-    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions ~patvars_abstract !!env sigma j t
+    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions ~patvars_abstract env sigma j t
 
 let check_instance subst = function
   | [] -> ()
@@ -1150,7 +1150,7 @@ struct
           sigma, body, na, c1, subs, c2, Coercion.empty_coercion_trace
         | _ ->
           let typ = Vars.esubst Vars.lift_substituend subs typ in
-          let sigma, body, typ, trace = Coercion.inh_app_fun ~program_mode:flags.program_mode ~resolve_tc:flags.resolve_tc ~use_coercions:flags.use_coercions !!env sigma body typ in
+          let sigma, body, typ, trace = Coercion.inh_app_fun ~program_mode:flags.program_mode ~resolve_tc:flags.resolve_tc ~use_coercions:flags.use_coercions env sigma body typ in
           let resty = whd_all !!env sigma typ in
           let na, c1, c2 = match EConstr.kind sigma resty with
           | Prod (na, c1, c2) -> (na, c1, c2)
@@ -1572,7 +1572,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
       let loc = loc_of_glob_constr c in
       let sigma, tj =
         let use_coercions = flags.use_coercions in
-        Coercion.inh_coerce_to_sort ?loc ~use_coercions !!env sigma j in
+        Coercion.inh_coerce_to_sort ?loc ~use_coercions env sigma j in
       match valcon with
       | None -> sigma, tj
       | Some v ->

@@ -26,13 +26,13 @@ val reapply_coercions : evar_map -> coercion_trace -> EConstr.t -> EConstr.t
     inserts a coercion into [j], if needed, in such a way it gets as
     type a sort; it fails if no coercion is applicable *)
 val inh_coerce_to_sort : ?loc:Loc.t -> ?use_coercions:bool ->
-  env -> evar_map -> unsafe_judgment -> evar_map * unsafe_type_judgment
+  GlobEnv.t -> evar_map -> unsafe_judgment -> evar_map * unsafe_type_judgment
 
 (** [inh_coerce_to_base env isevars j] coerces [j] to its base type; i.e. it
     inserts a coercion into [j], if needed, in such a way it gets as
     type its base type (the notion depends on the coercion system) *)
 val inh_coerce_to_base : ?loc:Loc.t -> program_mode:bool ->
-  env -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
+  GlobEnv.t -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
 
 (** [remove_subset env sigma t] applies program mode transformations
    to [t], recursively transforming [{x : A | P}] into [A] *)
@@ -45,11 +45,11 @@ val remove_subset : env -> evar_map -> types -> types
     resort before failing) *)
 
 val inh_conv_coerce_to : ?loc:Loc.t -> program_mode:bool -> resolve_tc:bool ->
-  ?use_coercions:bool -> ?patvars_abstract:bool -> env -> evar_map -> ?flags:Evarconv.unify_flags ->
+  ?use_coercions:bool -> ?patvars_abstract:bool -> GlobEnv.t -> evar_map -> ?flags:Evarconv.unify_flags ->
   unsafe_judgment -> types -> evar_map * unsafe_judgment * coercion_trace option
 
 val inh_conv_coerce_rigid_to : ?loc:Loc.t -> program_mode:bool -> resolve_tc:bool ->
-  ?use_coercions:bool -> ?patvars_abstract:bool -> env -> evar_map -> ?flags:Evarconv.unify_flags ->
+  ?use_coercions:bool -> ?patvars_abstract:bool -> GlobEnv.t -> evar_map -> ?flags:Evarconv.unify_flags ->
   unsafe_judgment -> types -> evar_map * unsafe_judgment * coercion_trace option
 
 (** [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
@@ -96,4 +96,4 @@ val reapply_coercions_body : evar_map -> coercion_trace -> delayed_app_body -> d
     resolve_tc=false disables resolving type classes (as the last
     resort before failing) *)
 val inh_app_fun : program_mode:bool -> resolve_tc:bool -> ?use_coercions:bool ->
-  env -> evar_map -> ?flags:Evarconv.unify_flags -> delayed_app_body -> types -> evar_map * delayed_app_body * types * coercion_trace
+  GlobEnv.t -> evar_map -> ?flags:Evarconv.unify_flags -> delayed_app_body -> types -> evar_map * delayed_app_body * types * coercion_trace
