@@ -49,6 +49,8 @@ module QState : sig
   val collapse : ?except:QVar.Set.t -> t -> t
   val pr : (QVar.t -> Libnames.qualid option) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
+  val of_elims : QGraph.t -> t
+  val elims : t -> QGraph.t
 end =
 struct
 
@@ -60,14 +62,18 @@ type t = {
   (** Rigid variables, may not be set to another *)
   qmap : Quality.t option QMap.t;
   (* TODO: use a persistent union-find structure *)
-  above : QSet.t;
-  (** Set of quality variables known to be either in Prop or Type.
-      If q ∈ above then it must map to None in qmap. *)
+  elims : QGraph.t;
+  (** Elimination graph for quality variables known to be either in Prop or Type.
+      If q ∈ QGraph.qvar_domain elims and it doesn't map to None in qmap, then
+      it is equated to a constant or another qvar in the graph. *)
+  initial_elims : QGraph.t
+  (** Keep the qvar domain without any constraints to optimize computation. *)
 }
 
 type elt = QVar.t
 
-let empty = { rigid = QSet.empty; qmap = QMap.empty; above = QSet.empty }
+let empty = { rigid = QSet.empty; qmap = QMap.empty; elims = QGraph.initial_graph
+            ; initial_elims = QGraph.initial_graph }
 
 let rec repr q m = match QMap.find q m.qmap with
 | None -> QVar q
@@ -77,7 +83,7 @@ let rec repr q m = match QMap.find q m.qmap with
 (*   let () = assert !Flags.in_debugger in *) (* FIXME *)
   QVar q
 
-let is_above_prop q m = QSet.mem q m.above
+let is_above_prop q m = QGraph.eliminates_to_prop ~cheat:false m.elims (QVar q)
 
 let is_rigid m q = QSet.mem q m.rigid
 
@@ -91,22 +97,29 @@ let set q qv m =
     else
     if QSet.mem q m.rigid then None
     else
-      let above =
-        if QSet.mem q m.above then QSet.add qv (QSet.remove q m.above)
-        else m.above
+      let elims =
+        if is_above_prop q m
+        then QGraph.enforce_eq (QVar qv) (QVar q) m.elims
+        else m.elims
       in
-      Some { rigid = m.rigid; qmap = QMap.add q (Some (QVar qv)) m.qmap; above }
+      Some { rigid = m.rigid; qmap = QMap.add q (Some (QVar qv)) m.qmap; elims
+             ; initial_elims = m.initial_elims }
   | q, (QConstant qc as qv) ->
-    if qc == QSProp && QSet.mem q m.above then None
+    if qc == QSProp && is_above_prop q m then None
     else if QSet.mem q m.rigid then None
     else
-      Some { rigid = m.rigid; qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
+      Some { rigid = m.rigid; qmap = QMap.add q (Some qv) m.qmap;
+             elims = QGraph.enforce_eq qv (QVar q) m.elims;
+             initial_elims = m.initial_elims }
 
 let set_above_prop q m =
   let q = repr q m in
   let q = match q with QVar q -> q | QConstant _ -> assert false in
   if QSet.mem q m.rigid then None
-  else Some { rigid = m.rigid; qmap = m.qmap; above = QSet.add q m.above }
+  else
+    Some { rigid = m.rigid; qmap = m.qmap;
+           elims = QGraph.enforce_eliminates_to (QVar q) qprop m.elims;
+           initial_elims = m.initial_elims }
 
 let unify_quality ~fail c q1 q2 local = match q1, q2 with
 | QConstant QType, QConstant QType
@@ -142,6 +155,19 @@ let nf_quality m = function
   | QConstant _ as q -> q
   | QVar q -> repr q m
 
+let add_qvars m qmap qs =
+  let g = m.initial_elims in
+  let filter v = match QMap.find v qmap with
+    | None | exception Not_found -> true
+    | _ -> false in
+  (* Here, we filter instead of enforcing equality due to the collapse:
+     simply enforcing equality may lead to inconsistencies after it *)
+  let qs = QVar.Set.filter filter qs in
+  let fold v g = try QGraph.add_quality (QVar v) g with QGraph.AlreadyDeclared -> g in
+  let fold' v = QGraph.enforce_eliminates_to (QVar v) qprop in
+  let g = QVar.Set.fold fold qs g in
+  (g, QVar.Set.fold fold' qs g)
+
 let union ~fail s1 s2 =
   let extra = ref [] in
   let qmap = QMap.union (fun qk q1 q2 ->
@@ -154,13 +180,9 @@ let union ~fail s1 s2 =
       s1.qmap s2.qmap
   in
   let extra = !extra in
-  let filter q = match QMap.find q qmap with
-  | None -> true
-  | Some _ -> false
-  | exception Not_found -> false
-  in
-  let above = QSet.filter filter @@ QSet.union s1.above s2.above in
-  let s = { rigid = QSet.union s1.rigid s2.rigid; qmap; above } in
+  let qs = QVar.Set.union (QGraph.qvar_domain s1.elims) (QGraph.qvar_domain s2.elims) in
+  let initial_elims,elims = add_qvars s2 qmap qs in
+  let s = { rigid = QSet.union s1.rigid s2.rigid; qmap; elims; initial_elims } in
   List.fold_left (fun s (q1,q2) ->
       let q1 = nf_quality s q1 and q2 = nf_quality s q2 in
       unify_quality ~fail:(fun () -> fail s q1 q2) CONV q1 q2 s)
@@ -171,10 +193,20 @@ let add ~check_fresh ~rigid q m =
   if check_fresh then assert (not (QMap.mem q m.qmap));
   { rigid = if rigid then QSet.add q m.rigid else m.rigid;
     qmap = QMap.add q None m.qmap;
-    above = m.above }
+    elims = QGraph.add_quality (QVar q) m.elims;
+    initial_elims = QGraph.add_quality (QVar q) m.initial_elims }
 
 let of_set qs =
-  { rigid = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; above = QSet.empty }
+  let empty_qmap = QMap.bind (fun _ -> None) qs in
+  let g = QVar.Set.fold (fun v -> QGraph.add_quality (QVar v)) qs QGraph.initial_graph in
+  { rigid = QSet.empty; qmap = empty_qmap;
+    elims = g; initial_elims = g }
+
+let of_elims elims =
+  let empty_qmap = QMap.bind (fun _ -> None) (QGraph.qvar_domain elims) in
+  let initial_elims =
+    QVar.Set.fold (fun v -> QGraph.add_quality (QVar v)) (QGraph.qvar_domain elims) QGraph.initial_graph in
+  { rigid = QSet.empty; qmap = empty_qmap; elims; initial_elims }
 
 (* XXX what about [above]? *)
 let undefined m =
@@ -182,23 +214,25 @@ let undefined m =
   QMap.domain m
 
 let collapse_above_prop ~to_prop m =
-  let map q v = match v with
-    | None ->
-      if not @@ QSet.mem q m.above then None else
-      if to_prop then Some (QConstant QProp)
-      else Some (QConstant QType)
-  | Some _ -> v
-  in
-  { rigid = m.rigid; qmap = QMap.mapi map m.qmap; above = QSet.empty }
+  QMap.fold (fun q v m ->
+           match v with
+           | Some _ -> m
+           | None ->
+              if not @@ is_above_prop q m then m else
+                if to_prop then Option.get (set q qprop m)
+                else Option.get (set q qtype m)
+         )
+         m.qmap m
 
 let collapse ?(except=QSet.empty) m =
-  let map q v = match v with
-  | None -> if QSet.mem q m.rigid || QSet.mem q except then None else Some (QConstant QType)
-  | Some _ -> v
-  in
-  { rigid = m.rigid; qmap = QMap.mapi map m.qmap; above = QSet.empty }
+  QMap.fold (fun q v m ->
+           match v with
+           | Some _ -> m
+           | None -> if QSet.mem q m.rigid || QSet.mem q except then m
+                    else Option.get (set q qtype m))
+         m.qmap m
 
-let pr prqvar_opt { qmap; above; rigid } =
+let pr prqvar_opt ({ qmap; elims; rigid } as m) =
   let open Pp in
   let prqvar q = match prqvar_opt q with
     | None -> QVar.raw_pr q
@@ -206,7 +240,7 @@ let pr prqvar_opt { qmap; above; rigid } =
   in
   let prbody u = function
   | None ->
-    if QSet.mem u above then str " >= Prop"
+    if is_above_prop u m then str " >= Prop"
     else if QSet.mem u rigid then
       str " (rigid)"
     else mt ()
@@ -220,6 +254,8 @@ let pr prqvar_opt { qmap; above; rigid } =
     | Some qid -> str " (named " ++ Libnames.pr_qualid qid ++ str ")"
   in
   h (prlist_with_sep fnl (fun (u, v) -> QVar.raw_pr u ++ prbody u v ++ prqvar_name u) (QMap.bindings qmap))
+
+let elims m = m.elims
 
 end
 
@@ -250,10 +286,11 @@ let empty =
     initial_universes = UGraph.initial_universes;
     minim_extra = UnivMinim.empty_extra; }
 
-let make univs =
+let make univs quals =
   { empty with
     universes = univs;
-    initial_universes = univs }
+    initial_universes = univs;
+    sort_variables = QState.of_elims quals }
 
 let is_empty uctx =
   ContextSet.is_empty uctx.local &&
@@ -394,15 +431,18 @@ let of_context_set ((qs,us),csts) =
 type universe_opt_subst = UnivFlex.t
 
 let subst uctx = uctx.univ_variables
-
 let ugraph uctx = uctx.universes
+
+let elim_graph uctx = QState.elims uctx.sort_variables
 
 let is_algebraic l uctx = UnivFlex.is_algebraic l uctx.univ_variables
 
 let of_names (ubind,(revqbind,revubind)) =
   let revqbind = QVar.Map.map (fun id -> { uname = Some id; uloc = None }) revqbind in
   let revubind = Level.Map.map (fun id -> { uname = Some id; uloc = None }) revubind in
-  {empty with names = (ubind,(revqbind,revubind))}
+  let qgraph = QVar.Map.fold (fun v _ -> QGraph.add_quality (QVar v)) revqbind QGraph.initial_graph in
+  { empty with names = (ubind,(revqbind,revubind));
+               sort_variables = QState.of_elims qgraph; }
 
 let universe_of_name uctx s =
   UNameMap.find s (snd (fst uctx.names))
@@ -751,11 +791,9 @@ let check_elim_constraints uctx csts =
   Sorts.ElimConstraints.for_all (fun (l,k,r) ->
       let l = nf_quality uctx l in
       let r = nf_quality uctx r in
-      if Quality.equal l r then true
-      else match l,k,r with
-        | _, Equal, _ -> false
-        | QVar q, ElimTo, QConstant QProp -> QState.is_above_prop q uctx.sort_variables
-        | _, ElimTo, _ -> Inductive.eliminates_to QGraph.initial_graph l r)
+      match l,k,r with
+        | _, Equal, _ -> Quality.equal l r
+        | _, ElimTo, _ -> Inductive.eliminates_to (QState.elims uctx.sort_variables) l r)
     csts
 
 let check_universe_constraint uctx (c:UnivProblem.t) =
@@ -767,13 +805,8 @@ let check_universe_constraint uctx (c:UnivProblem.t) =
   | QElimTo (a,b) ->
     let a = nf_quality uctx a in
     let b = nf_quality uctx b in
-    if Quality.equal a b then true
-    else
-      begin
-        match a, b with
-        | QVar q, QConstant QProp -> QState.is_above_prop q uctx.sort_variables
-        | _ -> Inductive.eliminates_to QGraph.initial_graph a b
-      end
+    Quality.equal a b ||
+      Inductive.eliminates_to (QState.elims uctx.sort_variables) a b
   | ULe (u,v) -> UGraph.check_leq_sort uctx.universes u v
   | UEq (u,v) -> UGraph.check_eq_sort uctx.universes u v
   | ULub (u,v) -> UGraph.check_eq_level uctx.universes u v
@@ -1191,15 +1224,15 @@ let new_univ_variable ?loc rigid name uctx =
 
 let add_forgotten_univ uctx u = add_universe None true uctx u
 
-let make_with_initial_binders univs binders =
-  let uctx = make univs in
+let make_with_initial_binders univs quals binders =
+  let uctx = make univs quals in
   List.fold_left
     (fun uctx { CAst.loc; v = id } ->
        fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
     uctx binders
 
 let from_env ?(binders=[]) env =
-  make_with_initial_binders (Environ.universes env) binders
+  make_with_initial_binders (Environ.universes env) (Environ.qualities env) binders
 
 let make_nonalgebraic_variable uctx u =
   { uctx with univ_variables = UnivFlex.make_nonalgebraic_variable uctx.univ_variables u }
