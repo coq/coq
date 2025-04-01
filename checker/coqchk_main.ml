@@ -45,9 +45,11 @@ let path_of_string s =
     | [] -> invalid_arg "path_of_string"
     | l::dir -> CheckLibrary.LogicalFile {dirpath=dir; basename=l}
 
-let get_version () =
+let get_version env () =
+  match env with
+  | Boot.Env.Boot -> Coq_config.version
+  | Env env ->
   try
-    let env = Boot.Env.init () in
     let revision = Boot.Env.(Path.to_string (revision env)) in
     let ch = open_in revision in
     let ver = input_line ch in
@@ -56,8 +58,8 @@ let get_version () =
     Printf.sprintf "%s (%s)" ver rev
   with Sys_error _ | End_of_file -> Coq_config.version
 
-let print_header () =
-  Printf.printf "Welcome to Chicken %s\n%!" (get_version ())
+let print_header env () =
+  Printf.printf "Welcome to Chicken %s\n%!" (get_version env ())
 
 (* Adding files to Rocq loadpath *)
 
@@ -102,8 +104,7 @@ let set_include d p =
   push_include (d,p)
 
 (* Initializes the LoadPath *)
-let init_load_path () =
-  let rocqenv = Boot.Env.init () in
+let init_load_path rocqenv =
   (* the to_string casting won't be necessary once Boot handles
      include paths *)
   let plugins = Boot.Env.plugins rocqenv |> Boot.Path.to_string in
@@ -127,9 +128,9 @@ let init_load_path () =
   (* then current directory *)
   add_path ~unix_path:"." ~rocq_root:CheckLibrary.default_root_prefix
 
-let init_load_path () : unit =
+let init_load_path env : unit =
   NewProfile.profile "init_load_path"
-    init_load_path
+    (fun () -> init_load_path env)
     ()
 
 let impredicative_set = ref false
@@ -137,6 +138,9 @@ let set_impredicative_set () = impredicative_set := true
 
 let boot = ref false
 let set_boot () = boot := true
+
+let coqlib = ref None
+let set_coqlib v = coqlib := Some v
 
 let indices_matter = ref false
 
@@ -348,7 +352,7 @@ let parse_args argv =
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then
         fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
-      Boot.Env.set_coqlib s;
+      set_coqlib s;
       parse rem
 
     | "-boot" :: rem ->
@@ -370,7 +374,7 @@ let parse_args argv =
     | "-profile" :: [] -> usage 1
 
     | "-where" :: _ ->
-      let env = Boot.Env.init () in
+      let env = Boot.Env.init_with ~coqlib:!coqlib in
       let rocqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
       print_endline rocqlib;
       exit 0
@@ -413,8 +417,15 @@ let init_with_argv argv =
     parse_args argv;
     Option.iter (fun file -> init_profile ~file) !profile;
     if CDebug.(get_flag misc) then Printexc.record_backtrace true;
-    Flags.if_verbose print_header ();
-    if not !boot then init_load_path ();
+    let coqenv = match Boot.Env.maybe_init ~boot:!boot ~coqlib:!coqlib with
+      | Ok x -> x
+      | Error msg -> CErrors.user_err Pp.(str msg)
+    in
+    Flags.if_verbose (fun () -> print_header coqenv ()) ();
+    let () = match coqenv with
+      | Boot -> ()
+      | Env coqenv -> init_load_path coqenv
+    in
     (* additional loadpath, given with -R/-Q options *)
     NewProfile.profile "add_load_paths" (fun () ->
         List.iter

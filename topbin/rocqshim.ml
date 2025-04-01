@@ -106,8 +106,8 @@ let putenv_from_file ~debug () =
 
 let make_ocamlpath envopt opts =
   let boot_ml_path = match envopt with
-    | None -> []
-    | Some coqenv ->
+    | Boot.Env.Boot -> []
+    | Boot.Env.Env coqenv ->
       Boot.Env.Path.[to_string (relative (Boot.Env.corelib coqenv) "..")]
   in
   let env_ocamlpath =
@@ -141,32 +141,16 @@ let parse_opts = function
   | args -> { debug_shim = false }, args
 
 let boot_env opts =
-  let noenv = match opts.queries with
-    | [] -> opts.boot
-    | _ :: _ ->
-      (* don't trust user-given -boot if the user also passed a query which needs it,
-         and don't needlessly initialize the env
-         if the user passed only queries which don't need it. *)
-      not (List.exists Boot.Env.query_needs_env opts.queries)
-  in
-  if noenv then None
-  else
-    let () = Option.iter Boot.Env.set_coqlib opts.coqlib in
-    Some (Boot.Env.init ())
-
-let do_queries opts =
-  match opts.queries with
-  | [] -> ()
-  | _ :: _ ->
-    List.iter (Boot.Env.print_query None) opts.queries;
-    exit 0
+  match Boot.Env.print_queries_maybe_init ~boot:opts.boot ~coqlib:opts.coqlib None opts.queries with
+  | Ok env -> env
+  | Error msg -> Printf.eprintf "%s\n%!" msg; exit 1
 
 let init { debug_shim=debug } args =
   (* important to putenv before reading OCAMLPATH / ROCQLIB *)
   let () = putenv_from_file ~debug () in
   let opts = parse_args args in
   let coqenv = boot_env opts in
-  let () = do_queries opts in
+  let () = match opts.queries with [] -> () | _ :: _ -> exit 0 in
   let env_ocamlpath = make_ocamlpath coqenv opts in
   let () = if debug then Printf.eprintf "OCAMLPATH = %s\n%!" env_ocamlpath in
   Findlib.init ~env_ocamlpath ()
@@ -178,5 +162,4 @@ let try_run_queries { debug_shim=debug } args =
   | [] -> false
   | _ :: _ ->
     let _coqenv = boot_env opts in
-    let () = do_queries opts in
     true

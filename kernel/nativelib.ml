@@ -59,16 +59,13 @@ let delay_cleanup_file =
    without native compute or native conv uses). *)
 let include_dirs = ref []
 
+let default_include_dirs env = [ Boot.Env.(Path.to_string (native_cmi env "kernel")) ]
+
 let get_include_dirs () =
   let base = match !include_dirs with
-  | [] ->
-    (* EJGA: Should this case go away in favor of always requiring
-       explicit -nI flags once we remove the make-based system? I think
-       so. *)
-    let env = Boot.Env.init () in
-    [ Boot.Env.(Path.to_string (native_cmi env "kernel"))
-    ; Boot.Env.(Path.to_string (native_cmi env "library"))
-    ]
+    | [] ->
+      CErrors.user_err
+        Pp.(str "Native compute with -boot: you must also give -nI pointing to the kernel.")
   | _::_ as l -> l
   in
   if Lazy.is_val my_temp_dir

@@ -341,13 +341,16 @@ let init ~make_separator_hack args =
   Makefile.set_noglob args.Args.noglob;
   (* Add to the findlib search path, common with sysinit/coqinit *)
   let ml_path = args.Args.ml_path in
-  let ml_path =
-    if args.Args.boot then ml_path
-    else
-      let env = Boot.Env.init () in
-       ml_path @ Boot.Env.Path.[to_string @@ relative (Boot.Env.corelib env) ".."]
+  let rocqenv = match Boot.Env.maybe_init ~boot:args.boot ~coqlib:args.coqlib with
+    | Ok x -> x
+    | Error msg -> CErrors.user_err Pp.(str msg)
+  in
+  let ml_path = match rocqenv with
+    | Boot -> ml_path
+    | Env env ->
+      ml_path @ Boot.Env.Path.[to_string @@ relative (Boot.Env.corelib env) ".."]
   in
   findlib_init ml_path;
   List.iter (add_include loadpath) args.Args.vo_path;
   Makefile.set_dyndep args.Args.dyndep;
-  { State.vAccu = []; loadpath; separator_hack = make_separator_hack }
+  rocqenv, { State.vAccu = []; loadpath; separator_hack = make_separator_hack }

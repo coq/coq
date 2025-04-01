@@ -80,11 +80,6 @@ let init_ocaml () =
   (* Get error message (and backtrace if enabled) on Ctrl-C instead of just exiting the process *)
   Sys.catch_break true
 
-let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
-  | None -> ()
-  | Some s ->
-    Boot.Env.set_coqlib s
-
 let dirpath_of_file f =
   let ldir0 =
     try
@@ -132,14 +127,34 @@ let to_vo_path (x:Coqargs.vo_path) : Loadpath.vo_path = {
   recursive = true;
   }
 
-let init_load_paths opts =
+let boot_env usage opts =
   let open Coqargs in
-  let boot_ml_path, boot_vo_path =
-    if opts.pre.boot then [],[]
-    else
-      let coqenv = Boot.Env.init () in
-      Coqloadpath.init_load_path ~coqenv
+  let with_err = function
+    | Ok x -> x
+    | Error msg -> CErrors.user_err Pp.(str msg)
   in
+  let boot = opts.pre.boot in
+  let coqlib = opts.config.coqlib in
+  match opts.main with
+  | Run -> with_err (Boot.Env.maybe_init ~boot ~coqlib)
+  | Queries qs ->
+    let _ = with_err (Boot.Env.print_queries_maybe_init ~boot ~coqlib (Some usage) qs) in
+    exit 0
+
+let init_load_paths (coqenv:Boot.Env.maybe_env) opts =
+  let open Coqargs in
+  let (boot_ml_path, boot_vo_path), native_ml_path =
+    match coqenv with
+    | Boot ->
+      ([],[]),opts.config.native_include_dirs
+    | Env coqenv ->
+      let nI = match opts.config.native_include_dirs with
+        | [] -> Nativelib.default_include_dirs coqenv
+        | _ :: _ as nI -> nI
+      in
+      Coqloadpath.init_load_path ~coqenv, nI
+  in
+  let () = Nativelib.include_dirs := native_ml_path in
   let ml_path = opts.pre.ml_includes @ boot_ml_path in
   List.iter Mltop.add_ml_dir (List.rev ml_path);
   List.iter Loadpath.add_vo_path boot_vo_path;
@@ -165,18 +180,17 @@ let init_runtime ~usage opts =
   Vernacextend.static_linking_done ();
   Option.iter (fun file -> init_profile ~file) opts.config.profile;
   Lib.init ();
-  init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;
 
   (* excluded directories *)
   List.iter System.exclude_directory opts.config.exclude_dirs;
 
-  (* Paths for loading stuff *)
-  init_load_paths opts;
+  let coqenv = boot_env usage opts in
 
-  match opts.Coqargs.main with
-  | Coqargs.Queries q -> List.iter (Boot.Env.print_query (Some usage)) q; exit 0
-  | Coqargs.Run -> ()
+  (* Paths for loading stuff *)
+  init_load_paths coqenv opts;
+
+  ()
 
 let init_document opts =
   let open Coqargs in
@@ -197,7 +211,6 @@ let init_document opts =
   (* XXX these flags should probably be in the summary *)
   (* Native output dir *)
   Nativelib.output_dir := opts.config.native_output_dir;
-  Nativelib.include_dirs := opts.config.native_include_dirs;
 
   (* Default output dir *)
   Flags.output_directory := opts.config.output_directory;

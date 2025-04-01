@@ -29,7 +29,9 @@ let make ~args ~(dir_info : _ Dir_info.t) =
   let args = Coqdeplib.Args.parse (Coqdeplib.Args.make ()) args in
   (* We are sane w.r.t. path separators *)
   let make_separator_hack = false in
-  let st = CD.Common.init ~make_separator_hack args in
+  let rocqenv, st = CD.Common.init ~make_separator_hack args in
+  (* we always use -boot *)
+  assert (rocqenv = Boot);
   let st =
     Dir_info.fold dir_info ~init:st ~f:(fun ~prefix:_ vAccu files ->
         let files = List.map Coq_module.source files in
