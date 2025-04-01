@@ -26,7 +26,7 @@
  (targets
   (dir refman-html))
  (alias refman-html)
- (package coq-doc)
+ (package rocq-doc)
  ; Cannot use this deps alias because of ocaml/dune#3415
  ; (deps (alias refman-deps))
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
@@ -47,7 +47,7 @@
  (targets
   (dir refman-pdf))
  (alias refman-pdf)
- (package coq-doc)
+ (package rocq-doc)
  ; Cannot use this deps alias because of ocaml/dune#3415
  ; (deps (alias refman-deps))
  ; EJGA: note this should've been fixed in dune master as of 05/03/2021
@@ -72,7 +72,7 @@
   (refman-html as html/refman)
   (refman-pdf as pdf/refman))
  (section doc)
- (package coq-doc))
+ (package rocq-doc))
 
 (documentation
- (package coq-doc))
+ (package rocq-doc))
