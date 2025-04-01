@@ -467,8 +467,20 @@ destroy all backtrack and return values.
 Backtracking
 ++++++++++++
 
-In Ltac2, we have the following backtracking primitives, defined in the
-`Control` module::
+Ltac2 models backtracking computations using streams of values: the head of a non-empty stream represent the first path of computation while its tail stands for the alternative paths of computation when backtracking occurs. The empty stream holding no values represent failure and initiates backtracking.
+
+Backtracking failures (empty streams) are moreover decorated with exceptions to inform the reason of failure. These exceptions are then passed to the tail of a non-empty backtracking computation. The following Ltac2 type summarizes the model for backtracking computations
+
+  .. rocqtop:: in
+
+    Ltac2 Type rec 'a backtracking_stream :=
+      [ EmptyStream(exn)
+      | ConsStream('a, (exn -> 'a backtracking_stream)) ].
+
+where `EmptyStream` is a backtracking failure holding an exception and `ConsStream` is a backtracking success with a value `'a` as its head and a backtracking handler parameterized by an exception. When sequenced with additional backtracking computations, a backtracking success may lead to a failure with an exception that will be passed to the handler.
+
+
+In practice, the backtracking aspects of Ltac2's computations can be accessed through the following primitives, defined in the `Control` module::
 
   Ltac2 Type 'a result := [ Val ('a) | Err (exn) ].
 
@@ -476,14 +488,47 @@ In Ltac2, we have the following backtracking primitives, defined in the
   val plus : (unit -> 'a) -> (exn -> 'a) -> 'a
   val case : (unit -> 'a) -> ('a * (exn -> 'a)) result
 
-If one views thunks as lazy lists, then `zero` is the empty list and `plus` is
-list concatenation, while `case` is pattern-matching.
+Informally, the primitive `zero e` ends the current computation and returns to the last backtracking point with exception `e`. In the stream model, it corresponds to the empty stream.
+The primitive `plus t handler` installs a backtracking point around `t`, using `handler` to handle any exception raised by a `zero` while evaluating `t`. This corresponds to appending two streams in the stream model.
+Finally, the primitive `case t` inspects the backtracking structure of a thunked computation `t` and returns `Err e` if `t` yields `zero e`, or returns the first backtracking point as a pair `Val(v,h)` of a value `v` and a handler `h` if there is any. In the particular case where the computation `t ()` yields an immediate value `v`, `case t` returns a trivial backtracking point `Val(v, zero)`. In the stream model, `case` exposes one layer of the stream acting as pattern-matching.
+
+Using these three primitives, thunks of type `unit -> 'a` (corresponding to suspended computations of type `'a`) can be seen as `'a backtracking_stream` when considering only the backtracking effect:
+
+  .. rocqtop:: in
+
+    Ltac2 rec to_stream (t : unit -> 'a) : 'a backtracking_stream :=
+      match Control.case t with
+      | Err e => EmptyStream e
+      | Val (v, h) => ConsStream v (fun e => to_stream (fun () => h e))
+      end.
+
+    Ltac2 rec from_stream (s : 'a backtracking_stream) : unit -> 'a := fun () =>
+      match s with
+      | EmptyStream e => Control.zero e
+      | ConsStream hd tl => Control.plus (fun () => hd) (fun e => from_stream (tl e) ())
+      end.
 
 The backtracking is first-class, i.e. one can write
 :n:`plus (fun () => "x") (fun _ => "y") : string` producing a backtracking string.
 
-These operations are expected to satisfy a few equations, most notably that they
-form a monoid compatible with sequentialization.::
+  .. example:: Behaviour of first class backtracking
+
+    .. rocqtop:: all
+
+        From Ltac2 Require Import Printf.
+
+        (* `bs` holds a backtracking string *)
+        Ltac2 bs () := Control.plus (fun () => "x") (fun _ => "y").
+        (* Prints the first branch "x" and terminates successfully. *)
+        Ltac2 Eval (let s := bs () in printf "%s" s).
+        (* Prints both branches and returns the error. *)
+        Ltac2 print_and_fail (s : string) :=
+          printf "%s" s ;
+          Control.zero (Tactic_failure None).
+
+        Ltac2 Eval (Control.case (fun () => let s := bs () in print_and_fail s)).
+
+These operations are expected to satisfy a few equations, validated by the stream model, most notably that they form a monoid-like structure (skewed by exceptions) compatible with sequentialization::
 
   plus t zero ≡ t ()
   plus (fun () => zero e) f ≡ f e
@@ -495,7 +540,9 @@ form a monoid compatible with sequentialization.::
   let x := zero e in u ≡ zero e
   let x := plus t f in u ≡ plus (fun () => let x := t in u) (fun e => let x := f e in u)
 
-  (t, u, f, g, e values)
+  (t, f, g, e values)
+
+The behaviour of `case` on immediate values can be recovered as `case (fun () => v) ≡ case (fun () => (fun () => v) ()) ≡ case (fun () => plus (fun () => v) zero) ≡ Val(v, zero)`.
 
 Goals
 +++++
