@@ -1020,9 +1020,9 @@ let declare_possibly_mutual_parameters ~info ~cinfo ?(mono_uctx_extra=UState.emp
       (i+1, (name, Constr.mkConstU (cst,inst))::subst, (cst, univs)::csts)
   ) (0, [], []) cinfo typs)
 
-let make_recursive_bodies env ~typing_flags ~possible_guard ~rec_declaration =
+let make_recursive_bodies ?evars env ~typing_flags ~possible_guard ~rec_declaration =
   let env = Environ.update_typing_flags ?typing_flags env in
-  let indexes = Pretyping.search_guard env possible_guard rec_declaration in
+  let indexes = Pretyping.search_guard ?evars env possible_guard rec_declaration in
   let mkbody i = match indexes with
   | Some indexes -> Constr.mkFix ((indexes,i), rec_declaration)
   | None -> Constr.mkCoFix (i, rec_declaration) in
@@ -1047,7 +1047,8 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~uctx ~bodies ~possible_guar
   let possible_guard, fixrelevances = possible_guard in
   let fixtypes = List.map (fun CInfo.{typ} -> typ) cinfo in
   let rec_declaration = prepare_recursive_declaration cinfo fixtypes fixrelevances bodies in
-  let bodies_types, indexes = make_recursive_bodies env ~typing_flags ~rec_declaration ~possible_guard in
+  let evars = Some (Evd.evar_handler @@ Evd.from_ctx uctx) in
+  let bodies_types, indexes = make_recursive_bodies ?evars env ~typing_flags ~rec_declaration ~possible_guard in
   let entries = List.map (fun (body, typ) -> ((body, Evd.empty_side_effects), Some typ)) bodies_types in
   let entries_for_using = List.map (fun (body, typ) -> (body, Some typ)) bodies_types in
   let using = interp_mutual_using env cinfo entries_for_using using in
