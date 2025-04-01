@@ -1034,7 +1034,7 @@ module Internal = struct
     let env = map_qualities (QGraph.Internal.add_template_qvars qvars) env in
     env
 
-  let is_above_prop env q =
+  let eliminates_to_prop env q =
     QGraph.eliminates_to_prop env.env_qualities (Sorts.Quality.QVar q)
 
   module View =

@@ -440,7 +440,7 @@ module Internal = struct
    relevant [QVar]s *)
 let nf_relevance sigma = function
   | Sorts.RelevanceVar q as r ->
-     if UState.is_above_prop (Evd.ustate sigma) q
+     if UState.eliminates_to_prop (Evd.ustate sigma) q
      then Sorts.Relevant
      else r
   | (Sorts.Irrelevant | Sorts.Relevant) as r -> r

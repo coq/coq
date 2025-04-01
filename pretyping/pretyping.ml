@@ -1017,7 +1017,7 @@ struct
         | None -> sigma, q
         | Some _ ->
           let sigma, q = Evd.new_quality_variable sigma in
-          let sigma = Evd.set_above_prop sigma (QVar q) in
+          let sigma = Evd.set_elim_to_prop sigma (QVar q) in
           sigma, q
       in
       let sigma, u = match Option.bind (Univ.Universe.level u) Univ.Level.var_index with

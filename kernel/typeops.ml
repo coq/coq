@@ -65,7 +65,7 @@ let infer_assumption env t ty =
 
 let nf_relevance env = function
   | Sorts.RelevanceVar q as r ->
-    if Environ.Internal.is_above_prop env q then Sorts.Relevant
+    if Environ.Internal.eliminates_to_prop env q then Sorts.Relevant
     else r
   | (Sorts.Irrelevant | Sorts.Relevant) as r -> r
 
@@ -407,7 +407,7 @@ let make_param_univs env indu spec args argtys =
       | Set -> TemplateUniv Universe.type0
       | Type u -> TemplateUniv u
       | QSort (q,u) ->
-        assert (Environ.Internal.is_above_prop env q);
+        assert (Environ.Internal.eliminates_to_prop env q);
         TemplateAboveProp (q,u))
     argtys
 

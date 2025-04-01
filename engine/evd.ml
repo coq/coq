@@ -1187,7 +1187,7 @@ let set_leq_sort evd s1 s2 =
 let set_eq_qualities evd q1 q2 =
   add_universe_constraints evd @@ UnivProblem.Set.singleton (QEq (q1, q2))
 
-let set_above_prop evd q =
+let set_elim_to_prop evd q =
   add_universe_constraints evd @@
     UnivProblem.Set.singleton (QElimTo (q, Sorts.Quality.qprop))
 

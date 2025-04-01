@@ -232,7 +232,7 @@ let check_eq_sort ugraph s1 s2 = match s1, s2 with
   QVar.equal q1 q2 && check_eq ugraph u1 u2
 | (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
 
-let is_above_prop ugraph q =
+let eliminates_to_prop ugraph q =
   Sorts.QVar.Set.mem q ugraph.above_prop_qvars
 
 let check_leq_sort ugraph s1 s2 = match s1, s2 with
@@ -240,14 +240,14 @@ let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, _) -> type_in_type ugraph
 | (Prop, SProp) -> type_in_type ugraph
 | (Prop, (Set | Type _)) -> true
-| (Prop, QSort (q,_)) -> is_above_prop ugraph q
+| (Prop, QSort (q,_)) -> eliminates_to_prop ugraph q
 | (_, (SProp | Prop)) -> type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
   check_leq ugraph (get_algebraic s1) (get_algebraic s2)
 | QSort (q1, u1), QSort (q2, u2) ->
   QVar.equal q1 q2 && check_leq ugraph u1 u2
-| QSort (q, _), Set -> is_above_prop ugraph q
-| QSort (q, u1), Type u2 -> is_above_prop ugraph q && check_leq ugraph u1 u2
+| QSort (q, _), Set -> eliminates_to_prop ugraph q
+| QSort (q, u1), Type u2 -> eliminates_to_prop ugraph q && check_leq ugraph u1 u2
 | ((Type _ | Set), QSort _) -> false
 
 (** Pretty-printing *)
