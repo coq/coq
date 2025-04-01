@@ -10,6 +10,6 @@ git_download stdlib
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/stdlib"
-  dev/with-rocq-wrap.sh dune build --root . --only-packages=rocq-stdlib @install
+  dev/with-rocq-wrap.sh dune build --root . --profile release --only-packages=rocq-stdlib @install
   dev/with-rocq-wrap.sh dune install --root . rocq-stdlib --prefix="$CI_INSTALL_DIR"
 )
