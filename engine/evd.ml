@@ -854,7 +854,8 @@ let evar_handler sigma =
   | exception Not_found -> false (* Should be an anomaly *)
   in
   let evar_repack ev = mkLEvar sigma ev in
-  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant }
+  let elim_to = Inductive.eliminates_to (UState.elim_graph sigma.universes) in
+  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant; elim_to }
 
 let existential_type_opt d (n, args) =
   match find_undefined d n with
@@ -1031,6 +1032,7 @@ let univ_flexible = UnivFlexible false
 let univ_flexible_alg = UnivFlexible true
 
 let ustate d = d.universes
+let elim_graph d = UState.elim_graph d.universes
 
 let evar_universe_context d = ustate d
 

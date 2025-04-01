@@ -250,7 +250,7 @@ let squash_elim_sort sigma squash rtnsort =
   let add_unif_if_cannot_elim_into starget =
     let q = Sorts.quality starget in
     let q' = ESorts.quality sigma rtnsort in
-    if Inductive.eliminates_to ~cheat:true QGraph.initial_graph q q'
+    if Inductive.eliminates_to (Evd.elim_graph sigma) q q'
     then sigma
     else Evd.set_eq_sort sigma rtnsort @@ ESorts.make starget in
   match squash with
@@ -282,7 +282,7 @@ let loc_squashed_to_quality sigma u q =
 
 let is_squashed sigma specifu =
   Inductive.is_squashed_gen
-    QGraph.initial_graph
+    (Evd.elim_graph sigma)
     (loc_indsort_to_quality sigma)
     (loc_squashed_to_quality sigma)
     specifu
@@ -292,7 +292,7 @@ let is_allowed_elimination sigma (((mib,_),_) as specifu) s =
   | PrimRecord _ -> true
   | NotRecord | FakeRecord ->
      let s = EConstr.ESorts.kind sigma s in
-     let g = QGraph.initial_graph in
+     let g = Evd.elim_graph sigma in
      Inductive.allowed_elimination_gen g
         (loc_indsort_to_quality sigma)
         (loc_squashed_to_quality sigma)
@@ -308,7 +308,7 @@ let make_allowed_elimination_actions sigma s =
     with UGraph.UniverseInconsistency _ -> None)
   ; squashed_to_quality =
       fun indq -> let sq = EConstr.ESorts.quality sigma s in
-               if Inductive.eliminates_to ~cheat:true QGraph.initial_graph indq sq
+               if Inductive.eliminates_to (Evd.elim_graph sigma) indq sq
                then Some sigma
                else
                  let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
@@ -320,7 +320,7 @@ let make_allowed_elimination sigma ((mib,_),_ as specifu) s =
   | PrimRecord _ -> Some sigma
   | NotRecord | FakeRecord ->
      Inductive.allowed_elimination_gen
-        QGraph.initial_graph
+        (Evd.elim_graph sigma)
         (loc_indsort_to_quality sigma)
         (loc_squashed_to_quality sigma)
         (make_allowed_elimination_actions sigma s)
@@ -430,9 +430,37 @@ let get_constructors env (ind,params) =
 
 let get_projections = Environ.get_projections
 
+
+(* ************************************* *)
+module Internal = struct
+(* FIXME temporary copy of [Typeops] functions: previously, there was an hack in
+   place to make the kernel aware of [QVar]s eliminating to [Prop]. It's not
+   working anymore with the [QGraph], so we redefine [nf_relevance] and
+   [should_invert_case] to work with the [QGraph] in [sigma] (which knows the
+   relevant [QVar]s *)
+let nf_relevance sigma = function
+  | Sorts.RelevanceVar q as r ->
+     if UState.is_above_prop (Evd.ustate sigma) q
+     then Sorts.Relevant
+     else r
+  | (Sorts.Irrelevant | Sorts.Relevant) as r -> r
+
+let should_invert_case env sigma r (ci : Constr.case_info) =
+  Sorts.relevance_equal (nf_relevance sigma r) Sorts.Relevant &&
+    let mib,mip = Inductive.lookup_mind_specif env ci.ci_ind in
+    (* mind_relevance cannot be a pseudo sort poly variable so don't use check_relevance *)
+    Sorts.relevance_equal mip.mind_relevance Sorts.Irrelevant &&
+      match Array.length mip.mind_nf_lc with
+      | 0 -> true
+      | 1 ->
+         List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
+      | _ -> false
+end
+(* ************************************* *)
+
 let make_case_invert env sigma (IndType (((ind,u),params),indices)) ~case_relevance:r ci =
   let r = ERelevance.kind sigma r in
-  if Typeops.should_invert_case env r ci
+  if Internal.should_invert_case env sigma r ci
   then Constr.CaseInvert {indices=Array.of_list indices}
   else Constr.NoInvert
 

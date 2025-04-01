@@ -128,6 +128,7 @@ type evar_handler = {
   evar_repack : Evar.t * constr list -> constr;
   evar_irrelevant : constr pexistential -> bool;
   qvar_irrelevant : Sorts.QVar.t -> bool;
+  elim_to : Sorts.Quality.t -> Sorts.Quality.t -> bool;
 }
 
 let default_evar_handler env = {
@@ -137,7 +138,10 @@ let default_evar_handler env = {
   qvar_irrelevant = (fun q ->
       assert (Sorts.QVar.Set.mem q (Environ.qvars env));
       false);
+  elim_to = (fun _ _ -> assert false);
 }
+
+let elim_to e = e.elim_to
 
 (** Reduction cache *)
 type infos_cache = {

@@ -101,8 +101,6 @@ let enforce_eliminates_to s1 s2 g =
 let enforce_eq s1 s2 g =
   enforce_constraint (s1, ElimConstraint.Equal, s2) g
 
-(* let add_qvar q g = add_quality g (QVar q) *)
-
 let initial_graph =
   let g = G.empty in
   let g = List.fold_left (fun g q -> G.add q g) g Quality.all_constants in
@@ -118,23 +116,17 @@ let initial_graph =
         (List.filter (fun q' -> not @@ Quality.equal q q') Quality.all_constants))
     g Quality.all_constants
 
-let cheat_eliminates_to g q q' =
-  if Quality.is_qtype q || Quality.equal q q' then true
-  else try check_func ElimConstraint.ElimTo g q q'
-       with _ -> false
-
-let eliminates_to ~cheat g q q' =
-  if cheat then cheat_eliminates_to g q q'
-  else check_func ElimConstraint.ElimTo g q q'
+let eliminates_to g q q' =
+  check_func ElimConstraint.ElimTo g q q'
 
 let sort_eliminates_to g s1 s2 =
-  eliminates_to ~cheat:false g (quality s1) (quality s2)
+  eliminates_to g (quality s1) (quality s2)
 
 let check_eq = G.check_eq
 
 let check_eq_sort g s s' = check_eq g (quality s) (quality s')
 
-let eliminates_to_prop ~cheat g q = eliminates_to ~cheat g q Quality.qprop
+let eliminates_to_prop g q = eliminates_to g q Quality.qprop
 
 let domain = G.domain
 
@@ -143,7 +135,7 @@ let qvar_domain g =
     (fun q acc -> match q with Quality.QVar q -> QVar.Set.add q acc | _ -> acc)
     (domain g) QVar.Set.empty
 
-let is_empty g = Quality.Set.is_empty (domain g)
+let is_empty g = QVar.Set.is_empty (qvar_domain g)
 
 let explain_quality_inconsistency defprv (prv, (k, q1, q2, r)) =
   let open Pp in

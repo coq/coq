@@ -85,7 +85,7 @@ val raw_eliminates_to : Sorts.Quality.t -> Sorts.Quality.t -> bool
    elimination on the same [QVar]. Use [eliminates_to] for a proper handling of
    variables. *)
 
-val eliminates_to : ?cheat:bool -> QGraph.t -> Sorts.Quality.t -> Sorts.Quality.t -> bool
+val eliminates_to : QGraph.t -> Sorts.Quality.t -> Sorts.Quality.t -> bool
 
 val sort_eliminates_to : QGraph.t -> Sorts.t -> Sorts.t -> bool
 
@@ -110,7 +110,8 @@ val is_squashed : env -> mind_specif puniverses -> squash option
 val is_allowed_elimination_actions : QGraph.t -> Sorts.t -> bool allow_elimination_actions
 
 val is_allowed_elimination : env -> mind_specif puniverses -> Sorts.t -> bool
-val is_allowed_fixpoint : QGraph.t -> Sorts.t -> Sorts.t -> bool
+val is_allowed_fixpoint : (Sorts.Quality.t -> Sorts.Quality.t -> bool)
+  -> Sorts.t -> Sorts.t -> bool
 
 (** End of elimination functions *)
 

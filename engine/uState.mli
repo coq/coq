@@ -76,6 +76,9 @@ val ugraph : t -> UGraph.t
 (** The current graph extended with the local constraints *)
 
 val elim_graph : t -> QGraph.t
+(** The elimination graph for above prop variables *)
+
+val is_above_prop : t -> Sorts.QVar.t -> bool
 
 val is_algebraic : Level.t -> t -> bool
 (** Can this universe be instantiated with an algebraic

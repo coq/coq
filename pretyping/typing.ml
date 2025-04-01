@@ -287,7 +287,7 @@ let judge_of_case env sigma case ci (pj,rp) iv cj lfj =
   let () = check_case_info env ind ci in
   let sigma = check_branch_types env sigma ind cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true)
-              != Typeops.should_invert_case env (ERelevance.kind sigma rp) ci
+              != Inductiveops.Internal.should_invert_case env sigma (ERelevance.kind sigma rp) ci
     then Type_errors.error_bad_invert env
   in
   sigma, { uj_val  = mkCase case;

@@ -951,7 +951,7 @@ let build_case_analysis env sigma (ind, u) params pred indices indarg dep knd =
           if dep then Context.Rel.instance mkRel 0 deparsign
           else Context.Rel.instance mkRel 1 (List.tl deparsign)) in
     let iv =
-      if Typeops.should_invert_case env (ERelevance.kind sigma relevance) ci
+      if Inductiveops.Internal.should_invert_case env sigma (ERelevance.kind sigma relevance) ci
       then CaseInvert { indices = indices }
       else NoInvert
     in

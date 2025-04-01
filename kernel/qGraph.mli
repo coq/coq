@@ -58,12 +58,8 @@ val initial_graph : t
 (** Graph with the constant quality elimination constraints found in
     [Quality.Constants.eliminates_to]. *)
 
-val eliminates_to : cheat:bool -> t -> Quality.t -> Quality.t -> bool
-(* FIXME: remove [cheat] once the graph is added to the [UState] *)
-
-val eliminates_to_prop : cheat:bool -> t -> Quality.t -> bool
-(* FIXME: remove [cheat] once the graph is added to the [UState] *)
-
+val eliminates_to : t -> Quality.t -> Quality.t -> bool
+val eliminates_to_prop : t -> Quality.t -> bool
 val sort_eliminates_to : t -> Sorts.t -> Sorts.t -> bool
 
 val check_eq : t -> Quality.t -> Quality.t -> bool
