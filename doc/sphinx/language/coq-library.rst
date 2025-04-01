@@ -6,22 +6,34 @@ The Coq libraries
 .. index::
    single: Theories
 
-The :gdef:`prelude` contains definitions and theorems for
+The :gdef:`core library` contains definitions and theorems for
 the most commonly used elementary logical notions and
-data types. Coq loads many of these files automatically when it starts.
-The content of the prelude can be browsed at https://coq.inria.fr/prelude/.
+data types, as well as :ref:`primitive objects <primitive-objects>`,
+support for tactics such as :tacn:`setoid_rewrite`
+or commands such as :ref:`Program <programs>`, the proof language
+:ref:`ssreflect <thessreflectprooflanguage>`,
+the tactic language :ref:`Ltac2 <ltac2>`
+and some compatibilty helpers for previous versions of Rocq.
+The content of the corelib can be browsed at https://rocq-prover.org/corelib/.
+
+Coq automatically loads many of these files when it starts.
+This set of preloaded files is called the :gdef:`prelude`.
+Its content can be browsed at
+https://rocq-prover.org/corelib/Corelib.Init.Prelude.html.
 
 Other libraries like the :gdef:`standard library` are general-purpose
 libraries with definitions and theorems for sets, lists, sorting,
 arithmetic, etc. To use these files, users must load them explicitly
-with the ``Require`` command (see :ref:`compiled-files`)
-The content of the standard library can be browsed at https://coq.inria.fr/stdlib/.
+with the ``From Stdlib Require`` command (see :ref:`compiled-files`).
+The content of the standard library can be browsed at https://rocq-prover.org/stdlib/.
 
-There are also many libraries provided by Coq users' community.
-These libraries and developments are available
-for download at https://coq.inria.fr/ (see :ref:`userscontributions`).
+There are many other libraries provided by the Rocq users' community.
+Many such libraries and developments are packaged in Nix or Opam.
+The Rocq Opam repository can be browsed at
+https://rocq-prover.org/packages/
+(see :ref:`userscontributions`).
 
-This chapter briefly reviews the Coq prelude
+This chapter briefly reviews the prelude.
 
 The prelude
 -----------
@@ -702,16 +714,17 @@ Tactics
 
 A few tactics defined at the user level are provided in the initial
 state, in module ``Tactics.v``. They are listed at
-https://coq.inria.fr/prelude/, in paragraph ``Init``, link ``Tactics``.
+https://rocq-prover.org/corelib/, in paragraph ``Init``, link ``Tactics``.
 
 .. _userscontributions:
 
-Users’ contributions
---------------------
+Opam repository
+---------------
 
-Numerous users' contributions have been collected and are available at
-URL https://coq.inria.fr/opam/www/.  On this web page, you have a list
-of all contributions with informations (author, institution, quick
-description, etc.) and the possibility to download them one by one.
+Numerous users' contributions have been packaged and are available at
+URL https://rocq-prover.org/packages/. On this web page, you can browse
+all contributions with informations (author, institution, quick
+description, etc.) and the possibility to download their sources
+or install them with their dependencies through the Opam package manager.
 You will also find informations on how to submit a new
-contribution.
+package.
