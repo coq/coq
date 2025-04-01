@@ -35,7 +35,7 @@ type dep_flag = bool
 
 (* Errors related to recursors building *)
 type recursion_scheme_error =
-  | NotAllowedCaseAnalysis of (*isrec:*) bool * Sorts.t * pinductive
+  | NotAllowedCaseAnalysis of Evd.evar_map * (*isrec:*) bool * Sorts.t * pinductive
   | NotMutualInScheme of inductive * inductive
   | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
@@ -154,7 +154,7 @@ let check_valid_elimination env sigma (ind, u as pind) ~dep s =
     let pind = on_snd EConstr.Unsafe.to_instance pind in
     raise
       (RecursionSchemeError
-         (env, NotAllowedCaseAnalysis (false, s, pind)))
+         (env, NotAllowedCaseAnalysis (sigma, false, s, pind)))
 
 let paramdecls_fresh_template sigma (mib,u) =
   match mib.mind_template with
@@ -681,7 +681,7 @@ let check_arities env sigma listdepkind =
         let u = EInstance.kind sigma u in
         raise
          (RecursionSchemeError
-          (env, NotAllowedCaseAnalysis (true, s,(mind,u))))
+          (env, NotAllowedCaseAnalysis (sigma, true, s,(mind,u))))
        else if Int.List.mem ni ln then raise
          (RecursionSchemeError (env, NotMutualInScheme (mind,mind)))
        else ni::ln)

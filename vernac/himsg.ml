@@ -241,6 +241,7 @@ let explain_elim_arity env sigma ind c okinds =
         if ppunivs then Flags.with_option Constrextern.print_universes pp ()
         else pp ()
       in
+      let env = Environ.set_qualities (Evd.elim_graph sigma) env in
       let squash = Option.get (Inductive.is_squashed env (specif, snd ind)) in
       match squash with
       | SquashToSet ->
@@ -1518,8 +1519,8 @@ let explain_incompatible_prim_declarations (type a) (act:a Primred.action_kind) 
 (* Recursion schemes errors *)
 
 let explain_recursion_scheme_error env = function
-  | NotAllowedCaseAnalysis (isrec,k,i) ->
-    explain_elim_arity env (Evd.from_env env) i None (Some k)
+  | NotAllowedCaseAnalysis (sigma,isrec,k,i) ->
+    explain_elim_arity env sigma i None (Some k)
       (* error_not_allowed_case_analysis env isrec k i *)
   | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme env ind ind'
   | NotAllowedDependentAnalysis (isrec, i) ->
