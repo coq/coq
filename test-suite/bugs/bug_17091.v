@@ -43,4 +43,7 @@ Program Definition to_simple : forall {x y} (p : PathOf x y),
 Next Obligation.
 elim admit.
 Defined.
-Admit Obligations.
+
+Final Obligation.
+clear to_simple. elim admit.
+Qed.
