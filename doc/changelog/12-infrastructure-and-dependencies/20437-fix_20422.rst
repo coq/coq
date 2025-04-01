@@ -1,0 +1,5 @@
+- **Fixed:**
+  Bad interaction between dune, `rocq dep`, and local opam directory switches
+  (`#20437 <https://github.com/rocq-prover/rocq/pull/20437>`_,
+  fixes `#20422 <https://github.com/rocq-prover/rocq/issues/20422>`_,
+  by Rodolphe Lepigre).
