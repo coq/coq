@@ -577,8 +577,11 @@ The current implementation recognizes the following built-in quotations:
 - ``ident``, which parses identifiers (type ``Init.ident``).
 - ``constr``, which parses Rocq terms and produces an-evar free term at runtime
   (type ``Init.constr``).
+- ``lconstr``, which is equivalent to ``constr`` but at precedence level 200.
 - ``open_constr``, which parses Rocq terms and produces a term potentially with
   holes at runtime (type ``Init.constr`` as well).
+- ``open_lconstr``, which is equivalent to ``open_constr`` but at precedence
+  level 200.
 - ``preterm``, which parses Rocq terms and produces a value which must
   be typechecked with ``Constr.pretype`` (type ``Init.preterm``).
 - ``pat``, which parses Rocq patterns and produces a pattern used for term
