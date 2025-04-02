@@ -50,7 +50,7 @@ ENV NJOBS="2" \
 RUN mkdir -p ~/.config/dune && printf '(lang dune 2.1)\n(jobs %s)\n' $NJOBS > ~/.config/dune/config
 
 # Edge opam is the set of edge packages required by Coq
-ENV COMPILER="4.14.1" \
+ENV COMPILER="4.14.2" \
     BASE_OPAM="zarith.1.13 ounit2.2.2.6 camlzip.1.13" \
     CI_OPAM="ocamlgraph.2.0.0 cppo.1.6.9" \
     BASE_OPAM_EDGE="dune.3.14.0 dune-build-info.3.14.0 dune-release.2.0.0 ocamlfind.1.9.6 odoc.2.3.1" \
