@@ -485,6 +485,10 @@ let universes_of_private eff =
   let fold acc eff = Univ.ContextSet.union eff.seff_univs acc in
   List.fold_left fold Univ.ContextSet.empty (side_effects_of_private_constants eff)
 
+let constants_of_private eff =
+  let fold acc eff = eff.seff_constant :: acc in
+  List.fold_left fold [] (side_effects_of_private_constants eff)
+
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
 

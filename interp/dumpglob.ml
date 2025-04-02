@@ -126,9 +126,11 @@ let type_of_global_ref gr =
     let open Names.GlobRef in
     match gr with
     | ConstRef cst ->
-      type_of_logical_kind (constant_kind cst)
+      let knd = try constant_kind cst with Not_found -> IsDefinition Definition in
+      type_of_logical_kind knd
     | VarRef v ->
-      "var" ^ type_of_logical_kind (Decls.variable_kind v)
+      let knd = try Decls.variable_kind v with Not_found -> IsDefinition Definition in
+      "var" ^ type_of_logical_kind knd
     | IndRef ind ->
         let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
           if mib.Declarations.mind_record <> Declarations.NotRecord then

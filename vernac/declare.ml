@@ -665,7 +665,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn
 
-let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~opaque de =
+let declare_private_constant ?role ~name ~opaque de =
   let de, ctx =
     if not opaque then
       let de, ctx = cast_pure_proof_entry de in
@@ -673,13 +673,13 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
     else
       let de, ctx = cast_opaque_proof_entry PureEntry de in
       OpaqueEff de, ctx
+
   in
   let kn, eff = Global.add_private_constant name ctx de in
   let () = if Univ.Level.Set.is_empty (fst ctx) then ()
     else DeclareUniv.declare_univ_binders (ConstRef kn)
         (Monomorphic_entry ctx, UnivNames.empty_binders)
   in
-  let () = register_constant (fallback_loc ~warn:false name None) kn kind local in
   let seff_roles = match role with None -> Cmap.empty | Some r -> Cmap.singleton kn r in
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
@@ -898,7 +898,8 @@ let ustate_of_proof = function
 let declare_definition_scheme ~internal ~univs ~role ~name ?loc c =
   let kind = Decls.(IsDefinition Scheme) in
   let entry = pure_definition_entry ~univs c in
-  let kn, eff = declare_private_constant ~role ~kind ~name ~opaque:false entry in
+  let kn, eff = declare_private_constant ~role ~name ~opaque:false entry in
+  let () = register_constant (fallback_loc ~warn:false name None) kn kind Locality.ImportDefaultBehavior in
   Dumpglob.dump_definition
     (CAst.make ?loc (Constant.label kn |> Label.to_id)) false "scheme";
   let () = if internal then () else definition_message name in
@@ -2159,10 +2160,6 @@ let build_by_tactic env ~uctx ~poly ~typ tac =
   body, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
 let declare_abstract ~name ~poly ~sign ~secsign ~opaque ~solve_tac sigma concl =
-  let kind = if opaque
-    then Decls.(IsProof Lemma)
-    else Decls.(IsDefinition Definition)
-  in
   let (const, safe, sigma') =
     try build_constant_by_tactic ~warn_incomplete:false ~name ~poly ~sigma ~sign:secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
@@ -2181,15 +2178,11 @@ let declare_abstract ~name ~poly ~sign ~secsign ~opaque ~solve_tac sigma concl =
      `if poly && opaque && private_poly_univs ()` in `close_proof`
      kernel will boom. This deserves more investigation. *)
   let body, typ, args = ProofEntry.shrink_entry sign body const.proof_entry_type in
-  let cst () =
-    (* do not compute the implicit arguments, it may be costly *)
-    let () = Impargs.make_implicit_args false in
+  let cst, eff =
     (* No side-effects in the entry, they already exist in the ambient environment *)
     let const = { const with proof_entry_body = body; proof_entry_type = typ } in
-    (* ppedrot: seems legit to have abstracted subproofs as local*)
-    declare_private_constant ~local:Locality.ImportNeedQualified ~name ~kind ~opaque const
+    declare_private_constant ~name ~opaque const
   in
-  let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = instance_of_univs const.proof_entry_universes in
   let lem = EConstr.of_constr (Constr.mkConstU (cst, inst)) in
   let effs = Evd.concat_side_effects eff effs in
