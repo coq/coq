@@ -329,6 +329,9 @@ let () =
     (bool @-> list induction_clause @-> option constr_with_bindings @-> tac unit)
     (Tac2tactics.induction_destruct true)
 
+let () = define "tac_exfalso" (unit @-> tac unit) @@ fun () ->
+  Tactics.exfalso
+
 let () =
   define "tac_red" (clause @-> tac unit) (Tac2tactics.reduce Red)
 

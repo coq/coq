@@ -358,10 +358,7 @@ Ltac2 Notation "inversion_clear"
   ids(opt(seq("in", list1(ident)))) :=
   Std.inversion Std.FullInversionClear arg pat ids.
 
-Ltac2 exfalso0 () := Control.enter (fun () =>
-  unshelve (let f := '(_ :> False) in induction $f)).
-
-Ltac2 Notation exfalso := exfalso0 ().
+Ltac2 Notation exfalso := Std.exfalso ().
 
 Ltac2 Notation "red" cl(opt(clause)) :=
   Std.red (default_on_concl cl).

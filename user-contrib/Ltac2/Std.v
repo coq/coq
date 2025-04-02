@@ -155,6 +155,8 @@ Ltac2 @ external destruct : evar_flag -> induction_clause list ->
 Ltac2 @ external induction : evar_flag -> induction_clause list ->
   constr_with_bindings option -> unit := "rocq-runtime.plugins.ltac2" "tac_induction".
 
+Ltac2 @external exfalso : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_exfalso".
+
 Ltac2 @ external red : clause -> unit := "rocq-runtime.plugins.ltac2" "tac_red".
 Ltac2 @ external hnf : clause -> unit := "rocq-runtime.plugins.ltac2" "tac_hnf".
 Ltac2 @ external simpl : red_flags -> (pattern * occurrences) option -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_simpl".
