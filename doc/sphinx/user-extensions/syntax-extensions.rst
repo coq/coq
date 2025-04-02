@@ -468,6 +468,8 @@ Reserving notations
       the other. See :ref:`factorization <NotationFactorization>` for
       details.
 
+.. _simultaneous-definition-and-notation:
+
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
