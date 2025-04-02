@@ -97,7 +97,8 @@ let generic_refine ~typecheck f gl =
   let trace () = Pp.(hov 2 (str"simple refine"++spc()++
                                    Termops.Internal.print_constr_env env sigma c)) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->
-  Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
+  Proofview.tclENV >>= fun env ->
+  Proofview.Unsafe.tclSETENV (Safe_typing.push_private_constants env privates_csts.Evd.seff_private) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
   Proofview.tclUNIT v
