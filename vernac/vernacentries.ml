@@ -847,6 +847,19 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, udecl) bl t =
   ComDefinition.do_definition_interactive ?loc:lid.loc ~typing_flags ~program_mode ~name ~poly ~scope ?clearbody:atts.clearbody
     ~kind:(Decls.IsDefinition kind) ?user_warns ?using:atts.using ?hook udecl bl t
 
+let vernac_definition_refine ~atts (discharge, kind) (lid, udecl) bl red_option c typ_opt =
+  if Option.has_some red_option then
+    CErrors.user_err ?loc:c.loc Pp.(str "Cannot use Eval with #[refine].");
+  let open DefAttributes in
+  let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
+     atts.scope, atts.locality, atts.polymorphic, atts.program, atts.user_warns, atts.typing_flags, atts.using, atts.clearbody in
+  let canonical_instance, reversible = atts.canonical_instance, atts.reversible in
+  let hook = vernac_definition_hook ~canonical_instance ~local ~poly kind ~reversible in
+  let name = vernac_definition_name lid scope in
+  ComDefinition.do_definition_refine ~name ?loc:lid.loc
+    ?clearbody ~poly ~typing_flags ~scope ~kind:(Decls.IsDefinition kind)
+    ?user_warns ?using udecl bl c typ_opt ?hook
+
 let vernac_definition ~atts ~pm (discharge, kind) (lid, udecl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope, local, poly, program_mode, user_warns, typing_flags, using, clearbody =
@@ -890,7 +903,7 @@ let vernac_start_proof ~atts kind l =
     let fix = List.map (fun ((fname, univs), (binders, rtype)) ->
         { fname; binders; rtype; body_def = None; univs; notations = []}) l in
     let pm, proof =
-      ComFixpoint.do_mutually_recursive ~program_mode ~use_inference_hook:program_mode
+      ComFixpoint.do_mutually_recursive ~refine:false ~program_mode ~use_inference_hook:program_mode
         ~scope ?clearbody ~kind:(Decls.IsProof kind) ~poly ?typing_flags
         ?user_warns ?using (CUnknownRecOrder, fix) in
     assert (Option.is_empty pm);
@@ -1256,7 +1269,7 @@ let with_obligations program_mode f pm =
     assert (Option.is_empty pm');
     pm, proof
 
-let vernac_fixpoint ~atts ~pm (rec_order,fixl) =
+let vernac_fixpoint ~atts ~refine ~pm (rec_order,fixl) =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts fixl in
   let poly, typing_flags, program_mode, clearbody, using, user_warns =
@@ -1267,7 +1280,7 @@ let vernac_fixpoint ~atts ~pm (rec_order,fixl) =
       let opens = List.exists (fun { body_def } -> Option.is_empty body_def) fixl in
       if opens then CErrors.user_err Pp.(str"Program Fixpoint requires a body.") in
   with_obligations program_mode
-    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition Fixpoint) ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~refine ~scope ?clearbody ~kind:(IsDefinition Fixpoint) ~poly ?typing_flags ?user_warns ?using (CFixRecOrder rec_order, fixl))
     pm
 
 let vernac_cofixpoint_common ~atts l =
@@ -1277,7 +1290,7 @@ let vernac_cofixpoint_common ~atts l =
   List.iter (fun { fname } -> check_name_freshness scope fname) l;
   scope
 
-let vernac_cofixpoint ~pm ~atts cofixl =
+let vernac_cofixpoint ~pm ~refine ~atts cofixl =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts cofixl in
   let poly, typing_flags, program_mode, clearbody, using, user_warns =
@@ -1288,7 +1301,7 @@ let vernac_cofixpoint ~pm ~atts cofixl =
       if opens then
         CErrors.user_err Pp.(str"Program CoFixpoint requires a body.") in
   with_obligations program_mode
-    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~scope ?clearbody ~kind:(IsDefinition CoFixpoint) ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
+    (fun pm -> ComFixpoint.do_mutually_recursive ?pm ~refine ~scope ?clearbody ~kind:(IsDefinition CoFixpoint) ~poly ?typing_flags ?user_warns ?using (CCoFixRecOrder, cofixl))
     pm
 
 let vernac_scheme l =
@@ -2587,9 +2600,15 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacDefinition ((discharge,kind as dkind),lid,DefineBody (bl,red_option,c,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
-    vtmodifyprogram (fun ~pm ->
-      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
-       vernac_definition ~pm dkind lid bl red_option c typ)
+    let atts, refine = Attributes.(parse_with_extra Classes.refine_att) atts in
+    if refine then
+      vtopenproof(fun () ->
+        with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
+         vernac_definition_refine dkind lid bl red_option c typ)
+    else
+      vtmodifyprogram (fun ~pm ->
+        with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
+        vernac_definition ~pm dkind lid bl red_option c typ)
   | VernacDefinition ((discharge,kind as dkind),lid,ProveBody(bl,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
@@ -2622,30 +2641,32 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     vtdefault(fun () -> vernac_inductive ~atts finite l)
 
   | VernacFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) (snd l) in
+    let atts, refine = Attributes.(parse_with_extra Classes.refine_att) atts in
+    let opens = refine || List.exists (fun { body_def } -> Option.is_empty body_def) (snd l) in
     let discharge = discharge, "\"Let Fixpoint\"", "\"#[local] Fixpoint\"" in
     (if opens then
       vtopenproof (fun () ->
-        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:None) l in
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~refine ~pm:None) l in
         assert (Option.is_empty pm);
         Option.get proof)
     else
       vtmodifyprogram (fun ~pm ->
-        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~pm:(Some pm)) l in
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_fixpoint ~refine ~pm:(Some pm)) l in
         assert (Option.is_empty proof);
         Option.get pm))
 
   | VernacCoFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let atts, refine = Attributes.(parse_with_extra Classes.refine_att) atts in
+    let opens = refine || List.exists (fun { body_def } -> Option.is_empty body_def) l in
     let discharge = discharge,  "\"Let CoFixpoint\"", "\"#[local] CoFixpoint\"" in
     (if opens then
       vtopenproof (fun () ->
-        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm:None) l in
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~refine ~pm:None) l in
         assert (Option.is_empty pm);
         Option.get proof)
     else
       vtmodifyprogram (fun ~pm ->
-        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~pm:(Some pm)) l in
+        let pm, proof = with_def_attributes ~discharge ~atts (vernac_cofixpoint ~refine ~pm:(Some pm)) l in
         assert (Option.is_empty proof);
         Option.get pm))
 

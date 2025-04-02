@@ -960,7 +960,7 @@ let interp_proof_using_gen f env evd cinfo using =
   Proof_using.definition_using env evd ~fixnames ~terms ~using
 
 let interp_proof_using_cinfo env evd cinfo using =
-  let f { CInfo.name; typ; _ } = name, [EConstr.of_constr typ] in
+  let f { CInfo.name; typ; _ } = name, [typ] in
   interp_proof_using_gen f env evd cinfo using
 
 let gather_mutual_using_data cinfo =
@@ -1032,7 +1032,7 @@ let prepare_recursive_declaration cinfo fixtypes fixrs fixdefs =
 
 let prepare_recursive_edeclaration sigma cinfo fixtypes fixrs fixdefs =
   let fixnames = List.map (fun CInfo.{name} -> name) cinfo in
-  let names = List.map2 (fun name r -> Context.make_annot (Name name) (EConstr.ERelevance.make r)) fixnames fixrs in
+  let names = List.map2 (fun name r -> Context.make_annot (Name name) r) fixnames fixrs in
   let defs = List.map (EConstr.Vars.subst_vars sigma (List.rev fixnames)) fixdefs in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
@@ -1723,7 +1723,7 @@ module Proof_info = struct
     ; info : Info.t
     ; proof_ending : Proof_ending.t CEphemeron.key
     (* This could be improved and the CEphemeron removed *)
-    ; possible_guard : (Pretyping.possible_guard * Sorts.relevance list) option (* None = not recursive *)
+    ; possible_guard : (Pretyping.possible_guard * Evd.erelevance list) option (* None = not recursive *)
     (** thms and compute guard are specific only to
        start_definition + regular terminator, so we
        could make this per-proof kind *)
@@ -1857,17 +1857,55 @@ let start_definition ~info ~cinfo ?using sigma =
   let pinfo = Proof_info.make ~cinfo:[{cinfo with typ = ()}] ~info () in
   let env = Global.env () in
   let using = Option.map (interp_proof_using_cinfo env sigma [cinfo]) using in
-  let lemma = start_proof_core ~name ~pinfo ?using sigma [None, EConstr.of_constr typ] in
+  let lemma = start_proof_core ~name ~pinfo ?using sigma [None, typ] in
   map lemma ~f:(fun p ->
       pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)
 
 let start_mutual_definitions ~info ~cinfo ~bodies ~possible_guard ?using sigma =
   let intro_tac { CInfo.args; _ } = Tactics.auto_intros_tac args in
-  let fixrs = snd possible_guard in
+  let (possible_guard, fixrs) = possible_guard in
+  let fixrs = List.map EConstr.ERelevance.make fixrs in
+  let cinfo' = List.map (fun cinfo -> { cinfo with CInfo.typ = EConstr.of_constr cinfo.CInfo.typ }) cinfo in
   let init_tac =
     (* This is the case for hybrid proof mode / definition
        fixpoint, where terms for some constants are given with := *)
     let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.tclIDTAC) bodies in
+    List.map2 (fun tac thm -> Tacticals.tclTHEN tac (intro_tac thm)) tacl cinfo'
+  in
+  match cinfo' with
+  | [] -> CErrors.anomaly (Pp.str "No proof to start.")
+  | { CInfo.name; _} :: _ as thms ->
+    let pinfo = Proof_info.make ~cinfo:(List.map (fun cinfo -> {cinfo with CInfo.typ = ()}) cinfo) ~info ~possible_guard:(possible_guard, fixrs) () in
+    (* start_lemma has the responsibility to add (name, impargs, typ)
+       to thms, once Info.t is more refined this won't be necessary *)
+    let env = Global.env () in
+    let sign =
+      List.fold_left2 (fun sign CInfo.{name;typ} r ->
+          let decl = Context.Named.Declaration.LocalAssum (Context.make_annot name r, typ) in
+          EConstr.push_named_context_val decl sign) (initialize_named_context_for_proof ()) cinfo' fixrs in
+    let using = Option.map (interp_proof_using_cinfo env sigma cinfo') using in
+    let goals = List.map (function CInfo.{typ} -> (Some sign, typ)) thms in
+    let lemma = start_proof_core ~name ~pinfo ?using sigma goals in
+    let lemma = map lemma ~f:(fun p ->
+        pi1 @@ Proof.run_tactic Global.(env ()) (Proofview.tclFOCUS 1 (List.length thms) (Proofview.tclDISPATCH init_tac)) p) in
+    let () =
+      (* Temporary declaration of notations for the time of the proofs *)
+      let ntn_env =
+        (* We simulate the goal context in which the fixpoint bodies have to be proved (exact relevance does not matter) *)
+        let make_decl CInfo.{name; typ} = Context.Named.Declaration.LocalAssum (Context.annotR name, typ) in
+        Environ.push_named_context (List.map make_decl cinfo) (Global.env()) in
+      List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) ntn_env) info.ntns in
+    lemma
+
+let start_mutual_definitions_refine ~info ~cinfo ~bodies ~possible_guard ?using sigma =
+  let future_goals, sigma = Evd.pop_future_goals sigma in
+  let gls = List.rev (Evd.FutureGoals.comb future_goals) in
+  let sigma = Evd.push_future_goals sigma in
+
+  let intro_tac { CInfo.args; _ } = Tactics.auto_intros_tac args in
+  let fixrs = snd possible_guard in
+  let init_tac =
+    let tacl = List.map (Option.cata (fun body -> Refine.refine ~typecheck:false (fun sigma -> sigma, body)) Tacticals.tclIDTAC) bodies in
     List.map2 (fun tac thm -> Tacticals.tclTHEN tac (intro_tac thm)) tacl cinfo
   in
   match cinfo with
@@ -1879,20 +1917,23 @@ let start_mutual_definitions ~info ~cinfo ~bodies ~possible_guard ?using sigma =
     let env = Global.env () in
     let sign =
       List.fold_left2 (fun sign CInfo.{name;typ} r ->
-          let typ = EConstr.of_constr typ in
-          let r = EConstr.ERelevance.make r in
           let decl = Context.Named.Declaration.LocalAssum (Context.make_annot name r, typ) in
           EConstr.push_named_context_val decl sign) (initialize_named_context_for_proof ()) cinfo fixrs in
     let using = Option.map (interp_proof_using_cinfo env sigma cinfo) using in
-    let goals = List.map (function CInfo.{typ} -> (Some sign, EConstr.of_constr typ)) thms in
+    let goals = List.map (function CInfo.{typ} -> (Some sign, typ)) thms in
     let lemma = start_proof_core ~name ~pinfo ?using sigma goals in
     let lemma = map lemma ~f:(fun p ->
-        pi1 @@ Proof.run_tactic Global.(env ()) (Proofview.tclFOCUS 1 (List.length thms) (Proofview.tclDISPATCH init_tac)) p) in
+        pi1 @@ Proof.run_tactic Global.(env ())
+          (Tacticals.tclTHENLIST [
+            Proofview.tclFOCUS 1 (List.length thms) (Proofview.tclDISPATCH init_tac);
+            Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
+            Tactics.reduce_after_refine;
+          ]) p) in
     let () =
       (* Temporary declaration of notations for the time of the proofs *)
       let ntn_env =
         (* We simulate the goal context in which the fixpoint bodies have to be proved (exact relevance does not matter) *)
-        let make_decl CInfo.{name; typ} = Context.Named.Declaration.LocalAssum (Context.annotR name, typ) in
+        let make_decl CInfo.{name; typ} = Context.Named.Declaration.LocalAssum (Context.annotR name, EConstr.Unsafe.to_constr typ) in
         Environ.push_named_context (List.map make_decl cinfo) (Global.env()) in
       List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) ntn_env) info.ntns in
     lemma
@@ -2044,6 +2085,7 @@ let prepare_proof ?(warn_incomplete=true) { proof; pinfo } =
     | Some (possible_guard, fixrelevances) ->
       let env = Safe_typing.push_private_constants (Global.env()) eff.Evd.seff_private in
       let fixbodies, fixtypes = List.split proofs in
+      let fixrelevances = List.map (EConstr.ERelevance.kind evd) fixrelevances in
       let rec_declaration = prepare_recursive_declaration pinfo.cinfo fixtypes fixrelevances fixbodies in
       let typing_flags = pinfo.info.typing_flags in
       fst (make_recursive_bodies env ~typing_flags ~possible_guard ~rec_declaration) in

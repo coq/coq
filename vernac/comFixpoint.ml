@@ -460,10 +460,6 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
         sigma fixctximpenvs fixextras fixctxs fixl fixccls)
       () in
 
-  (* Instantiate evars and check all are resolved *)
-  let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
-  let sigma = Evd.minimize_universes sigma in
-
   (* Build the fix declaration block *)
   let fix = {fixnames=fixlnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fixntns;fixwfs} in
   (env, rec_sign, sigma), (fix, possible_guard, decl)
@@ -487,6 +483,9 @@ let ground_fixpoint env evd {fixnames;fixrs;fixdefs;fixtypes;fixctxs;fiximps;fix
 let interp_fixpoint_short rec_order fixpoint_exprl =
   let env = Global.env () in
   let (_, _, sigma),(fix, _, _) = interp_mutual_definition ~program_mode:false ~function_mode:true env (CFixRecOrder rec_order) fixpoint_exprl in
+  (* Instantiate evars and check all are resolved *)
+  let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
+  let sigma = Evd.minimize_universes sigma in
   let sigma = Pretyping.(solve_remaining_evars all_no_fail_flags env sigma) in
   let typel = (ground_fixpoint env sigma fix).fixtypes in
   typel, sigma
@@ -545,12 +544,25 @@ let finish_regular env sigma use_inference_hook fix =
   let sigma = Pretyping.(solve_remaining_evars ?hook:inference_hook all_no_fail_flags env sigma) in
   sigma, ground_fixpoint env sigma fix, [], None
 
-let do_mutually_recursive ?pm ~program_mode ?(use_inference_hook=false) ?scope ?clearbody ~kind ~poly ?typing_flags ?user_warns ?using (rec_order, fixl)
+let do_mutually_recursive ?pm ~refine ~program_mode ?(use_inference_hook=false) ?scope ?clearbody ~kind ~poly ?typing_flags ?user_warns ?using (rec_order, fixl)
   : Declare.OblState.t option * Declare.Proof.t option =
   let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
   let (env,rec_sign,sigma),(fix,possible_guard,udecl) = interp_mutual_definition env ~program_mode ~function_mode:false rec_order fixl in
   check_recursive ~kind env sigma fix;
+
+  if refine then
+    let info = Declare.Info.make ?scope ?clearbody ~kind ~poly ~udecl ?typing_flags ?user_warns ~ntns:fix.fixntns () in
+    let cinfo = build_recthms fix in
+    let possible_guard = (possible_guard, fix.fixrs) in
+    let lemma = Declare.Proof.start_mutual_definitions_refine ~info ~cinfo ~bodies:fix.fixdefs ~possible_guard ?using sigma in
+    None, Some lemma
+  else
+
+  (* Instantiate evars and check all are resolved *)
+  let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
+  let sigma = Evd.minimize_universes sigma in
+
   let sigma, ({fixdefs=bodies;fixrs;fixtypes;fixwfs} as fix), obls, hook =
     match pm with
     | Some pm -> finish_obligations env sigma rec_sign possible_guard poly udecl fix

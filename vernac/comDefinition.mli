@@ -78,3 +78,20 @@ val do_definition_interactive
   -> local_binder_expr list
   -> constr_expr
   -> Declare.Proof.t
+
+val do_definition_refine
+  : ?loc:Loc.t
+  -> ?hook:Declare.Hook.t
+  -> name:Id.t
+  -> scope:Locality.definition_scope
+  -> ?clearbody:bool
+  -> poly:bool
+  -> typing_flags:Declarations.typing_flags option
+  -> kind:Decls.logical_kind
+  -> ?using:Vernacexpr.section_subset_expr
+  -> ?user_warns:Globnames.extended_global_reference UserWarn.with_qf
+  -> universe_decl_expr option
+  -> local_binder_expr list
+  -> constr_expr
+  -> constr_expr option
+  -> Declare.Proof.t

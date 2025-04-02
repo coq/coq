@@ -17,6 +17,8 @@ open Vernacexpr
 val do_mutually_recursive
   :  ?pm:Declare.OblState.t
      (* Obligation mode turns unresolved evars into obligations *)
+  -> refine:bool
+     (* [refine] means definitions are allowed to have holes *)
   -> program_mode:bool
      (* [program_mode] means here:
         - a special treatment of subsets in pretyping
