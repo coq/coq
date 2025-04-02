@@ -69,5 +69,4 @@ val wit_natural : int uniform_genarg_type
 val wit_integer : int uniform_genarg_type
 val wit_preident : string uniform_genarg_type
 val wit_reference : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
-val wit_global : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 val wit_clause :  (lident Locus.clause_expr, lident Locus.clause_expr, Names.Id.t Locus.clause_expr) genarg_type

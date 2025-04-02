@@ -17,6 +17,28 @@ open Glob_term
 open Notationextern
 open Constrexpr
 
+let reference_expr_kind_eq k1 k2 = match k1, k2 with
+  | CQualidRef, CQualidRef | CLibRef, CLibRef -> true
+  | (CQualidRef | CLibRef), _ -> false
+
+let reference_expr_eq (k1,q1) (k2,q2) =
+  reference_expr_kind_eq k1 k2 &&
+  qualid_eq q1 q2
+
+let ref_expr_of_ident ?loc id = CQualidRef, qualid_of_ident ?loc id
+
+let ref_expr_is_ident = function
+  | CQualidRef, q -> qualid_is_ident q
+  | CLibRef, _ -> false
+
+let ref_expr_basename = function
+  | CQualidRef, q -> qualid_basename q
+  | CLibRef, _ -> assert false
+
+let pr_ref_expr = function
+  | CQualidRef, q -> pr_qualid q
+  | CLibRef, q -> str "lib:" ++ pr_qualid q
+
 (***********)
 (* Universes *)
 
@@ -105,11 +127,11 @@ let rec cases_pattern_expr_eq p1 p2 =
   | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
       CAst.eq Name.equal i1 i2 && cases_pattern_expr_eq a1 a2
   | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
-      qualid_eq c1 c2 &&
+      reference_expr_eq c1 c2 &&
       Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
       List.equal cases_pattern_expr_eq b1 b2
   | CPatAtom(r1), CPatAtom(r2) ->
-    Option.equal qualid_eq r1 r2
+    Option.equal reference_expr_eq r1 r2
   | CPatOr a1, CPatOr a2 ->
     List.equal cases_pattern_expr_eq a1 a2
   | CPatNotation (inscope1, n1, s1, l1), CPatNotation (inscope2, n2, s2, l2) ->
@@ -197,7 +219,8 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
   let constr_expr_eq e1 e2 =
     if CAst.(e1.v == e2.v) then true
     else match CAst.(e1.v, e2.v) with
-      | CRef (r1,u1), CRef (r2,u2) -> qualid_eq r1 r2 && Option.equal instance_expr_eq u1 u2
+      | CRef (r1,u1), CRef (r2,u2) ->
+        reference_expr_eq r1 r2 && Option.equal instance_expr_eq u1 u2
       | CFix(id1,fl1), CFix(id2,fl2) ->
         lident_eq id1 id2 &&
         List.equal fix_expr_eq fl1 fl2
@@ -216,7 +239,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         Option.equal constr_expr_eq t1 t2 &&
         constr_expr_eq b1 b2
       | CAppExpl((r1,u1),al1), CAppExpl((r2,u2),al2) ->
-        qualid_eq r1 r2 &&
+        reference_expr_eq r1 r2 &&
         Option.equal instance_expr_eq u1 u2 &&
         List.equal constr_expr_eq al1 al2
       | CApp(e1,al1), CApp(e2,al2) ->
@@ -224,7 +247,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         List.equal args_eq al1 al2
       | CProj(e1,(p1,u1),al1,c1), CProj(e2,(p2,u2),al2,c2) ->
         e1 = (e2:bool) &&
-        qualid_eq p1 p2 &&
+        reference_expr_eq p1 p2 &&
         Option.equal instance_expr_eq u1 u2 &&
         List.equal args_eq al1 al2 &&
         constr_expr_eq c1 c2
@@ -333,9 +356,9 @@ let rec cases_pattern_fold_names f h nacc pt = match CAst.(pt.v) with
          (patl@List.flatten patll@List.map fst binderl)) patl'
   | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f h nacc pat
   | CPatAtom (Some qid)
-      when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
+      when ref_expr_is_ident qid && not (is_constructor @@ ref_expr_basename qid) ->
       let (n, acc) = nacc in
-      (f (qualid_basename qid) n, acc)
+      (f (ref_expr_basename qid) n, acc)
   | CPatPrim _ | CPatAtom _ -> nacc
   | CPatCast (p,t) ->
       let (n, acc) = nacc in
@@ -411,8 +434,8 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
-    | { CAst.v = CRef (qid, _) } when qualid_is_ident qid ->
-      let id = qualid_basename qid in
+    | { CAst.v = CRef (qid, _) } when ref_expr_is_ident qid ->
+      let id = ref_expr_basename qid in
       if Id.List.mem id bdvars then l else Id.Set.add id l
     | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] Id.Set.empty c
@@ -420,8 +443,8 @@ let free_vars_of_constr_expr c =
 let names_of_constr_expr c =
   let vars = ref Id.Set.empty in
   let rec aux () () = function
-    | { CAst.v = CRef (qid, _) } when qualid_is_ident qid ->
-      let id = qualid_basename qid in vars := Id.Set.add id !vars
+    | { CAst.v = CRef (qid, _) } when ref_expr_is_ident qid ->
+      let id = ref_expr_basename qid in vars := Id.Set.add id !vars
     | c -> fold_constr_expr_with_binders (fun a () -> vars := Id.Set.add a !vars) aux () () c
   in aux () () c; !vars
 
@@ -452,8 +475,8 @@ let rec fold_map_cases_pattern f h acc (CAst.{v=pt;loc} as p) = match pt with
     let acc, p = fold_map_cases_pattern f h acc pat in
     acc, CAst.make ?loc (CPatDelimiters (depth,d,pat))
   | CPatAtom (Some qid)
-      when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
-    f (qualid_basename qid) acc, p
+      when ref_expr_is_ident qid && not (is_constructor @@ ref_expr_basename qid) ->
+    f (ref_expr_basename qid) acc, p
   | CPatPrim _ | CPatAtom _ -> (acc,p)
   | CPatCast (pat,t) ->
     let acc, pat = fold_map_cases_pattern f h acc pat in
@@ -535,9 +558,9 @@ let map_constr_expr_with_binders g f e = CAst.map (function
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l r =
   match r with
-  | { CAst.loc; v = CRef (qid,us) } as x when qualid_is_ident qid ->
-    let id = qualid_basename qid in
-    (try CAst.make ?loc @@ CRef (qualid_of_ident ?loc (Id.Map.find id l),us)
+  | { CAst.loc; v = CRef (qid,us) } as x when ref_expr_is_ident qid ->
+    let id = ref_expr_basename qid in
+    (try CAst.make ?loc @@ CRef ((CQualidRef,qualid_of_ident ?loc (Id.Map.find id l)),us)
      with Not_found -> x)
   | cn -> map_constr_expr_with_binders Id.Map.remove replace_vars_constr_expr l cn
 
@@ -568,8 +591,8 @@ let error_invalid_pattern_notation ?loc () =
 
 (** Pseudo-constructors *)
 
-let mkIdentC id   = CAst.make @@ CRef (qualid_of_ident id,None)
-let mkRefC r      = CAst.make @@ CRef (r,None)
+let mkIdentC id   = CAst.make @@ CRef ((CQualidRef,qualid_of_ident id),None)
+let mkRefC r      = CAst.make @@ CRef ((CQualidRef,r),None)
 let mkCastC (a,k,t) = CAst.make @@ CCast (a,k,t)
 let mkLambdaC (idl,bk,a,b) = CAst.make @@ CLambdaN ([CLocalAssum (idl,None,bk,a)],b)
 let mkLetInC  (id,a,t,b)   = CAst.make @@ CLetIn (id,a,t,b)
@@ -602,14 +625,14 @@ let coerce_reference_to_id qid =
       (str "This expression should be a simple identifier.")
 
 let coerce_to_id = function
-  | { CAst.loc; v = CRef (qid,None) } when qualid_is_ident qid ->
-    CAst.make ?loc @@ qualid_basename qid
+  | { CAst.loc; v = CRef (qid,None) } when ref_expr_is_ident qid ->
+    CAst.make ?loc @@ ref_expr_basename qid
   | { CAst.loc; _ } -> CErrors.user_err ?loc
                          (str "This expression should be a simple identifier.")
 
 let coerce_to_name = function
-  | { CAst.loc; v = CRef (qid,None) } when qualid_is_ident qid ->
-    CAst.make ?loc @@ Name (qualid_basename qid)
+  | { CAst.loc; v = CRef (qid,None) } when ref_expr_is_ident qid ->
+    CAst.make ?loc @@ Name (ref_expr_basename qid)
   | { CAst.loc; v = CHole (None) } -> CAst.make ?loc Anonymous
   | { CAst.loc; _ } -> CErrors.user_err ?loc
                          (str "This expression should be a name.")
@@ -636,7 +659,7 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CHole (None) ->
      CPatAtom None
   | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef (qid,None) })
-      when qualid_is_ident qid && Id.equal id (qualid_basename qid) ->
+      when ref_expr_is_ident qid && Id.equal id (ref_expr_basename qid) ->
       CPatAlias (coerce_to_cases_pattern_expr b, CAst.(make ?loc @@ Name id))
   | CApp (p,args) when List.for_all (fun (_,e) -> e=None) args ->
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v

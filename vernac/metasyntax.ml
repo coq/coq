@@ -23,7 +23,6 @@ open Ppextend
 open Extend
 open Libobject
 open Constrintern
-open Libnames
 open Notation
 open Nameops
 
@@ -282,7 +281,7 @@ let adjust_infix_notation df notation_symbols c =
   let vars = names_of_constr_expr c in
   let x, y, notation_symbols = adjust_symbols vars notation_symbols in
   let df = Id.to_string x ^ " " ^ df ^ " " ^ Id.to_string y in
-  let inject_var x = CAst.make @@ CRef (qualid_of_ident x,None) in
+  let inject_var x = CAst.make @@ CRef (ref_expr_of_ident x,None) in
   let metas = [inject_var x; inject_var y] in
   let c = mkAppC (c,metas) in
   df, notation_symbols, c

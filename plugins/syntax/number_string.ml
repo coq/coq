@@ -419,7 +419,8 @@ let locate_global_inductive_or_int63_or_float env allow_params qid =
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
 
 let intern_cref env sigma r =
-  Constrintern.intern_constr env sigma (CAst.make @@ Constrexpr.CAppExpl ((r,None),[]))
+  Constrintern.intern_constr env sigma
+    (CAst.make @@ Constrexpr.CAppExpl (((CQualidRef,r),None),[]))
 
 let vernac_number_notation local ty f g opts scope =
   let rec parse_opts = function

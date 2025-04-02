@@ -20,6 +20,7 @@ open Libnames
 open Globnames
 open Abbreviation
 open Notation_term
+open Constrexpr
 
 let global_of_extended_global_head = function
   | TrueGlobal ref -> ref
@@ -89,6 +90,10 @@ let global_with_alias ?head qid =
   with Not_found as exn ->
     let _, info = Exninfo.capture exn in
     Nametab.error_global_not_found ~info qid
+
+let ref_expr_with_alias ?head = function
+  | CQualidRef, qid -> global_with_alias ?head qid
+  | CLibRef, qid -> Rocqlib.lib_ref_qualid qid
 
 let smart_global ?(head = false) = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
   | AN r ->

@@ -102,7 +102,7 @@ let interp_hints ~poly h =
     let open Vernacexpr in
     match rectify_hint_constr c with
     | HintsReference c ->
-      let gr = Smartlocate.global_with_alias c in
+      let gr = Smartlocate.ref_expr_with_alias c in
       (hint_globref gr)
     | HintsConstr c ->
       let () = warn_deprecated_hint_constr () in

@@ -12,6 +12,19 @@ open Names
 open Libnames
 open Constrexpr
 
+val reference_expr_kind_eq : reference_expr_kind -> reference_expr_kind -> bool
+val reference_expr_eq : reference_expr -> reference_expr -> bool
+
+val ref_expr_of_ident : ?loc:Loc.t -> Id.t -> reference_expr
+
+val ref_expr_is_ident : reference_expr -> bool
+(** Is a CQualidRef of an ident *)
+
+val ref_expr_basename : reference_expr -> Id.t
+(** Assertion failure unless it's a CQualidRef (basename of CLibRef is nonsense) *)
+
+val pr_ref_expr : reference_expr -> Pp.t
+
 (** Constrexpr_ops: utilities on [constr_expr] *)
 
 val expr_Type_sort : sort_expr

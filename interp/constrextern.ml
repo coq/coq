@@ -401,14 +401,14 @@ let rec extern_cases_pattern_in_scope ((custom,(lev_after:int option)),scopes as
     let loc = pat.CAst.loc in
     match DAst.get pat with
     | PatVar (Name id) when entry_has_global custom || entry_has_ident custom ->
-      CAst.make ?loc (CPatAtom (Some (qualid_of_ident ?loc id)))
+      CAst.make ?loc (CPatAtom (Some (ref_expr_of_ident ?loc id)))
     | pat ->
     match availability_of_entry_coercion custom constr_lowest_level with
     | None -> raise No_match
     | Some coercion ->
       let allscopes = ((constr_some_level,None),scopes) in
       let pat = match pat with
-        | PatVar (Name id) -> CAst.make ?loc (CPatAtom (Some (qualid_of_ident ?loc id)))
+        | PatVar (Name id) -> CAst.make ?loc (CPatAtom (Some (ref_expr_of_ident ?loc id)))
         | PatVar (Anonymous) -> CAst.make ?loc (CPatAtom None)
         | PatCstr(cstrsp,args,na) ->
           let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
@@ -419,13 +419,13 @@ let rec extern_cases_pattern_in_scope ((custom,(lev_after:int option)),scopes as
                   let c = extern_reference Id.Set.empty (GlobRef.ConstructRef cstrsp) in
                   if Constrintern.get_asymmetric_patterns () then
                     if pattern_printable_in_both_syntax cstrsp
-                    then CPatCstr (c, None, args)
-                    else CPatCstr (c, Some (add_patt_for_params (fst cstrsp) args), [])
+                    then CPatCstr ((CQualidRef,c), None, args)
+                    else CPatCstr ((CQualidRef,c), Some (add_patt_for_params (fst cstrsp) args), [])
                   else
                     let full_args = add_patt_for_params (fst cstrsp) args in
                     match drop_implicits_in_patt (GlobRef.ConstructRef cstrsp) 0 full_args with
-                      | Some true_args -> CPatCstr (c, None, true_args)
-                      | None           -> CPatCstr (c, Some full_args, [])
+                      | Some true_args -> CPatCstr ((CQualidRef,c), None, true_args)
+                      | None           -> CPatCstr ((CQualidRef,c), Some full_args, [])
           in
           insert_pat_alias ?loc (CAst.make ?loc p) na
       in
@@ -493,7 +493,8 @@ and apply_notation_to_pattern ?loc gr ((terms,termlists,binders),(no_implicit,nb
           terms in
       assert (List.is_empty termlists);
       assert (List.is_empty binders);
-      insert_pat_coercion ?loc coercion (CAst.make ?loc @@ CPatCstr (qid,None,List.rev_append l1 extra_args))
+      insert_pat_coercion ?loc coercion
+        (CAst.make ?loc @@ CPatCstr ((CQualidRef,qid),None,List.rev_append l1 extra_args))
 
 and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
@@ -508,7 +509,7 @@ and extern_notation_pattern allscopes vars t = function
             (match_notation_constr_cases_pattern t pat) allscopes vars pat keyrule in
           insert_pat_alias ?loc p na
         | PatVar Anonymous -> CAst.make ?loc @@ CPatAtom None
-        | PatVar (Name id) -> CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident ?loc id))
+        | PatVar (Name id) -> CAst.make ?loc @@ CPatAtom (Some (ref_expr_of_ident ?loc id))
     with
         No_match -> extern_notation_pattern allscopes vars t rules
 
@@ -528,7 +529,7 @@ let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
   if !Flags.in_debugger||Inductiveops.inductive_has_local_defs (Global.env()) ind then
     let c = extern_reference vars (GlobRef.IndRef ind) in
     let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
-    CAst.make @@ CPatCstr (c, Some (add_patt_for_params ind args), [])
+    CAst.make @@ CPatCstr ((CQualidRef,c), Some (add_patt_for_params ind args), [])
   else
     try
       if !Flags.raw_print || !print_no_symbol then raise No_match;
@@ -538,8 +539,8 @@ let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
       let c = extern_reference vars (GlobRef.IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
       match drop_implicits_in_patt (GlobRef.IndRef ind) 0 args with
-      | Some true_args -> CAst.make @@ CPatCstr (c, None, true_args)
-      | None           -> CAst.make @@ CPatCstr (c, Some args, [])
+      | Some true_args -> CAst.make @@ CPatCstr ((CQualidRef,c), None, true_args)
+      | None           -> CAst.make @@ CPatCstr ((CQualidRef,c), Some args, [])
 
 let extern_cases_pattern vars p =
   extern_cases_pattern_in_scope ((constr_some_level,None),([],[])) vars p
@@ -847,9 +848,10 @@ let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_lo
 let qualid_of_ref n =
   n |> Rocqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
 
-let q_infinity () = qualid_of_ref "num.float.infinity"
-let q_neg_infinity () = qualid_of_ref "num.float.neg_infinity"
-let q_nan () = qualid_of_ref "num.float.nan"
+(* we deliberately don't print as lib:num.float.infinity etc *)
+let q_infinity () = CQualidRef, qualid_of_ref "num.float.infinity"
+let q_neg_infinity () = CQualidRef, qualid_of_ref "num.float.neg_infinity"
+let q_nan () = CQualidRef, qualid_of_ref "num.float.nan"
 
 let extern_float f scopes =
   if Float64.is_nan f then CRef(q_nan (), None)
@@ -920,9 +922,9 @@ let extern_instance uvars = function
 
 let extern_ref (vars,uvars) ref us =
   extern_global (select_stronger_impargs (implicits_of_global ref))
-    (extern_reference vars ref) (extern_instance uvars us)
+    (CQualidRef,extern_reference vars ref) (extern_instance uvars us)
 
-let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
+let extern_var ?loc id = CRef (ref_expr_of_ident ?loc id,None)
 
 let add_vname (vars,uvars) na = add_vname vars na, uvars
 
@@ -962,7 +964,7 @@ let succ_depth = function
     if Int.equal current max then None
     else Some (Until { current; max })
 
-let ellipsis = Constrexpr.CRef (Libnames.qualid_of_ident (Id.of_string_soft "..."), None)
+let ellipsis = Constrexpr.CRef (ref_expr_of_ident (Id.of_string_soft "..."), None)
 
 let rec extern depth0 inctx scopes vars r =
   match succ_depth depth0 with
@@ -1032,7 +1034,8 @@ let rec extern depth0 inctx scopes vars r =
              (* Otherwise... *)
                extern_applied_ref inctx
                  (select_stronger_impargs (implicits_of_global ref))
-                 (ref,extern_reference ?loc (fst vars) ref) (extern_instance (snd vars) us) args)
+                 (ref,(CQualidRef,extern_reference ?loc (fst vars) ref))
+                 (extern_instance (snd vars) us) args)
          | GProj (f,params,c) ->
              extern_applied_proj depth inctx scopes vars f params c args
          | _ ->
@@ -1392,6 +1395,7 @@ and extern_notation depth inctx ((custom,(lev_after: int option)),scopes as alls
                   terms
               in
               let cf = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
+              let cf = CQualidRef, cf in
               let a = CRef (cf,None) in
               let c = CAst.make ?loc @@ extern_applied_abbreviation (a,cf) l extra_args in
               if isCRef_no_univ c.CAst.v && entry_has_global custom then c
@@ -1411,7 +1415,7 @@ and extern_applied_proj depth inctx scopes vars (cst,us) params c extraargs =
   let imps = select_stronger_impargs (implicits_of_global ref) in
   let f = extern_reference (fst vars) ref in
   let us = extern_instance (snd vars) us in
-  extern_projection inctx (f,us) nparams args imps
+  extern_projection inctx ((CQualidRef,f),us) nparams args imps
 
 let extern inctx scopes vars c : constr_expr = extern (init_depth()) inctx scopes vars c
 

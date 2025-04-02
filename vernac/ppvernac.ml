@@ -294,7 +294,7 @@ let pr_opt_hintbases l = match l with
   | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z
 
 let pr_reference_or_constr pr_c = function
-  | HintsReference r -> pr_qualid r
+  | HintsReference r -> pr_reference r
   | HintsConstr c -> pr_c c
 
 let pr_hint_mode = let open Hints in function

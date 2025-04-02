@@ -286,11 +286,11 @@ GRAMMAR EXTEND Gram
           { VernacSchemeEquality (SchemeBooleanEquality,id) }
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
               l = LIST1 identref SEP "," -> { VernacCombinedScheme (id, l) }
-      | IDENT "Register"; g = global; "as"; quid = qualid ->
+      | IDENT "Register"; g = reference; "as"; quid = qualid ->
           { VernacRegister(g, RegisterCoqlib quid) }
-      | IDENT "Register"; IDENT "Scheme"; g = global; "as"; qid = qualid; IDENT "for"; g' = global ->
+      | IDENT "Register"; IDENT "Scheme"; g = reference; "as"; qid = qualid; IDENT "for"; g' = reference ->
         { VernacRegister(g, RegisterScheme {inductive = g'; scheme_kind = qid}) }
-      | IDENT "Register"; IDENT "Inline"; g = global ->
+      | IDENT "Register"; IDENT "Inline"; g = reference ->
           { VernacRegister(g, RegisterInline) }
       | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
           { VernacPrimitive(id, r, typopt) }
@@ -676,7 +676,7 @@ GRAMMAR EXTEND Gram
           { VernacSynPure (VernacNameSectionHypSet (id, expr)) }
 
       (* Requiring an external file *)
-      | IDENT "From" ; ns = global ;
+      | IDENT "From" ; ns = reference ;
         IDENT "Extra"; IDENT "Dependency"; f = ne_string ;
         id = OPT [ "as"; id = IDENT -> { id } ] ->
           { VernacSynterp (VernacExtraDependency (ns, f, Option.map Id.of_string id)) }
@@ -684,7 +684,7 @@ GRAMMAR EXTEND Gram
       (* Requiring an already compiled module *)
       | IDENT "Require"; export = export_token; qidl = LIST1 filtered_import ->
           { VernacSynterp (VernacRequire (None, export, qidl)) }
-      | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
+      | IDENT "From" ; ns = reference ; IDENT "Require"; export = export_token
         ; qidl = LIST1 filtered_import ->
         { VernacSynterp (VernacRequire (Some ns, export, qidl)) }
       | IDENT "Import"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
@@ -704,11 +704,11 @@ GRAMMAR EXTEND Gram
   ] ]
   ;
   filtered_import:
-    [ [ m = global -> { (m, ImportAll) }
-      | m = global; "("; ns = LIST1 one_import_filter_name SEP ","; ")" -> { (m, ImportNames ns) } ] ]
+    [ [ m = reference -> { (m, ImportAll) }
+      | m = reference; "("; ns = LIST1 one_import_filter_name SEP ","; ")" -> { (m, ImportNames ns) } ] ]
   ;
   one_import_filter_name:
-    [ [ n = global; etc = OPT [ "("; ".."; ")" -> { () } ] -> { n, Option.has_some etc } ] ]
+    [ [ n = reference; etc = OPT [ "("; ".."; ")" -> { () } ] -> { n, Option.has_some etc } ] ]
   ;
   export_token:
     [ [ IDENT "Import"; cats = OPT import_categories -> { Some (Import,cats) }
@@ -828,7 +828,7 @@ GRAMMAR EXTEND Gram
           LIST1 [ v=strategy_level; "["; q=LIST1 smart_global; "]" -> { (v,q) } ] ->
             { VernacSynPure (VernacSetStrategy l) }
       (* Canonical structure *)
-      | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { (u,d) } ] ->
+      | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; qid = reference; ud = OPT [ u = OPT univ_decl; d = def_body -> { (u,d) } ] ->
           { match ud with
            | None ->
              VernacSynPure (VernacCanonical CAst.(make ?loc:qid.CAst.loc @@ AN qid))
@@ -839,14 +839,14 @@ GRAMMAR EXTEND Gram
           { VernacSynPure (VernacCanonical CAst.(make ~loc @@ ByNotation ntn)) }
 
       (* Coercions *)
-      | IDENT "Coercion"; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { u, d } ] ->
+      | IDENT "Coercion"; qid = reference; ud = OPT [ u = OPT univ_decl; d = def_body -> { u, d } ] ->
           { match ud with Some (u, d) -> let s = coerce_reference_to_id qid in
           VernacSynPure (VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d))
           | None -> VernacSynPure (VernacCoercion (CAst.make ~loc @@ AN qid, None)) }
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = coercion_class; ">->"; t = coercion_class ->
            { VernacSynPure (VernacIdentityCoercion (f, s, t)) }
-      | IDENT "Coercion"; qid = global; ":"; s = coercion_class; ">->";
+      | IDENT "Coercion"; qid = reference; ":"; s = coercion_class; ">->";
          t = coercion_class ->
           { VernacSynPure (VernacCoercion (CAst.make ~loc @@ AN qid, Some(s, t))) }
       | IDENT "Coercion"; ntn = by_notation; ":"; s = coercion_class; ">->";
@@ -863,17 +863,17 @@ GRAMMAR EXTEND Gram
              ":="; c = lconstr -> { Some (false,c) } | -> { None } ] ->
            { VernacSynPure (VernacInstance (fst namesup,snd namesup,t,props,info)) }
 
-      | IDENT "Existing"; IDENT "Instance"; id = global;
+      | IDENT "Existing"; IDENT "Instance"; id = reference;
           info = hint_info ->
           { VernacSynPure (VernacExistingInstance [id, info]) }
 
-      | IDENT "Existing"; IDENT "Instances"; ids = LIST1 global;
+      | IDENT "Existing"; IDENT "Instances"; ids = LIST1 reference;
         pri = OPT [ "|"; i = natural -> { i } ] ->
          { let info = { Typeclasses.hint_priority = pri; hint_pattern = None } in
          let insts = List.map (fun i -> (i, info)) ids in
           VernacSynPure (VernacExistingInstance insts) }
 
-      | IDENT "Existing"; IDENT "Class"; is = global -> { VernacSynPure (VernacExistingClass is) }
+      | IDENT "Existing"; IDENT "Class"; is = reference -> { VernacSynPure (VernacExistingClass is) }
 
       (* Arguments *)
       | IDENT "Arguments"; qid = smart_global;
@@ -1072,9 +1072,9 @@ GRAMMAR EXTEND Gram
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> { VernacSynPure (VernacPrint p) }
       | IDENT "Print"; qid = smart_global; l = OPT univ_name_list -> { VernacSynPure (VernacPrint (PrintName (qid,l))) }
-      | IDENT "Print"; IDENT "Module"; "Type"; qid = global ->
+      | IDENT "Print"; IDENT "Module"; "Type"; qid = reference ->
           { VernacSynPure (VernacPrint (PrintModuleType qid)) }
-      | IDENT "Print"; IDENT "Module"; qid = global ->
+      | IDENT "Print"; IDENT "Module"; qid = reference ->
           { VernacSynPure (VernacPrint (PrintModule qid)) }
       | IDENT "Print"; IDENT "Namespace" ; ns = dirpath ->
           { VernacSynPure (VernacPrint (PrintNamespace ns)) }
@@ -1129,7 +1129,7 @@ GRAMMAR EXTEND Gram
   printable:
     [ [ IDENT "Term"; qid = smart_global; l = OPT univ_name_list -> { PrintName (qid,l) }
       | IDENT "All" -> { PrintFullContext }
-      | IDENT "Section"; s = global -> { PrintSectionContext s }
+      | IDENT "Section"; s = reference -> { PrintSectionContext s }
       | IDENT "Grammar"; ents = LIST0 IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
           { PrintGrammar ents }
@@ -1203,8 +1203,8 @@ GRAMMAR EXTEND Gram
     [ [ qid = smart_global -> { LocateAny qid }
       | IDENT "Term"; qid = smart_global -> { LocateTerm qid }
       | IDENT "File"; f = ne_string -> { LocateFile f }
-      | IDENT "Library"; qid = global -> { LocateLibrary qid }
-      | IDENT "Module"; qid = global -> { LocateModule qid } ] ]
+      | IDENT "Library"; qid = reference -> { LocateLibrary qid }
+      | IDENT "Module"; qid = reference -> { LocateModule qid } ] ]
   ;
   option_setting:
     [ [ -> { OptionSetTrue }
@@ -1212,16 +1212,16 @@ GRAMMAR EXTEND Gram
       | s  = STRING    -> { OptionSetString s } ] ]
   ;
   table_value:
-    [ [ id = global   -> { Goptions.QualidRefValue id }
+    [ [ id = reference   -> { Goptions.QualidRefValue id }
       | s  = STRING   -> { Goptions.StringRefValue s } ] ]
   ;
   setting_name:
     [ [ fl = LIST1 [ x = IDENT -> { x } ] -> { fl } ]]
   ;
   ne_in_or_out_modules:
-    [ [ IDENT "inside"; l = LIST1 global -> { SearchInside l }
-      | "in"; l = LIST1 global -> { SearchInside l }
-      | IDENT "outside"; l = LIST1 global -> { SearchOutside l } ] ]
+    [ [ IDENT "inside"; l = LIST1 reference -> { SearchInside l }
+      | "in"; l = LIST1 reference -> { SearchInside l }
+      | IDENT "outside"; l = LIST1 reference -> { SearchOutside l } ] ]
   ;
   in_or_out_modules:
     [ [ m = ne_in_or_out_modules -> { m }
@@ -1371,7 +1371,7 @@ GRAMMAR EXTEND Gram
   ;
   enable_notation_rule:
     [ [ s = ne_string -> { Some (Inl s) }
-      | qid = global; idl = LIST0 ident -> { Some (Inr (idl,qid)) }
+      | qid = reference; idl = LIST0 ident -> { Some (Inr (idl,qid)) }
       | -> { None } ] ]
   ;
   enable_notation_interpretation:

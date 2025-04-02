@@ -11,6 +11,7 @@ Prim.name: [
 
 global: [
 | Prim.reference
+| "lib:" Prim.reference
 ]
 
 constr_pattern: [
@@ -44,7 +45,7 @@ universe_increment: [
 ]
 
 universe_name: [
-| global
+| Prim.reference
 | "Set"
 | "Prop"
 ]
@@ -116,7 +117,7 @@ term1: [
 term0: [
 | atomic_constr
 | term_match
-| reference univ_annot
+| global univ_annot
 | NUMBER
 | string
 | "(" term200 ")"
@@ -142,7 +143,7 @@ fields_def: [
 ]
 
 field_def: [
-| global binders ":=" lconstr
+| reference binders ":=" lconstr
 ]
 
 binder_constr: [
@@ -194,7 +195,7 @@ univ_level_or_quality: [
 | "Prop"
 | "Type"
 | "_"
-| global
+| reference
 ]
 
 fix_decls: [
@@ -244,7 +245,7 @@ eqn: [
 ]
 
 record_pattern: [
-| global ":=" pattern200
+| reference ":=" pattern200
 ]
 
 record_patterns: [
@@ -273,7 +274,7 @@ pattern90: [
 pattern10: [
 | pattern1 "as" name
 | pattern1 LIST1 pattern1
-| "@" Prim.reference LIST0 pattern1
+| "@" global LIST0 pattern1
 | pattern1
 ]
 
@@ -284,7 +285,7 @@ pattern1: [
 ]
 
 pattern0: [
-| Prim.reference
+| global
 | "{|" record_patterns bar_cbrace
 | "_"
 | "(" pattern200 ")"
@@ -526,7 +527,7 @@ command: [
 | "Guarded"
 | "Validate" "Proof"
 | "Create" "HintDb" IDENT; [ "discriminated" | ]
-| "Remove" "Hints" LIST1 global opt_hintbases
+| "Remove" "Hints" LIST1 reference opt_hintbases
 | "Hint" hint opt_hintbases
 | "Comments" LIST0 comment
 | "Attributes" attribute_list
@@ -541,8 +542,8 @@ command: [
 | "Type" lconstr
 | "Print" printable
 | "Print" smart_global OPT univ_name_list
-| "Print" "Module" "Type" global
-| "Print" "Module" global
+| "Print" "Module" "Type" reference
+| "Print" "Module" reference
 | "Print" "Namespace" dirpath
 | "Inspect" natural
 | "Set" setting_name option_setting
@@ -564,30 +565,30 @@ command: [
 | "Declare" "Custom" "Entry" IDENT
 | "Derive" open_binders "SuchThat" constr "As" identref      (* derive plugin *)
 | "Derive" open_binders "in" constr "as" identref      (* derive plugin *)
-| "Extraction" global      (* extraction plugin *)
-| "Recursive" "Extraction" LIST1 global      (* extraction plugin *)
-| "Extraction" string LIST1 global      (* extraction plugin *)
-| "Extraction" "TestCompile" LIST1 global      (* extraction plugin *)
-| "Separate" "Extraction" LIST1 global      (* extraction plugin *)
+| "Extraction" reference      (* extraction plugin *)
+| "Recursive" "Extraction" LIST1 reference      (* extraction plugin *)
+| "Extraction" string LIST1 reference      (* extraction plugin *)
+| "Extraction" "TestCompile" LIST1 reference      (* extraction plugin *)
+| "Separate" "Extraction" LIST1 reference      (* extraction plugin *)
 | "Extraction" "Library" identref      (* extraction plugin *)
 | "Recursive" "Extraction" "Library" identref      (* extraction plugin *)
 | "Extraction" "Language" language      (* extraction plugin *)
-| "Extraction" "Inline" LIST1 global      (* extraction plugin *)
-| "Extraction" "NoInline" LIST1 global      (* extraction plugin *)
+| "Extraction" "Inline" LIST1 reference      (* extraction plugin *)
+| "Extraction" "NoInline" LIST1 reference      (* extraction plugin *)
 | "Print" "Extraction" "Inline"      (* extraction plugin *)
 | "Reset" "Extraction" "Inline"      (* extraction plugin *)
-| "Extraction" "Implicit" global "[" LIST0 int_or_id "]"      (* extraction plugin *)
+| "Extraction" "Implicit" reference "[" LIST0 int_or_id "]"      (* extraction plugin *)
 | "Extraction" "Blacklist" LIST1 preident      (* extraction plugin *)
 | "Print" "Extraction" "Blacklist"      (* extraction plugin *)
 | "Reset" "Extraction" "Blacklist"      (* extraction plugin *)
-| "Extract" "Callback" OPT string global      (* extraction plugin *)
+| "Extract" "Callback" OPT string reference      (* extraction plugin *)
 | "Print" "Extraction" "Callback"      (* extraction plugin *)
 | "Reset" "Extraction" "Callback"      (* extraction plugin *)
 | "Print" "Extraction" "Foreign"      (* extraction plugin *)
-| "Extract" "Constant" global LIST0 string "=>" mlname      (* extraction plugin *)
-| "Extract" "Foreign" "Constant" global "=>" string      (* extraction plugin *)
-| "Extract" "Inlined" "Constant" global "=>" mlname      (* extraction plugin *)
-| "Extract" "Inductive" global "=>" mlname "[" LIST0 mlname "]" OPT string      (* extraction plugin *)
+| "Extract" "Constant" reference LIST0 string "=>" mlname      (* extraction plugin *)
+| "Extract" "Foreign" "Constant" reference "=>" string      (* extraction plugin *)
+| "Extract" "Inlined" "Constant" reference "=>" mlname      (* extraction plugin *)
+| "Extract" "Inductive" reference "=>" mlname "[" LIST0 mlname "]" OPT string      (* extraction plugin *)
 | "Show" "Extraction"      (* extraction plugin *)
 | "Set" "Firstorder" "Solver" tactic
 | "Print" "Firstorder" "Solver"
@@ -714,8 +715,8 @@ reference_or_constr: [
 
 hint: [
 | "Resolve" LIST1 reference_or_constr hint_info
-| "Resolve" "->" LIST1 global OPT natural
-| "Resolve" "<-" LIST1 global OPT natural
+| "Resolve" "->" LIST1 reference OPT natural
+| "Resolve" "<-" LIST1 reference OPT natural
 | "Immediate" LIST1 reference_or_constr
 | "Variables" "Transparent"
 | "Variables" "Opaque"
@@ -723,11 +724,11 @@ hint: [
 | "Constants" "Opaque"
 | "Projections" "Transparent"
 | "Projections" "Opaque"
-| "Transparent" LIST1 global
-| "Opaque" LIST1 global
-| "Mode" global mode
-| "Unfold" LIST1 global
-| "Constructors" LIST1 global
+| "Transparent" LIST1 reference
+| "Opaque" LIST1 reference
+| "Mode" reference mode
+| "Unfold" LIST1 reference
+| "Constructors" LIST1 reference
 | "Extern" natural OPT Constr.constr_pattern "=>" Pltac.tactic
 ]
 
@@ -901,9 +902,9 @@ gallina: [
 | "Scheme" "Equality" "for" smart_global
 | "Scheme" "Boolean" "Equality" "for" smart_global
 | "Combined" "Scheme" identref "from" LIST1 identref SEP ","
-| "Register" global "as" qualid
-| "Register" "Scheme" global "as" qualid "for" global
-| "Register" "Inline" global
+| "Register" reference "as" qualid
+| "Register" "Scheme" reference "as" qualid "for" reference
+| "Register" "Inline" reference
 | "Primitive" ident_decl OPT [ ":" lconstr ] ":=" register_token
 | "Universe" LIST1 identref
 | "Universes" LIST1 identref
@@ -1151,9 +1152,9 @@ gallina_ext: [
 | "Section" identref
 | "End" identref
 | "Collection" identref ":=" section_subset_expr
-| "From" global "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
+| "From" reference "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
 | "Require" export_token LIST1 filtered_import
-| "From" global "Require" export_token LIST1 filtered_import
+| "From" reference "Require" export_token LIST1 filtered_import
 | "Import" OPT import_categories LIST1 filtered_import
 | "Export" OPT import_categories LIST1 filtered_import
 | "Include" module_type_inl LIST0 ext_module_type
@@ -1161,17 +1162,17 @@ gallina_ext: [
 | "Transparent" OPT "!" LIST1 smart_global
 | "Opaque" OPT "!" LIST1 smart_global
 | "Strategy" LIST1 [ strategy_level "[" LIST1 smart_global "]" ]
-| "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
+| "Canonical" OPT "Structure" reference OPT [ OPT univ_decl def_body ]
 | "Canonical" OPT "Structure" by_notation
-| "Coercion" global OPT [ OPT univ_decl def_body ]
+| "Coercion" reference OPT [ OPT univ_decl def_body ]
 | "Identity" "Coercion" identref ":" coercion_class ">->" coercion_class
-| "Coercion" global ":" coercion_class ">->" coercion_class
+| "Coercion" reference ":" coercion_class ">->" coercion_class
 | "Coercion" by_notation ":" coercion_class ">->" coercion_class
 | "Context" LIST1 binder
 | "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
-| "Existing" "Instance" global hint_info
-| "Existing" "Instances" LIST1 global OPT [ "|" natural ]
-| "Existing" "Class" global
+| "Existing" "Instance" reference hint_info
+| "Existing" "Instances" LIST1 reference OPT [ "|" natural ]
+| "Existing" "Class" reference
 | "Arguments" smart_global LIST0 arg_specs OPT [ "," LIST1 [ LIST0 implicits_alt ] SEP "," ] OPT [ ":" LIST1 args_modifier SEP "," ]
 | "Implicit" "Type" reserv_list
 | "Implicit" "Types" reserv_list
@@ -1185,12 +1186,12 @@ import_categories: [
 ]
 
 filtered_import: [
-| global
-| global "(" LIST1 one_import_filter_name SEP "," ")"
+| reference
+| reference "(" LIST1 one_import_filter_name SEP "," ")"
 ]
 
 one_import_filter_name: [
-| global OPT [ "(" ".." ")" ]
+| reference OPT [ "(" ".." ")" ]
 ]
 
 export_token: [
@@ -1400,7 +1401,7 @@ query_command: [
 printable: [
 | "Term" smart_global OPT univ_name_list
 | "All"
-| "Section" global
+| "Section" reference
 | "Grammar" LIST0 IDENT
 | "Custom" "Grammar" IDENT
 | "Keywords"
@@ -1459,8 +1460,8 @@ locatable: [
 | smart_global
 | "Term" smart_global
 | "File" ne_string
-| "Library" global
-| "Module" global
+| "Library" reference
+| "Module" reference
 ]
 
 option_setting: [
@@ -1470,7 +1471,7 @@ option_setting: [
 ]
 
 table_value: [
-| global
+| reference
 | STRING
 ]
 
@@ -1479,9 +1480,9 @@ setting_name: [
 ]
 
 ne_in_or_out_modules: [
-| "inside" LIST1 global
-| "in" LIST1 global
-| "outside" LIST1 global
+| "inside" LIST1 reference
+| "in" LIST1 reference
+| "outside" LIST1 reference
 ]
 
 in_or_out_modules: [
@@ -1573,7 +1574,7 @@ enable_enable_disable: [
 
 enable_notation_rule: [
 | ne_string
-| global LIST0 ident
+| reference LIST0 ident
 |
 ]
 
@@ -2109,7 +2110,7 @@ hints_path: [
 | "emp"
 | "eps"
 | hints_path "|" hints_path
-| LIST1 global
+| LIST1 reference
 | "_"
 | hints_path hints_path
 ]
@@ -2302,8 +2303,8 @@ ltac_def_kind: [
 ]
 
 tacdef_body: [
-| Constr.global LIST1 input_fun ltac_def_kind ltac_expr5
-| Constr.global ltac_def_kind ltac_expr5
+| Prim.reference LIST1 input_fun ltac_def_kind ltac_expr5
+| Prim.reference ltac_def_kind ltac_expr5
 ]
 
 tactic: [
@@ -2624,12 +2625,12 @@ ring_mod: [
 | "abstract"      (* ring plugin *)
 | "morphism" constr      (* ring plugin *)
 | "constants" "[" tactic "]"      (* ring plugin *)
-| "closed" "[" LIST1 global "]"      (* ring plugin *)
+| "closed" "[" LIST1 reference "]"      (* ring plugin *)
 | "preprocess" "[" tactic "]"      (* ring plugin *)
 | "postprocess" "[" tactic "]"      (* ring plugin *)
 | "setoid" constr constr      (* ring plugin *)
 | "sign" constr      (* ring plugin *)
-| "power" constr "[" LIST1 global "]"      (* ring plugin *)
+| "power" constr "[" LIST1 reference "]"      (* ring plugin *)
 | "power_tac" constr "[" tactic "]"      (* ring plugin *)
 | "div" constr      (* ring plugin *)
 ]

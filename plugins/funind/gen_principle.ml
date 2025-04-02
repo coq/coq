@@ -1640,7 +1640,7 @@ let register_wf interactive_proof ?(is_mes = false) fname rec_impls wf_rel_expr
     let f_app_args =
       CAst.make
       @@ Constrexpr.CAppExpl
-           ( (Libnames.qualid_of_ident fname, None)
+           ( (Constrexpr_ops.ref_expr_of_ident fname, None)
            , List.map
                (function
                  | {CAst.v = Anonymous} -> assert false
@@ -1919,11 +1919,11 @@ let rec chop_n_arrow n t =
     | _ -> CErrors.anomaly (Pp.str "Not enough products.")
 
 let rec add_args id new_args =
-  let open Libnames in
   let open Constrexpr in
+  let open Constrexpr_ops in
   CAst.map (function
     | CRef (qid, _) as b ->
-      if qualid_is_ident qid && Id.equal (qualid_basename qid) id then
+      if ref_expr_is_ident qid && Id.equal (ref_expr_basename qid) id then
         CAppExpl ((qid, None), new_args)
       else b
     | CFix _ | CCoFix _ -> CErrors.anomaly ~label:"add_args " (Pp.str "todo.")
@@ -1964,7 +1964,7 @@ let rec add_args id new_args =
         , Option.map (add_args id new_args) t
         , add_args id new_args b2 )
     | CAppExpl ((qid, us), exprl) ->
-      if qualid_is_ident qid && Id.equal (qualid_basename qid) id then
+      if ref_expr_is_ident qid && Id.equal (ref_expr_basename qid) id then
         CAppExpl
           ((qid, us), new_args @ List.map (add_args id new_args) exprl)
       else CAppExpl ((qid, us), List.map (add_args id new_args) exprl)
@@ -2076,7 +2076,7 @@ let make_graph (f_ref : GlobRef.t) =
                            (fun {CAst.loc; v = n} ->
                              CAst.make ?loc
                              @@ CRef
-                                  ( Libnames.qualid_of_ident ?loc
+                                  ( Constrexpr_ops.ref_expr_of_ident ?loc
                                     @@ Nameops.Name.get_id n
                                   , None ))
                            nal

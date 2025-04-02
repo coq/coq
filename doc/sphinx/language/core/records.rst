@@ -273,8 +273,8 @@ Accessing fields (projections)
    .. insertprodn term_projection term_projection
 
    .. prodn::
-      term_projection ::= @term0 .( @qualid {? @univ_annot } {* @arg } )
-      | @term0 .( @ @qualid {? @univ_annot } {* @term1 } )
+      term_projection ::= @term0 .( @global {? @univ_annot } {* @arg } )
+      | @term0 .( @ @global {? @univ_annot } {* @term1 } )
 
    The value of a field can be accessed using *projection form* (:n:`@term_projection`,
    shown here) or with *application form* (see :n:`@term_application`) using the

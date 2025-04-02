@@ -421,7 +421,7 @@ Creating Hints
 
    The `Hint` commands are:
 
-   .. cmd:: Hint Resolve {+ {| @qualid | @one_term } } {? @hint_info } {? : {+ @ident } }
+   .. cmd:: Hint Resolve {+ {| @global | @one_term } } {? @hint_info } {? : {+ @ident } }
             Hint Resolve {| -> | <- } {+ @qualid } {? @natural } {? : {+ @ident } }
       :name: Hint Resolve; _
 
@@ -470,7 +470,7 @@ Creating Hints
          The head symbol of the type of :n:`@qualid` is a bound variable
          such that this tactic cannot be associated with a constant.
 
-   .. cmd:: Hint Immediate {+ {| @qualid | @one_term } } {? : {+ @ident } }
+   .. cmd:: Hint Immediate {+ {| @global | @one_term } } {? : {+ @ident } }
 
       For each specified :n:`@qualid`, adds the tactic :tacn:`simple apply` :n:`@qualid;`
       :tacn:`solve` :n:`[` :tacn:`trivial` :n:`]` to the hint list

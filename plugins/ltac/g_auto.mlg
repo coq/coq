@@ -13,7 +13,6 @@
 open Pp
 open Stdarg
 open Procq.Prim
-open Procq.Constr
 open Pltac
 open Hints
 
@@ -173,7 +172,7 @@ PRINTED BY { pr_pre_hints_path }
 | [ "emp" ] -> { Hints.PathEmpty }
 | [ "eps" ] -> { Hints.PathEpsilon }
 | [ hints_path(p) "|" hints_path(q) ] -> { Hints.PathOr (p, q) }
-| [ ne_global_list(g) ] -> { Hints.PathAtom (Hints.PathHints g) }
+| [ ne_reference_list(g) ] -> { Hints.PathAtom (Hints.PathHints g) }
 | [ "_" ] -> { Hints.PathAtom Hints.PathAny }
 | [ hints_path(p) hints_path(q) ] -> { Hints.PathSeq (p, q) }
 END

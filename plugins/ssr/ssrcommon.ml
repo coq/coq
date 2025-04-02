@@ -22,7 +22,6 @@ open Locusops
 
 open Ltac_plugin
 open Proofview.Notations
-open Libnames
 open Ssrmatching_plugin
 open Ssrmatching
 open Ssrast
@@ -715,7 +714,7 @@ open Util
 (** Constructors for constr_expr *)
 let mkCProp loc = CAst.make ?loc @@ CSort Constrexpr_ops.expr_Prop_sort
 let mkCType loc = CAst.make ?loc @@ CSort Constrexpr_ops.expr_Type_sort
-let mkCVar ?loc id = CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)
+let mkCVar ?loc id = CAst.make ?loc @@ CRef (Constrexpr_ops.ref_expr_of_ident ?loc id, None)
 let rec mkCHoles ?loc n =
   if n <= 0 then [] else (CAst.make ?loc @@ CHole (None)) :: mkCHoles ?loc (n - 1)
 let mkCHole loc = CAst.make ?loc @@ CHole (None)
