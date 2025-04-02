@@ -680,9 +680,12 @@ let declare_private_constant ?role ~name ~opaque de effs =
     else DeclareUniv.declare_univ_binders (ConstRef kn)
         (Monomorphic_entry ctx, UnivNames.empty_binders)
   in
-  let seff_roles = match role with None -> Cmap.empty | Some r -> Cmap.singleton kn r in
-  let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
-  let effs = Evd.concat_side_effects eff effs in
+  let seff_roles = match role with
+  | None -> effs.Evd.seff_roles
+  | Some r -> Cmap.add kn r effs.Evd.seff_roles
+  in
+  let seff_private = Safe_typing.concat_private eff effs.Evd.seff_private in
+  let effs = { Evd.seff_private; Evd.seff_roles } in
   kn, effs
 
 let inline_private_constants ~uctx env (body, eff) =
