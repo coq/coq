@@ -526,7 +526,7 @@ backtracking continuations that normally live in the effects monad.
 
 By repeated application of `plus`, it is possible to stack exception
 handlers. If `h_1, h_2 : exn -> 'a` are exception handlers, then `fun
-e => plus (fun () => h1 e ()) h2` is an exception handler which first
+e => plus (fun () => h1 e) h2` is an exception handler which first
 attempts to handle the exception `e` using `h_1`, and, if this fails
 and raises an exception `e'`, attempts to handle `e'` with `h_2`.
 
@@ -630,8 +630,9 @@ The backtracking is first-class, i.e. one can write
 
 These operations are expected to satisfy a few equations, most notably
 that they form a monoid compatible with sequentialization. Note that
-the variables in these equations range over values, rather than
-expressions, but the stated equivalence should be understood as a
+the metavariables in these equations range over syntactic values 
+such as lambdas, variables or numerals rather than arbitrary expressions.
+The stated equivalence should be understood as a
 behavioral equivalence of programs, expressing that both sides of the
 equation cause the same side effects, return the same implicit
 exception handler, and raise the same exceptions or converge to the
@@ -647,7 +648,7 @@ same value. ::
   let x := zero e in u ≡ zero e
   let x := plus t f in u ≡ plus (fun () => let x := t () in u) (fun e => let x := f e in u)
 
-  (t, f, g, e values)
+  (t, f, g, e)
 
 Goals
 +++++
