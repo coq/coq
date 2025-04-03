@@ -2074,35 +2074,56 @@ let () = add_scope "thunk" begin function
 | arg -> scope_fail "thunk" arg
 end
 
-let () = add_scope "constr" (fun arg ->
+let () = add_scope "constr" begin function arg ->
+  let delimiters = List.map (function
+      | SexprRec (_, { v = Some s }, []) -> s
+      | _ -> scope_fail "constr" arg)
+      arg
+  in
+  let act e = Tac2quote.of_constr ~delimiters e in
+  Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
+end
+
+  let () = add_scope "lconstr" begin function arg ->
     let delimiters = List.map (function
         | SexprRec (_, { v = Some s }, []) -> s
-        | _ -> scope_fail "constr" arg)
+        | _ -> scope_fail "lconstr" arg)
         arg
     in
     let act e = Tac2quote.of_constr ~delimiters e in
-    Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
-  )
+    Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.lconstr, act)
+  end
 
-let () = add_scope "open_constr" (fun arg ->
-    let delimiters = List.map (function
-        | SexprRec (_, { v = Some s }, []) -> s
-        | _ -> scope_fail "open_constr" arg)
-        arg
-    in
-    let act e = Tac2quote.of_open_constr ~delimiters e in
-    Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
-  )
+let () = add_scope "open_constr" begin function arg ->
+  let delimiters = List.map (function
+      | SexprRec (_, { v = Some s }, []) -> s
+      | _ -> scope_fail "open_constr" arg)
+      arg
+  in
+  let act e = Tac2quote.of_open_constr ~delimiters e in
+  Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
+end
 
-let () = add_scope "preterm" (fun arg ->
-    let delimiters = List.map (function
-        | SexprRec (_, { v = Some s }, []) -> s
-        | _ -> scope_fail "preterm" arg)
-        arg
-    in
-    let act e = Tac2quote.of_preterm ~delimiters e in
-    Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
-  )
+let () = add_scope "open_lconstr" begin function arg ->
+  let delimiters = List.map (function
+      | SexprRec (_, { v = Some s }, []) -> s
+      | _ -> scope_fail "open_lconstr" arg)
+      arg
+  in
+  let act e = Tac2quote.of_open_constr ~delimiters e in
+  Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.lconstr, act)
+end
+
+
+let () = add_scope "preterm" begin function arg ->
+  let delimiters = List.map (function
+      | SexprRec (_, { v = Some s }, []) -> s
+      | _ -> scope_fail "preterm" arg)
+      arg
+  in
+  let act e = Tac2quote.of_preterm ~delimiters e in
+  Tac2entries.ScopeRule (Procq.Symbol.nterm Procq.Constr.constr, act)
+end
 
 let add_expr_scope name entry f =
   add_scope name begin function
