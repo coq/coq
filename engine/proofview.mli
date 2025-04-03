@@ -162,6 +162,7 @@ val apply
   -> 'a tactic
   -> proofview
   -> 'a * proofview
+       * Environ.env
        * bool
        * Proofview_monad.Info.tree
 
