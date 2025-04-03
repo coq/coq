@@ -648,7 +648,7 @@ same value. ::
   let x := zero e in u ≡ zero e
   let x := plus t f in u ≡ plus (fun () => let x := t () in u) (fun e => let x := f e in u)
 
-  (t, f, g, e)
+  (t, f, g, e values)
 
 Goals
 +++++
