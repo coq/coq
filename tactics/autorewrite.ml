@@ -18,13 +18,15 @@ open Mod_subst
 open Locus
 
 (* Rewriting rules *)
-type rew_rule = { rew_id : KerName.t;
-                  rew_lemma : constr;
-                  rew_type: types;
-                  rew_pat: constr;
-                  rew_ctx: Univ.ContextSet.t;
-                  rew_l2r: bool;
-                  rew_tac: Genarg.glob_generic_argument option }
+type rew_rule = {
+  rew_id : KerName.t;
+  rew_lemma : constr;
+  rew_type: types;
+  rew_pat: constr;
+  rew_ctx: Univ.ContextSet.t;
+  rew_l2r: bool;
+  rew_tac: Gentactic.glob_generic_tactic option;
+}
 
 module RewRule =
 struct
@@ -354,10 +356,10 @@ let print_rewrite_hintdb bas =
              str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
                Printer.pr_lconstr_env env sigma h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr_env env sigma h.rew_type ++
                Option.cata (fun tac -> str " then use tactic " ++
-               Pputils.pr_glb_generic env sigma tac) (mt ()) h.rew_tac)
+               Gentactic.print_glob env sigma tac) (mt ()) h.rew_tac)
            (find_rewrites bas))
 
-type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) CAst.t
+type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Gentactic.raw_generic_tactic option) CAst.t
 
 let tclMAP_rev f args =
   List.fold_left (fun accu arg -> Tacticals.tclTHEN accu (f arg)) (Proofview.tclUNIT ()) args
@@ -383,11 +385,7 @@ let one_base where conds tac_main bas =
   let eval h =
     let tac = match h.rew_tac with
     | None -> Proofview.tclUNIT ()
-    | Some tac ->
-      let ist = { Geninterp.lfun = Id.Map.empty
-                ; poly
-                ; extra = Geninterp.TacStore.empty } in
-      Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
+    | Some tac -> Gentactic.interp tac
     in
     Tacticals.tclREPEAT_MAIN (Tacticals.tclTHENFIRST (try_rewrite h tac) tac_main)
   in
@@ -485,7 +483,7 @@ let subst_hintrewrite (subst,(rbase,list as node)) =
     let cst' = subst_mps subst hint.rew_lemma in
     let typ' = subst_mps subst hint.rew_type in
     let pat' = subst_mps subst hint.rew_pat in
-    let t' = Option.Smart.map (Gensubst.generic_substitute subst) hint.rew_tac in
+    let t' = Option.Smart.map (Gentactic.subst subst) hint.rew_tac in
       if hint.rew_id == id' && hint.rew_lemma == cst' && hint.rew_type == typ' &&
          hint.rew_tac == t' && hint.rew_pat == pat' then hint else
         { hint with
@@ -546,8 +544,7 @@ let add_rew_rules ~locality base lrul =
   let () = Locality.check_locality_nodischarge locality in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let ist = Genintern.empty_glob_sign ~strict:true (Global.env ()) in
-  let intern tac = snd (Genintern.generic_intern ist tac) in
+  let intern tac = Gentactic.intern ~strict:true env tac in
   let map {CAst.loc;v=((c,ctx),b,t)} =
     let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
     let info = find_applied_relation ?loc env sigma c b in
