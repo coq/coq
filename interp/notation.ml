@@ -1522,15 +1522,15 @@ let interp_prim_token ?loc =
 let interp_prim_token_cases_pattern_expr ?loc check_allowed p =
   interp_prim_token_gen ?loc check_allowed p
 
-let warn_deprecated_notation =
-  Deprecation.create_warning ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-notation"
-    pr_notation
+let warn_notation =
+  UserWarn.create_depr_and_user_warnings ~object_name:"Notation" ~warning_name_base:"notation"
+    pr_notation ()
 
 let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
   try
     let (n,sc) = find_interpretation ntn (find_notation ntn) scopes in
-    Option.iter (fun d -> Option.iter (fun d -> warn_deprecated_notation ?loc (ntn,d)) d.UserWarn.depr) n.not_user_warns;
+    Option.iter (fun d -> warn_notation ?loc ntn d) n.not_user_warns;
     n.not_interp, (n.not_location, sc)
   with Not_found as exn ->
     let _, info = Exninfo.capture exn in
