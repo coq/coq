@@ -1,6 +1,8 @@
 #[deprecated(since = "X.Y", note = "Use idtac instead.")]
  Ltac foo := idtac.
 
+Fail #[deprecated(since="today", why="I said so")] Definition foo := 1.
+
 Goal True.
 foo.
 Abort.

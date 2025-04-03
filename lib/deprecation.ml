@@ -15,7 +15,7 @@ let drop_qf { depr } = depr
 let with_empty_qf depr = { depr; use_instead = None }
 
 let make ?since ?note () = { since ; note }
-let make_with_qf ?since ?note ?use_instead () = { depr = make ?since ?note (); use_instead }
+let make_with_qf depr ?use_instead () = { depr; use_instead }
 
 type since_name = NoSince | Since of string
 

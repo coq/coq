@@ -15,7 +15,7 @@ val drop_qf : 'a with_qf -> t
 val with_empty_qf : t -> 'a with_qf
 
 val make : ?since:string -> ?note:string -> unit -> t
-val make_with_qf : ?since:string -> ?note:string -> ?use_instead:'qf -> unit -> 'qf with_qf
+val make_with_qf : t -> ?use_instead:'qf -> unit -> 'qf with_qf
 
 val create_warning : ?default:CWarnings.status -> object_name:string -> warning_name_if_no_since:string ->
   ('b -> Pp.t) -> ?loc:Loc.t -> 'b * t -> unit
