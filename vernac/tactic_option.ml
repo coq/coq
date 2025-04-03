@@ -48,22 +48,22 @@ let warn_default_locality =
          with just \"#[export]\" in any surrounding modules. If you \
          are fine with the change of semantics, disable this warning.")
 
-let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
-  let default_tactic : Tacexpr.glob_tactic_expr ref =
+let declare_tactic_option ?default name =
+  let current_tactic : Gentactic.glob_generic_tactic option ref =
     Summary.ref default ~name:(name^"-default-tactic")
   in
-  let set_default_tactic t =
-    default_tactic := t
+  let set_current_tactic t =
+    current_tactic := t
   in
-  let cache (_, tac) = set_default_tactic tac in
+  let cache (_, tac) = set_current_tactic tac in
   let load _ (local, tac) = match local with
-    | Default | Global | GlobalAndExport -> set_default_tactic tac
+    | Default | Global | GlobalAndExport -> set_current_tactic tac
     | Export -> ()
     | Local -> assert false (* not allowed by classify *)
   in
   let import i (local, tac) = match local with
-    | GlobalAndExport | Export -> if Int.equal i 1 then set_default_tactic tac
-    | Default | Global -> set_default_tactic tac
+    | GlobalAndExport | Export -> if Int.equal i 1 then set_current_tactic tac
+    | Default | Global -> set_current_tactic tac
     | Local -> assert false (* not allowed by classify *)
   in
   let classify (local, _) = match local with
@@ -71,9 +71,9 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
     | Default | Global | Export | GlobalAndExport -> Substitute
   in
   let subst (s, (local, tac)) =
-    (local, Tacsubst.subst_tactic s tac)
+    (local, Option.map (Gentactic.subst s) tac)
   in
-  let input : tac_option_locality * Tacexpr.glob_tactic_expr -> obj =
+  let input : tac_option_locality * Gentactic.glob_generic_tactic option -> obj =
     declare_object
       { (default_object name) with
         cache_function = cache;
@@ -91,8 +91,17 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
         then CErrors.user_err ?loc
             Pp.(str "This locality is not supported inside sections by this command.")
     in
-    Lib.add_leaf (input (local, tac))
+    Lib.add_leaf (input (local, Some tac))
   in
-  let get () = Tacinterp.eval_tactic !default_tactic in
-  let print () = Pptactic.pr_glob_tactic (Global.env ()) !default_tactic in
+  let get () = match !current_tactic with
+    | None -> Proofview.tclUNIT ()
+    | Some tac -> Gentactic.interp tac
+  in
+  let print () = match !current_tactic with
+    | None -> Pp.str "<unset>"
+    | Some tac ->
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      Gentactic.print_glob env sigma tac
+  in
   put, get, print

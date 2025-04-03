@@ -90,6 +90,11 @@ let check_is_plugin ~what () = match !plugin_name with
   | Some b -> b
   | None -> fatal ("DECLARE PLUGIN required before "^what)
 
+let pp_opt_plugin_arg ~what () =
+  match check_is_plugin ~what () with
+  | Some name -> "(Some \""^name^"\")"
+  | None -> "None"
+
 let print_list fmt pr l =
   let rec prl fmt = function
   | [] -> ()
@@ -487,7 +492,7 @@ let print_entry fmt = function
 let print_ast fmt ext =
   let pr fmt () =
     fprintf fmt "Vernacextend.static_vernac_extend ~plugin:%s ~command:\"%s\" %a ?entry:%a %a"
-      (match check_is_plugin ~what:"VERNAC EXTEND" () with | Some name -> "(Some \""^name^"\")" | None -> "None")
+      (pp_opt_plugin_arg ~what:"VERNAC EXTEND" ())
       ext.vernacext_name print_classifier ext.vernacext_class
       print_entry ext.vernacext_entry (print_rules ext.vernacext_state) ext.vernacext_rules
   in
@@ -596,10 +601,10 @@ let print_printer fmt = function
 let print_ast fmt arg =
   let name = arg.vernacargext_name in
   let pr fmt () =
-    fprintf fmt "Vernacextend.vernac_argument_extend ~plugin:\"%s\" ~name:%a @[<2>{@\n\
+    fprintf fmt "Vernacextend.vernac_argument_extend ~plugin:%s ~name:%a @[<2>{@\n\
       Vernacextend.arg_parsing =@ %a;@\n\
       Vernacextend.arg_printer = fun env sigma ->@ %a;@\n}@]"
-      (force_is_plugin ~what:"VERNAC ARGUMENT EXTEND" ())
+      (pp_opt_plugin_arg ~what:"VERNAC ARGUMENT EXTEND" ())
       print_string name print_rules (name, arg.vernacargext_rules)
       print_printer arg.vernacargext_printer
   in

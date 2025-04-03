@@ -266,7 +266,7 @@ module Proof : sig
   val map_fold_endline : f:(unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
 
   (** Sets the tactic to be used when a tactic line is closed with [...] *)
-  val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
+  val set_endline_tactic : Gentactic.glob_generic_tactic -> t -> t
 
   val definition_scope : t -> Locality.definition_scope
 
@@ -603,12 +603,12 @@ val add_mutual_definitions :
 val obligation :
      int * Names.Id.t option
   -> pm:OblState.t
-  -> Genarg.glob_generic_argument option
+  -> Gentactic.glob_generic_tactic option
   -> Proof.t
 
 (** Implementation of the [Next Obligation of id with tac] and [Final Obligation of id with tac] commands *)
 val next_obligation :
-  pm:OblState.t -> ?final:bool -> Names.Id.t option -> Genarg.glob_generic_argument option -> Proof.t
+  pm:OblState.t -> ?final:bool -> Names.Id.t option -> Gentactic.glob_generic_tactic option -> Proof.t
 
 (** Implementation of the [Solve Obligations of id with tac] command *)
 val solve_obligations :

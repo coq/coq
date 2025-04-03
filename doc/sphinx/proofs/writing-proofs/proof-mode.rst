@@ -272,7 +272,7 @@ When the proof is completed, you can exit proof mode with commands such as
 
    .. seealso:: :cmd:`Proof with`
 
-.. cmd:: Proof using @section_var_expr {? with @ltac_expr }
+.. cmd:: Proof using @section_var_expr {? with @generic_tactic }
 
    .. insertprodn section_var_expr starred_ident_ref
 
@@ -487,11 +487,20 @@ Name a set of section hypotheses for ``Proof using``
 Proof modes
 -----------
 
-When entering proof mode through commands such as :cmd:`Goal` and :cmd:`Proof`,
-Rocq picks by default the |Ltac| mode. Nonetheless, there exist other proof modes
-shipped in the standard Rocq installation, and furthermore some plugins define
-their own proof modes. The default proof mode used when opening a proof can
-be changed using the following option.
+When entering proof mode through commands such as :cmd:`Goal` and
+:cmd:`Proof`, Rocq picks by default the |Ltac| mode. Nonetheless,
+there exist other proof modes shipped in the standard Rocq
+installation, and furthermore some plugins define their own proof
+modes. The default proof mode used when opening a proof can be changed
+using the following option.
+
+The default proof mode is also used for tactic arguments to
+commands through :n:`generic_tactic`. By default,
+
+.. insertprodn generic_tactic generic_tactic
+
+.. prodn::
+   generic_tactic ::= @ltac_expr
 
 .. opt:: Default Proof Mode @string
 

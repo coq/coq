@@ -850,13 +850,13 @@ command: [
 | "Attributes" LIST1 attribute SEP ","
 | "Declare" "Instance" ident_decl LIST0 binder ":" term OPT hint_info
 | "Declare" "Scope" scope_name
-| "Obligation" natural OPT ( "of" ident ) OPT ( "with" ltac_expr )
-| "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
-| "Final" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
+| "Obligation" natural OPT ( "of" ident ) OPT ( "with" generic_tactic )
+| "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" generic_tactic )
+| "Final" "Obligation" OPT ( "of" ident ) OPT ( "with" generic_tactic )
 | "Solve" "Obligations" OPT ( "of" ident ) OPT ( "with" ltac_expr )
 | "Solve" "All" "Obligations" OPT ( "with" ltac_expr )
 | "Admit" "Obligations" OPT ( "of" ident )
-| "Obligation" "Tactic" ":=" ltac_expr
+| "Obligation" "Tactic" ":=" generic_tactic
 | "Show" "Obligation" "Tactic"
 | "Obligations" OPT ( "of" ident )
 | "Preterm" OPT ( "of" ident )
@@ -885,8 +885,8 @@ command: [
 | "Typeclasses" "Transparent" LIST1 qualid
 | "Typeclasses" "Opaque" LIST1 qualid
 | "Typeclasses" "eauto" ":=" OPT "debug" OPT ( "(" [ "bfs" | "dfs" ] ")" ) OPT natural
-| "Proof" "with" ltac_expr OPT [ "using" section_var_expr ]
-| "Proof" "using" section_var_expr OPT [ "with" ltac_expr ]
+| "Proof" "with" generic_tactic OPT [ "using" section_var_expr ]
+| "Proof" "using" section_var_expr OPT [ "with" generic_tactic ]
 | "Tactic" "Notation" OPT ( "(" "at" "level" natural ")" ) LIST1 ltac_production_item ":=" ltac_expr
 | "Print" "Rewrite" "HintDb" ident
 | "Print" "Ltac" qualid
@@ -1004,7 +1004,7 @@ command: [
 | "Hint" "Mode" qualid LIST1 [ "+" | "!" | "-" ] OPT ( ":" LIST1 ident )
 | "Hint" "Unfold" LIST1 qualid OPT ( ":" LIST1 ident )
 | "Hint" "Constructors" LIST1 qualid OPT ( ":" LIST1 ident )
-| "Hint" "Extern" natural OPT one_pattern "=>" ltac_expr OPT ( ":" LIST1 ident )
+| "Hint" "Extern" natural OPT one_pattern "=>" generic_tactic OPT ( ":" LIST1 ident )
 | "Time" sentence
 | "Instructions" sentence
 | "Profile" OPT string sentence
@@ -2124,6 +2124,10 @@ ltac2_quotations: [
 ltac1_expr_in_env: [
 | ltac_expr      (* ltac2_ltac1 plugin *)
 | LIST0 ident "|-" ltac_expr      (* ltac2_ltac1 plugin *)
+]
+
+generic_tactic: [
+| ltac_expr
 ]
 
 ltac2_branches: [

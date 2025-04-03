@@ -12,12 +12,11 @@
   Syntax for the subtac terms and types.
   Elaborated from correctness/psyntax.ml4 by Jean-Christophe Filliâtre *)
 
-DECLARE PLUGIN "rocq-runtime.plugins.ltac"
+DECLARE GLOBAL PLUGIN
 
 {
 
 open Stdarg
-open Tacarg
 
 let (set_default_tactic, get_default_tactic, print_default_tactic) =
   Tactic_option.declare_tactic_option "Program tactic"
@@ -31,31 +30,30 @@ let () =
   Declare.Obls.default_tactic := tac
 
 let with_tac f tac =
-  let env = Genintern.empty_glob_sign ~strict:true (Global.env ()) in
-  let tac = match tac with
-  | None -> None
-  | Some tac ->
-    let tac = Genarg.in_gen (Genarg.rawwit wit_ltac) tac in
-    let _, tac = Genintern.generic_intern env tac in
-    Some tac
-  in
+  let tac = Option.map (fun tac -> Gentactic.intern (Global.env()) tac) tac in
   f tac
+
+let interp_gen tac =
+  Proofview.Goal.enter begin fun gl ->
+  let tac = Gentactic.intern ~strict:false (Proofview.Goal.env gl) tac in
+  Gentactic.interp tac
+  end
 
 (* We define new entries for programs, with the use of this module
  * Subtac. These entries are named Subtac.<foo>
  *)
 
-let pr_withtac env sigma = function
-  | None -> Pp.mt ()
-  | Some tac -> Pp.(str "with" ++ spc () ++ Pptactic.pr_raw_tactic env sigma tac)
+let pr_withtac env sigma = let open Pp in function
+  | None -> mt ()
+  | Some tac -> str "with" ++ spc () ++ Gentactic.print_raw env sigma tac
 
-let tactic = Pltac.tactic
+let generic_tactic = Pvernac.Vernac_.generic_tactic
 
 }
 
 VERNAC ARGUMENT EXTEND withtac PRINTED BY { pr_withtac env sigma }
 | [ ] -> { None }
-| [ "with" tactic(tac) ] -> { Some tac }
+| [ "with" generic_tactic(tac) ] -> { Some tac }
 END
 
 {
@@ -83,21 +81,15 @@ VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE declare_
 END
 
 VERNAC COMMAND EXTEND Solve_Obligations CLASSIFIED AS SIDEFF STATE program
-| [ "Solve" "Obligations" "of" identref(name) "with" tactic(t) ] ->
-    { try_solve_obligations (Some name.CAst.v) (Some (Tacinterp.interp t)) }
-| [ "Solve" "Obligations" "of" identref(name) ] ->
-    { try_solve_obligations (Some name.CAst.v) None }
-| [ "Solve" "Obligations" "with" tactic(t) ] ->
-    { try_solve_obligations None (Some (Tacinterp.interp t)) }
-| [ "Solve" "Obligations" ] ->
-    { try_solve_obligations None None }
+| [ "Solve" "Obligations" "of" identref(name) withtac(t) ] ->
+    { try_solve_obligations (Some name.CAst.v) (Option.map interp_gen t) }
+| [ "Solve" "Obligations" withtac(t) ] ->
+    { try_solve_obligations None (Option.map interp_gen t) }
 END
 
 VERNAC COMMAND EXTEND Solve_All_Obligations CLASSIFIED AS SIDEFF STATE program
-| [ "Solve" "All" "Obligations" "with" tactic(t) ] ->
-    { solve_all_obligations (Some (Tacinterp.interp t)) }
-| [ "Solve" "All" "Obligations" ] ->
-    { solve_all_obligations None }
+| [ "Solve" "All" "Obligations" withtac(t) ] ->
+    { solve_all_obligations (Option.map interp_gen t) }
 END
 
 VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF STATE program
@@ -106,22 +98,16 @@ VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF STATE program
 END
 
 VERNAC COMMAND EXTEND Set_Solver CLASSIFIED AS SIDEFF
-| #[ locality = Tactic_option.tac_option_locality; ] [ "Obligation" "Tactic" ":=" tactic(t) ] -> {
+| #[ locality = Tactic_option.tac_option_locality; ] [ "Obligation" "Tactic" ":=" generic_tactic(t) ] -> {
         set_default_tactic
           locality
-          (Tacintern.glob_tactic t);
+          (Gentactic.intern (Global.env()) t);
   }
 END
 
-{
-
-open Pp
-
-}
-
 VERNAC COMMAND EXTEND Show_Solver CLASSIFIED AS QUERY
 | [ "Show" "Obligation" "Tactic" ] -> {
-    Feedback.msg_notice (str"Program obligation tactic is " ++ print_default_tactic ()) }
+    Feedback.msg_notice Pp.(str"Program obligation tactic is " ++ print_default_tactic ()) }
 END
 
 VERNAC COMMAND EXTEND Show_Obligations CLASSIFIED AS QUERY STATE read_program

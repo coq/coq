@@ -518,7 +518,7 @@ Creating Hints
       These flags affect the unification of hints in the database.
       We advise using this just after a :cmd:`Create HintDb` command.
 
-   .. cmd:: Hint Extern @natural {? @one_pattern } => @ltac_expr {? : {+ @ident } }
+   .. cmd:: Hint Extern @natural {? @one_pattern } => @generic_tactic {? : {+ @ident } }
 
       Extends :tacn:`auto` with tactics other than :tacn:`apply` and
       :tacn:`unfold`. :n:`@natural` is the cost, :n:`@one_pattern` is the pattern
@@ -758,7 +758,7 @@ of where these hints are used:
 Setting implicit automation tactics
 -----------------------------------
 
-.. cmd:: Proof with @ltac_expr {? using @section_var_expr }
+.. cmd:: Proof with @generic_tactic {? using @section_var_expr }
 
    Starts a proof in which :token:`ltac_expr` is applied to the active goals
    after each tactic that ends with `...` instead of the usual single period.

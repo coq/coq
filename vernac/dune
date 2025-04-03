@@ -18,6 +18,11 @@
  (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
 
 (rule
+ (targets g_obligations.ml)
+ (deps (:mlg g_obligations.mlg))
+ (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
+
+(rule
  (targets g_vernac.ml)
  (deps (:mlg g_vernac.mlg))
  (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))

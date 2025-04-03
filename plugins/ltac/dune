@@ -47,11 +47,6 @@
  (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
 
 (rule
- (targets g_obligations.ml)
- (deps (:mlg g_obligations.mlg))
- (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
-
-(rule
  (targets g_ltac.ml)
  (deps (:mlg g_ltac.mlg))
  (action (chdir %{project_root} (run rocq pp-mlg %{deps}))))
