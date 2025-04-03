@@ -359,8 +359,6 @@ let print_rewrite_hintdb bas =
                Gentactic.print_glob env sigma tac) (mt ()) h.rew_tac)
            (find_rewrites bas))
 
-type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Gentactic.raw_generic_tactic option) CAst.t
-
 let tclMAP_rev f args =
   List.fold_left (fun accu arg -> Tacticals.tclTHEN accu (f arg)) (Proofview.tclUNIT ()) args
 
@@ -539,8 +537,10 @@ let find_applied_relation ?loc env sigma c left2right =
                     (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
                        spc () ++ str"of this term does not end with an applied relation.")
 
+type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Gentactic.raw_generic_tactic option) CAst.t
+
 (* To add rewriting rules to a base *)
-let add_rew_rules ~locality base lrul =
+let add_rew_rules ~locality base (lrul:raw_rew_rule list) =
   let () = Locality.check_locality_nodischarge locality in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -556,3 +556,22 @@ let add_rew_rules ~locality base lrul =
   in
   let lrul = List.map map lrul in
   Lib.add_leaf (inHintRewrite (locality,(base,lrul)))
+
+let add_rewrite_hint ~locality ~poly bases ort t lcsr =
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  let f ce =
+    let c, ctx = Constrintern.interp_constr env sigma ce in
+    let c = EConstr.to_constr sigma c in
+    let ctx =
+      let ctx = UState.context_set ctx in
+      if poly then ctx
+      else (* This is a global universe context that shouldn't be
+              refreshed at every use of the hint, declare it globally. *)
+        (Global.push_context_set ctx;
+         Univ.ContextSet.empty)
+    in
+    CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, t) in
+  let eqs = List.map f lcsr in
+  let add_hints base = add_rew_rules ~locality base eqs in
+  List.iter add_hints bases
