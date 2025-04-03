@@ -760,8 +760,8 @@ Setting implicit automation tactics
 
 .. cmd:: Proof with @generic_tactic {? using @section_var_expr }
 
-   Starts a proof in which :token:`ltac_expr` is applied to the active goals
+   Starts a proof in which :token:`generic_tactic` is applied to the active goals
    after each tactic that ends with `...` instead of the usual single period.
-   ":n:`@tactic...`" is equivalent to ":n:`@tactic; @ltac_expr.`".
+   ":n:`@tactic...`" is equivalent to ":n:`@tactic; @generic_tactic.`".
 
    .. seealso:: :cmd:`Proof` in :ref:`proof-editing-mode`.
