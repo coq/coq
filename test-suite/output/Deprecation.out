@@ -12,3 +12,17 @@ Tactic foo is deprecated since X.Y. Use idtac instead.
 File "./output/Deprecation.v", line 26, characters 0-3:
 Warning: Tactic bar is deprecated since library X.Y. Use baz instead.
 [deprecated-tactic-since-library-X.Y,deprecated-since-library-X.Y,deprecated-tactic,deprecated,default]
+File "./output/Deprecation.v", line 31, characters 6-9:
+Warning: hello [warn-reference,user-warn,default]
+bar
+     : nat
+File "./output/Deprecation.v", line 36, characters 6-13:
+Warning: use less +s
+[warn-notation-fragile-too-many-plus,too-many-plus,fragile,warn-notation,user-warn,default]
+1 ++ 2
+     : nat
+File "./output/Deprecation.v", line 37, characters 6-12:
+Warning: use less +s 2
+[warn-notation-too-many-plus,too-many-plus,warn-notation,user-warn,default]
+1 ++ 2
+     : nat
