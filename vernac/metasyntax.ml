@@ -2021,15 +2021,15 @@ let remove_delimiters local scope =
 let add_class_scope local scope where cl =
   Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses (where, cl)))
 
-let interp_abbreviation_modifiers user_warns modl =
-  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true user_warns modl in
+let interp_abbreviation_modifiers modl =
+  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true None modl in
   if skipped <> [] then
     (let modifier = List.hd skipped in
     user_err ?loc:modifier.CAst.loc (str "Abbreviations don't support " ++ Ppvernac.pr_syntax_modifier modifier));
   (mods.onlyparsing, mods.itemscopes)
 
 let add_abbreviation ~local user_warns env ident (vars,c) modl =
-  let (only_parsing, scopes) = interp_abbreviation_modifiers user_warns modl in
+  let (only_parsing, scopes) = interp_abbreviation_modifiers modl in
   let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
     match vars, intern_name_alias c with
