@@ -32,8 +32,11 @@ jobs:
       - name: 🧱 Build Rocq
         run: opam exec -- make world
 
+      - name: 🐛 Debug number of processors
+        run: echo %NUMBER_OF_PROCESSORS%
+
       - name: 🐛 Test Rocq
-        run: opam exec -- make -C test-suite
+        run: opam exec -- make -j4 -C test-suite
 
   Windows-platform:
     if: false
