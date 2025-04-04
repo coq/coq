@@ -75,8 +75,7 @@ Ltac2 init (l : int) (f : int->'a) :=
   end.
 
 Ltac2 make_matrix (sx : int) (sy : int) (v : 'a) :=
-  let init1 _ := v in
-  let initr _ := init sy init1 in
+  let initr _ := make sy v in
   init sx initr.
 
 Ltac2 copy a := lowlevel_sub a 0 (length a).
