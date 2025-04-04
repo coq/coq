@@ -31,21 +31,47 @@ Require Ltac2.Control.
 Require Ltac2.Bool.
 Require Ltac2.Message.
 
-(* Question: what is returned in case of an out of range value?
-   Answer:   Ltac2 throws a panic *)
+(** This module implements fixed sized, mutable arrays.
 
+    Unless specified otherwise, all functions defined below throw
+    an exception in case of out of bounds indices, and arrays are indexed
+    starting at [0]. *)
+
+(** The empty array. *)
 Ltac2 @external empty : 'a array := "rocq-runtime.plugins.ltac2" "array_empty".
+
+(** [make n x] creates an array of length [n], with all elements set to [x]. *)
 Ltac2 @external make : int -> 'a -> 'a array := "rocq-runtime.plugins.ltac2" "array_make".
+
+(** Return the length of an array. *)
 Ltac2 @external length : 'a array -> int := "rocq-runtime.plugins.ltac2" "array_length".
+
+(** [get arr i] returns the [i]-th element of [arr]. *)
 Ltac2 @external get : 'a array -> int -> 'a := "rocq-runtime.plugins.ltac2" "array_get".
+
+(** [set arr i x] replaces [arr[i]] with [x]. This modifies [arr] in place. *)
 Ltac2 @external set : 'a array -> int -> 'a -> unit := "rocq-runtime.plugins.ltac2" "array_set".
+
+(** [lowlevel_blit from fofs to tofs len] copies [from[fofs...fofs+len-1]] to [to[tofs...tofs+len-1]] (bounds included).
+    This modifies [to] in place.
+
+    Consider using [blit] for nicer error messages. *)
 Ltac2 @external lowlevel_blit : 'a array -> int -> 'a array -> int -> int -> unit := "rocq-runtime.plugins.ltac2" "array_blit".
+
+(** [lowlevel_fill arr ofs len x] replaces [arr[ofs]], [arr[ofs+1]], ..., [arr[ofs+len-1]] with [x].
+    This modifes [arr] in place.
+
+    Consider using [fill] for nicer error messages. *)
 Ltac2 @external lowlevel_fill : 'a array -> int -> int -> 'a -> unit := "rocq-runtime.plugins.ltac2" "array_fill".
+
+(** [concat [a1 ; a2 ; ... ; aN]] returns the array [a1 ++ a2 ++ ... ++ an]. *)
 Ltac2 @external concat : ('a array) list -> 'a array := "rocq-runtime.plugins.ltac2" "array_concat".
 
-(* Low level array operations *)
+(** [lowlevel_sub arr ofs len] returns the subarray [arr[ofs...ofs+len-1]].
+    The result is allocated as a new array, i.e. is not aliased with [arr].
 
-Ltac2 lowlevel_sub (arr : 'a array) (start : int) (len : int) :=
+    Consider using [sub] for nicer error messages. *)
+Ltac2 lowlevel_sub (arr : 'a array) (start : int) (len : int) : 'a array :=
   let l := length arr in
   match Int.equal l 0 with
   | true => empty
@@ -55,9 +81,8 @@ Ltac2 lowlevel_sub (arr : 'a array) (start : int) (len : int) :=
       newarr
   end.
 
-(* Array functions as defined in the OCaml library *)
-
-Ltac2 init (l : int) (f : int->'a) :=
+(** [init n f] creates the array [| f 0 ; f 1 ; ... ; f (n-1) |]. *)
+Ltac2 init (l : int) (f : int -> 'a) : 'a array :=
   let rec init_aux (dst : 'a array) (pos : int) (len : int) (f : int->'a) :=
     match Int.equal len 0 with
     | true => ()
@@ -74,13 +99,20 @@ Ltac2 init (l : int) (f : int->'a) :=
       arr
   end.
 
-Ltac2 make_matrix (sx : int) (sy : int) (v : 'a) :=
+(** [make_matrix sx sy v] creates an array of size [sx]
+    which contains array of size [sy], filled with [v]. *)
+Ltac2 make_matrix (sx : int) (sy : int) (v : 'a) : 'a array array :=
   let initr _ := make sy v in
   init sx initr.
 
-Ltac2 copy a := lowlevel_sub a 0 (length a).
+(** Copy an array. The copied array can be modified without
+    changing the original array (and vice versa). *)
+Ltac2 copy (a : 'a array) : 'a array :=
+  lowlevel_sub a 0 (length a).
 
-Ltac2 append (a1 : 'a array) (a2 : 'a array) :=
+(** [append a1 a2] appends [a1] and [a2].
+    This allocates a new array, even if [a1] or [a2] is empty. *)
+Ltac2 append (a1 : 'a array) (a2 : 'a array) : 'a array :=
   match Int.equal (length a1) 0 with
   | true => copy a2
   | false => match Int.equal (length a2) 0 with
@@ -93,19 +125,25 @@ Ltac2 append (a1 : 'a array) (a2 : 'a array) :=
              end
   end.
 
-Ltac2 sub (a : 'a array) (ofs : int) (len : int) :=
+(** [sub arr ofs len] returns the subarray [arr[ofs...ofs+len-1]].
+    The result is allocated as a new array, i.e. is not aliased with [arr]. *)
+Ltac2 sub (a : 'a array) (ofs : int) (len : int) : 'a array :=
   Control.assert_valid_argument "Array.sub ofs<0" (Int.ge ofs 0);
   Control.assert_valid_argument "Array.sub len<0" (Int.ge len 0);
   Control.assert_bounds "Array.sub" (Int.le ofs (Int.sub (length a) len));
   lowlevel_sub a ofs len.
 
-Ltac2 fill (a : 'a array) (ofs : int) (len : int) (v : 'a) :=
+(** [fill arr ofs len x] replaces [arr[ofs]], [arr[ofs+1]], ..., [arr[ofs+len-1]] with [x].
+    This modifes [arr] in place. *)
+Ltac2 fill (a : 'a array) (ofs : int) (len : int) (v : 'a) : unit :=
   Control.assert_valid_argument "Array.fill ofs<0" (Int.ge ofs 0);
   Control.assert_valid_argument "Array.fill len<0" (Int.ge len 0);
   Control.assert_bounds "Array.fill" (Int.le ofs (Int.sub (length a) len));
   lowlevel_fill a ofs len v.
 
-Ltac2 blit (a1 : 'a array) (ofs1 : int) (a2 : 'a array) (ofs2 : int) (len : int) :=
+(** [blit from fofs to tofs len] copies [from[fofs...fofs+len-1]] to [to[tofs...tofs+len-1]] (bounds included).
+    This modifies [to] in place. *)
+Ltac2 blit (a1 : 'a array) (ofs1 : int) (a2 : 'a array) (ofs2 : int) (len : int) : unit :=
   Control.assert_valid_argument "Array.blit ofs1<0" (Int.ge ofs1 0);
   Control.assert_valid_argument "Array.blit ofs2<0" (Int.ge ofs2 0);
   Control.assert_valid_argument "Array.blit len<0" (Int.ge len 0);
@@ -113,51 +151,72 @@ Ltac2 blit (a1 : 'a array) (ofs1 : int) (a2 : 'a array) (ofs2 : int) (len : int)
   Control.assert_bounds "Array.blit ofs2+len>len a2" (Int.le ofs2 (Int.sub (length a2) len));
   lowlevel_blit a1 ofs1 a2 ofs2 len.
 
-Ltac2 rec iter_aux (f : 'a -> unit) (a : 'a array) (pos : int) (len : int) :=
+(** Helper function for [iter]. *)
+Ltac2 rec iter_aux (f : 'a -> unit) (a : 'a array) (pos : int) (len : int) : unit :=
   match Int.equal len 0 with
   | true => ()
   | false => f (get a pos); iter_aux f a (Int.add pos 1) (Int.sub len 1)
   end.
 
-Ltac2 iter (f : 'a -> unit) (a : 'a array) := iter_aux f a 0 (length a).
+(** [iter f arr] calls [f] on every element of [arr], from first to last. *)
+Ltac2 iter (f : 'a -> unit) (a : 'a array) : unit :=
+  iter_aux f a 0 (length a).
 
-Ltac2 rec iter2_aux (f : 'a -> 'b -> unit) (a : 'a array) (b : 'b array) (pos : int) (len : int) :=
+(** Helper function for [iter2]. *)
+Ltac2 rec iter2_aux (f : 'a -> 'b -> unit) (a : 'a array) (b : 'b array) (pos : int) (len : int) : unit :=
   match Int.equal len 0 with
   | true => ()
   | false => f (get a pos) (get b pos); iter2_aux f a b (Int.add pos 1) (Int.sub len 1)
   end.
 
-Ltac2 rec iter2 (f : 'a -> 'b -> unit) (a : 'a array) (b : 'b array) :=
+(** Same as [iter] but with two arrays.
+    Throws an exception when the lengths of the arrays differ. *)
+Ltac2 rec iter2 (f : 'a -> 'b -> unit) (a : 'a array) (b : 'b array) : unit :=
   Control.assert_valid_argument "Array.iter2" (Int.equal (length a) (length b));
   iter2_aux f a b 0 (length a).
 
-Ltac2 map (f : 'a -> 'b) (a : 'a array) :=
+(** Map a function over an array. Elements are processed from first to last.
+    The result is allocated as a new array, i.e. it does not alias the original array. *)
+Ltac2 map (f : 'a -> 'b) (a : 'a array) : 'b array :=
   init (length a) (fun i => f (get a i)).
 
-Ltac2 map2 (f : 'a -> 'b -> 'c) (a : 'a array) (b : 'b array) :=
+(** Same as [map] but with two arrays.
+    Throws an exception when the lengths of the arrays differ. *)
+Ltac2 map2 (f : 'a -> 'b -> 'c) (a : 'a array) (b : 'b array) : 'c array :=
   Control.assert_valid_argument "Array.map2" (Int.equal (length a) (length b));
   init (length a) (fun i => f (get a i) (get b i)).
 
-Ltac2 rec iteri_aux (f : int -> 'a -> unit) (a : 'a array) (pos : int) (len : int) :=
+(** Helper function for [iteri]. *)
+Ltac2 rec iteri_aux (f : int -> 'a -> unit) (a : 'a array) (pos : int) (len : int) : unit :=
   match Int.equal len 0 with
   | true => ()
   | false => f pos (get a pos); iteri_aux f a (Int.add pos 1) (Int.sub len 1)
   end.
 
-Ltac2 iteri (f : int -> 'a -> unit) (a : 'a array) := iteri_aux f a 0 (length a).
+(** Iterate a function over an array, passing the index of each argument to the function.
+    Elements are processed from first to last. *)
+Ltac2 iteri (f : int -> 'a -> unit) (a : 'a array) : unit :=
+  iteri_aux f a 0 (length a).
 
-Ltac2 mapi (f : int -> 'a -> 'b) (a : 'a array) :=
+(** Map a function over an array, passing the index of each argument to the function.
+    Elements are processed from first to last. The result is allocated as a new array,
+    i.e. it does not alias the original array. *)
+Ltac2 mapi (f : int -> 'a -> 'b) (a : 'a array) : 'b array :=
   init (length a) (fun i => f i (get a i)).
 
-Ltac2 rec to_list_aux (a : 'a array) (pos : int) (len : int) :=
+(** Helper function to [to_list]. *)
+Ltac2 rec to_list_aux (a : 'a array) (pos : int) (len : int) : 'a list :=
   match Int.equal len 0 with
   | true => []
   | false => get a pos :: to_list_aux a (Int.add pos 1) (Int.sub len 1)
   end.
 
-Ltac2 to_list (a : 'a array) := to_list_aux a 0 (length a).
+(** Convert an array to a list. *)
+Ltac2 to_list (a : 'a array) : 'a list :=
+  to_list_aux a 0 (length a).
 
-Ltac2 rec of_list_aux (ls : 'a list) (dst : 'a array) (pos : int) :=
+(** Helper function to [of_list]. *)
+Ltac2 rec of_list_aux (ls : 'a list) (dst : 'a array) (pos : int) : unit :=
   match ls with
   | [] => ()
   | hd::tl =>
@@ -165,7 +224,8 @@ Ltac2 rec of_list_aux (ls : 'a list) (dst : 'a array) (pos : int) :=
       of_list_aux tl dst (Int.add pos 1)
   end.
 
-Ltac2 of_list (ls : 'a list) :=
+(** Convert a list into an array. *)
+Ltac2 of_list (ls : 'a list) : 'a array :=
   (* Don't use List.length here because the List module might depend on Array some day *)
   let rec list_length (ls : 'a list) :=
     match ls with
@@ -180,16 +240,19 @@ Ltac2 of_list (ls : 'a list) :=
       anew
   end.
 
-Ltac2 rec fold_left_aux (f : 'a -> 'b -> 'a) (x : 'a) (a : 'b array) (pos : int) (len : int) :=
+(** Helper function for [fold_left]. *)
+Ltac2 rec fold_left_aux (f : 'a -> 'b -> 'a) (x : 'a) (a : 'b array) (pos : int) (len : int) : 'a :=
   match Int.equal len 0 with
   | true => x
   | false => fold_left_aux f (f x (get a pos)) a (Int.add pos 1) (Int.sub len 1)
   end.
 
+(** Left fold over an array. *)
 Ltac2 fold_left (f : 'a -> 'b -> 'a) (x : 'a) (a : 'b array) : 'a :=
   fold_left_aux f x a 0 (length a).
 
-Ltac2 rec fold_right_aux (f : 'a -> 'b -> 'b) (a : 'a array) (x : 'b) (pos : int) (len : int) :=
+(** Helper function for [fold_right]. *)
+Ltac2 rec fold_right_aux (f : 'a -> 'b -> 'b) (a : 'a array) (x : 'b) (pos : int) (len : int) : 'b :=
   (* Note: one could compare pos<0.
      We keep an extra len parameter so that the function can be used for any sub array *)
   match Int.equal len 0 with
@@ -197,10 +260,12 @@ Ltac2 rec fold_right_aux (f : 'a -> 'b -> 'b) (a : 'a array) (x : 'b) (pos : int
   | false => fold_right_aux f a (f (get a pos) x) (Int.sub pos 1) (Int.sub len 1)
   end.
 
+(** Right fold over an array. *)
 Ltac2 fold_right (f : 'a -> 'b -> 'b) (a : 'a array) (x : 'b) : 'b :=
   fold_right_aux f a x (Int.sub (length a) 1) (length a).
 
-Ltac2 rec exist_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) :=
+(** Helper function for [exist]. *)
+Ltac2 rec exist_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) : bool :=
   match Int.equal len 0 with
   | true => false
   | false => match p (get a pos) with
@@ -209,10 +274,16 @@ Ltac2 rec exist_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) :=
              end
   end.
 
-(* Note: named exist (as in Rocq library) rather than exists cause exists is a notation *)
-Ltac2 exist (p : 'a -> bool) (a : 'a array) := exist_aux p a 0 (length a).
+(** [exist f arr] checks if [f] is true for _at least one_ element of [arr].
+    In particular [exist f empty] is [false].
 
-Ltac2 rec for_all_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) :=
+    We would call this [exists] a la OCaml's [List.exists],
+    but that would be a syntax error (because it conflicts with the notation for tactic `exists`), so instead we name it exist. *)
+Ltac2 exist (p : 'a -> bool) (a : 'a array) : bool :=
+  exist_aux p a 0 (length a).
+
+(** Helper function for [for_all]. *)
+Ltac2 rec for_all_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) : bool :=
   match Int.equal len 0 with
   | true => true
   | false => match p (get a pos) with
@@ -221,33 +292,44 @@ Ltac2 rec for_all_aux (p : 'a -> bool) (a : 'a array) (pos : int) (len : int) :=
              end
   end.
 
-Ltac2 for_all (p : 'a -> bool) (a : 'a array) := for_all_aux p a 0 (length a).
+(** [for_all f arr] checks if [f] is true for _all_ elements of [arr].
+    In particular [for_all f empty] is [true]. *)
+Ltac2 for_all (p : 'a -> bool) (a : 'a array) : bool :=
+  for_all_aux p a 0 (length a).
 
-(* Note: we don't have (yet) a generic equality function in Ltac2 *)
-Ltac2 mem (eq : 'a -> 'a -> bool) (x : 'a) (a : 'a array) :=
+(** [mem eq x arr] checks if an element of [arr] is equal to [x] according
+    to the user-supplied equality function [eq] *)
+Ltac2 mem (eq : 'a -> 'a -> bool) (x : 'a) (a : 'a array) : bool :=
   exist (eq x) a.
 
-Ltac2 rec for_all2_aux (p : 'a -> 'b -> bool) (a : 'a array) (b : 'b array) (pos : int) (len : int) :=
+(** Helper function for [for_all2]. *)
+Ltac2 rec for_all2_aux (p : 'a -> 'b -> bool) (a : 'a array) (b : 'b array) (pos : int) (len : int) : bool :=
   if Int.equal len 0
   then true
   else if p (get a pos) (get b pos)
        then for_all2_aux p a b (Int.add pos 1) (Int.sub len 1)
        else false.
 
-Ltac2 for_all2 p a b :=
+(** Same as [for_all] but for two lists.
+    Throws an exception when the lengths of the lists differ. *)
+Ltac2 for_all2 (p : 'a -> 'b -> bool) (a : 'a array) (b : 'b array) : bool :=
   let lena := length a in
   let lenb := length b in
   if Int.equal lena lenb
   then for_all2_aux p a b 0 lena
   else Control.throw_invalid_argument "Array.for_all2".
 
-Ltac2 equal p a b :=
+(** Same as [for_all] but for two lists.
+    Returns [false] when the lengths of the lists differ. *)
+Ltac2 equal (p : 'a -> 'b -> bool) (a : 'a array) (b : 'b array) : bool :=
   let lena := length a in
   let lenb := length b in
   if Int.equal lena lenb
   then for_all2_aux p a b 0 lena
   else false.
 
+(** Reverse an array. The result is allocated as a new array,
+    i.e. it does not alias the original array. *)
 Ltac2 rev (ar : 'a array) : 'a array :=
   let len := length ar in
   init len (fun i => get ar (Int.sub (Int.sub len i) 1)).
