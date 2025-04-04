@@ -3,6 +3,8 @@
 export COQBIN=$BIN
 export PATH=$COQBIN:$PATH
 
+set -e
+
 TMP=`mktemp -d`
 cd $TMP
 mkdir -p overridden/theories/Init/
@@ -19,9 +21,10 @@ FOOBAR="one more"
 EOT
 
 cp $BIN/rocq .
-cp $BIN/rocq makefile .
 mkdir -p overridden/tools/
 cp $ROCQLIB/../rocq-runtime/tools/CoqMakefile.in overridden/tools/
+
+set +e
 
 unset ROCQLIB
 N=`./rocq c -config | grep COQLIB | grep /overridden | wc -l`
