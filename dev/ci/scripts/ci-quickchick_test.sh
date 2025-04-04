@@ -8,5 +8,5 @@ ci_dir="$(dirname "$0")"
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/quickchick"
-  dune build -p coq-quickchick @runtest @cram --stop-on-first-error
+  dune build --root . --only-packages=coq-quickchick @runtest @cram --stop-on-first-error
 )
