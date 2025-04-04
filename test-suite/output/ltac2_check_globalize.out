@@ -27,14 +27,14 @@ The command has indeed failed with message:
 This expression has type string but an expression was expected of type 
 int
 let (m : '__α Pattern.goal_matching) :=
-      [(([(None, (Pattern.MatchPattern, pat:(_)))],
-         (Pattern.MatchPattern, pat:(_))),
-        (fun h =>
-         let h := Array.get h 0 in
-         fun _ => fun _ => fun _ => fun _ => Std.clear h));
-        (([], (Pattern.MatchPattern, pat:(_))),
-         (fun _ => fun _ => fun _ => fun _ => fun _ => ()))]
-        : _ Pattern.goal_matching
+  [(([(None, (Pattern.MatchPattern, pat:(_)))],
+     (Pattern.MatchPattern, pat:(_))),
+    (fun h =>
+     let h := Array.get h 0 in
+     fun _ => fun _ => fun _ => fun _ => Std.clear h));
+    (([], (Pattern.MatchPattern, pat:(_))),
+     (fun _ => fun _ => fun _ => fun _ => fun _ => ()))]
+    : _ Pattern.goal_matching
 in
 Pattern.lazy_goal_match0 false m :'__α
 constr:(ltac2:(()))

@@ -309,7 +309,10 @@ let pr_glbexpr_gen lvl ~avoid c =
     let avoidbnd = List.fold_left (fun avoid (na,_) -> Termops.add_vname avoid na) avoid bnd in
     let pr_bnd (na, e) =
       let avoid = if isrec then avoidbnd else avoid in
-      hov 2 (pr_name na ++ str " :=" ++ spc () ++ hov 2 (pr_glbexpr E5 avoid e))
+      (* negative offset: the box starts at the | in "let |x := ..."
+         but we want to print with offset 2 from the start of "let" *)
+      hov (-2 - if isrec then 4 else 0)
+        (pr_name na ++ str " :=" ++ spc () ++ pr_glbexpr E5 avoid e)
     in
     let bnd = prlist_with_sep (fun () -> spc() ++ str "with ") pr_bnd bnd in
     paren (v 0 (hov 0 (v 0 (str "let " ++ pprec ++ bnd) ++ spc() ++ str "in") ++ spc ()) ++ pr_glbexpr E5 avoidbnd e)
@@ -649,7 +652,8 @@ let pr_rawexpr_gen lvl ~avoid c =
     let avoidbnd = List.fold_left (fun avoid (pat,_) -> ids_of_pattern avoid pat) avoid bnd in
     let pr_bnd (pat, e) =
       let avoid = if isrec then avoidbnd else avoid in
-      hov 2 (pr_rawpat_gen E0 pat ++ str " :=" ++ spc () ++ hov 2 (pr_rawexpr E5 avoid e))
+      hov (-2 - if isrec then 4 else 0)
+        (pr_rawpat_gen E0 pat ++ str " :=" ++ spc () ++ hov 2 (pr_rawexpr E5 avoid e))
     in
     let bnd = prlist_with_sep (fun () -> spc() ++ str "with ") pr_bnd bnd in
     paren (v 0 (hov 0 (v 0 (str "let " ++ pprec ++ bnd) ++ spc() ++ str "in") ++ spc ()) ++ pr_rawexpr E5 avoidbnd e)
@@ -717,7 +721,7 @@ let pr_rawexpr_gen lvl ~avoid c =
           paren (pr_name pat.CAst.v ++ spc() ++ str ":" ++ spc() ++ pr_glbtype_gen tynames T5_l ty)
         | None -> pr_name pat.CAst.v
       in
-      hov 2 (bnd  ++ str " :=" ++ spc() ++ hov 2 (pr_rawexpr E5 avoid arg))
+      hov (-2) (bnd  ++ str " :=" ++ spc() ++ hov 2 (pr_rawexpr E5 avoid arg))
     in
     let paren = match lvl with
       | E0 | E1 | E2 | E3 | E4 -> paren
