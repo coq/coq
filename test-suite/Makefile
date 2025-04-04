@@ -195,6 +195,10 @@ all:
 	@echo "Coq's standard library has not been built; please run: "
 	@echo "  - make world"
 	@echo "(looked in $(COQLIBINSTALL))"
+ifeq ($(COQLIBINSTALL),)
+	@echo "config file $(TEST_SUITE_CONFIG_FILE) seems corrupt:"
+	@cat $(TEST_SUITE_CONFIG_FILE)
+endif
 	@false
 else
 ifeq ($(TIMED),)
