@@ -384,7 +384,7 @@ Ltac2 rec for_all f ls :=
     In particular [exist f []] is [false].
 
     We would call this [exists] a la OCaml's [List.exists],
-    but that would be a syntax error, so instead we name it exist. *)
+    but that would be a syntax error (because it conflicts with the notation for tactic `exists`), so instead we name it exist. *)
 Ltac2 rec exist f ls :=
   match ls with
   | [] => false
