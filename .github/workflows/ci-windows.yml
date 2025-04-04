@@ -30,7 +30,7 @@ jobs:
         run: opam exec -- make world
 
       - name: 🐛 Test Rocq
-        run: opam exec -- make test-suite
+        run: opam exec -- make -C test-suite
 
   Windows-platform:
     if: false
