@@ -23,6 +23,7 @@ let write_makefile coqprefix coqlibinstall best_compiler ocamlfind caml_flags co
   pr "OCAMLFIND=%S\n" ocamlfind;
   pr "# Caml flags\n";
   pr "CAMLFLAGS=%s %s\n" caml_flags coq_caml_flags;
+  pr "# coqc was said to be %s\n" Sys.argv.(1);
   ()
 
 let coq_warn_error (prefs : Prefs.t) =
