@@ -37,6 +37,8 @@ Ltac2 rec length (ls : 'a list) :=
   | _ :: xs => Int.add 1 (length xs)
   end.
 
+(** [compare_lengths l1 l2] is equal to [Int.compare (length l1) (length l2)],
+    but is more efficient in most cases. *)
 Ltac2 rec compare_lengths (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | []
@@ -51,6 +53,8 @@ Ltac2 rec compare_lengths (ls1 : 'a list) (ls2 : 'b list) :=
        end
   end.
 
+(** [compare_length_with l n] is equal to [Int.compare (length l) n],
+    but is more efficient in most cases. *)
 Ltac2 rec compare_length_with (ls : 'a list) (n : int) :=
   match Int.lt n 0 with
   | true => 1
@@ -64,40 +68,51 @@ Ltac2 rec compare_length_with (ls : 'a list) (n : int) :=
 Ltac2 cons (x : 'a) (xs : 'a list) :=
   x :: xs.
 
-(* Since Ltac-2 distinguishes between backtracking and fatal exceptions,
-   we provide option and default variants of functions which throw in the
-   OCaml stdlib. *)
+(** Since Ltac-2 distinguishes between backtracking and fatal exceptions,
+    we provide option and default variants of functions which throw in the
+    OCaml stdlib. *)
 
+(** Return the first element of a list.
+    Returns [None] if the list is empty. *)
 Ltac2 hd_opt (ls : 'a list) :=
   match ls with
   | [] => None
   | x :: _ => Some x
   end.
 
+(** Return the first element of a list.
+    Throw an exception if the list is empty. *)
 Ltac2 hd (ls : 'a list) :=
   match ls with
   | [] => Control.throw_invalid_argument "List.hd"
   | x :: _ => x
   end.
 
+(** Remove the first element from a list.
+    The empty list is returned as is. *)
 Ltac2 tl (ls : 'a list) :=
   match ls with
   | [] => []
   | _ :: xs => xs
   end.
 
+(** Destruct a list into its head and tail.
+    Throws an exception if the list is empty. *)
 Ltac2 dest (xs : 'a list) : 'a * 'a list :=
   match xs with
   | x :: xs => (x, xs)
   | [] => Control.throw_invalid_argument "List.dest: list empty"
   end.
 
+(** Return [true] if the list is empty. *)
 Ltac2 is_empty (xs : 'a list) : bool :=
   match xs with
   | _ :: _ => false
   | _ => true
   end.
 
+(** Return the last element of a list.
+    Returns [None] if the list is empty. *)
 Ltac2 rec last_opt (ls : 'a list) :=
   match ls with
   | [] => None
@@ -108,12 +123,16 @@ Ltac2 rec last_opt (ls : 'a list) :=
        end
   end.
 
+(** Return the last element of a list.
+    Throws an exception if the list is empty. *)
 Ltac2 last (ls : 'a list) :=
   match last_opt ls with
   | None => Control.throw_invalid_argument "List.last"
   | Some v => v
   end.
 
+(** Remove the last element of a list.
+    The empty list is returned as is. *)
 Ltac2 rec removelast (ls : 'a list) :=
   match ls with
   | [] => []
@@ -124,6 +143,7 @@ Ltac2 rec removelast (ls : 'a list) :=
        end
   end.
 
+(** Helper function for [nth_opt]. *)
 Ltac2 rec nth_opt_aux (ls : 'a list) (n : int) :=
   match ls with
   | [] => None
@@ -134,75 +154,99 @@ Ltac2 rec nth_opt_aux (ls : 'a list) (n : int) :=
        end
   end.
 
+(** Return the [n]-th element of a list, starting at [0].
+    Throws an exception if [n < 0]. Returns [None] if [n >= length l]. *)
 Ltac2 nth_opt (ls : 'a list) (n : int) :=
   Control.assert_valid_argument "List.nth" (Int.ge n 0);
   nth_opt_aux ls n.
 
+(** Return the [n]-th element of a list, starting at [0].
+    Throws an exception if [n < 0] or [n >= length l]. *)
 Ltac2 nth (ls : 'a list) (n : int) :=
   match nth_opt ls n with
   | Some v => v
   | None => Control.throw_out_of_bounds "List.nth"
   end.
 
+(** Append [l1] with a reversed copy of [l2]:
+    [rev_append l1 l2 = append l1 (rev l2)]. *)
 Ltac2 rec rev_append (l1 : 'a list) (l2 : 'a list) :=
   match l1 with
   | [] => l2
   | a :: l => rev_append l (a :: l2)
   end.
 
+(** Reverse a list (tail recursive). *)
 Ltac2 rev l := rev_append l [].
 
+(** Append two lists [l1] and [l2]. Complexity: O(length l1). *)
 Ltac2 rec append ls1 ls2 :=
   match ls1 with
   | [] => ls2
   | x :: xs => x :: append xs ls2
   end.
 
+(** Concatenate a list of lists. *)
 Ltac2 rec concat (ls : 'a list list) :=
   match ls with
   | [] => []
   | x :: xs => append x (concat xs)
   end.
 
+(** Synonym for [concat]. *)
 Ltac2 flatten (ls : 'a list list) := concat ls.
 
+(** Iterate a function on each element of a list.
+    Elements are processed from first to last. *)
 Ltac2 rec iter (f : 'a -> unit) (ls : 'a list) :=
   match ls with
   | [] => ()
   | l :: ls => f l; iter f ls
   end.
 
+(** Helper function for [iteri]. *)
 Ltac2 rec iteri_aux (i : int) (f : int -> 'a -> unit) (ls : 'a list) :=
   match ls with
   | [] => ()
   | l :: ls => f i l; iteri_aux (Int.add i 1) f ls
   end.
 
+(** Iterate a function [f] on each element of a list.
+    [f] is additionally supplied the index of each element, starting at [0].
+    Elements are processed from first to last. *)
 Ltac2 iteri (f : int -> 'a -> unit) (ls : 'a list) :=
   iteri_aux 0 f ls.
 
+(** Map a function over a list.
+    Elements are processed from first to last. *)
 Ltac2 rec map (f : 'a -> 'b) (ls : 'a list) :=
   match ls with
   | [] => []
   | l :: ls => f l :: map f ls
   end.
 
+(** Helper function for [mapi]. *)
 Ltac2 rec mapi_aux (i : int) (f : int -> 'a -> 'b) (ls : 'a list) :=
   match ls with
   | [] => []
   | l :: ls => f i l :: mapi_aux (Int.add i 1) f ls
   end.
 
+(** Map a function [f] over a list.
+    [f] is additionally supplied the index of each argument, starting at [0].
+    Elements are processed from first to last. *)
 Ltac2 mapi (f : int -> 'a -> 'b) (ls : 'a list) :=
   mapi_aux 0 f ls.
 
+(** Map a function over a list, and then concatenate the results. *)
 Ltac2 rec flat_map (f : 'a -> 'b list) (xs : 'a list) :=
   match xs with
   | [] => []
   | x :: xs => append (f x) (flat_map f xs)
   end.
 
-(* from the OCaml std lib *)
+(** [rev_map f l] is equal to [rev (map f l)],
+    but is more efficient in most cases. *)
 Ltac2 rev_map (f : 'a -> 'b) (ls : 'a list) :=
   let rec rmap_f accu ls :=
       match ls with
@@ -211,12 +255,14 @@ Ltac2 rev_map (f : 'a -> 'b) (ls : 'a list) :=
       end in
   rmap_f [] ls.
 
+(** Right fold over a list. *)
 Ltac2 rec fold_right (f : 'a -> 'b -> 'b) (ls : 'a list) (a : 'b) : 'b :=
   match ls with
   | [] => a
   | l :: ls => f l (fold_right f ls a)
   end.
 
+(** Left fold over a list. *)
 Ltac2 rec fold_left (f : 'a -> 'b -> 'a) (a : 'a) (xs : 'b list) : 'a :=
   match xs with
   | [] => a
@@ -231,6 +277,9 @@ Ltac2 fold_lefti (f : int -> 'a -> 'b -> 'a) (a : 'a) (xs : 'b list) : 'a :=
     end
   in go 0 a xs.
 
+(** Iterate a function over two lists.
+    Elements are processed from first to last.
+    Throws an exception if the lengths of the lists differ. *)
 Ltac2 rec iter2 (f : 'a -> 'b -> unit) (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | []
@@ -246,6 +295,9 @@ Ltac2 rec iter2 (f : 'a -> 'b -> unit) (ls1 : 'a list) (ls2 : 'b list) :=
        end
   end.
 
+(** Map a function over two lists.
+    Elements are processed from first to last.
+    Throws an exception if the lengths of the lists differ. *)
 Ltac2 rec map2 (f : 'a -> 'b -> 'c) (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | []
@@ -261,7 +313,8 @@ Ltac2 rec map2 (f : 'a -> 'b -> 'c) (ls1 : 'a list) (ls2 : 'b list) :=
        end
   end.
 
-(* from the OCaml std lib *)
+(** [rev_map2 f l1 l2] is equal to [rev (map2 f l1 l2)],
+    but is more efficient in most cases. *)
 Ltac2 rev_map2 (f : 'a -> 'b -> 'c) (ls1 : 'a list) (ls2 : 'b list) :=
   let rec rmap2_f accu ls1 ls2 :=
       match ls1 with
@@ -279,6 +332,8 @@ Ltac2 rev_map2 (f : 'a -> 'b -> 'c) (ls1 : 'a list) (ls2 : 'b list) :=
       end in
   rmap2_f [] ls1 ls2.
 
+(** Right fold over two lists.
+    Throws an exception if the lengths of the lists differ. *)
 Ltac2 rec fold_right2 (f : 'a -> 'b -> 'c -> 'c) (ls1 : 'a list) (ls2 : 'b list) (a : 'c) :=
   match ls1 with
   | []
@@ -294,6 +349,8 @@ Ltac2 rec fold_right2 (f : 'a -> 'b -> 'c -> 'c) (ls1 : 'a list) (ls2 : 'b list)
        end
   end.
 
+(** Left fold over two lists.
+    Throws an exception if the lengths of the lists differ. *)
 Ltac2 rec fold_left2 (f : 'a -> 'b -> 'c -> 'a)  (a : 'a) (ls1 : 'b list) (ls2 : 'c list) :=
   match ls1 with
   | []
@@ -309,6 +366,8 @@ Ltac2 rec fold_left2 (f : 'a -> 'b -> 'c -> 'a)  (a : 'a) (ls1 : 'b list) (ls2 :
        end
   end.
 
+(** [for_all f l] checks that [f] returns true on _all_ elements of the list [l].
+    In particular [for_all f []] is [true]. *)
 Ltac2 rec for_all f ls :=
   match ls with
   | [] => true
@@ -318,7 +377,11 @@ Ltac2 rec for_all f ls :=
                end
   end.
 
-(* we would call this [exists] a la OCaml's [List.exists], but that's a syntax error, so instead we name it exist *)
+(** [exist f l] checks that [f] returns true on _at least one_ element of the list [l].
+    In particular [exist f []] is [false].
+
+    We would call this [exists] a la OCaml's [List.exists],
+    but that would be a syntax error, so instead we name it exist. *)
 Ltac2 rec exist f ls :=
   match ls with
   | [] => false
@@ -328,6 +391,7 @@ Ltac2 rec exist f ls :=
                end
   end.
 
+(** Helper function for [for_all2]. *)
 Ltac2 rec for_all2_aux (on_length_mismatch : 'a list -> 'b list -> bool) f xs ys :=
   match xs with
   | [] => match ys with
@@ -345,9 +409,16 @@ Ltac2 rec for_all2_aux (on_length_mismatch : 'a list -> 'b list -> bool) f xs ys
        end
   end.
 
+(** Same as [for_all] but for two lists.
+    Throws an exception in case the lengths of the lists differ. *)
 Ltac2 for_all2 f xs ys := for_all2_aux (fun _ _ => Control.throw_invalid_argument "List.for_all2") f xs ys.
+
+(** Same as [for_all] but for two lists.
+    Returns [false] in case the lengths of the lists differ. *)
 Ltac2 equal f xs ys := for_all2_aux (fun _ _ => false) f xs ys.
 
+(** Same as [exist] but for two lists.
+    Throws an exception if the lengths of the lists differ. *)
 Ltac2 rec exist2 f xs ys :=
   match xs with
   | [] => match ys with
@@ -365,6 +436,8 @@ Ltac2 rec exist2 f xs ys :=
        end
   end.
 
+(** [find_opt f l] returns the _first_ element of the list [l] satisfying [f].
+    Returns [None] if no element is found. *)
 Ltac2 rec find_opt f xs :=
   match xs with
   | [] => None
@@ -374,12 +447,16 @@ Ltac2 rec find_opt f xs :=
                end
   end.
 
+(** [find f l] returns the _first_ element of the list [l] satisfying [f].
+    Throws an exception if no element is found. *)
 Ltac2 find f xs :=
   match find_opt f xs with
   | Some v => v
   | None => Control.throw Not_found
   end.
 
+(** [find_rev_opt f l] returns the _last_ element of the list [l] satisfying [f].
+    Returns [None] if no element is found. *)
 Ltac2 rec find_rev_opt f xs :=
   match xs with
   | [] => None
@@ -392,15 +469,20 @@ Ltac2 rec find_rev_opt f xs :=
                end
   end.
 
+(** [find_rev f l] returns the _last_ element of the list [l] satisfying [f].
+    Throws an exception if no element is found. *)
 Ltac2 find_rev f xs :=
   match find_rev_opt f xs with
   | Some v => v
   | None => Control.throw Not_found
   end.
 
+(** [mem eq x l] checks if an element of [l] is equal to [x] according
+    to the user-supplied equality function [eq]. *)
 Ltac2 mem (eq : 'a -> 'a -> bool) (a : 'a) (ls : 'a list) :=
   exist (eq a) ls.
 
+(** [filter f l] removes all the elements of [l] which do not satisfy [f]. *)
 Ltac2 rec filter f xs :=
   match xs with
   | [] => []
@@ -411,18 +493,24 @@ Ltac2 rec filter f xs :=
        end
   end.
 
+(** [filter_out f l] removes all the elements of [l] which satisfy [f]. *)
 Ltac2 rec filter_out f xs :=
   filter (fun x => Bool.neg (f x)) xs.
 
+(** Synonym for [filter]. *)
 Ltac2 find_all (f : 'a -> bool) (ls : 'a list) := filter f ls.
 
+(** Synonym for [filter_out]. *)
 Ltac2 remove (eqb : 'a -> 'a -> bool) (x : 'a) (ls : 'a list) :=
   filter_out (eqb x) ls.
 
+(** [count_occ eq x l] counts how many elements of [l] are equal to [x], according
+    to the user-supplied equality function [eq]. *)
 Ltac2 count_occ (eqb : 'a -> 'a -> bool) (x : 'a) (ls : 'a list) :=
   length (filter (eqb x) ls).
 
-(* from the Rocq stdlib *)
+(** [list_power x y) is [y]^[x], or the set of sequences of elements
+    of [y] indexed by elements of [x], sorted in lexicographic order. *)
 Ltac2 rec list_power (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | [] => [] :: []
@@ -431,6 +519,9 @@ Ltac2 rec list_power (ls1 : 'a list) (ls2 : 'b list) :=
                 (list_power t ls2)
   end.
 
+(** [partition f l] returns two lists [(l_true, l_false)] such that:
+    - [l_true] is the sublist of elements of [l] which satisfy [f].
+    - [l_false] is the sublist of elements of [l] which do not satisfy [f]. *)
 Ltac2 rec partition (f : 'a -> bool) (l : 'a list) :=
   match l with
   | [] => ([], [])
@@ -442,11 +533,8 @@ Ltac2 rec partition (f : 'a -> bool) (l : 'a list) :=
        end
   end.
 
-(* from the Rocq stdlib *)
-(** [list_prod] has the same signature as [combine], but unlike
-     [combine], it adds every possible pairs, not only those at the
-     same position. *)
-
+(** [list_prod l1 l2] returns the cartesian product of [l1] and [l2],
+    i.e. the list of _all_ pairs [(x, y)] where [x] is in [l1] and [y] is in [l2]. *)
 Ltac2 rec list_prod (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | [] => []
@@ -454,6 +542,8 @@ Ltac2 rec list_prod (ls1 : 'a list) (ls2 : 'b list) :=
     => append (map (fun y => (x, y)) ls2) (list_prod t ls2)
   end.
 
+(** [fistn n l] returns the first [n] elements of [l].
+    Throws an exception if [n < 0] or [n > length l]. *)
 Ltac2 rec firstn (n : int) (ls : 'a list) :=
   Control.assert_valid_argument "List.firstn" (Int.ge n 0);
   match Int.equal n 0 with
@@ -466,6 +556,8 @@ Ltac2 rec firstn (n : int) (ls : 'a list) :=
        end
   end.
 
+(** [skipn n l] removes the first [n] elements of [l].
+    Throws an exception if [n < 0] or [n > length l]. *)
 Ltac2 rec skipn (n : int) (ls : 'a list) :=
   Control.assert_valid_argument "List.skipn" (Int.ge n 0);
   match Int.equal n 0 with
@@ -478,12 +570,16 @@ Ltac2 rec skipn (n : int) (ls : 'a list) :=
        end
   end.
 
+(** [lastn n l] returns the last [n] elements of [l].
+    Throws an exception if [n < 0] or [n > length l]. *)
 Ltac2 lastn (n : int) (ls : 'a list) :=
   let l := length ls in
   Control.assert_valid_argument "List.lastn" (Int.ge n 0);
   Control.assert_bounds "List.lastn" (Int.le n l);
   skipn (Int.sub l n) ls.
 
+(** [nodup eq l] removes duplicates from [l], according
+    to the user-suppplied equality function [eq]. *)
 Ltac2 rec nodup (eqb : 'a -> 'a -> bool) (ls : 'a list) :=
   match ls with
   | [] => []
@@ -494,7 +590,10 @@ Ltac2 rec nodup (eqb : 'a -> 'a -> bool) (ls : 'a list) :=
        end
   end.
 
-(* seq start 1 last = start :: start + 1 :: ... :: (last - 1) *)
+(** [seq lb d up] returns the list [lb :: (lb + step) :: (lb + 2*step) :: (lb + 3*step) :: ...],
+    stopping when [lb + n*step >= up]. In particular the lower bound [lb] is included,
+    whereas the upper bound [up] is excluded.
+    Throws an exception if [step <= 0]. *)
 Ltac2 rec seq (start : int) (step : int) (last : int) :=
   match Int.lt (Int.sub last start) step with
   | true
@@ -503,18 +602,27 @@ Ltac2 rec seq (start : int) (step : int) (last : int) :=
     => start :: seq (Int.add start step) step last
   end.
 
+(** [init n f] returns the list [f 0 ; f 1 ; ... ; f (n-1)].
+    Throws an exception if [n < 0]. *)
 Ltac2 init (len : int) (f : int -> 'a) :=
   Control.assert_valid_argument "List.init" (Int.ge len 0);
   map f (seq 0 1 len).
 
+(** [repeat x n] returns the list of length [n] with all elements equal to [x]. *)
 Ltac2 repeat (x : 'a) (n : int) :=
   init n (fun _ => x).
 
+(** [assoc eq k l] returns the first value associated to key [k] in an association list [l],
+    using [eq] to compare keys for equality.
+    Throws an exception if no value is found. *)
 Ltac2 assoc (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
   let eq_key kv := let (k', _) := kv in eqk k k' in
   let (_, v) := find eq_key l in
   v.
 
+(** [assoc eq k l] returns the first value associated to key [k] in an association list [l],
+    using [eq] to compare keys for equality.
+    Returns [None] if no value is found. *)
 Ltac2 assoc_opt (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
   let eq_key kv := let (k', _) := kv in eqk k k' in
   match find_opt eq_key l with
@@ -522,14 +630,19 @@ Ltac2 assoc_opt (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
   | None => None
   end.
 
+(** [mem_assoc eq k l] checks if the key [k] is present in an association list [l],
+    using [eq] to compare keys for equality. *)
 Ltac2 mem_assoc (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
   let eq_key kv := let (k', _) := kv in eqk k k' in
   exist eq_key l.
 
+(** [remove_assoc eq k l] removes _all_ key/value pairs associated with key [k]
+    from an association list [l], using [eq] to compare keys for equality. *)
 Ltac2 remove_assoc (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
   let eq_key kv := let (k', _) := kv in eqk k k' in
   filter_out eq_key l.
 
+(** Split a list of pairs into a pair of lists. *)
 Ltac2 rec split (ls : ('a * 'b) list) :=
   match ls with
   | [] => ([], [])
@@ -539,6 +652,9 @@ Ltac2 rec split (ls : ('a * 'b) list) :=
        ((x::left), (y::right))
   end.
 
+(** Combine two lists into a list of pairs. Only pairs of elements
+    at the same position are considered.
+    Throws an exception if the lengths of the lists differ. *)
 Ltac2 rec combine (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | []
@@ -554,10 +670,12 @@ Ltac2 rec combine (ls1 : 'a list) (ls2 : 'b list) :=
        end
   end.
 
+(** [enumerate (x0 :: x1 :: x2 :: ...)] returns the list [(0, x0) :: (1, x1) :: (2, x2) :: ...]. *)
 Ltac2 enumerate (ls : 'a list) :=
   combine (seq 0 1 (length ls)) ls.
 
-(* from Rocq stdlib *)
+(** Merge two list sorted in increasing order into a sorted list,
+    using a user-provided comparison function. *)
 Ltac2 rec merge (cmp : 'a -> 'a -> int) (l1 : 'a list) (l2 : 'a list) :=
   let rec merge_aux l2 :=
       match l1 with
@@ -601,9 +719,17 @@ Ltac2 rec iter_merge cmp stack l :=
   | a::l' => iter_merge cmp (merge_list_to_stack cmp stack [a]) l'
   end.
 
+(** [sort cmp l] sorts the list [l] in increasing order,
+    according to the user-supplied comparison function [cmp].
+
+    It is currently implemented using a variant of merge sort. *)
 Ltac2 sort cmp l := iter_merge cmp [] l.
 
-(* TODO: maybe replace this with a faster implementation *)
+(** [sort cmp l] sorts the list [l] in increasing order and removes duplicates,
+    according to the user-supplied comparison function [cmp].
+
+    This takes advantage of the fact that removing duplicates from a sorted list
+    is much faster than for an arbitrary list.  *)
 Ltac2 sort_uniq (cmp : 'a -> 'a -> int) (l : 'a list) :=
   let rec uniq l :=
       match l with
@@ -620,17 +746,19 @@ Ltac2 sort_uniq (cmp : 'a -> 'a -> int) (l : 'a list) :=
       end in
   uniq (sort cmp l).
 
-Ltac2 inclusive_range (lb : int) (ub : int) : int list :=
-  let rec go lb ub :=
-    if Int.gt lb ub then [] else lb :: go (Int.add lb 1) ub
-  in
-  go lb ub.
+(** [inclusive_range lb ub] returns the list [lb ; lb+1 ; lb+2 ; ... ; up].
+    In particular both the lower bound [lb] and upper bound [ub] are included.  *)
+Ltac2 rec inclusive_range (lb : int) (ub : int) : int list :=
+  if Int.gt lb ub then [] else lb :: go (Int.add lb 1) ub.
 
+(** [range lb ub] returns the list [lb ; lb+1 ; lb+2 ; ... ; up-1].
+    In particular the lower bound [lb] is included, whereas the upper bound [ub] is excluded. *)
 Ltac2 range (lb : int) (ub : int) : int list :=
   inclusive_range lb (Int.sub ub 1).
 
-(** [concat_rev [x1; ..; xN-1; xN]] computes [rev xN ++ rev xN-1 ++ .. x1].
+(** [concat_rev [x1; ..; xN-1; xN]] computes [rev xN ++ rev xN-1 ++ .. ++ x1].
     Note that [x1] is not reversed and appears in its original order.
+
     [concat_rev] is faster than [concat] and should be preferred over [concat]
     when the order of items does not matter. *)
 Ltac2 concat_rev (ls : 'a list list) : 'a list :=
@@ -645,6 +773,7 @@ Ltac2 concat_rev (ls : 'a list list) : 'a list :=
   | l :: ls => go ls l
   end.
 
+(** [map_filter f l] maps [f] over [l], then removes all elements that are [None]. *)
 Ltac2 rec map_filter (f : 'a -> 'b option) (l : 'a list) : 'b list :=
   match l with
   | [] => []
