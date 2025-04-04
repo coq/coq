@@ -21,10 +21,10 @@ jobs:
         with:
           ocaml-compiler: 4.14
           dune-cache: true
-          opam-local-packages: coqide-server.opam rocq*.opam
+          opam-local-packages: rocq-*.opam
 
       - name: 🐫🐪🐫 Get Rocq dependencies
-        run: opam install --deps-only ./coqide-server.opam ./rocq*.opam
+        run: opam install --deps-only ./rocq-*.opam
 
       - name: 🧱 Build Rocq
         run: opam exec -- make world
