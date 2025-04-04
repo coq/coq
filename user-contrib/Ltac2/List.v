@@ -749,7 +749,10 @@ Ltac2 sort_uniq (cmp : 'a -> 'a -> int) (l : 'a list) :=
 (** [inclusive_range lb ub] returns the list [lb ; lb+1 ; lb+2 ; ... ; up].
     In particular both the lower bound [lb] and upper bound [ub] are included.  *)
 Ltac2 rec inclusive_range (lb : int) (ub : int) : int list :=
-  if Int.gt lb ub then [] else lb :: go (Int.add lb 1) ub.
+  let rec go lb ub :=
+    if Int.gt lb ub then [] else lb :: go (Int.add lb 1) ub
+  in
+  go lb ub.
 
 (** [range lb ub] returns the list [lb ; lb+1 ; lb+2 ; ... ; up-1].
     In particular the lower bound [lb] is included, whereas the upper bound [ub] is excluded. *)
