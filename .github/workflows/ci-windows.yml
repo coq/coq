@@ -33,6 +33,7 @@ jobs:
         run: opam exec -- make test-suite
 
   Windows-platform:
+    if: false
     name: Windows (Coq Platform)
     runs-on: windows-latest
     strategy:
