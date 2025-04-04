@@ -559,6 +559,9 @@ let shortest_qualid_of_modtype ?loc kn =
   let sp = MPmap.find kn Modules.(!nametab.modtyperevtab) in
     MPTab.shortest_qualid ?loc Id.Set.empty sp Modules.(!nametab.modtypetab)
 
+let shortest_qualid_of_dir ?loc sp =
+  DirTab.shortest_qualid ?loc Id.Set.empty sp Modules.(!nametab.dirtab)
+
 let shortest_qualid_of_universe ?loc ctx kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
   UnivTab.shortest_qualid_gen ?loc (fun id -> Id.Map.mem id ctx) sp !the_univtab

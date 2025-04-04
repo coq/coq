@@ -200,6 +200,7 @@ val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
 val shortest_qualid_of_abbreviation : ?loc:Loc.t -> Id.Set.t -> Globnames.abbreviation -> qualid
 val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
 val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
+val shortest_qualid_of_dir : ?loc:Loc.t -> full_path -> qualid
 
 (** In general we have a [UnivNames.universe_binders] around rather than a [Id.Set.t] *)
 val shortest_qualid_of_universe : ?loc:Loc.t -> 'u Id.Map.t -> Univ.UGlobal.t -> qualid

@@ -561,15 +561,16 @@ let split_ltac_fun = function
 let pr_ltac_fun_arg n = spc () ++ Name.print n
 
 let print_ltac_body qid tac =
-  let filter mp =
-    try Some (Nametab.shortest_qualid_of_module mp)
-    with Not_found -> None
-  in
-  let mods = List.map_filter filter tac.Tacenv.tac_redef in
-  let redefined = match mods with
+  let redefined = match tac.Tacenv.tac_redef with
   | [] -> mt ()
   | mods ->
-    let redef = prlist_with_sep fnl pr_qualid mods in
+    let pr_one mp =
+      let qid = try Nametab.shortest_qualid_of_module mp
+        with Not_found -> Nametab.shortest_qualid_of_dir (Libnames.path_of_string (ModPath.to_string mp))
+      in
+      pr_qualid qid
+    in
+    let redef = prlist_with_sep fnl pr_one mods in
     fnl () ++ str "Redefined by:" ++ fnl () ++ redef
   in
   let l,t = split_ltac_fun tac.Tacenv.tac_body in
