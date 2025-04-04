@@ -514,7 +514,7 @@ Ltac2 count_occ (eqb : 'a -> 'a -> bool) (x : 'a) (ls : 'a list) :=
 
 (** [list_power x y) is [y]^[x], or the set of sequences of elements
     of [y] indexed by elements of [x], sorted in lexicographic order. *)
-Ltac2 rec list_power (ls1 : 'a list) (ls2 : 'b list) :=
+Ltac2 rec list_power (ls1 : 'a list) (ls2 : 'b list) : ('a * 'b) list list :=
   match ls1 with
   | [] => [] :: []
   | x :: t
