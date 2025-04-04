@@ -35,7 +35,7 @@ jobs:
         run: opam exec -- make world
 
       - name: 🐛 Debug number of processors
-        run: echo %NUMBER_OF_PROCESSORS%
+        run: head _build/log
 
       - name: 🐫 Get test suite deps
         run: opam install ounit2 conf-python-3 conf-time
