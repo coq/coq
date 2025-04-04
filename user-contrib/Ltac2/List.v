@@ -258,7 +258,7 @@ Ltac2 rev_map (f : 'a -> 'b) (ls : 'a list) :=
       end in
   rmap_f [] ls.
 
-(** Right fold over a list. *)
+(** [fold_right f [a1; ...; an] init] is [f a1 (f a2 (... (f an init) ...))]. *)
 Ltac2 rec fold_right (f : 'a -> 'b -> 'b) (ls : 'a list) (a : 'b) : 'b :=
   match ls with
   | [] => a
