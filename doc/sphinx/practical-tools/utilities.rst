@@ -645,7 +645,7 @@ section of the generated makefile. These include:
 :COQLIBINSTALL, COQPLUGININSTALL, COQDOCINSTALL:
    specify where the Rocq libraries, plugins and documentation will be installed.
    By default a combination of ``$(DESTDIR)`` (if defined) with
-   ``$(ROCQLIB)/user-contrib``, ``$(ROCQRUNTIMELIB)/..`` and ``$(DOCDIR)/coq/user-contrib``.
+   ``$(COQLIB)/user-contrib``, ``$(COQCORELIB)/..`` and ``$(DOCDIR)/coq/user-contrib``.
 
 Use :ref:`rocqmakefilelocallate` instead to access more variables.
 
