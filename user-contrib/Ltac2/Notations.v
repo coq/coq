@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import Corelib.Init.Ltac.
 Require Import Ltac2.Init.
 Require Ltac2.Control Ltac2.Fresh Ltac2.Option Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std Ltac2.Constr.
 
@@ -358,10 +359,7 @@ Ltac2 Notation "inversion_clear"
   ids(opt(seq("in", list1(ident)))) :=
   Std.inversion Std.FullInversionClear arg pat ids.
 
-Ltac2 exfalso0 () := Control.enter (fun () =>
-  unshelve (let f := '(_ :> False) in induction $f)).
-
-Ltac2 Notation exfalso := exfalso0 ().
+Ltac2 Notation exfalso := Std.exfalso ().
 
 Ltac2 Notation "red" cl(opt(clause)) :=
   Std.red (default_on_concl cl).
@@ -636,7 +634,7 @@ Ltac2 Notation f_equal := Std.f_equal ().
 
 (** now *)
 
-Ltac2 now0 t := t (); ltac1:(easy).
+Ltac2 now0 t := t (); ltac1:(easy_forward_decl).
 Ltac2 Notation "now" t(thunk(self)) : 6 := now0 t.
 
 (** profiling *)

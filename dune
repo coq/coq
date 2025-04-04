@@ -59,7 +59,7 @@
   %{workspace_root}/_build/install/%{context_name}/lib/rocq-runtime/META)
  (action
   (with-stdout-to %{targets}
-   (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 %{env:COQ_DUNE_EXTRA_OPT=}))))
+   (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 -noinit %{env:COQ_DUNE_EXTRA_OPT=}))))
 
 (rule
  (targets theories_dune_split)
@@ -79,7 +79,7 @@
   (source_tree user-contrib))
  (action
   (with-stdout-to %{targets}
-   (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 -split %{env:COQ_DUNE_EXTRA_OPT=}))))
+   (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 -noinit -split %{env:COQ_DUNE_EXTRA_OPT=}))))
 
 ; Use summary.log as the target
 (alias
