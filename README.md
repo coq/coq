@@ -22,8 +22,8 @@
 [zulip-badge]: https://img.shields.io/badge/Zulip-chat-informational.svg
 [zulip-link]: https://rocq-prover.zulipchat.com/
 
-[doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg
-[doi-link]: https://doi.org/10.5281/zenodo.1003420
+[doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.15149628.svg
+[doi-link]: https://doi.org/10.5281/zenodo.15149628
 
 The Rocq Prover is an interactive theorem prover, or proof assistant. It provides a formal language to write
 mathematical definitions, executable algorithms and theorems together with an
