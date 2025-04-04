@@ -50,6 +50,7 @@ let main () =
 
   let relocate = function
     | Coq_config.NotRelocatable p -> p
+    | Coq_config.Relocatable "" -> coqroot
     | Coq_config.Relocatable p -> Filename.concat coqroot p
   in
 
