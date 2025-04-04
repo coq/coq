@@ -7,7 +7,30 @@ permissions:
 
 jobs:
   Windows:
-    name: Windows
+    name: Windows (Native OPAM)
+    runs-on: windows-latest
+    steps:
+      - name: 🔭 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐫 Setup OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 4.14
+          dune-cache: true
+          opam-local-packages: rocq-*.opam
+
+      - name: 🐫🐪🐫 Get Rocq dependencies
+        run: opam install --deps-only ./rocq-*.opam
+
+      - name: 🧱 Build Rocq
+        run: opam exec -- make world
+
+      - name: 🐛 Test Rocq
+        run: opam exec -- make test-suite
+
+  Windows-platform:
+    name: Windows (Coq Platform)
     runs-on: windows-latest
     strategy:
       fail-fast: false
