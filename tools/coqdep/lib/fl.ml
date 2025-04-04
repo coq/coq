@@ -61,7 +61,7 @@ let relative_if_dune path =
   (* relativize the path if inside the current dune workspace
      if we relativize paths outside the dune workspace it fails so make sure to avoid it *)
   match Sys.getenv_opt "DUNE_SOURCEROOT" with
-  | Some dune when CString.is_prefix dune path ->
+  | Some dune when CString.is_prefix (Filename.concat dune "_build") path ->
     normalize_path (to_relative_path path)
   | _ -> normalize_path path
 
@@ -97,8 +97,5 @@ module Internal = struct
     let dir = Findlib.package_directory "rocq-runtime" in
     let exe = if Sys.(os_type = "Win32" || os_type = "Cygwin") then ".exe" else "" in
     let file = Filename.concat dir (top^exe) in
-    match Sys.getenv_opt "DUNE_SOURCEROOT" with
-    | Some dune when CString.is_prefix dune file ->
-      normalize_path (to_relative_path file)
-    | _ -> normalize_path file
+    relative_if_dune file
 end
