@@ -5,5 +5,5 @@ Ltac2 bar : unit -> unit
         fun _ =>
         let _ := open_constr:(ltac2:(let c := preterm:(0) in
                                      exact1 false c))
-          in
+        in
         ()
