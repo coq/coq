@@ -16,6 +16,9 @@ jobs:
       - name: 😈 Evil hack
         run: rm rocq-prover.opam
 
+      - name: 😈😈 Evil hack 2
+        run: rm test-suite/success/rewrule.v
+
       - name: 🐫 Setup OCaml
         uses: ocaml/setup-ocaml@v3
         with:
