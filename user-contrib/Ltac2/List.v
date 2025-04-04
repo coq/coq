@@ -265,7 +265,7 @@ Ltac2 rec fold_right (f : 'a -> 'b -> 'b) (ls : 'a list) (a : 'b) : 'b :=
   | l :: ls => f l (fold_right f ls a)
   end.
 
-(** Left fold over a list. *)
+(** [fold_left f init [b1; ...; bn]] is [f (... (f (f init b1) b2) ...) bn]. *)
 Ltac2 rec fold_left (f : 'a -> 'b -> 'a) (a : 'a) (xs : 'b list) : 'a :=
   match xs with
   | [] => a
