@@ -37,6 +37,9 @@ jobs:
       - name: 🐛 Debug number of processors
         run: echo %NUMBER_OF_PROCESSORS%
 
+      - name: 🐫 Get test suite deps
+        run: opam install ounit2 conf-python-3 conf-time
+
       - name: 🐛 Test Rocq
         run: opam exec -- make -j4 -C test-suite
 
