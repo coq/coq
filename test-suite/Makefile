@@ -30,14 +30,18 @@
 DUNE_CONTEXT:=default
 TEST_SUITE_CONFIG_FILE:=test_suite_config.inc
 
-ifeq ($(INSIDE_DUNE),)
-TEST_SUITE_CONFIG_PATH:=../_build/$(DUNE_CONTEXT)/test-suite/$(TEST_SUITE_CONFIG_FILE)
-else
-TEST_SUITE_CONFIG_PATH:=$(TEST_SUITE_CONFIG_FILE)
-endif
-
 ifneq ($(MAKECMDGOALS),clean)
 include $(TEST_SUITE_CONFIG_FILE)
+endif
+
+# Not inside Dune, build by hand
+ifeq ($(INSIDE_DUNE),)
+CONFIG_TO_MAKE_EXE:=../_build/$(DUNE_CONTEXT)/test-suite/tools/coq_config_to_make.exe
+ROCQ_EXE:=../_build/install/$(DUNE_CONTEXT)/bin/rocq
+
+$(TEST_SUITE_CONFIG_FILE):
+	dune build $(CONFIG_TO_MAKE_EXE)
+	$(CONFIG_TO_MAKE_EXE) $(ROCQ_EXE) > $@
 endif
 
 #######################################################################
@@ -284,20 +288,6 @@ summary.log:
 
 report: summary.log
 	$(HIDE)bash report.sh
-
-#######################################################################
-# Test suite configuration, to eventually go away
-#######################################################################
-
-# Not inside Dune, build by hand
-ifeq ($(INSIDE_DUNE),)
-CONFIG_TO_MAKE_EXE:=../_build/$(DUNE_CONTEXT)/test-suite/tools/coq_config_to_make.exe
-ROCQ_EXE:=../_build/install/$(DUNE_CONTEXT)/bin/rocq
-
-$(TEST_SUITE_CONFIG_FILE):
-	dune build $(CONFIG_TO_MAKE_EXE)
-	$(CONFIG_TO_MAKE_EXE) $(ROCQ_EXE) > $@
-endif
 
 #######################################################################
 # Unit tests
