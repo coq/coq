@@ -68,7 +68,7 @@ Ltac2 rec compare_length_with (ls : 'a list) (n : int) :=
 Ltac2 cons (x : 'a) (xs : 'a list) :=
   x :: xs.
 
-(** Since Ltac-2 distinguishes between backtracking and fatal exceptions,
+(** Since Ltac2 distinguishes between backtracking and fatal exceptions,
     we provide option and default variants of functions which throw in the
     OCaml stdlib. *)
 
