@@ -31,6 +31,7 @@ Require Ltac2.Control.
 Require Ltac2.Bool.
 Require Ltac2.Message.
 
+(** Compute the length of a list. *)
 Ltac2 rec length (ls : 'a list) :=
   match ls with
   | [] => 0
@@ -38,7 +39,8 @@ Ltac2 rec length (ls : 'a list) :=
   end.
 
 (** [compare_lengths l1 l2] is equal to [Int.compare (length l1) (length l2)],
-    but is more efficient in most cases. *)
+    but is more efficient in most cases: it runs in O(min (length l1) (length l2))
+    instead of O(max (length l1) (length l2)). *)
 Ltac2 rec compare_lengths (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | []
@@ -54,7 +56,8 @@ Ltac2 rec compare_lengths (ls1 : 'a list) (ls2 : 'b list) :=
   end.
 
 (** [compare_length_with l n] is equal to [Int.compare (length l) n],
-    but is more efficient in most cases. *)
+    but is more efficient in most cases: it runs in O(min (length l) n)
+    instead of O(length l). *)
 Ltac2 rec compare_length_with (ls : 'a list) (n : int) :=
   match Int.lt n 0 with
   | true => 1
@@ -168,15 +171,15 @@ Ltac2 nth (ls : 'a list) (n : int) :=
   | None => Control.throw_out_of_bounds "List.nth"
   end.
 
-(** Append [l1] with a reversed copy of [l2]:
-    [rev_append l1 l2 = append l1 (rev l2)]. *)
+(** Reverse [l1], and append it with [l2]:
+    [rev_append l1 l2 = append (rev l1) l2]. *)
 Ltac2 rec rev_append (l1 : 'a list) (l2 : 'a list) :=
   match l1 with
   | [] => l2
   | a :: l => rev_append l (a :: l2)
   end.
 
-(** Reverse a list (tail recursive). *)
+(** Reverse a list. *)
 Ltac2 rev l := rev_append l [].
 
 (** Append two lists [l1] and [l2]. Complexity: O(length l1). *)
