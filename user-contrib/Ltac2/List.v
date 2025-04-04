@@ -538,7 +538,7 @@ Ltac2 rec partition (f : 'a -> bool) (l : 'a list) :=
 
 (** [list_prod l1 l2] returns the cartesian product of [l1] and [l2],
     i.e. the list of _all_ pairs [(x, y)] where [x] is in [l1] and [y] is in [l2]. *)
-Ltac2 rec list_prod (ls1 : 'a list) (ls2 : 'b list) :=
+Ltac2 rec list_prod (ls1 : 'a list) (ls2 : 'b list) : ('a * 'b) list :=
   match ls1 with
   | [] => []
   | x :: t
