@@ -29,7 +29,7 @@ bug-reports: "https://github.com/rocq-prover/rocq/issues"
 depends: [
   "dune" {>= "3.8"}
   "ocaml" {>= "4.09.0"}
-  "ocamlfind" {>= "1.8.1"}
+  "ocamlfind" {>= "1.8.1" & (>= "1.9.8" | os != "windows") }
   "zarith" {>= "1.11"}
   "conf-linux-libc-dev" {os = "linux"}
   "odoc" {with-doc}

@@ -10,4 +10,4 @@ rocq makefile -f _CoqProject -o Makefile
 make clean
 rm -f main.out
 make
-diff -u main.out main.out.reference
+diff -u --strip-trailing-cr main.out main.out.reference
