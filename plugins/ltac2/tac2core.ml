@@ -740,6 +740,18 @@ let () =
   with e when CErrors.noncritical e ->
     throw err_notfound
 
+let () =
+  define "constr_case_npar" (case @-> ret int)
+    (fun {ci_npar} -> ci_npar)
+
+let () =
+  define "constr_case_cstr_ndecls" (case @-> ret (array int))
+    (fun {ci_cstr_ndecls} -> ci_cstr_ndecls)
+
+let () =
+  define "constr_case_cstr_nargs" (case @-> ret (array int))
+    (fun {ci_cstr_nargs} -> ci_cstr_nargs)
+
 let () = define "constr_cast_default" (ret valexpr) (of_cast DEFAULTcast)
 let () = define "constr_cast_vm" (ret valexpr) (of_cast VMcast)
 let () = define "constr_cast_native" (ret valexpr) (of_cast NATIVEcast)

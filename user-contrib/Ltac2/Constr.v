@@ -129,6 +129,28 @@ Ltac2 occurn (n : int) (c : constr) : bool := noccur_between n 1 c.
 Ltac2 @ external case : inductive -> case := "rocq-runtime.plugins.ltac2" "constr_case".
 (** Generate the case information for a given inductive type. *)
 
+Ltac2 @ external case_npar : case -> int := "rocq-runtime.plugins.ltac2" "constr_case_npar".
+(** [case_npar c] is the number of parameters of the inductive type [case c] *)
+
+Ltac2 @ external constructor_ndecls : case -> int array := "rocq-runtime.plugins.ltac2" "constr_case_cstr_ndecls".
+(** [Array.get (constructor_ndecls c) i] is the number of values that can be
+    bound in the [i]th branch of a pattern match on a term of inductive type
+    [case c]. Parameters of the inductive type are therefore excluded from the
+    count. E.g., for
+    [Inductive ind (A : Type) (f : A -> A) : A -> Type := Ctor1 (a : A) (b := f a) : abc_ind _ _ b.],
+    [Array.get (constructor_ndecls case) 0] = 2,
+    because [a] and [b] are available in that branch when pattern matching. *)
+
+Ltac2 @ external constructor_nargs : case -> int array := "rocq-runtime.plugins.ltac2" "constr_case_cstr_nargs".
+(** [Array.get i (case_constructor_nargs c)] is the number of values that can be
+    applied to the [i]th constructor, in addition to the parameters of the related
+    inductive type. [let]-bindings and parameters of the associated inductive type
+    are therefore excluded from the count. E.g., for
+    [Inductive abc_ind (A : Type) (f : A -> A) : A -> Type :=
+     | Ctor1 (a : A) (b := f a) : abc_ind _ _ b.],
+    [Array.get (constructor_ndecls case) 0] = 1, because [a] is the only
+    non-parameter argument of the constructor. *)
+
 Ltac2 constructor (ind : inductive) (i : int) : constructor :=
   Ind.get_constructor (Ind.data ind) i.
 (** Generate the i-th constructor for a given inductive type. Indexing starts

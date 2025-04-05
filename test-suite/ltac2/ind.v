@@ -23,3 +23,26 @@ Ltac2 Eval
   let s := Env.instantiate (Std.ConstructRef s) in
   constr:($s 0)
 .
+
+Inductive test_ind (A : Type) (f : A -> A) : A -> A -> Type :=
+  Ctor (a : A) (b := f a) : test_ind _ _ a b.
+
+Ltac2 Eval
+  let test_ind := List.hd (Env.expand [@ind; @test_ind]) in
+  let ind := match test_ind with
+  | Std.IndRef ind => ind
+  | _ => Control.throw Not_found
+  end in
+  let case := Constr.Unsafe.case ind in
+  let () := if Int.equal (Constr.Unsafe.case_npar case) 2 then () else
+              Control.throw Not_found
+  in 
+  let num_constructors := Ind.nconstructors (Ind.data ind) in
+  let () :=
+    let arr_ndecls := Constr.Unsafe.constructor_ndecls case in
+    if Array.equal Int.equal arr_ndecls (Array.make num_constructors 2) then ()
+    else Control.throw Not_found
+  in
+  let arr_nargs := Constr.Unsafe.constructor_nargs case in
+  if Array.equal Int.equal arr_nargs (Array.make num_constructors 1) then ()
+  else Control.throw Not_found.
