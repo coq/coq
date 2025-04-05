@@ -172,6 +172,11 @@ module LinPoly : sig
       i.e can be written c*x+r where c is a constant and r is independent from x *)
   val is_linear_for : var -> t -> bool
 
+  (** [is_integer isZ v]
+      @return true if the polynomila is built
+        from integer variables *)
+  val is_integer : ISet.t option -> t -> bool
+
   (** [constant c]
       @return the constant polynomial c
    *)
@@ -280,6 +285,8 @@ module WithProof : sig
 
   val polynomial : t -> LinPoly.t
 
+  val is_integer : ISet.t option -> t -> bool
+
   val compare : t -> t -> int
   val annot : string -> t -> t
   val of_cstr : cstr * ProofFormat.prf_rule -> t
@@ -325,6 +332,9 @@ module WithProof : sig
   (** [cutting_plane p] does integer reasoning and adjust the constant to be integral *)
   val cutting_plane : t -> t option
 
+  (** [cutting_plane_isz p] does integer reasoning and adjust the constant to be integral *)
+  val cutting_plane_isz : ISet.t option -> t -> t option
+
   (** [linear_pivot sys p x q]
       @return the polynomial [q] where [x] is eliminated using the polynomial [p]
       The pivoting operation is only defined if
@@ -354,6 +364,12 @@ module WithProof : sig
   (** [subst_constant b sys] performs the equivalent of the 'subst' tactic of Rocq
       only if there is an equation a.x = c for a,c a constant and a divides c if b= true*)
   val subst_constant : bool -> t list -> t list
+
+ (** [subst_simple b sys] performs the equivalent of the `subst` tactic of Rocq
+     only if there is an equation of the form a.x = c or a.x = b.y.
+     If b = true, we require a or b to be 1 or -1
+  *)
+  val subst_simple : bool -> t list -> t list
 
   val saturate_subst : bool -> t list -> t list
 end

@@ -45,6 +45,7 @@ module Monomial : sig
   val degree : t -> int
   val subset : t -> t -> bool
   val output : out_channel -> t -> unit
+  val is_integer : ISet.t -> t -> bool
 end =
 struct
   type t = int array
@@ -223,6 +224,10 @@ struct
     in
     pp_list o (List.rev @@ fold (fun x v accu -> (x, v) :: accu) m [])
 
+
+  let is_integer s m =
+        fold (fun x _ acc -> ISet.mem x s && acc ) m true
+
 end
 
 module MonMap = struct
@@ -369,7 +374,8 @@ module LinPoly = struct
     (** A hash table might be preferable but requires a hash function. *)
     let (index_of_monomial : int MonoMap.t ref) = ref MonoMap.empty
 
-    let (monomial_of_index : Monomial.t IntMap.t ref) = ref IntMap.empty
+    let (monomial_of_index : Monomial.t  IntMap.t ref) = ref IntMap.empty
+
     let fresh = ref 0
 
     let reserve vr =
@@ -401,6 +407,21 @@ module LinPoly = struct
 
     let _ = register Monomial.const
   end
+
+  let is_integer isZ v =
+    let module EXIT = struct exception Exit end in
+    match isZ with
+    | None -> true
+    | Some s ->
+       if Vect.is_constant v
+       then false
+       else
+         try
+           Vect.fold (fun acc vr _ ->
+               if not (Monomial.is_integer s (MonT.retrieve vr)) then raise EXIT.Exit) () v;
+           true
+         with EXIT.Exit -> false
+
 
   let var v = Vect.set (MonT.register (Monomial.var v)) Q.one Vect.null
 
@@ -678,8 +699,87 @@ module ProofFormat = struct
     | ExProof (i, j, k, _, _, _, prf) ->
       max (max (max i j) k) (proof_max_def prf)
 
+  let add_proof x y =
+    match (x, y) with Zero, p | p, Zero -> p | _ -> AddPrf (x, y)
+
+  let rec mul_cst_proof c p =
+    match p with
+    | Annot (s, p) -> Annot (s, mul_cst_proof c p)
+    | MulC (v, p') -> MulC (Vect.mul c v, p')
+    | _ -> (
+      match Q.sign c with
+      | 0 -> Zero (* This is likely to be a bug *)
+      | -1 ->
+        MulC (LinPoly.constant c, p) (* [p] should represent an equality *)
+      | 1 -> if Q.one =/ c then p else MulPrf (Cst c, p)
+      | _ -> assert false )
+
+  let sMulC v p =
+    let c, v' = Vect.decomp_cst v in
+    if Vect.is_null v' then mul_cst_proof c p else MulC (v, p)
+
+  let mul_proof p1 p2 =
+    match (p1, p2) with
+    | Zero, _ | _, Zero -> Zero
+    | Cst c, p | p, Cst c -> mul_cst_proof c p
+    | _, _ -> MulPrf (p1, p2)
+
+
+
+  let rec pr_rule_scale_gcd m lenv p =
+    match p with
+    | Annot(_,p) -> (p,Z.one)
+    | MulC(p,prf) -> let prf', g = pr_rule_scale_gcd m lenv prf in
+                     (MulC(p,prf'),g)
+    | Gcd(z,prf)  -> let prf', g = pr_rule_scale_gcd m lenv prf in
+                     assert (Z.compare z Z.zero = 1);
+                     (prf',Z.mul z g)
+    | MulPrf(prf1,prf2) ->
+       let prf1, g1 = pr_rule_scale_gcd m lenv prf1 in
+       let prf2, g2 = pr_rule_scale_gcd m lenv prf2 in
+       (MulPrf(prf1,prf2),Z.mul g1 g2)
+    | AddPrf(prf1,prf2) ->
+       let prf1, g1 = pr_rule_scale_gcd m lenv prf1 in
+       let prf2, g2 = pr_rule_scale_gcd m lenv prf2 in
+       let lcm = Z.ppcm g1 g2 in
+       let q1  = Q.of_bigint (Z.div lcm g1) in
+       let q2  = Q.of_bigint (Z.div lcm g2) in
+       AddPrf(mul_cst_proof q1 prf1,mul_cst_proof  q2 prf2),lcm
+    | CutPrf p ->
+       let prf1,g = pr_rule_scale_gcd m lenv p in
+       CutPrf prf1, Z.one
+    | LetPrf(p1,p2) ->
+       let prf1,g = pr_rule_scale_gcd m lenv p1 in
+       let prf2,g2 = pr_rule_scale_gcd m (g::lenv) p2 in
+       LetPrf(prf1,prf2), g2
+      | Def i  -> (Def i, try IMap.find i m with Not_found -> Z.one)
+      | Ref i  -> (Ref i,List.nth lenv i)
+      | _      -> (p,Z.one)
+
+  let proof_scale_gcd prf =
+    let rec proof_scale_gcd m prf =
+      match prf with
+      | Done -> Done
+      | Step(i,r,prf) -> let (p',z) = pr_rule_scale_gcd m [] r in
+                         if Z.equal z Z.one
+                         then Step(i,p',proof_scale_gcd m prf)
+                         else Step(i,p',proof_scale_gcd (IMap.add i z m) prf)
+      | Split(i,v,p1,p2) ->
+         Split(i,v,proof_scale_gcd m p1, proof_scale_gcd m p2)
+      | Enum(i,r1,v1,r2,l) ->
+         let r1,_ = pr_rule_scale_gcd m [] r1 in
+         let r2,_ = pr_rule_scale_gcd m [] r2 in
+         Enum(i,r1,v1,r2,List.map (proof_scale_gcd m) l)
+      | ExProof(x,y,z,v1,v2,v3,prf) ->
+         ExProof(z,y,z,v1,v2,v3,proof_scale_gcd m prf)
+    in proof_scale_gcd IMap.empty prf
+
+
+
+
+
   (** [pr_rule_def_cut id pr] gives an explicit [id] to cut rules.
-      This is because the Rocq proof format only accept they as a proof-step *)
+      This is because the Rocq proof format only accept them as a proof-step *)
   let pr_rule_def_cut m id p =
     let rec pr_rule_def_cut m id = function
       | Annot (_, p) -> pr_rule_def_cut m id p
@@ -698,7 +798,8 @@ module ProofFormat = struct
         let bds1, m, id, p1 = pr_rule_def_cut m id p1 in
         let bds2, m, id, p2 = pr_rule_def_cut m id p2 in
         (bds2 @ bds1, m, id, LetPrf (p1, p2))
-      | CutPrf p | Gcd (_, p) -> (
+      | Gcd (_, p) -> assert false (* removed by pr_rule_scale_gcd *)
+      | CutPrf p  -> (
         let bds, m, id, p = pr_rule_def_cut m id p in
         try
           let id' = PrfRuleMap.find p m in
@@ -731,30 +832,6 @@ module ProofFormat = struct
       ISet.union (pr_rule_collect_defs p1) (pr_rule_collect_defs p2)
 
 
-  let add_proof x y =
-    match (x, y) with Zero, p | p, Zero -> p | _ -> AddPrf (x, y)
-
-  let rec mul_cst_proof c p =
-    match p with
-    | Annot (s, p) -> Annot (s, mul_cst_proof c p)
-    | MulC (v, p') -> MulC (Vect.mul c v, p')
-    | _ -> (
-      match Q.sign c with
-      | 0 -> Zero (* This is likely to be a bug *)
-      | -1 ->
-        MulC (LinPoly.constant c, p) (* [p] should represent an equality *)
-      | 1 -> if Q.one =/ c then p else MulPrf (Cst c, p)
-      | _ -> assert false )
-
-  let sMulC v p =
-    let c, v' = Vect.decomp_cst v in
-    if Vect.is_null v' then mul_cst_proof c p else MulC (v, p)
-
-  let mul_proof p1 p2 =
-    match (p1, p2) with
-    | Zero, _ | _, Zero -> Zero
-    | Cst c, p | p, Cst c -> mul_cst_proof c p
-    | _, _ -> MulPrf (p1, p2)
 
   let prf_rule_of_map m =
     PrfRuleMap.fold (fun k v acc -> add_proof (sMulC v k) acc) m Zero
@@ -886,28 +963,6 @@ module ProofFormat = struct
         (snd res);
     res
 
-  (*
-  let mul_proof p1 p2 =
-    let res = mul_proof p1 p2 in
-    Printf.printf "mul_proof %a %a = %a\n"
-    output_prf_rule p1 output_prf_rule p2 output_prf_rule res; res
-
-  let add_proof p1 p2 =
-    let res = add_proof p1 p2 in
-    Printf.printf "add_proof %a %a = %a\n"
-    output_prf_rule p1 output_prf_rule p2 output_prf_rule res; res
-
-
-  let sMulC v p =
-    let res = sMulC v p in
-    Printf.printf "sMulC %a %a = %a\n" Vect.pp v output_prf_rule p output_prf_rule res ;
-    res
-
-  let mul_cst_proof c p  =
-    let res = mul_cst_proof c p in
-    Printf.printf "mul_cst_proof %s %a = %a\n" (Num.string_of_num c) output_prf_rule p output_prf_rule res ;
-    res
- *)
 
   let proof_of_farkas env vect =
     Vect.fold
@@ -1010,6 +1065,7 @@ module ProofFormat = struct
         (CamlToCoq.positive x, cmpl_proof (Env.push_def i  (Env.push_def j (Env.push_def k env))) prf)
 
   let compile_proof env prf =
+    let prf = proof_scale_gcd prf in
     let id = 1 + proof_max_def prf in
     let _, prf = normalise_proof id prf in
     cmpl_proof env prf
@@ -1024,6 +1080,8 @@ module WithProof = struct
   let proof p = snd p
 
   let polynomial ((p, _), _) = p
+
+  let is_integer isZ ((p,_),_) = LinPoly.is_integer isZ p
 
   (* The comparison ignores proofs on purpose *)
   let compare : t -> t -> int =
@@ -1089,24 +1147,39 @@ module WithProof = struct
   let square p q = ((p, Ge), ProofFormat.Square q)
 
   let cutting_plane ((p, o), prf) =
+    (* All the coefficients need to be integers! *)
     let c, p' = Vect.decomp_cst p in
+    let c = if o = Gt then c -/ Q.one else c in
     let g = Vect.gcd p' in
-    if Z.equal Z.one g || c =/ Q.zero || not (Z.equal (Q.den c) Z.one) then None
-      (* Nothing to do *)
+    if Z.equal Z.one g
+    then if o = Gt
+         then Some ((Vect.set 0 c p,Ge),ProofFormat.CutPrf prf)
+         else None
     else
       let c1 = c // Q.of_bigint g in
       let c1' = Q.floor c1 in
-      if c1 =/ c1' then None
+      if c1 =/ c1' && o <> Gt then None
       else
         match o with
         | Eq ->
           Some ((Vect.set 0 Q.minus_one Vect.null, Eq), ProofFormat.CutPrf prf)
-        | Gt -> failwith "cutting_plane ignore strict constraints"
+        (* This is a non-trivial common divisor *)
+        | Gt -> Some
+                  ( (Vect.set 0 c1' (Vect.div (Q.of_bigint g) p), Ge)
+                  , ProofFormat.CutPrf prf )
         | Ge ->
-          (* This is a non-trivial common divisor *)
           Some
             ( (Vect.set 0 c1' (Vect.div (Q.of_bigint g) p), o)
             , ProofFormat.CutPrf prf )
+
+  let cutting_plane_isz isz wp =
+    if is_integer isz wp
+    then
+      begin
+      cutting_plane wp
+      end
+    else None
+
 
   let construct_sign p =
     let c, p' = Vect.decomp_cst p in
@@ -1181,7 +1254,7 @@ module WithProof = struct
         | _ -> None )
       | (Ge | Gt), Eq -> failwith "pivot: equality as second argument"
 
-  let linear_pivot sys ((lp1, op1), prf1) x ((lp2, op2), prf2) =
+  let linear_pivot (sys: t list) (((lp1, op1), prf1):t) x (((lp2, op2), prf2):t) : t option =
     match linear_pivot sys ((lp1, op1), prf1) x ((lp2, op2), prf2) with
     | None -> None
     | Some (c, p) -> Some (c, ProofFormat.simplify_prf_rule p)
@@ -1206,6 +1279,7 @@ module WithProof = struct
     in
     List.sort cmp (List.rev_map (fun wp -> (size wp, wp)) sys)
 
+
   let iterate_pivot p sys0 =
     let elim sys =
       let oeq, sys' = extract p sys in
@@ -1213,6 +1287,7 @@ module WithProof = struct
       | None -> None
       | Some (v, pc) -> simplify (linear_pivot sys0 pc v) sys'
     in
+
     iterate_until_stable elim (List.map snd (sort sys0))
 
   let subst_constant is_int sys =
@@ -1230,6 +1305,40 @@ module WithProof = struct
             else None) )
     in
     iterate_pivot is_constant sys
+
+  let subst_simple strict sys =
+
+    let get_variable x1 x2 =
+      match Monomial.get_var (LinPoly.MonT.retrieve x1) , Monomial.get_var (LinPoly.MonT.retrieve x2) with
+          | Some x1 , Some x2 -> Some (x1,x2)
+          | _ , _ -> None
+    in
+
+    let is_simple_subst p =
+      match Vect.Classify.classify p with
+      | None -> None
+      | Some (Vect.Classify.IsCst(c,a,x)) ->
+         if not (strict) || Q.abs a = Q.one
+         then Monomial.get_var (LinPoly.MonT.retrieve x)
+         else None
+      | Some (Vect.Classify.IsVar(a1,x1,a2,x2)) ->
+         match get_variable x1 x2 with
+         | None -> None
+         | Some (x1,x2) ->
+            if not strict
+            then (* Give priority to smallest coefficient *)
+              if a1 </ a2 then Some x1 else Some x2
+            else
+              if Q.abs a1 = Q.one then Some x1
+              else if Q.abs a2 = Q.one then Some x2
+              else None in
+
+    let is_simple ((p,o),prf) =
+      if o = Eq then is_simple_subst p
+      else None
+    in
+
+    iterate_pivot is_simple sys
 
   let subst sys0 = iterate_pivot (is_substitution true) sys0
 
