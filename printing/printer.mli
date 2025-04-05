@@ -191,7 +191,6 @@ val pr_predicate           : ('a -> Pp.t) -> (bool * 'a list) -> Pp.t
 val pr_cpred               : Cpred.t -> Pp.t
 val pr_idpred              : Id.Pred.t -> Pp.t
 val pr_prpred              : PRpred.t -> Pp.t
-val pr_transparent_state   : TransparentState.t -> Pp.t
 
 (** Proofs, these functions obey [Hyps Limit] and [Compact contexts]. *)
 
