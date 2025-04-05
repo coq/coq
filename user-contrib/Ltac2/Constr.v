@@ -45,34 +45,109 @@ Module Unsafe.
 (** Low-level access to kernel terms. Use with care! *)
 
 Ltac2 Type case.
+(** A value of [case] contains information about the structure of pattern match
+    expressions for eliminating on a particular corresponding inductive type,
+    such as the number of parameters of the type, the number of constructors,
+    and for each constructor, the number of values that are bound in the left
+    hand side of the pattern match for that constructor (i.e., the number of
+    non-parameter arguments of the constructor)
 
-Ltac2 Type case_invert := [
-| NoInvert
-| CaseInvert (constr array)
+    TODO: Expose this information. *)
+
+Ltac2 Type case_invert
+(** A piece of metadata attached to a pattern match expression which
+tells Rocq which reduction rule to use for the pattern match *)
+  := [
+  | NoInvert
+  (** The normal reduction rule: reduce the pattern match exactly when the
+      scrutinee is a constructor. *)
+  | CaseInvert (constr array)
+  (** The special reduction rule for eliminating out of an [SProp] into a
+      non-[SProp]. Normally this is only legal when the [SProp] has no
+      constructors, in which case the match is reducible. If the [SProp] was
+      defined with the [Definitional UIP] flag on, and the [SProp] has one
+      constructor which takes no non-parameter arguments, then the match is
+      reducible if the indices for the scrutinee are unifiable with the indices
+      for the unique constructor. See the [Definitional UIP] section of the
+      [SProp] documentation in the refman for more information. *)
 ].
 
 Ltac2 Type kind := [
-| Rel (int)
-| Var (ident)
-| Meta (meta)
-| Evar (evar, constr array)
-| Sort (sort)
-| Cast (constr, cast, constr)
-| Prod (binder, constr)
-| Lambda (binder, constr)
-| LetIn (binder, constr, constr)
-| App (constr, constr array)
-| Constant (constant, instance)
-| Ind (inductive, instance)
-| Constructor (constructor, instance)
-| Case (case, (constr * Binder.relevance), case_invert, constr, constr array)
-| Fix (int array, int, binder array, constr array)
-| CoFix (int, binder array, constr array)
-| Proj (projection, Binder.relevance, constr)
-| Uint63 (uint63)
-| Float (float)
-| String (pstring)
-| Array (instance, constr array, constr, constr)
+  | Rel (int)
+  (** de Bruijn local variable, introduced by [forall], [fun], [let-in], [fix], or
+      [cofix]. *)
+  | Var (ident)
+  (** Gallina-variable that was introduced by Vernacular-command that
+      extends the local context of the currently open section (i.e.
+     [Variable] or [Let]). *)
+  | Meta (meta)
+  (** An older, legacy implementation of unification variables. This is probably
+      dead code. *)
+  | Evar (evar, constr array)
+  (** The current implementation of existential variables (unification
+      variables). In [Evar evar array], [evar] is the existential variable
+      itself and [array] is the local variable context, i.e., [Var]s bound in
+      the proof term and which are in scope at the point of the hole and [Rel]s
+      bound in the current section. [array] is in reverse order, with the most
+      recent assumptions appearing first. *)
+  | Sort (sort)
+  (** Prop, SProp, or Type@{u} *)
+  | Cast (constr, cast, constr)
+  | Prod (binder, constr)
+  (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A:B) C]. *)
+  | Lambda (binder, constr)
+  (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A:B) C]. *)
+  | LetIn (binder, constr, constr)
+  (** Concrete syntax ["let A:C := B in D"] is represented as
+      [LetIn (A:C) B D]. *)
+  | App (constr, constr array)
+  (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])]. *)
+  | Constant (constant, instance)
+  (** Gallina-variable that was introduced by Vernacular-command that extends
+      the global environment - i.e. [Parameter], or [Axiom], or
+      [Definitionally], or [Theorem], or [Symbol] etc. [Constant c ui] is the
+      constant [c] @ universe instance [ui]. *)
+  | Ind (inductive, instance)
+  (** A name of an inductive type defined by [Variant], [Inductive] or [Record]
+      Vernacular-commands. [Ind ind ui] is [ind@[ui]] *)
+  | Constructor (constructor, instance)
+  (** A constructor of an inductive type defined by [Variant], [Inductive] or
+      [Record] Vernacular-commands. [Constructor c ui] is [c@[ui]]. *)
+  | Case (case, (constr * Binder.relevance), case_invert, constr, constr array)
+  (** [Case case (ret, fun u1 u2 ... un v => rettype) ci scrut
+          [|(fun x1 x2 => t1);(fun y1 y2 y3 => t2));...|]]
+      corresponds to
+      [match scrut in I u1 u2 ... as v return rettype with
+       | c0 _ _ x1 x2 => t1
+       | c1 _ _ y1 y2 y3 => t2
+       | (...)
+      end].
+      [ci] is of interest when [scrut] is an [SProp], see comments on the type
+      [case_invert] above. [case] contains a reference to the inductive type,
+      the number of constructors, the number of parameters, and the number of
+      non-parameter arguments associated to each constructor. *)
+  | Fix (int array, int, binder array, constr array)
+  (** [fix fun0 (b00 : B00) (b01 : B01) (...) {struct b0_k0} : C0 := t0 with
+           fun1 (b10 : B10) (b11 : B11) (...) {struct b1_k1} : C1 := t1 with
+           (...)
+           for funi]
+      is represented as
+      [Fix [|k0;k1;...|] i [|
+          fun0 : forall (b00 : B00) (b01 : B01) (...), C0;
+          fun1 : forall (b10 : B10) (b11 : B11) (...), C1;
+       |] [|
+          fun b00 b01 (...) => t0;
+          fun b00 b01 (...) => t1;
+       |]] *)
+  | CoFix (int, binder array, constr array)
+  | Proj (projection, Binder.relevance, constr)
+  (** The relevance is the relevance of the whole term *)
+  | Uint63 (uint63)
+  | Float (float)
+  | String (pstring)
+  | Array (instance, constr array, constr, constr)
+  (** [Array (u,vals,def,t)] is an array of [vals] in type [t] with default
+      value [def]. [u] is a universe containing [t]. *)
 ].
 
 Ltac2 @ external kind : constr -> kind := "rocq-runtime.plugins.ltac2" "constr_kind".

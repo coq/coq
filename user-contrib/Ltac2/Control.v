@@ -19,12 +19,38 @@ Ltac2 @ external throw : exn -> 'a := "rocq-runtime.plugins.ltac2" "throw".
 (** Generic backtracking control *)
 
 Ltac2 @ external zero : exn -> 'a := "rocq-runtime.plugins.ltac2" "zero".
+(** [zero e] raises the exception e, passing control to the current backtracking continuation. *)
+
 Ltac2 @ external plus : (unit -> 'a) -> (exn -> 'a) -> 'a := "rocq-runtime.plugins.ltac2" "plus".
+(** If [r ()] would raise an exception [e] in the current context,
+    then [plus r h] is behaviorally equivalent to [h e]. In
+    particular, [plus (fun () => zero e) h] is behaviorally equivalent to
+    [h e] and [plus r zero] is behaviorally equivalent to [r ()]. If [t]
+    is a syntactic value, then [let x := plus (fun () => t) h in u] is
+    behaviorally equivalent to [plus (fun () => u[x/t]) h], i.e.,
+    the expression [u[x/t]] evaluates under the context of the backtracking
+    continuation [h]. *)
+
 Ltac2 @ external once : (unit -> 'a) -> 'a := "rocq-runtime.plugins.ltac2" "once".
+(** [once t] behaves like [t], except it has at most one success: [once t]
+    stops after the first success of [t]. If [t] fails with [e],
+    [once e] also fails with [e]. *)
+
 Ltac2 @ external case : (unit -> 'a) -> ('a * (exn -> 'a)) result := "rocq-runtime.plugins.ltac2" "case".
+(** If [t ()] would fail with [e], [case t] returns [Err e]. If [t ()]
+would succeed and evaluate to [v] then [case t] returns [Val (v, h)],
+where [h] is a continuation. [case] is the most general primitive to control backtracking. *)
 
 Ltac2 once_plus (run : unit -> 'a) (handle : exn -> 'a) : 'a :=
   once (fun () => plus run handle).
+(** [once_plus run handle] runs the computation [run] under the
+exception handler [h]. If [run] succeeds and returns [r], [once_plus
+run handle] returns [r]. If [run] fails with [e], then [once_plus run
+handle] returns the value of [h e] if this succeeds or fails with [e']
+if [h e] fails with [e]. This expression is non-backtracking - unlike
+[plus], [let x := once_plus run handle in u] does not cause an
+exception-handling continuation to be installed in the scope of [x].
+*)
 
 (** Proof state manipulation *)
 
@@ -32,13 +58,42 @@ Ltac2 @ external numgoals : unit -> int := "rocq-runtime.plugins.ltac2" "numgoal
 (** Return the number of goals currently focused. *)
 
 Ltac2 @ external dispatch : (unit -> unit) list -> unit := "rocq-runtime.plugins.ltac2" "dispatch".
+(** The dispatch tactical is used to apply a different tactic to each
+    goal under focus. It takes a list of unit tactics and returns a
+    unit tactic. It works by applying each of the tactics in a focus
+    restricted to the corresponding goal (starting with the first
+    goal). When the length of the tactic list is not equal to the
+    number of focused goals, raises Internal err. *)
+
 Ltac2 @ external extend : (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit := "rocq-runtime.plugins.ltac2" "extend".
+(** extend is a more flexible variant of dispatch, where the second argument
+    tactic is "repeated" enough times such that every goal has a tactic
+    assigned to it. [extend b r e] applies the tactics in [b] to the first
+    [length b] goals, the tactics in [r] to the last [length r] goals, and
+    [e] to all tactics in between. Raises Internal err if [length b + length r]
+    is greater than the number of goals under focus.*)
+
 Ltac2 @ external enter : (unit -> unit) -> unit := "rocq-runtime.plugins.ltac2" "enter".
+(** enter takes a single tactic [t] and applies [t] in each goal under focus independently. *)
 
 Ltac2 @ external focus : int -> int -> (unit -> 'a) -> 'a := "rocq-runtime.plugins.ltac2" "focus".
+(** [focus i j tac] focuses a proofview on the goals from index [i] to
+    index [j] (inclusive, goals are indexed from [1]) and runs
+    t with those goals under focus, i.e. goals
+    number [i] to [j] become the only focused goals during the execution
+ of tac. When [focus] returns, the present focus is restored. *)
+
 Ltac2 @ external cycle : int -> unit := "rocq-runtime.plugins.ltac2" "cycle".
+(** If [n] is positive, [cycle n] puts the [n] first goal last. If [n]
+    is negative, then it puts the [n] last goals first.*)
+
 Ltac2 @ external shelve : unit -> unit := "rocq-runtime.plugins.ltac2" "shelve".
+(** Shelve all goals under focus. The goals are placed on the shelf for later use, or to be solved by side-effects.*)
+
 Ltac2 @ external shelve_unifiable : unit -> unit := "rocq-runtime.plugins.ltac2" "shelve_unifiable".
+(** Shelves the unifiable goals under focus, i.e. the goals which
+    appear in other goals under focus (the unfocused goals are not
+    considered). *)
 
 Ltac2 @ external new_goal : evar -> unit := "rocq-runtime.plugins.ltac2" "new_goal".
 (** Adds the given evar to the list of goals as the last one. If it is
@@ -51,6 +106,9 @@ Ltac2 @ external unshelve : (unit -> 'a) -> 'a := "rocq-runtime.plugins.ltac2" "
     Returns the value produced by the closure. *)
 
 Ltac2 @ external progress : (unit -> 'a) -> 'a := "rocq-runtime.plugins.ltac2" "progress".
+(** [progress t] checks the state of the proof after [t]. It it is
+    identical to the state before, then [progress t] fails, otherwise
+    it succeeds like [t]. *)
 
 (** Goal inspection *)
 
@@ -79,6 +137,9 @@ Ltac2 @ external hyps : unit -> (ident * constr option * constr) list := "rocq-r
 (** Refinement *)
 
 Ltac2 @ external refine : (unit -> constr) -> unit := "rocq-runtime.plugins.ltac2" "refine".
+(** [refine t] computes the type of the term [t ()] and unifies the
+ type with the current goal. All unification variables in [t] not
+ solved by this unification process are added as new goals. *)
 
 (** Evars *)
 
