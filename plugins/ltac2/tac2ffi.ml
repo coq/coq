@@ -60,6 +60,10 @@ let val_transparent_state : TransparentState.t Val.tag = Val.create "transparent
 let val_pretype_flags = Val.create "pretype_flags"
 let val_expected_type = Val.create "expected_type"
 
+type local_env = Environ.named_context_val
+
+let val_local_env = Val.create "local_env"
+
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
 match Val.eq tag tag' with
 | None -> assert false
@@ -409,6 +413,10 @@ let reference = {
   r_of = of_reference;
   r_to = to_reference;
 }
+
+let of_local_env c = of_ext val_local_env c
+let to_local_env c = to_ext val_local_env c
+let local_env = repr_ext val_local_env
 
 type ('a, 'b) fun1 = closure
 
