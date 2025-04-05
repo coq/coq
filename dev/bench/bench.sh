@@ -629,13 +629,13 @@ $coq_opam_package (in $RUNNER)"
         echo "${rendered_results}"
         # update the comment
         coqbot_update_comment "" "${rendered_results}" ""
-        msg="Benching continues..."
+        msg="Benching continues ($coq_opam_package done)..."
         if [ -n "$failed_packages" ]; then
             msg="$msg
 Failed: $failed_packages
 $skipped_packages"
         fi
-        zulip_edit "Benching continues..."
+        zulip_edit "$msg"
     fi
 
     # N.B. Not all packages end in .dev, e.g., coq-lambda-rust uses .dev.timestamp.
