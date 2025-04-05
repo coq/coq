@@ -1007,6 +1007,11 @@ library:ci-stdlib_doc:
   variables:
     SAVE_BUILD_CI: "1" # for doc:refman:deploy
 
+library:ci-test_relocatable:
+  extends: .ci-template
+  needs:
+  - build:base
+
 library:ci-tlc:
   extends: .ci-template
   needs:
