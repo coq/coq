@@ -51,7 +51,7 @@ stdenv.mkDerivation rec {
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
     glib
-    gnome.adwaita-icon-theme
+    adwaita-icon-theme
     wrapGAppsHook
   ]
   ++ optionals buildDoc [
