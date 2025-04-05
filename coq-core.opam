@@ -42,3 +42,7 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/rocq-prover/rocq.git"
+post-messages: [
+  "Coq has been renamed to The Rocq Prover, see https://rocq-prover.org/refman/changes.html#porting-to-the-rocq-prover for details. 
+   This package provides compatibility binaries to ease the transition to the new rocq binary."
+]

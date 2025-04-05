@@ -30,18 +30,5 @@ depends: [
   "conf-time" {with-test}
   "odoc" {with-doc}
 ]
-build: [
-  ["dune" "subst"] {dev}
-  [
-    "dune"
-    "build"
-    "-p"
-    name
-    "-j"
-    jobs
-    "@install"
-    "@runtest" {with-test}
-    "@doc" {with-doc}
-  ]
-]
 dev-repo: "git+https://github.com/rocq-prover/rocq.git"
+build: [ ]
