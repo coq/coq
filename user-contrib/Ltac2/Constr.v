@@ -101,7 +101,7 @@ Ltac2 Type kind := [
   (** Concrete syntax ["let A:C := B in D"] is represented as
       [LetIn (A:C) B D]. *)
   | App (constr, constr array)
-  (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])]. *)
+  (** Application is n-ary. Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])]. *)
   | Constant (constant, instance)
   (** Gallina-variable that was introduced by Vernacular-command that extends
       the global environment - i.e. [Parameter], or [Axiom], or
