@@ -679,10 +679,10 @@ Creating Hints
       argument with ``1``, typeclass resolution succeeds as the second declared mode is matched,
       and instantiates ``x`` with ``11``.
 
-.. cmd:: Hint Rewrite {? {| -> | <- } } {+ @one_term } {? using @ltac_expr } {? : {+ @ident } }
+.. cmd:: Hint Rewrite {? {| -> | <- } } {+ @one_term } {? using @generic_tactic } {? : {+ @ident } }
 
-   :n:`{? using @ltac_expr }`
-     If specified, :n:`@ltac_expr` is applied to the generated subgoals, except for the
+   :n:`{? using @generic_tactic }`
+     If specified, :n:`@generic_tactic` is applied to the generated subgoals, except for the
      main subgoal.
 
    :n:`{| -> | <- }`
