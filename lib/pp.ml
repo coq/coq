@@ -423,3 +423,103 @@ let rec flatten pp =
   | Ppcmd_box (block, pp) -> Ppcmd_box (block, flatten pp)
   | Ppcmd_tag (tag, pp) -> Ppcmd_tag (tag, flatten pp)
   | p -> p
+
+type container =
+  | CBox of block_type
+  | CTag of pp_tag
+  | CTop
+
+let box_of_string s =
+  let indent, bty = CamlinternalFormat.open_box_of_string s in
+  match bty with
+  | Pp_hbox -> Pp_hbox (* check indent? *)
+  | Pp_vbox -> Pp_vbox indent
+  | Pp_hvbox -> Pp_hvbox indent
+  (* NB these 3 are all treated the same *)
+  | Pp_hovbox | Pp_box | Pp_fits -> Pp_hovbox indent
+
+let of_acc =
+  let open CamlinternalFormat in
+  let push stack elt = match stack with
+    | [] -> assert false
+    | (l,k) :: rest -> (elt :: l, k) :: rest
+  in
+  let seq0 = function
+    | [] -> mt()
+    | [x] -> x
+    | l -> seq l
+  in
+  let init = [[], CTop] in
+  let finish = function
+    | [elts, CTop] -> seq0 (List.rev elts)
+    | _ -> assert false
+  in
+  let rec of_acc stack = function
+  | Acc_string_literal(Acc_formatting_lit (p, Magic_size (_, size)), s)
+  | Acc_data_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
+    let stack = of_acc stack p in
+    (* XXX size *)
+    push stack (str s)
+  | Acc_char_literal (Acc_formatting_lit (p, Magic_size (_, size)), c)
+  | Acc_data_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
+    let stack = of_acc stack p in
+    (* XXX size *)
+    push stack (str (String.make 1 c))
+  | Acc_formatting_lit (p, f) ->
+    let stack = of_acc stack p in
+    of_formatting_lit stack f
+  | Acc_formatting_gen (p, Acc_open_tag acc') ->
+    let stack = of_acc stack p in
+    let tag = compute_tag acc' in
+    ([], CTag tag) :: stack
+  | Acc_formatting_gen (p, Acc_open_box acc') ->
+    let stack = of_acc stack p in
+    let tag = compute_tag acc' in
+    let box = box_of_string tag in
+    ([], CBox box) :: stack
+  | Acc_string_literal (p, s)
+  | Acc_data_string (p, s) ->
+    let stack = of_acc stack p in
+    push stack (str s)
+  | Acc_char_literal (p, c)
+  | Acc_data_char (p, c) ->
+    let stack = of_acc stack p in
+    push stack (str @@ String.make 1 c)
+  | Acc_delay (p, f) ->
+    let stack = of_acc stack p in
+    let x = f () in
+    push stack x
+  | Acc_flush p -> of_acc stack p (* ignore flush *)
+  | Acc_invalid_arg (p, msg) -> invalid_arg msg
+  | End_of_acc -> stack
+
+  and compute_tag tag =
+    let tag = finish (of_acc init tag) in
+    let tag = string_of_ppcmds tag in
+    if String.length tag < 2 then tag
+    else String.sub tag 1 (String.length tag - 2)
+
+  and of_formatting_lit stack flit = match stack, flit with
+    | (elts, CBox box) :: rest, Close_box ->
+      push rest (Ppcmd_box (box, seq0 (List.rev elts)))
+    | (elts, CTag tag) :: rest, Close_tag ->
+      push rest (Ppcmd_tag (tag, seq0 (List.rev elts)))
+    | stack, Break (_, width, offset) ->
+      push stack (brk (width, offset))
+    | stack, FFlush -> stack (* flush is ignored, maybe error instead? *)
+    | stack, Force_newline -> push stack (fnl())
+    | stack, Flush_newline -> push stack (fnl()) (* not sure if correct *)
+    | stack, Magic_size _ -> stack
+    | stack, Escaped_at -> push stack (str "@")
+    | stack, Escaped_percent -> push stack (str "%")
+    | stack, Scan_indic c -> push stack (str @@ Printf.sprintf "@%c" c)
+    | _, (Close_box | Close_tag) -> assert false
+  in
+  fun acc -> finish (of_acc init acc)
+
+let kf k (CamlinternalFormatBasics.Format (fmt, _)) =
+  CamlinternalFormat.make_printf (fun acc -> k (of_acc acc))
+    End_of_acc
+    fmt
+
+let fmt fmt = kf (fun x -> x) fmt

@@ -75,6 +75,9 @@ val ismt  : t -> bool
 
 val comment  : string list -> t
 
+val fmt : ('a, unit, t) format -> 'a
+(** complex formatting *)
+
 (** {6 Manipulation commands} *)
 
 val app : t -> t -> t
