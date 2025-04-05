@@ -1579,8 +1579,6 @@ let add_hints ~locality dbnames h =
 
 let hint_globref gr = IsGlobRef gr
 
-let hint_constr (c, diff) = IsConstr (c, diff)
-
 let warn_non_reference_hint_using =
   CWarnings.create ~name:"non-reference-hint-using" ~category:CWarnings.CoreCategories.deprecated
     Pp.(fun (env, sigma, c) -> str "Use of the non-reference term " ++ pr_leconstr_env env sigma c ++ str " in \"using\" clauses is deprecated")
