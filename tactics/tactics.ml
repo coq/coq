@@ -1721,7 +1721,8 @@ let default_elim with_evars clear_flag (c,_ as cx) =
       let sigma, t = Typing.type_of env sigma c in
       let (ind,u) = eval_to_quantified_ind env sigma t in
       if is_nonrec env ind then raise IsNonrec;
-      let sigma, elim = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
+      let sigma, elim = find_ind_eliminator env sigma ind
+                          (Retyping.get_sort_quality_of env sigma concl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (general_elim with_evars clear_flag cx (ElimConstant elim))
     end)
@@ -1786,8 +1787,9 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
       then
         let (_, mip) as specif = Inductive.lookup_mind_specif env ind in
         let t = lift (i + 1 - n) t in
-        let ksort = Retyping.get_sort_family_of (push_rel_context sign env) sigma t in
-        if Sorts.family_leq ksort (Inductiveops.elim_sort specif) then
+        let ksort = Retyping.get_sort_quality_of (push_rel_context sign env) sigma t in
+        if UnivGen.QualityOrSet.eliminates_to
+             (UnivGen.QualityOrSet.of_quality @@ Inductiveops.elim_sort specif) ksort then
           let arity = List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt in
           let mknas ctx = Array.of_list (List.rev_map get_annot ctx) in
           let ci = Inductiveops.make_case_info env ind RegularStyle in
@@ -3215,7 +3217,7 @@ let exfalso =
     let sigma = Proofview.Goal.sigma gl in
     let (sigma, f) = Evd.fresh_global env sigma (Rocqlib.lib_ref "core.False.type") in
     let (ind, _) = reduce_to_atomic_ind env sigma f in
-    let s = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
+    let s = Retyping.get_sort_quality_of env sigma (Proofview.Goal.concl gl) in
     let sigma, elimc = find_ind_eliminator env sigma (fst ind) s in
     let elimc = mkConstU elimc in
     let elimt = Retyping.get_type_of env sigma elimc in

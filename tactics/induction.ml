@@ -1123,7 +1123,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
     in
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
     let tmpcl = it_mkNamedProd_or_LetIn sigma concl deps in
-    let s = Retyping.get_sort_family_of env sigma tmpcl in
+    let s = Retyping.get_sort_quality_of env sigma tmpcl in
     let deps_cstr =
       List.fold_left
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in
@@ -1138,13 +1138,13 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       let tac = destruct_tac with_evars id dep in
       sigma, false, tac, indsign
     | ElimOver (id, (mind, u)) ->
-      let sigma, ind = find_ind_eliminator env sigma mind s in
-      (* FIXME: we should store this instead of recomputing it *)
-      let elimt = Retyping.get_type_of env sigma (mkConstU ind) in
-      let scheme = compute_elim_sig sigma elimt in
-      let indsign = compute_scheme_signature sigma scheme id (mkIndU (mind, u)) in
-      let tac = induction_tac with_evars [] [id] (ElimConstant ind, elimt) in
-      sigma, true, tac, indsign
+       let sigma, ind = find_ind_eliminator env sigma mind s in
+       (* FIXME: we should store this instead of recomputing it *)
+       let elimt = Retyping.get_type_of env sigma (mkConstU ind) in
+       let scheme = compute_elim_sig sigma elimt in
+       let indsign = compute_scheme_signature sigma scheme id (mkIndU (mind, u)) in
+       let tac = induction_tac with_evars [] [id] (ElimConstant ind, elimt) in
+       sigma, true, tac, indsign
     | ElimUsing (hyp0, (elim, elimt, indsign)) ->
       let tac = induction_tac with_evars [] [hyp0] (ElimClause elim, elimt) in
       sigma, (* bugged, should be computed *) true, tac, indsign

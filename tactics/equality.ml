@@ -14,7 +14,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Term
 open Constr
 open Context
 open Termops
@@ -322,17 +321,18 @@ let jmeq_same_dom env sigma (rels, eq, args) =
     | _ -> false
 
 let eq_elimination_ref l2r sort =
+  let open UnivGen.QualityOrSet in
   let name =
     if l2r then
       match sort with
-      | InProp -> "core.eq.ind_r"
-      | InSProp -> "core.eq.sind_r"
-      | InSet | InType | InQSort -> "core.eq.rect_r"
+      | Qual (QConstant QProp) -> "core.eq.ind_r"
+      | Qual (QConstant QSProp) -> "core.eq.sind_r"
+      | Set | Qual (QConstant QType | QVar _) -> "core.eq.rect_r"
     else
       match sort with
-      | InProp -> "core.eq.ind"
-      | InSProp -> "core.eq.sind"
-      | InSet | InType | InQSort -> "core.eq.rect"
+      | Qual (QConstant QProp) -> "core.eq.ind"
+      | Qual (QConstant QSProp) -> "core.eq.sind"
+      | Set | Qual (QConstant QType | QVar _) -> "core.eq.rect"
   in
   Rocqlib.lib_ref_opt name
 
@@ -362,20 +362,20 @@ let find_elim lft2rgt dep cls ((_, hdcncl, _) as t) =
           begin match if is_eq then eq_elimination_ref true sort else None with
           | Some r -> destConstRef r
           | None ->
-            let c1 = destConstRef (lookup_eliminator env ind_sp sort) in
-            let mp,l = KerName.repr (Constant.canonical c1) in
-            let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
-            let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
-            if not (Environ.mem_constant c1' (Global.env ())) then
-              user_err
-                (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".");
-            c1'
+             let c1 = destConstRef (lookup_eliminator env ind_sp sort) in
+             let mp,l = KerName.repr (Constant.canonical c1) in
+             let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
+             let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
+             if not (Environ.mem_constant c1' (Global.env ())) then
+               user_err
+                 (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".");
+             c1'
           end
         | _ ->
-          begin match if is_eq then eq_elimination_ref false sort else None with
-          | Some r -> destConstRef r
-          | None -> destConstRef (lookup_eliminator env ind_sp sort)
-          end
+           begin match if is_eq then eq_elimination_ref false sort else None with
+           | Some r -> destConstRef r
+           | None -> destConstRef (lookup_eliminator env ind_sp sort)
+           end
         end
       | _ ->
           (* cannot occur since we checked that we are in presence of
@@ -757,7 +757,7 @@ let set_keep_equality = KeepEqualitiesTable.set
 
 let keep_head_inductive sigma c =
   (* Note that we do not weak-head normalize c before checking it is an
-     applied inductive, because [get_sort_family_of] did not use to either.
+     applied inductive, because [get_sort_quality_of] did not use to either.
      As a matter of fact, if it reduces to an applied template inductive
      type but is not syntactically equal to it, it will fail to project. *)
   let _, hd = EConstr.decompose_prod sigma c in
@@ -772,8 +772,8 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
     let keep =
       if keep_head_inductive sigma ty1 then true
       else
-        let s = get_sort_family_of env sigma ty1 in
-        List.mem_f Sorts.family_equal s sorts
+        let s = get_sort_quality_of env sigma ty1 in
+        List.mem_f UnivGen.QualityOrSet.equal s sorts
     in
     if keep then [(List.rev posn,t1,t2)] else []
   in
@@ -785,7 +785,8 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
           when Int.equal (List.length args1) (constructor_nallargs env sp1)
             ->
           let sorts' =
-            CList.intersect Sorts.family_equal sorts (sorts_below (top_allowed_sort env (fst sp1)))
+            CList.intersect UnivGen.QualityOrSet.equal sorts
+              (constant_sorts_below (top_allowed_sort env (fst sp1)))
           in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
@@ -799,7 +800,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
             List.flatten
               (List.map2_i (fun i -> findrec sorts' ((sp1,adjust i)::posn))
                 0 rargs1 rargs2)
-          else if List.mem_f Sorts.family_equal InType sorts' && not no_discr
+          else if List.mem_f UnivGen.QualityOrSet.equal (UnivGen.QualityOrSet.qtype) sorts' && not no_discr
           then (* see build_discriminator *)
             raise (DiscrFound (List.rev posn,sp1,sp2))
           else
@@ -815,7 +816,9 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
             project env sorts posn t1_0 t2_0
   in
   try
-    let sorts = if keep_proofs then [InSet;InType;InProp] else [InSet;InType] in
+    let sorts = if keep_proofs
+                then UnivGen.QualityOrSet.[prop;set;qtype]
+                else UnivGen.QualityOrSet.[set;qtype] in
     Inr (findrec sorts [] t1 t2)
   with DiscrFound (path,c1,c2) ->
     Inl (path,c1,c2)
@@ -1004,7 +1007,7 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v; eq_evar
   build_rocq_True () >>= fun true_0 ->
   build_rocq_False () >>= fun false_0 ->
   let false_ty = Retyping.get_type_of env sigma false_0 in
-  let false_kind = Retyping.get_sort_family_of env sigma false_0 in
+  let false_kind = Retyping.get_sort_quality_of env sigma false_0 in
   let e = next_ident_away eq_baseid (vars_of_env env) in
   let e_env = push_named (Context.Named.Declaration.LocalAssum (make_annot e ERelevance.relevant,t)) env in
   let discriminator =

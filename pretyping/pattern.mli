@@ -34,7 +34,7 @@ type 'i constr_pattern_r =
   | PLambda of Name.t * 'i constr_pattern_r * 'i constr_pattern_r
   | PProd of Name.t * 'i constr_pattern_r * 'i constr_pattern_r
   | PLetIn of Name.t * 'i constr_pattern_r * 'i constr_pattern_r option * 'i constr_pattern_r
-  | PSort of Sorts.family
+  | PSort of UnivGen.QualityOrSet.t
   | PMeta of patvar option
   | PIf of 'i constr_pattern_r * 'i constr_pattern_r * 'i constr_pattern_r
   | PCase of case_info_pattern * (Name.t array * 'i constr_pattern_r) option * 'i constr_pattern_r *

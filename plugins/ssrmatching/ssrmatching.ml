@@ -440,7 +440,7 @@ let nb_cs_proj_args env ise pc f u =
       | _ -> assert false in
   try match EConstr.kind ise f with
   | Prod _ -> na Prod_cs
-  | Sort s -> na (Sort_cs (Sorts.family (ESorts.kind ise s)))
+  | Sort s -> na (Sort_cs (ESorts.quality_or_set ise s))
   | Const (c',_) when Environ.QConstant.equal env c' pc -> nargs_of_proj u.up_f
   | Proj (c',_,_) when Environ.QConstant.equal env (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
   | Proj (c',_,_) -> let _ = na (Proj_cs (Names.Projection.repr c')) in 0

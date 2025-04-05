@@ -22,7 +22,7 @@ type 'constr pfix_guard_error =
   | RecursionNotOnInductiveType of 'constr
   | RecursionOnIllegalTerm of int * (env * 'constr) * (int list * int list) Lazy.t
   | NotEnoughArgumentsForFixCall of int
-  | FixpointOnIrrelevantInductive
+  | FixpointOnNonEliminable of Sorts.t * Sorts.t
 
 type 'constr pcofix_guard_error =
   (* CoFixpoints *)
@@ -186,7 +186,7 @@ let map_pfix_guard_error f = function
 | RecursionNotOnInductiveType c -> RecursionNotOnInductiveType (f c)
 | RecursionOnIllegalTerm (n, (env, c), l1_l2) -> RecursionOnIllegalTerm (n, (env, f c), l1_l2)
 | NotEnoughArgumentsForFixCall n -> NotEnoughArgumentsForFixCall n
-| FixpointOnIrrelevantInductive -> FixpointOnIrrelevantInductive
+| FixpointOnNonEliminable (s, s') -> FixpointOnNonEliminable (s, s')
 
 let map_pcofix_guard_error f = function
 | CodomainNotInductiveType c -> CodomainNotInductiveType (f c)

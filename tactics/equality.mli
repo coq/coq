@@ -27,7 +27,7 @@ type conditions =
   | FirstSolved (* Use the first match whose side-conditions are solved *)
   | AllMatches (* Rewrite all matches whose side-conditions are solved *)
 
-val eq_elimination_ref : orientation -> Sorts.family -> GlobRef.t option
+val eq_elimination_ref : orientation -> UnivGen.QualityOrSet.t -> GlobRef.t option
 
 (* Equivalent to [general_rewrite l2r] *)
 val rewriteLR : constr -> unit Proofview.tactic

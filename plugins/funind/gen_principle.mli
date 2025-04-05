@@ -20,5 +20,5 @@ val make_graph : Names.GlobRef.t -> unit
 (* Can be thrown by build_{,case}_scheme *)
 exception No_graph_found
 
-val build_scheme : (Names.lident * Libnames.qualid * Sorts.family) list -> unit
-val build_case_scheme : Names.lident * Libnames.qualid * Sorts.family -> unit
+val build_scheme : (Names.lident * Libnames.qualid * UnivGen.QualityOrSet.t) list -> unit
+val build_case_scheme : Names.lident * Libnames.qualid * UnivGen.QualityOrSet.t -> unit

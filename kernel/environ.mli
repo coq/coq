@@ -83,7 +83,6 @@ val deactivated_guard : env -> bool
 val indices_matter : env -> bool
 
 val is_impredicative_sort : env -> Sorts.t -> bool
-val is_impredicative_family : env -> Sorts.family -> bool
 
 (** is the local context empty *)
 val empty_context : env -> bool

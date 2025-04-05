@@ -17,5 +17,5 @@ val lemInv_clause :
   quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
 
 val add_inversion_lemma_exn : poly:bool ->
-  lident -> constr_expr -> Sorts.family -> bool -> (Id.t -> unit Proofview.tactic) ->
+  lident -> constr_expr -> UnivGen.QualityOrSet.t -> bool -> (Id.t -> unit Proofview.tactic) ->
     unit

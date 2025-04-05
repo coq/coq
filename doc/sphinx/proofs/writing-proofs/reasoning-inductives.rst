@@ -1104,15 +1104,15 @@ Generation of induction principles with ``Scheme``
 
 .. cmd:: Scheme {? @ident := } @scheme_kind {* with {? @ident := } @scheme_kind }
 
-   .. insertprodn scheme_kind sort_family scheme_type
+   .. insertprodn scheme_kind sort_quality_or_set scheme_type
 
    .. prodn::
-      scheme_kind ::= @scheme_type for @reference Sort @sort_family
+      scheme_kind ::= @scheme_type for @reference Sort @sort_quality_or_set
       scheme_type ::= Induction
       | Minimality
       | Elimination
       | Case
-      sort_family ::= Prop
+      sort_quality_or_set ::= Prop
       | SProp
       | Set
       | Type
@@ -1125,7 +1125,7 @@ Generation of induction principles with ``Scheme``
 
    :n:`@ident`
       The name of the scheme. If not provided, the name will be determined
-      automatically from the :n:`@scheme_type` and :n:`@sort_family`.
+      automatically from the :n:`@scheme_type` and :n:`@sort_quality_or_set`.
 
    The following :n:`@scheme_type`\s generate induction principles with
    given properties:
@@ -1343,7 +1343,7 @@ Combined Scheme
 Generation of inversion principles with ``Derive`` ``Inversion``
 -----------------------------------------------------------------
 
-.. cmd:: Derive Inversion @ident with @one_term {? Sort @sort_family }
+.. cmd:: Derive Inversion @ident with @one_term {? Sort @sort_quality_or_set }
 
    Generates an inversion lemma for the
    :tacn:`inversion` tactic.  :token:`ident` is the name
@@ -1352,21 +1352,21 @@ Generation of inversion principles with ``Derive`` ``Inversion``
    :token:`qualid` is the name of an inductive
    predicate and :n:`{+ @binder }` binds the variables occurring in the term
    :token:`term`. The lemma is generated for the sort
-   :token:`sort_family` corresponding to :token:`one_term`.
+   :token:`sort_quality_or_set` corresponding to :token:`one_term`.
    Applying the lemma is equivalent to inverting the instance with the
    :tacn:`inversion` tactic.
 
-.. cmd:: Derive Inversion_clear @ident with @one_term {? Sort @sort_family }
+.. cmd:: Derive Inversion_clear @ident with @one_term {? Sort @sort_quality_or_set }
 
    When applied, it is equivalent to having inverted the instance with the
    tactic inversion replaced by the tactic `inversion_clear`.
 
-.. cmd:: Derive Dependent Inversion @ident with @one_term Sort @sort_family
+.. cmd:: Derive Dependent Inversion @ident with @one_term Sort @sort_quality_or_set
 
    When applied, it is equivalent to having inverted the instance with
    the tactic `dependent inversion`.
 
-.. cmd:: Derive Dependent Inversion_clear @ident with @one_term Sort @sort_family
+.. cmd:: Derive Dependent Inversion_clear @ident with @one_term Sort @sort_quality_or_set
 
    When applied, it is equivalent to having inverted the instance
    with the tactic `dependent inversion_clear`.

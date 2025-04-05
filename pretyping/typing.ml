@@ -205,9 +205,10 @@ let is_correct_arity env sigma c pj ind specif params =
         sigma, s
       end
     | Evar (ev,_), [] ->
-        let sigma, s = Evd.fresh_sort_in_family sigma (elim_sort specif) in
-        let sigma = Evd.define ev (mkSort s) sigma in
-        sigma, s
+       let sigma, s = Evd.fresh_sort_quality sigma
+                            (UnivGen.QualityOrSet.of_quality @@ elim_sort specif) in
+       let sigma = Evd.define ev (mkSort s) sigma in
+       sigma, s
     | _, (LocalDef _ as d)::ar' ->
         srec (push_rel d env) sigma (lift 1 pt') ar'
     | _ ->
@@ -313,7 +314,7 @@ let check_allowed_sort env sigma ind c p =
     | Sort s -> s
     | _ -> error_elim_arity env sigma ind c None
   in
-  match Inductiveops.make_allowed_elimination env sigma (specif, (snd ind)) sort with
+  match Inductiveops.make_allowed_elimination sigma (specif, (snd ind)) sort with
   | Some sigma -> sigma, ESorts.relevance_of_sort sort
   | None ->
     error_elim_arity env sigma ind c (Some sort)
