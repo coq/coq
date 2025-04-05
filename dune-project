@@ -147,7 +147,7 @@ This package provides the RocqIDE, a graphical user interface for the
 development of interactive proofs."))
 
 (package
- (name coq-doc)
+ (name rocq-doc)
  (license "OPUBL-1.0")
  (depends
   (conf-python-3 :build)
