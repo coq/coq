@@ -75,9 +75,9 @@ sig
     : (QVar.t -> Quality.t) * (Level.t -> Level.t)
     -> t -> t
 
-  type mask = Quality.pattern array * int option array
+  type ('q, 'u) mask = 'q Quality.pattern array * 'u array
 
-  val pattern_match : mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
+  val pattern_match : (int option, int option) mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
   (** Pattern matching, as used by the rewrite rules mechanism *)
 end
 

@@ -57,8 +57,7 @@ let w_refine evk rawc env sigma =
       expand_evars = true;
       program_mode = false;
       polymorphic = false;
-      undeclared_evars_patvars = false;
-      patvars_abstract = false;
+      undeclared_evars_rr = false;
       unconstrained_sorts = false;
     } in
     let expected_type = Pretyping.OfType (Evd.evar_concl evi) in
