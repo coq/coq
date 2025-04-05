@@ -40,3 +40,24 @@ val marshal_out_binary : out_handle -> segment:'a id -> out_channel * (unit -> u
     [Stdlib.output_*] APIs should be used on [oc]. [stop ()] must be invoked in
     order to signal that all data was written to [oc] (which should not be used
     afterwards). Only after calling [stop] the other API can be used on [oh]. *)
+
+module Delayed : sig
+  type 'a t
+  (** Serialized objects loaded on-the-fly *)
+
+  val make : file:string -> what:string option -> whatfor:string -> in_handle -> segment:'a id -> 'a t
+  (** [whatfor] is expected to be the dirpath of the file.
+      If [what] is [Some str] we print "Fetching str ..." when forced. *)
+
+  val return : 'a -> 'a t
+
+  val eval : verbose:bool -> 'a t -> 'a
+  (** Fetches the value. If the digest changed since the [in_delayed]
+      call, raises an error.
+
+      With [verbose:true], if the value has not been previously
+      fetched, print a message to msg_info.
+
+      Calling [eval] multiple times on a given ['a t] value only does
+      the work once (like Lazy.force). *)
+end

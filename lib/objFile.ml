@@ -205,3 +205,82 @@ let close_out { out_channel = ch; out_segments = seg } =
   let () = output_int64 ch pos in
   let () = flush ch in
   close_out ch
+
+module Delayed = struct
+
+  exception Faulty of string * string * string
+
+  let () = CErrors.register_handler Pp.(function
+      | Faulty (file,what,dp) ->
+        let pp =
+          str "The file " ++ str file ++ str " (bound to " ++ str dp ++
+          str ") is corrupted,\ncannot load some " ++ str what ++ str " in it.\n"
+        in
+        Some pp
+      | _-> None)
+
+  type 'a delayed = {
+    del_what : 'a id;
+    (* None: non verbose mode *)
+    del_whatname : string option;
+    del_whatfor : string;
+    del_file : string;
+    del_off : int64;
+    del_digest : Digest.t;
+  }
+
+  type 'a node = ToFetch of 'a delayed | Fetched of ('a,exn) result
+
+  type 'a t = 'a node ref
+
+  let in_delayed ~file ~what ~whatfor ch ~segment =
+    let seg = get_segment ch ~segment in
+    let digest = seg.hash in
+    { del_what = segment; del_whatname = what; del_whatfor = whatfor;
+      del_file = file; del_digest = digest; del_off = seg.pos; }
+
+  let make ~file ~what ~whatfor ch ~segment =
+    let del = in_delayed ~file ~what ~whatfor ch ~segment in
+    ref (ToFetch del)
+
+  (** Fetching a table of opaque terms at position [pos] in file [f],
+      expecting to find first a copy of [digest]. *)
+
+  let fetch_delayed ~verbose del =
+    let { del_what = what; del_whatname = whatname; del_whatfor = whatfor;
+          del_digest = digest; del_file = f; del_off = pos; } = del in
+    let () = match whatname with
+      | None -> ()
+      | Some whatname ->
+        Flags.if_verbose
+          Feedback.msg_info
+          Pp.(str"Fetching " ++ str whatname ++ str" from disk for " ++ str whatfor)
+    in
+    let ch = open_in_bin f in
+    let obj, digest' =
+      try
+        let () = LargeFile.seek_in ch pos in
+        let obj = System.marshal_in f ch in
+        let digest' = Digest.input ch in
+        obj, digest'
+      with e -> Stdlib.close_in ch; raise e
+    in
+    Stdlib.close_in ch;
+    if not (String.equal digest digest') then Error (Faulty (f,what.id,whatfor))
+    else Ok obj
+
+  let eval ~verbose r = match !r with
+    | Fetched v -> v
+    | ToFetch del ->
+      let v = fetch_delayed ~verbose del in
+      let () = r := Fetched v in
+      v
+
+  let eval ~verbose r =
+    match eval ~verbose r with
+    | Ok v -> v
+    | Error e -> raise e
+
+  let return v = ref (Fetched (Ok v))
+
+end
