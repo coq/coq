@@ -1076,7 +1076,7 @@ let check_useless_entry_types recvars mainvars etyps =
 type notation_main_data = {
   onlyparsing  : bool;
   onlyprinting : bool;
-  user_warns   : Globnames.extended_global_reference UserWarn.with_qf option;
+  user_warns   : UserWarn.t option;
   entry        : notation_entry;
   format       : unparsing Loc.located list option;
   itemscopes  : (Id.t * scope_name) list;
@@ -1855,7 +1855,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     notobj_use = use;
     notobj_interp = (vars, ac);
     notobj_coercion = coe;
-    notobj_user_warns = main_data.user_warns |> Option.map UserWarn.drop_qf;
+    notobj_user_warns = main_data.user_warns;
     notobj_notation = df';
     notobj_specific_pp_rules = sy_pp_rules;
   }
@@ -1916,7 +1916,6 @@ let set_notation_for_interpretation env impls (ntn_decl, main_data, notation_sym
 let build_notation_syntax ~local ~infix user_warns ntn_decl =
   let { ntn_decl_string = {CAst.loc;v=df}; ntn_decl_modifiers = modifiers; ntn_decl_interp = c } = ntn_decl in
   (* Extract the modifiers not affecting the parsing rule *)
-  let user_warns = Option.map UserWarn.with_empty_qf user_warns in
   let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~abbrev:false user_warns modifiers in
   (* Extract the modifiers not affecting the parsing rule *)
   let notation_symbols, is_prim_token = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
@@ -2021,15 +2020,15 @@ let remove_delimiters local scope =
 let add_class_scope local scope where cl =
   Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses (where, cl)))
 
-let interp_abbreviation_modifiers user_warns modl =
-  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true user_warns modl in
+let interp_abbreviation_modifiers modl =
+  let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true None modl in
   if skipped <> [] then
     (let modifier = List.hd skipped in
     user_err ?loc:modifier.CAst.loc (str "Abbreviations don't support " ++ Ppvernac.pr_syntax_modifier modifier));
   (mods.onlyparsing, mods.itemscopes)
 
 let add_abbreviation ~local user_warns env ident (vars,c) modl =
-  let (only_parsing, scopes) = interp_abbreviation_modifiers user_warns modl in
+  let (only_parsing, scopes) = interp_abbreviation_modifiers modl in
   let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
     match vars, intern_name_alias c with

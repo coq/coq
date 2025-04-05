@@ -1,10 +1,28 @@
-File "./output/Deprecation.v", line 5, characters 0-3:
+File "./output/Deprecation.v", line 4, characters 33-48:
+The command has indeed failed with message:
+This command does not support this attribute: why.
+[unsupported-attributes,parsing,default]
+File "./output/Deprecation.v", line 7, characters 0-3:
 Warning: Tactic foo is deprecated since X.Y. Use idtac instead.
 [deprecated-tactic-since-X.Y,deprecated-since-X.Y,deprecated-tactic,deprecated,default]
-File "./output/Deprecation.v", line 17, characters 5-8:
+File "./output/Deprecation.v", line 19, characters 5-8:
 The command has indeed failed with message:
 Tactic foo is deprecated since X.Y. Use idtac instead.
 [deprecated-tactic-since-X.Y,deprecated-since-X.Y,deprecated-tactic,deprecated,default]
-File "./output/Deprecation.v", line 24, characters 0-3:
+File "./output/Deprecation.v", line 26, characters 0-3:
 Warning: Tactic bar is deprecated since library X.Y. Use baz instead.
 [deprecated-tactic-since-library-X.Y,deprecated-since-library-X.Y,deprecated-tactic,deprecated,default]
+File "./output/Deprecation.v", line 31, characters 6-9:
+Warning: hello [warn-reference,user-warn,default]
+bar
+     : nat
+File "./output/Deprecation.v", line 36, characters 6-13:
+Warning: use less +s
+[warn-notation-fragile-too-many-plus,too-many-plus,fragile,warn-notation,user-warn,default]
+1 ++ 2
+     : nat
+File "./output/Deprecation.v", line 37, characters 6-12:
+Warning: use less +s 2
+[warn-notation-too-many-plus,too-many-plus,warn-notation,user-warn,default]
+1 ++ 2
+     : nat

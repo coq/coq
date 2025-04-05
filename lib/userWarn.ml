@@ -30,15 +30,13 @@ let make_warn ~note ?cats () =
 
 let user_warn_cat = CWarnings.CoreCategories.user_warn
 
-let warn_cats = ref CString.Map.empty
-
 let get_generic_cat cat =
-  match CString.Map.find_opt cat !warn_cats with
-  | Some c -> c
-  | None ->
+  match CWarnings.get_category cat with
+  | There c -> c
+  | NotThere ->
     let c = CWarnings.create_category ~from:[user_warn_cat] ~name:cat () in
-    warn_cats := CString.Map.add cat c !warn_cats;
     c
+  | OtherType -> CErrors.user_err Pp.(str "Cannot use " ++ str cat ++ str " as a category name.")
 
 let create_warning ?default ~warning_name_if_no_cats () =
   let main_cat, main_w = CWarnings.create_hybrid ?default ~name:warning_name_if_no_cats ~from:[user_warn_cat] () in

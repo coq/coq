@@ -292,83 +292,9 @@ let template =
 let unfold_fix =
   enable_attribute ~key:"unfold_fix" ~default:(fun () -> false)
 
-let rec flags2map m = function
-  | { CAst.v = (n,VernacFlagLeaf l); loc } :: xs ->
-      if CString.Map.mem n m then
-        CErrors.user_err ?loc Pp.(str "Duplicate attribute " ++ str n);
-      flags2map (CString.Map.add n l m) xs
-  | { CAst.v = n,_; loc } :: _ ->
-      CErrors.user_err ?loc Pp.(str "Attribute " ++ str n ++ str " must be a leaf.")
-  | [] -> m
-
-let find_string_opt m s =
-  match CString.Map.find s m with
-  | FlagString s -> Some s
-  | FlagQualid _ -> CErrors.user_err Pp.(str "Attribute " ++ str s ++ str " should be a string")
-  | exception Not_found -> None
-
-let deprecation_parser parse_use : _ key_parser = fun ?loc orig args ->
-  assert_once ?loc ~name:"deprecation" orig;
-  match args with
-  | VernacFlagList l ->
-      let m = flags2map CString.Map.empty l in
-      let note = find_string_opt m "note" in
-      let since = find_string_opt m "since" in
-      CString.Map.find_opt "use" m |> parse_use ?since ?note
-  |  _ ->
-    CErrors.user_err ?loc
-      Pp.(str "Ill formed “deprecated” attribute:" ++ spc() ++
-          str "expected “deprecated(since = \"since\", note = \"note\")“.")
-
-let no_use_allowed ?since ?note = function
-  | None -> Deprecation.make ?since ?note ()
-  | Some _ -> CErrors.user_err Pp.(str "Attribute use not allowed")
-
-let extended_globref_allowed ?since ?note = function
-  | None -> Deprecation.make_with_qf ?since ?note ()
-  | Some (FlagQualid p) ->
-      let use_instead =
-        try Nametab.locate_extended p
-        with Not_found -> CErrors.user_err ?loc:p.CAst.loc Pp.(Libnames.pr_qualid p ++ str " not found.")
-      in
-      Deprecation.make_with_qf ?since ?note ~use_instead ()
-  | Some _ -> CErrors.user_err Pp.(str "Attribute \"use\" should be a (qualified) identifier")
-
-
-let deprecation = attribute_of_list ["deprecated",deprecation_parser no_use_allowed]
-let deprecation_with_use_globref_instead = attribute_of_list ["deprecated",deprecation_parser extended_globref_allowed]
-
-let user_warn_parser : UserWarn.warn list key_parser = fun ?loc orig args ->
-  let orig = Option.default [] orig in
-  match args with
-  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)};
-                     {CAst.v="cats", VernacFlagLeaf (FlagString cats)} ]
-  | VernacFlagList [ {CAst.v="cats", VernacFlagLeaf (FlagString cats)};
-                     {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
-    UserWarn.make_warn ~note ~cats () :: orig
-  | VernacFlagList [ {CAst.v="note", VernacFlagLeaf (FlagString note)} ] ->
-    UserWarn.make_warn ~note () :: orig
-  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “warn” attribute.")
-
-let user_warn_warn =
-  attribute_of_list ["warn",user_warn_parser] >>= function
-  | None -> return []
-  | Some l -> return (List.rev l)
-
-let user_warns =
-  (deprecation ++ user_warn_warn) >>= function
-  | None, [] -> return None
-  | depr, warn -> return (Some UserWarn.{ depr; warn })
-
-  let user_warns_with_use_globref_instead =
-    (deprecation_with_use_globref_instead ++ user_warn_warn) >>= function
-    | None, [] -> return None
-    | depr_qf, warn_qf -> return (Some UserWarn.{ depr_qf; warn_qf })
-
-  let only_locality atts = parse locality atts
+let only_locality atts = parse locality atts
 
 let only_polymorphism atts = parse polymorphic atts
-
 
 let vernac_polymorphic_flag loc =
   CAst.make ?loc (ukey, VernacFlagList [CAst.make ?loc ("polymorphic", VernacFlagEmpty)])
@@ -389,11 +315,78 @@ let payload_parser ?cat ~name : string key_parser = fun ?loc orig args ->
       | Some orig, Some cat -> cat orig str
       | Some _, None -> error_twice ?loc ~name
     end
-  |  _ -> CErrors.user_err ?loc Pp.(str "Ill formed \"" ++ str name ++ str"\" attribute")
+  |  _ -> CErrors.user_err ?loc Pp.(str "Ill formed \"" ++ str name ++ str"\" attribute (string expected)")
+
+let qualid_parser ~name : Libnames.qualid key_parser = fun ?loc orig args ->
+  match args with
+  | VernacFlagLeaf (FlagQualid str) -> begin match orig with
+      | None -> str
+      | Some _ -> error_twice ?loc ~name
+    end
+  |  _ -> CErrors.user_err ?loc Pp.(str "Ill formed \"" ++ str name ++ str"\" attribute (qualid expected)")
 
 let payload_attribute ?cat ~name = attribute_of_list [name, payload_parser ?cat ~name]
 
 let using = payload_attribute ?cat:None ~name:"using"
+
+let deprecation_parser parse_use : _ key_parser = fun ?loc orig args ->
+  assert_once ?loc ~name:"deprecation" orig;
+  match args with
+  | VernacFlagList l ->
+    let subatt name = payload_attribute ~name in
+    let use_att = attribute_of_list ["use", qualid_parser ~name:"use"] in
+    let (note, since), use = parse (subatt "note" ++ subatt "since" ++ use_att) l in
+    let depr = Deprecation.make ?since ?note () in
+    parse_use depr use
+  |  _ ->
+    CErrors.user_err ?loc
+      Pp.(str "Ill formed “deprecated” attribute:" ++ spc() ++
+          str "expected “deprecated(since = \"since\", note = \"note\")“.")
+
+let no_use_allowed depr = function
+  | None -> depr
+  | Some _ -> CErrors.user_err Pp.(str "Attribute use not allowed")
+
+let extended_globref_allowed depr = function
+  | None -> Deprecation.make_with_qf depr ()
+  | Some p ->
+    let use_instead =
+      try Nametab.locate_extended p
+      with Not_found -> CErrors.user_err ?loc:p.CAst.loc Pp.(Libnames.pr_qualid p ++ str " not found.")
+    in
+    Deprecation.make_with_qf depr ~use_instead ()
+
+let deprecation_gen parse_use = attribute_of_list ["deprecated",deprecation_parser parse_use]
+let deprecation = deprecation_gen no_use_allowed
+let deprecation_with_use_globref_instead = deprecation_gen extended_globref_allowed
+
+let user_warn_parser : UserWarn.warn list key_parser = fun ?loc orig args ->
+  let orig = Option.default [] orig in
+  match args with
+  | VernacFlagList l ->
+    let subatt name = payload_attribute ~name in
+    let note, cats = parse (subatt "note" ++ subatt "cats") l in
+    let note = match note with
+      | Some x -> x
+      | None -> CErrors.user_err Pp.(str "Ill formed “warn” attribute (\"note\" is required).")
+    in
+    UserWarn.make_warn ~note ?cats () :: orig
+  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed “warn” attribute (expected \"note\" and optionally \"cats\" sub-attributes).")
+
+let user_warn_warn =
+  attribute_of_list ["warn",user_warn_parser] >>= function
+  | None -> return []
+  | Some l -> return (List.rev l)
+
+let user_warns =
+  (deprecation ++ user_warn_warn) >>= function
+  | None, [] -> return None
+  | depr, warn -> return (Some UserWarn.{ depr; warn })
+
+let user_warns_with_use_globref_instead =
+  (deprecation_with_use_globref_instead ++ user_warn_warn) >>= function
+  | None, [] -> return None
+  | depr_qf, warn_qf -> return (Some UserWarn.{ depr_qf; warn_qf })
 
 let process_typing_att ?loc ~typing_flags att disable =
   let enable = not disable in

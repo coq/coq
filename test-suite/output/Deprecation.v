@@ -1,6 +1,8 @@
 #[deprecated(since = "X.Y", note = "Use idtac instead.")]
  Ltac foo := idtac.
 
+Fail #[deprecated(since="today", why="I said so")] Definition foo := 1.
+
 Goal True.
 foo.
 Abort.
@@ -23,3 +25,13 @@ Abort.
 Goal True.
 bar.
 Abort.
+
+#[warn(note="hello")] Definition bar := 2.
+
+Check bar.
+
+#[warn(note="use less +s", cats="too many plus,fragile")] Notation "x +++ y" := (x + y) (at level 2).
+#[warn(note="use less +s 2", cats="too-many-plus")] Notation "x ++ y" := (x + y).
+
+Check 1 +++ 2.
+Check 1 ++ 2.
