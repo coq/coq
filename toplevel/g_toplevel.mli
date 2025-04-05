@@ -6,6 +6,7 @@ type vernac_toplevel =
   | VernacControl of Vernacexpr.vernac_control
   | VernacShowGoal of { gid : int; sid : int; }
   | VernacShowProofDiffs of Proof_diffs.diffOpt
+  | VernacBeautify of Vernacexpr.vernac_control
 
 val err : unit -> 'a
 
