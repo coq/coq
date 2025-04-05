@@ -555,7 +555,7 @@ Ltac2 rec combine (ls1 : 'a list) (ls2 : 'b list) :=
   end.
 
 Ltac2 enumerate (ls : 'a list) :=
-  combine (seq 0 1 (length ls)) ls.
+  mapi (fun i v => (i,v)) ls.
 
 (* from Rocq stdlib *)
 Ltac2 rec merge (cmp : 'a -> 'a -> int) (l1 : 'a list) (l2 : 'a list) :=
