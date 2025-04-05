@@ -385,8 +385,6 @@ type side_effects = {
 
 val empty_side_effects : side_effects
 
-val concat_side_effects : side_effects -> side_effects -> side_effects
-
 val emit_side_effects : side_effects -> evar_map -> evar_map
 (** Push a side-effect into the evar map. *)
 

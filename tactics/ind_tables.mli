@@ -98,6 +98,7 @@ val declare_definition_scheme :
    -> univs:UState.named_universes_entry
    -> role:Evd.side_effect_role
    -> name:Id.t
+   -> effs:Evd.side_effects
    -> ?loc:Loc.t
    -> Constr.t
    -> Constant.t * Evd.side_effects) ref

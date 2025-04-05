@@ -317,7 +317,7 @@ let run_tactic env tac pr =
     Proofview.tclUNIT v
   in
   let { name; poly; proofview } = pr in
-  let (result,proofview,status,info_trace) =
+  let (result,proofview,env,status,info_trace) =
     Proofview.apply ~name ~poly env tac proofview
   in
   let sigma = Proofview.return proofview in
@@ -326,7 +326,7 @@ let run_tactic env tac pr =
      tclNEWSHELVED filters out defined goals instead of adding them)
      XXX should we be doing something advance-aware like tclNEWSHELVED? *)
   let proofview = Proofview.filter_shelf (Evd.is_undefined sigma) proofview in
-  { pr with proofview },(status,info_trace),result
+  { pr with proofview },(env,status,info_trace),result
 
 (*** Commands ***)
 
@@ -456,7 +456,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     let env = Global.env () in
     let env = Environ.update_typing_flags ?typing_flags:pr.typing_flags env in
-    let (p,(status,info),()) = run_tactic env tac pr in
+    let (p,(_env,status,info),()) = run_tactic env tac pr in
     let () = register_side_effects (Evd.eval_side_effects (Proofview.return p.proofview)) in
     let env = Global.env () in
     let sigma = Evd.from_env env in

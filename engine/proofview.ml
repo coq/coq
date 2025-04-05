@@ -241,7 +241,7 @@ let apply ~name ~poly env t sp =
   match ans with
   | Nil (e, info) -> Exninfo.iraise (TacticFailure e, info)
   | Cons ((r, (state, _), status, info), _) ->
-    r, state, status, Trace.to_tree info)
+    r, state, env, status, Trace.to_tree info)
     ()
 
 

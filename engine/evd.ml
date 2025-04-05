@@ -1240,13 +1240,11 @@ exception UniversesDiffer = UState.UniversesDiffer
 (**********************************************************)
 (* Side effects *)
 
-let concat_side_effects eff eff' = {
-  seff_private = Safe_typing.concat_private eff.seff_private eff'.seff_private;
-  seff_roles = Cmap.fold Cmap.add eff.seff_roles eff'.seff_roles;
-}
-
 let emit_side_effects eff evd =
-  let effects = concat_side_effects eff evd.effects in
+  let effects = {
+  seff_private = Safe_typing.concat_private eff.seff_private evd.effects.seff_private;
+  seff_roles = Cmap.fold Cmap.add eff.seff_roles evd.effects.seff_roles;
+  } in
   { evd with effects; universes = UState.emit_side_effects eff.seff_private evd.universes }
 
 let drop_side_effects evd =

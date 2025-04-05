@@ -1024,7 +1024,7 @@ module Search = struct
       if get_debug () > 1 then Proofview.Trace.record_info_trace tac
       else tac
     in
-    let (), pv', unsafe, info =
+    let (), pv', _, unsafe, info =
       try Proofview.apply ~name ~poly env tac pv
       with Logic_monad.TacticFailure _ -> raise Not_found
     in
@@ -1309,7 +1309,7 @@ let resolve_one_typeclass env sigma concl =
   let pv =
     let name = Names.Id.of_string "legacy_pe" in
     match Proofview.apply ~name ~poly:false (Global.env ()) tac pv with
-    | (_, final, _, _) -> final
+    | (_, final, _, _, _) -> final
     | exception (Logic_monad.TacticFailure (Tacticals.FailError _)) ->
       raise Not_found
   in
