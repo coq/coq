@@ -189,16 +189,16 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FInt _ -> infer_stack infos variances stk
   | FFloat _ -> infer_stack infos variances stk
   | FString _ -> infer_stack infos variances stk
-  | FFlex Names.(RelKey _ | VarKey _ as fl) ->
+  | FFlex Names.(RelKey _ | VarKey _) ->
     (* We could try to lazily unfold but then we have to analyse the
        universes in the bodies, not worth coding at least for now. *)
-    begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
+    begin match unfold_ref_with_args (fst infos) (snd infos) hd stk with
     | Some (hd,stk) -> infer_fterm cv_pb infos variances hd stk
     | None -> infer_stack infos variances stk
     end
-  | FFlex (Names.ConstKey con as fl) ->
+  | FFlex (Names.ConstKey con) ->
     begin
-      let def = unfold_ref_with_args (fst infos) (snd infos) fl stk in
+      let def = unfold_ref_with_args (fst infos) (snd infos) hd stk in
       try
         let infer_mode = get_infer_mode variances in
         let variances = if Option.has_some def then set_infer_mode false variances else variances in
@@ -214,13 +214,14 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let variances = infer_fterm CONV infos variances c [] in
     infer_stack infos variances stk
   | FLambda _ ->
-    let (na,ty,bd) = destFLambda mk_clos hd in
+    let (na,ty,bd) = destFLambda hd in
     let variances = infer_fterm CONV infos variances ty [] in
     infer_fterm CONV (push_relevance infos na) variances bd []
   | FProd (na,dom,codom,e) ->
     let na = usubst_binder e na in
     let variances = infer_fterm CONV infos variances dom [] in
-    infer_fterm cv_pb (push_relevance infos na) variances (mk_clos (CClosure.usubs_lift e) codom) []
+    (* TODO ctx *)
+    infer_fterm cv_pb (push_relevance infos na) variances (mk_clos None (CClosure.usubs_lift e) codom) []
   | FInd (ind, u) ->
     let variances =
       let nargs = stack_args_size stk in
@@ -236,12 +237,14 @@ let rec infer_fterm cv_pb infos variances hd stk =
     infer_stack infos variances (append_stack args stk)
   | FFix ((_,(na,tys,cl)),e) | FCoFix ((_,(na,tys,cl)),e) ->
     let n = Array.length cl in
-    let variances = infer_vect infos variances (Array.map (mk_clos e) tys) in
+    (* TODO ctx *)
+    let variances = infer_vect infos variances (Array.map (mk_clos None e) tys) in
     let le = CClosure.usubs_liftn n e in
     let variances =
       let na = Array.map (usubst_binder e) na in
       let infos = push_relevances infos na in
-      infer_vect infos variances (Array.map (mk_clos le) cl)
+      (* TODO ctx *)
+      infer_vect infos variances (Array.map (mk_clos None le) cl)
     in
     infer_stack infos variances stk
   | FArray (u,elemsdef,ty) ->
@@ -257,7 +260,8 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let (_, (p, _), _, _, br) =
       Inductive.expand_case_specif mib (ci, u, pms, p, NoInvert, mkProp, br)
     in
-    let infer c variances = infer_fterm CONV infos variances (mk_clos e c) [] in
+    (* TODO ctx *)
+    let infer c variances = infer_fterm CONV infos variances (mk_clos None e c) [] in
     let variances = infer p variances in
     Array.fold_right infer br variances
 
@@ -276,15 +280,15 @@ and infer_stack infos variances (stk:CClosure.stack) =
       | Zfix (fx,a) ->
         let variances = infer_fterm CONV infos variances fx [] in
         infer_stack infos variances a
-      | ZcaseT (ci,u,pms,p,br,e) ->
+      | ZcaseT (ctx,ci,u,pms,p,br,e) ->
         let dummy = mkProp in
         let case = (ci, u, pms, p, NoInvert, dummy, br) in
         let (_, (p, _), _, _, br) = Inductive.expand_case (info_env (fst infos)) case in
-        let variances = infer_fterm CONV infos variances (mk_clos e p) [] in
-        infer_vect infos variances (Array.map (mk_clos e) br)
+        let variances = infer_fterm CONV infos variances (mk_clos ctx e p) [] in
+        infer_vect infos variances (Array.map (mk_clos ctx e) br)
       | Zshift _ -> variances
       | Zupdate _ -> variances
-      | Zprimitive (_,_,rargs,kargs) ->
+      | Zprimitive (_,_,_,rargs,kargs) ->
         let variances = List.fold_left (fun variances c -> infer_fterm CONV infos variances c []) variances rargs in
         let variances = List.fold_left (fun variances (_,c) -> infer_fterm CONV infos variances c []) variances kargs in
         variances
