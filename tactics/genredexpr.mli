@@ -48,6 +48,7 @@ type ('a, 'b, 'c, 'occvar, 'flags) red_expr_gen0 =
   | Simpl of 'flags * ('b, 'c, 'occvar) red_context
   | Cbv of 'flags
   | Cbn of 'flags
+  | Kred of 'flags
   | Lazy of 'flags
   | Unfold of ('occvar Locus.occurrences_gen * 'b) list
   | Fold of 'a list

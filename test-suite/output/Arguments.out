@@ -108,6 +108,10 @@ Expands to: Constant Arguments.f
 Declared in library Arguments, line 30, characters 9-10
      = forall v : unit, f 0 0 5 v 3 = 2
      : Prop
+     = forall v : unit, f 0 0 5 v 3 = 2
+     : Prop
+     = 2 = 2
+     : Prop
      = 2 = 2
      : Prop
 f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
@@ -121,12 +125,12 @@ Expands to: Constant Arguments.f
 Declared in library Arguments, line 30, characters 9-10
 forall w : r, w 3 true = tt
      : Prop
-File "./output/Arguments.v", line 52, characters 28-29:
+File "./output/Arguments.v", line 54, characters 28-29:
 The command has indeed failed with message:
 Unknown interpretation for notation "$".
 w 3 true = tt
      : Prop
-File "./output/Arguments.v", line 56, characters 0-28:
+File "./output/Arguments.v", line 58, characters 0-28:
 The command has indeed failed with message:
 Extra arguments: _, _.
 volatilematch : nat -> nat
@@ -137,7 +141,7 @@ The reduction tactics always unfold volatilematch
   but avoid exposing match constructs
 volatilematch is transparent
 Expands to: Constant Arguments.volatilematch
-Declared in library Arguments, line 58, characters 11-24
+Declared in library Arguments, line 60, characters 11-24
      = fun n : nat => volatilematch n
      : nat -> nat
 *** [ f :
