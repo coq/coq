@@ -309,10 +309,13 @@ let pr_glbexpr_gen lvl ~avoid c =
     let avoidbnd = List.fold_left (fun avoid (na,_) -> Termops.add_vname avoid na) avoid bnd in
     let pr_bnd (na, e) =
       let avoid = if isrec then avoidbnd else avoid in
-      hov 2 (pr_name na ++ str " :=" ++ spc () ++ hov 2 (pr_glbexpr E5 avoid e))
+      (* negative offset: the box starts at the | in "let |x := ..."
+         but we want to print with offset 2 from the start of "let" *)
+      hov (-2 - if isrec then 4 else 0)
+        (pr_name na ++ str " :=" ++ spc () ++ pr_glbexpr E5 avoid e)
     in
     let bnd = prlist_with_sep (fun () -> spc() ++ str "with ") pr_bnd bnd in
-    paren (v 0 (hov 2 (v 0 (str "let " ++ pprec ++ bnd) ++ spc() ++ str "in") ++ spc ()) ++ pr_glbexpr E5 avoidbnd e)
+    paren (v 0 (hov 0 (v 0 (str "let " ++ pprec ++ bnd) ++ spc() ++ str "in") ++ spc ()) ++ pr_glbexpr E5 avoidbnd e)
   | GTacCst (Tuple 0, _, _) -> str "()"
   | GTacCst (Tuple _, _, cl) ->
     paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1 avoid) cl)
@@ -649,10 +652,11 @@ let pr_rawexpr_gen lvl ~avoid c =
     let avoidbnd = List.fold_left (fun avoid (pat,_) -> ids_of_pattern avoid pat) avoid bnd in
     let pr_bnd (pat, e) =
       let avoid = if isrec then avoidbnd else avoid in
-      pr_rawpat_gen E0 pat ++ spc () ++ str ":=" ++ spc () ++ hov 2 (pr_rawexpr E5 avoid e) ++ spc ()
+      hov (-2 - if isrec then 4 else 0)
+        (pr_rawpat_gen E0 pat ++ str " :=" ++ spc () ++ hov 2 (pr_rawexpr E5 avoid e))
     in
-    let bnd = prlist_with_sep (fun () -> str "with" ++ spc ()) pr_bnd bnd in
-    paren (hv 0 (hov 2 (str "let" ++ spc () ++ pprec ++ bnd ++ str "in") ++ spc () ++ pr_rawexpr E5 avoidbnd e))
+    let bnd = prlist_with_sep (fun () -> spc() ++ str "with ") pr_bnd bnd in
+    paren (v 0 (hov 0 (v 0 (str "let " ++ pprec ++ bnd) ++ spc() ++ str "in") ++ spc ()) ++ pr_rawexpr E5 avoidbnd e)
   | CTacCnv (e,t) ->
     let paren = match lvl with
       | E0 -> paren
@@ -717,16 +721,16 @@ let pr_rawexpr_gen lvl ~avoid c =
           paren (pr_name pat.CAst.v ++ spc() ++ str ":" ++ spc() ++ pr_glbtype_gen tynames T5_l ty)
         | None -> pr_name pat.CAst.v
       in
-      bnd ++ spc() ++ str ":=" ++ spc() ++ hov 2 (pr_rawexpr E5 avoid arg) ++ spc()
+      hov (-2) (bnd  ++ str " :=" ++ spc() ++ hov 2 (pr_rawexpr E5 avoid arg))
     in
     let paren = match lvl with
       | E0 | E1 | E2 | E3 | E4 -> paren
       | E5 -> fun x -> x
     in
-    let bnd = prlist_with_sep (fun () -> str "with" ++ spc ()) pr_arg args in
-    paren (hv 0 (hov 2 (str "let" ++ spc() ++ bnd ++ str "in") ++ spc()
-                 ++ pr_glbexpr_gen ~avoid E5 body ++ spc()
-                 ++ str ":" ++ pr_glbtype_gen tynames T5_l ty))
+    let bnd = prlist_with_sep (fun () -> spc() ++ str "with ") pr_arg args in
+    paren (v 0 (hov 0 (v 0 (str "let " ++ bnd) ++ spc() ++ str "in") ++ spc())
+           ++ pr_glbexpr_gen ~avoid E5 body ++ spc()
+           ++ str ":" ++ pr_glbtype_gen tynames T5_l ty)
   in
   hov 0 (pr_rawexpr lvl avoid c)
 
