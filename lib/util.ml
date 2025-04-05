@@ -129,15 +129,36 @@ type 'a delayed = unit -> 'a
 let delayed_force f = f ()
 
 (* finalize - Credit X.Leroy, D.Remy. , adapted to Coq's exn handling *)
+let with_finally finally y =
+  let acquire () = () in
+  let release () = finally y in
+  Memprof_coq.Masking.with_resource ~acquire () ~release
+
 let try_finally f x finally y =
-  let res = try f x
-    with exn ->
-      let exn, info = Exninfo.capture exn in
-      finally y;
-      Exninfo.iraise (exn, info)
-  in
-  finally y;
-  res
+  let open Memprof_coq.Resource_bind in
+  let& () = with_finally finally y in
+  f x
+
+let with_flag_value r =
+  let acquire () = !r in
+  let release r_val = r := r_val in
+  Memprof_coq.Masking.with_resource ~acquire () ~release
+
+let protect_ref ~scope r =
+  let scope _ = scope () in
+  with_flag_value ~scope r
+
+let protect_state ~freeze ~unfreeze ~scope =
+  let acquire () = freeze () in
+  let release p_st = unfreeze p_st in
+  let scope _ = scope () in
+  Memprof_coq.Masking.with_resource ~acquire () ~release ~scope
+
+let atomify f x =
+  let acquire () = f x in
+  let release _ = () in
+  let scope r = r in
+  Memprof_coq.Masking.with_resource ~acquire () ~release ~scope
 
 (* Misc *)
 
