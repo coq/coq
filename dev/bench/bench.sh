@@ -35,8 +35,8 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.14.1}"
-: "${old_ocaml_version:=4.14.1}"
+: "${new_ocaml_version:=5.3.0}"
+: "${old_ocaml_version:=5.3.0}"
 : "${new_ocaml_flambda:=0}"
 : "${old_ocaml_flambda:=0}"
 : "${new_coq_repository:=${CI_REPOSITORY_URL:-.}}"
@@ -92,6 +92,7 @@ log_dir=$working_dir/logs
 mkdir "$log_dir"
 export COQ_LOG_DIR=$log_dir
 
+echo "DEBUG: /sys/kernel/mm/transparent_hugepage/enabled = $(cat /sys/kernel/mm/transparent_hugepage/enabled)"
 echo "DEBUG: ocaml -version = $(ocaml -version)"
 echo "DEBUG: working_dir = $working_dir"
 echo "DEBUG: new_ocaml_switch = $new_ocaml_switch"
@@ -385,6 +386,10 @@ create_opam() {
     # number of jobs available on Travis, so we set it here manually:
     opam var --global jobs=$number_of_processors >/dev/null
     if [ ! -z "$BENCH_DEBUG" ]; then opam config list; fi
+
+    if [ $RUNNER = NEW ]; then
+      opam pin add -y ocaml-compiler https://github.com/gadmm/ocaml.git#hugepages5.3+static_from_channel
+    fi
 
     opam repo add -q --this-switch coq-core-dev "$OPAM_COQ_DIR/core-dev"  # For rocq-stdlib
     opam repo add -q --this-switch coq-extra-dev "$OPAM_COQ_DIR/extra-dev"
