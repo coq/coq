@@ -63,7 +63,7 @@ tells Rocq which reduction rule to use for the pattern match *)
       scrutinee is a constructor. *)
   | CaseInvert (constr array)
   (** The special reduction rule for eliminating out of an [SProp] into a
-      non-[SProp]. Normally this is only legal when the [SProp] has no
+      non-[SProp]. Normally such elimination is only legal when the [SProp] has no
       constructors, in which case the match is reducible. If the [SProp] was
       defined with the [Definitional UIP] flag on, and the [SProp] has one
       constructor which takes no non-parameter arguments, then the match is
