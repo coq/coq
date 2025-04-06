@@ -109,7 +109,7 @@ Ltac2 Type kind := [
   | Constant (constant, instance)
   (** Gallina-variable that was introduced by Vernacular-command that extends
       the global environment - i.e. [Parameter], or [Axiom], or
-      [Definitionally], or [Theorem], or [Symbol] etc. [Constant c ui] is the
+      [Definition], or [Theorem], or [Symbol] etc. [Constant c ui] is the
       constant [c] @ universe instance [ui]. *)
   | Ind (inductive, instance)
   (** A name of an inductive type defined by [Variant], [Inductive] or [Record]
