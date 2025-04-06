@@ -93,6 +93,10 @@ Ltac2 Type kind := [
   | Sort (sort)
   (** Prop, SProp, or Type@{u} *)
   | Cast (constr, cast, constr)
+  (** [Cast t1 k t2] corresponds to the syntactic term [(t1 : t2)], i.e.,
+      the programmer declares that [t1] is of type [t2]. [k] is a flag telling
+      the kernel what strategy should be used to validate this assertion,
+      e.g., VM or native evaluation. *)
   | Prod (binder, constr)
   (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A:B) C]. *)
   | Lambda (binder, constr)
