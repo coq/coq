@@ -14,7 +14,7 @@
 (rule
   (targets (dir html))
   (alias corelib-html)
-  (package coq-doc)
+  (package rocq-doc)
   (deps
    ; This will be replaced soon by `theories/**/*.v` soon, thanks to rgrinberg
    (source_tree %{project_root}/theories)
@@ -36,11 +36,11 @@
    (run cp _index.html html/index.html))))
 
 ; Installable directories are not yet fully supported by Dune.  See
-; ocaml/dune#1868.  Yet, this makes coq-doc.install a valid target to
+; ocaml/dune#1868.  Yet, this makes rocq-doc.install a valid target to
 ; generate the whole Coq documentation.  And the result under
-; _build/install/default/doc/coq-doc looks just right!
+; _build/install/default/doc/rocq-doc looks just right!
 
 (install
  (dirs (html as html/corelib))
  (section doc)
- (package coq-doc))
+ (package rocq-doc))
