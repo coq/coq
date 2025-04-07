@@ -665,7 +665,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn
 
-let declare_private_constant ?role ~name ~opaque de =
+let declare_private_constant ?role ~name ~opaque de effs =
   let de, ctx =
     if not opaque then
       let de, ctx = cast_pure_proof_entry de in
@@ -680,9 +680,13 @@ let declare_private_constant ?role ~name ~opaque de =
     else DeclareUniv.declare_univ_binders (ConstRef kn)
         (Monomorphic_entry ctx, UnivNames.empty_binders)
   in
-  let seff_roles = match role with None -> Cmap.empty | Some r -> Cmap.singleton kn r in
-  let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
-  kn, eff
+  let seff_roles = match role with
+  | None -> effs.Evd.seff_roles
+  | Some r -> Cmap.add kn r effs.Evd.seff_roles
+  in
+  let seff_private = Safe_typing.concat_private eff effs.Evd.seff_private in
+  let effs = { Evd.seff_private; Evd.seff_roles } in
+  kn, effs
 
 let inline_private_constants ~uctx env (body, eff) =
   let body, ctx = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
@@ -895,15 +899,15 @@ let ustate_of_proof = function
   | DefaultProof { proof = (_entries, uctx) } -> uctx
   | DeferredOpaqueProof { initial_euctx } -> initial_euctx
 
-let declare_definition_scheme ~internal ~univs ~role ~name ?loc c =
+let declare_definition_scheme ~internal ~univs ~role ~name ~effs ?loc c =
   let kind = Decls.(IsDefinition Scheme) in
   let entry = pure_definition_entry ~univs c in
-  let kn, eff = declare_private_constant ~role ~name ~opaque:false entry in
+  let kn, effs = declare_private_constant ~role ~name ~opaque:false entry effs in
   let () = register_constant (fallback_loc ~warn:false name None) kn kind Locality.ImportDefaultBehavior in
   Dumpglob.dump_definition
     (CAst.make ?loc (Constant.label kn |> Label.to_id)) false "scheme";
   let () = if internal then () else definition_message name in
-  kn, eff
+  kn, effs
 
 (* Locality stuff *)
 let declare_entry ~loc ~name ?(scope=Locality.default_scope) ?(clearbody=false) ~kind ~typing_flags ~user_warns ?hook ?(obls=[]) ~impargs ~uctx entry =
@@ -2215,14 +2219,13 @@ let declare_abstract ~name ~poly ~sign ~secsign ~opaque ~solve_tac sigma concl =
      `if poly && opaque && private_poly_univs ()` in `close_proof`
      kernel will boom. This deserves more investigation. *)
   let body, typ, args = ProofEntry.shrink_entry sign body const.proof_entry_type in
-  let cst, eff =
+  let cst, effs =
     (* No side-effects in the entry, they already exist in the ambient environment *)
     let const = { const with proof_entry_body = body; proof_entry_type = typ } in
-    declare_private_constant ~name ~opaque const
+    declare_private_constant ~name ~opaque const effs
   in
   let inst = instance_of_univs const.proof_entry_universes in
   let lem = EConstr.of_constr (Constr.mkConstU (cst, inst)) in
-  let effs = Evd.concat_side_effects eff effs in
   effs, sigma, lem, args, safe
 
 let get_goal_context pf i =
