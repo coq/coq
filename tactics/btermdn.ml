@@ -84,7 +84,7 @@ let decomp_constant (c : Names.Constant.t) (args : 'a list) :
   match Structures.PrimitiveProjections.find_opt c with
   | None -> (None, args)
   | Some p ->
-    let n_args_needed = Structures.Structure.projection_nparams c + 1 in (* +1 for the record value itself *)
+    let n_args_needed = Names.Projection.Repr.npars p + 1 in (* +1 for the record value itself *)
     let n_args_given = List.length args in
     let n_args_missing = max (n_args_needed - n_args_given) 0 in
     let n_args_drop = min (n_args_needed - 1) n_args_given in (* we do not drop the record value from the stack *)
@@ -172,12 +172,12 @@ let decomp_lambda_constr env sigma ts decomp : EConstr.t -> EConstr.t -> constr_
     | (_, (Some (p, args_missing), args)) ->
       debug Pp.(fun () -> str "decomp_lambda_constr: opaque proj");
       (* We have [num_params + |args| - args_missing] virtual arguments left. *)
-      let params = Structures.Structure.projection_nparams (Projection.Repr.constant p) in
+      let params = Projection.Repr.npars p in
       let nargs = List.length args in
       let total_nargs = params + nargs - args_missing in
       let n = min numds total_nargs in
       let ds = List.skipn n ds in
-      let args = List.firstn (nargs -n ) args in
+      let args = List.firstn (max 0 (nargs - n)) args in
       let args = List.map (fun c -> Constr c) args in
       let args_missing = args_missing + (max 0 (n - nargs)) in
       let p = Label (ProjLabel (p, args_missing), args) in
@@ -321,12 +321,12 @@ let decomp_lambda_pat env ts decomp : constr_pattern -> constr_pattern -> pat_re
     | (_, (Some (p, args_missing), args)) ->
       debug Pp.(fun () -> str "decomp_lambda_pat: opaque proj");
       (* We have [num_params + |args| - args_missing] virtual arguments left. *)
-      let params = Structures.Structure.projection_nparams (Projection.Repr.constant p) in
+      let params = Projection.Repr.npars p in
       let nargs = List.length args in
       let total_nargs = params + nargs - args_missing in
       let n = min numds total_nargs in
       let ds = List.skipn n ds in
-      let args = List.firstn (nargs -n ) args in
+      let args = List.firstn (max 0 (nargs - n)) args in
       let args = List.map (fun c -> Pattern c) args in
       let args_missing = args_missing + (max 0 (n - nargs)) in
       let p = (Some (ProjLabel (p, args_missing), args)) in

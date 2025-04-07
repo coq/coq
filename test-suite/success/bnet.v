@@ -99,7 +99,7 @@ Module const.
 
 End const.
 
-Module PrimProj.
+Module PrimProjParamsNoArgs.
   #[projections(primitive)]
   Record r (dummy : unit) := v { f : unit }.
   Hint Opaque f : test.
@@ -155,7 +155,61 @@ Module PrimProj.
       typeclasses eauto with test.
     Qed.
   End M4.
-End PrimProj.
+End PrimProjParamsNoArgs.
+
+Module PrimProjParamsArgs.
+  #[projections(primitive)]
+  Record r (dummy : unit) := v { f : nat }.
+  Hint Opaque f : test.
+
+  Axiom (P : (unit -> unit -> unit -> nat) -> Prop).
+
+  Axiom (x : r tt).
+
+  (* Proj hint, Proj goal *)
+  Module M1.
+    Definition C_pproj : C (P (fun _ _ _ : unit => x.(f _))) := MKC _ _.
+    Hint Resolve C_pproj : test.
+    Goal C (P (fun _ _ _ : unit => x.(f _))).
+    Proof.
+      Print HintDb test.
+      typeclasses eauto with test.
+    Qed.
+  End M1.
+
+  (* Proj hint, Compat constant goal *)
+  Module M2.
+    Definition C_pproj : C (P (fun _ _ _ : unit => x.(f _))) := MKC _ _.
+    Hint Resolve C_pproj : test.
+    Goal C (P (fun _ _ _ : unit => ltac:(exact (f _ x)))).
+    Proof.
+      Print HintDb test.
+      typeclasses eauto with test.
+    Qed.
+  End M2.
+
+  (* Compat constant hint, Proj goal *)
+  Module M3.
+    Definition C_pproj : C (P (fun _ _ _ : unit => ltac:(exact (f _ x)))) := MKC _ _.
+    Hint Resolve C_pproj : test.
+    Goal C (P (fun _ _ _ : unit => x.(f _))).
+    Proof.
+      Print HintDb test.
+      typeclasses eauto with test.
+    Qed.
+  End M3.
+
+  (* Compat constant hint, compat constant goal *)
+  Module M4.
+    Definition C_pproj : C (P (fun _ _ _ : unit => ltac:(exact (f _ x)))) := MKC _ _.
+    Hint Resolve C_pproj : test.
+    Goal C (P (fun _ _ _ : unit => ltac:(exact (f _ x)))).
+    Proof.
+      Print HintDb test.
+      typeclasses eauto with test.
+    Qed.
+  End M4.
+End PrimProjParamsArgs.
 
 Module Negative.
   (* To test the discriminating power of the bnet we construct a hint that
