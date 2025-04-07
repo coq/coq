@@ -621,13 +621,10 @@ Ltac2 sort_uniq (cmp : 'a -> 'a -> int) (l : 'a list) :=
   uniq (sort cmp l).
 
 Ltac2 inclusive_range (lb : int) (ub : int) : int list :=
-  let rec go lb ub :=
-    if Int.gt lb ub then [] else lb :: go (Int.add lb 1) ub
-  in
-  go lb ub.
+  seq lb 1 (Int.add ub 1).
 
 Ltac2 range (lb : int) (ub : int) : int list :=
-  inclusive_range lb (Int.sub ub 1).
+  seq lb 1 ub.
 
 (** [concat_rev [x1; ..; xN-1; xN]] computes [rev xN ++ rev xN-1 ++ .. x1].
     Note that [x1] is not reversed and appears in its original order.
