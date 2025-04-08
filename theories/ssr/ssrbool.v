@@ -276,7 +276,7 @@ Require Import ssreflect ssrfun.
   AC -- right commutativity.
  ACA -- self-interchange (inner commutativity), e.g.,
         orbACA : (a || b) || (c || d) = (a || c) || (b || d).
-   b -- a boolean argument, as in andbb : idempotent andb.
+   b -- a boolean argument, as in andbb : idempotent_op andb.
    C -- commutativity, as in andbC : commutative andb,
         or predicate complement, as in predC.
   CA -- left commutativity.
@@ -1033,7 +1033,7 @@ Lemma andTb : left_id true andb.       Proof. by []. Qed.
 Lemma andFb : left_zero false andb.    Proof. by []. Qed.
 Lemma andbT : right_id true andb.      Proof. by case. Qed.
 Lemma andbF : right_zero false andb.   Proof. by case. Qed.
-Lemma andbb : idempotent andb.         Proof. by case. Qed.
+Lemma andbb : idempotent_op andb.      Proof. by case. Qed.
 Lemma andbC : commutative andb.        Proof. by do 2!case. Qed.
 Lemma andbA : associative andb.        Proof. by do 3!case. Qed.
 Lemma andbCA : left_commutative andb.  Proof. by do 3!case. Qed.
@@ -1044,7 +1044,7 @@ Lemma orTb : forall b, true || b.      Proof. by []. Qed.
 Lemma orFb : left_id false orb.        Proof. by []. Qed.
 Lemma orbT : forall b, b || true.      Proof. by case. Qed.
 Lemma orbF : right_id false orb.       Proof. by case. Qed.
-Lemma orbb : idempotent orb.           Proof. by case. Qed.
+Lemma orbb : idempotent_op orb.        Proof. by case. Qed.
 Lemma orbC : commutative orb.          Proof. by do 2!case. Qed.
 Lemma orbA : associative orb.          Proof. by do 3!case. Qed.
 Lemma orbCA : left_commutative orb.    Proof. by do 3!case. Qed.
