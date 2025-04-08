@@ -48,7 +48,9 @@ let in_filter ~cat f =
   | None, Filtered f -> not (CString.Pred.is_finite f)
   | Some cat, Filtered f -> CString.Pred.mem cat f
 
-let simple_open ?cat f filter i o = if in_filter ~cat filter then f i o
+let filtered_open ?cat f filter i o = if in_filter ~cat filter then f i o
+
+let simple_open ?cat f filter i o = if in_filter ~cat filter && Int.equal i 1 then f o
 
 let filter_eq f1 f2 = match f1, f2 with
   | Unfiltered, Unfiltered -> true
@@ -258,10 +260,9 @@ let local_object ?stage s ~cache ~discharge =
   }
 
 let global_object_nodischarge ?cat ?stage s ~cache ~subst =
-  let import i o = if Int.equal i 1 then cache o in
   { (default_object ?stage s) with
     cache_function = cache;
-    open_function = simple_open ?cat import;
+    open_function = simple_open ?cat cache;
     subst_function = (match subst with
         | None -> fun _ ->
             CErrors.anomaly Pp.(str "The object " ++ str s
@@ -303,9 +304,9 @@ let object_with_locality ?stage ?cat s ~cache ~subst ~discharge =
         | Local -> assert false
         | Export -> ()
         | SuperGlobal -> cache v);
-    open_function = simple_open ?cat (fun i (locality,v) -> match locality with
+    open_function = simple_open ?cat (fun (locality,v) -> match locality with
         | Local -> assert false
-        | Export -> begin if Int.equal i 1 then cache v else () end
+        | Export -> cache v
         | SuperGlobal -> ());
     subst_function = (match subst with
         | None -> fun _ -> assert false (* Keep *)

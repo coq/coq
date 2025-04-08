@@ -265,8 +265,6 @@ let cache_tactic_notation (tobj, body) =
   let () = check_key key in
   Tacenv.register_alias key body
 
-let open_tactic_notation i _ = ()
-
 let load_tactic_notation i (tobj, body) =
   let key = tobj.tacobj_key in
   let () = check_key key in
@@ -286,7 +284,7 @@ let ltac_notation_cat = Libobject.create_category "ltac.notations"
 
 let inTacticGrammar : tactic_grammar_obj * Tacenv.alias_tactic -> obj =
   declare_object {(default_object "TacticGrammar") with
-       open_function = simple_open ~cat:ltac_notation_cat open_tactic_notation;
+       (* no open_function for the interp side of tactic notations *)
        load_function = load_tactic_notation;
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;
@@ -297,9 +295,9 @@ let cache_tactic_syntax tobj =
   extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram)
 
-let open_tactic_syntax i tobj =
+let open_tactic_syntax tobj =
   let key = tobj.tacobj_key in
-  if Int.equal i 1 && not tobj.tacobj_local then
+  if not tobj.tacobj_local then
     extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
 
 let load_tactic_syntax i tobj =
@@ -314,6 +312,7 @@ let subst_tactic_syntax (subst, tobj) =
     tacobj_key = Mod_subst.subst_kn subst tobj.tacobj_key
   }
 
+(* why do we not Drop when local? *)
 let classify_tactic_syntax tacobj = Substitute
 
 let inTacticSyntax : tactic_grammar_obj -> obj =

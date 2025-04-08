@@ -231,10 +231,6 @@ let cache_coercion ?(update=false) c =
   let sigma = Evd.from_env env in
   Coercionops.declare_coercion env sigma ~update c
 
-let open_coercion i o =
-  if Int.equal i 1 then
-    cache_coercion o
-
 let discharge_coercion c =
   if c.coe_local then None
   else
@@ -255,7 +251,7 @@ let coe_cat = create_category "coercions"
 
 let inCoercion : coe_info_typ -> obj =
   declare_object {(default_object "COERCION") with
-    open_function = simple_open ~cat:coe_cat open_coercion;
+    open_function = simple_open ~cat:coe_cat cache_coercion;
     cache_function = cache_coercion;
     subst_function = (fun (subst,c) -> subst_coercion subst c);
     classify_function = classify_coercion;

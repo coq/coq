@@ -965,14 +965,11 @@ let subst_syntax_extension (subst, (local, (ntn, synext))) =
 let classify_syntax_definition (local, _) =
   if local then Dispose else Substitute
 
-let open_syntax_extension i o =
-  if Int.equal i 1 then cache_syntax_extension o
-
 let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object
     {(default_object "SYNTAX-EXTENSION") with
      object_stage = Summary.Stage.Synterp;
-     open_function = simple_open ~cat:notation_cat open_syntax_extension;
+     open_function = simple_open ~cat:notation_cat cache_syntax_extension;
      cache_function = cache_syntax_extension;
      subst_function = subst_syntax_extension;
      classify_function = classify_syntax_definition}
@@ -1597,28 +1594,26 @@ let load_notation_common silently_define_scope_if_undefined _ nobj =
 let load_notation =
   load_notation_common true
 
-let open_notation i nobj =
-  if Int.equal i 1 then begin
-    let scope = nobj.notobj_scope in
-    let (ntn, df) = nobj.notobj_notation in
-    let pat = nobj.notobj_interp in
-    let user_warns = nobj.notobj_user_warns in
-    let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
-    (* Declare the notation *)
-    (match nobj.notobj_use with
-    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion user_warns
-    | None -> ());
-    (* Declare specific format if any *)
-    (match nobj.notobj_specific_pp_rules with
-    | Some pp_sy ->
-      if specific_format_to_declare (scope,ntn) pp_sy then
-        Ppextend.declare_specific_notation_printing_rules (scope,ntn) pp_sy
-    | None -> ())
-  end
+let open_notation nobj =
+  let scope = nobj.notobj_scope in
+  let (ntn, df) = nobj.notobj_notation in
+  let pat = nobj.notobj_interp in
+  let user_warns = nobj.notobj_user_warns in
+  let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
+  (* Declare the notation *)
+  (match nobj.notobj_use with
+   | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion user_warns
+   | None -> ());
+  (* Declare specific format if any *)
+  (match nobj.notobj_specific_pp_rules with
+   | Some pp_sy ->
+     if specific_format_to_declare (scope,ntn) pp_sy then
+       Ppextend.declare_specific_notation_printing_rules (scope,ntn) pp_sy
+   | None -> ())
 
 let cache_notation o =
   load_notation_common false 1 o;
-  open_notation 1 o
+  open_notation o
 
 let subst_notation (subst, nobj) =
   { nobj with notobj_interp = subst_interpretation subst nobj.notobj_interp; }
@@ -1637,12 +1632,8 @@ let inNotation : notation_obj -> obj =
 (**********************************************************************)
 (* Registration of interpretation scopes opening/closing              *)
 
-let open_scope i (local,op,sc) =
-  if Int.equal i 1 then
-    if op then Notation.open_scope sc else Notation.close_scope sc
-
-let cache_scope o =
-  open_scope 1 o
+let cache_scope (local,op,sc) =
+  if op then Notation.open_scope sc else Notation.close_scope sc
 
 let subst_scope (subst,sc) = sc
 
@@ -1655,7 +1646,7 @@ let classify_scope (local,_,_) =
 let inScope : bool * bool * scope_name -> obj =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
-      open_function = simple_open ~cat:notation_cat open_scope;
+      open_function = simple_open ~cat:notation_cat cache_scope;
       subst_function = subst_scope;
       discharge_function = discharge_scope;
       classify_function = classify_scope }
@@ -1973,19 +1964,18 @@ let load_scope_command_common silently_define_scope_if_undefined _ (local,scope,
 let load_scope_command =
   load_scope_command_common true
 
-let open_scope_command i (noexport,scope,o) =
-  if Int.equal i 1 then
-    match o with
-    | ScopeDeclare -> ()
-    | ScopeDelimAdd dlm -> Notation.declare_delimiters scope dlm
-    | ScopeDelimRemove -> Notation.remove_delimiters scope
-    | ScopeClasses (where, cl) ->
-      let local = Lib.sections_are_opened () in
-      List.iter (Notation.declare_scope_class local scope ?where) cl
+let open_scope_command (noexport,scope,o) =
+  match o with
+  | ScopeDeclare -> ()
+  | ScopeDelimAdd dlm -> Notation.declare_delimiters scope dlm
+  | ScopeDelimRemove -> Notation.remove_delimiters scope
+  | ScopeClasses (where, cl) ->
+    let local = Lib.sections_are_opened () in
+    List.iter (Notation.declare_scope_class local scope ?where) cl
 
 let cache_scope_command o =
   load_scope_command_common false 1 o;
-  open_scope_command 1 o
+  open_scope_command o
 
 let subst_scope_command (subst,(noexport,scope,o as x)) = match o with
   | ScopeClasses (where, cl) ->
@@ -2061,9 +2051,6 @@ let cache_notation_toggle (local,(on,all,pat)) =
   let sigma = Evd.from_env env in
   toggle_notations ~on ~all ~verbose:(not !Flags.quiet) (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) pat
 
-let open_notation_toggle i o =
-  if Int.equal i 1 then cache_notation_toggle o
-
 let subst_notation_toggle (subst,(local,(on,all,pat))) =
   let {notation_entry_pattern; interp_rule_key_pattern; use_pattern;
        scope_pattern; interpretation_pattern} = pat in
@@ -2078,7 +2065,7 @@ let classify_notation_toggle (local,_) =
 let inNotationActivation : locality_flag * (bool * bool * notation_query_pattern) -> obj =
   declare_object {(default_object "NOTATION-TOGGLE") with
       cache_function = cache_notation_toggle;
-      open_function = simple_open open_notation_toggle;
+      open_function = simple_open cache_notation_toggle;
       subst_function = subst_notation_toggle;
       classify_function = classify_notation_toggle}
 

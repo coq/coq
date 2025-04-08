@@ -68,7 +68,7 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
     { (default_object "Global universe name state") with
       cache_function = cache_univ_names;
       load_function = load_univ_names;
-      open_function = simple_open open_univ_names;
+      open_function = filtered_open open_univ_names;
       discharge_function = discharge_univ_names;
       classify_function = (fun _ -> Escape) }
 
