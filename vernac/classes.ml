@@ -93,7 +93,7 @@ let load_instance _ inst = match inst.locality with
 
 let open_instance i inst = match inst.locality with
 | Local -> assert false
-| SuperGlobal -> perform_instance inst
+| SuperGlobal -> ()
 | Export -> if Int.equal i 1 then perform_instance inst
 
 let subst_instance (subst, inst) =
