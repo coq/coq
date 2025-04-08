@@ -407,20 +407,33 @@ Module AppliedPatternsPrinting.
 
 End AppliedPatternsPrinting.
 
+Module Activation0.
 Module Activation.
 
-Disable Notation "_ + _" : nat_scope.
-Check Nat.add 0 0.
-Fail Check 0 + 0.
+  Disable Notation "_ + _" : nat_scope.
+  Check Nat.add 0 0.
+  Fail Check 0 + 0.
 
-Disable Notation "_ + _" : type_scope.
-Fail Check 0 + 0.
+  Disable Notation "_ + _" : type_scope.
+  Fail Check 0 + 0.
 
-Notation f x := (Some x).
+  Notation f x := (Some x).
 
-Disable Notation f.
+  Disable Notation f.
 
-Check Some 0.
-Fail Check f 0.
+  Check Some 0.
+  Fail Check f 0.
 
 End Activation.
+End Activation0.
+
+Module Activation1.
+  Import Activation0.
+
+  Check Nat.add 0 0.
+  Check 0 + 0.
+
+  Import Activation.
+  Check Nat.add 0 0.
+  Fail Check 0 + 0.
+End Activation1.

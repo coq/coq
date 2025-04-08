@@ -332,14 +332,23 @@ fun a : T => match a with
      : T -> nat
 Nat.add 0 0
      : nat
-File "./output/Notations5.v", line 414, characters 11-12:
+File "./output/Notations5.v", line 415, characters 13-14:
 The command has indeed failed with message:
 The term "0" has type "nat" while it is expected to have type "Type".
-File "./output/Notations5.v", line 417, characters 11-16:
+File "./output/Notations5.v", line 418, characters 13-18:
 The command has indeed failed with message:
 Unknown interpretation for notation "_ + _".
 Some 0
      : option nat
-File "./output/Notations5.v", line 424, characters 11-12:
+File "./output/Notations5.v", line 425, characters 13-14:
 The command has indeed failed with message:
 The reference f was not found in the current environment.
+0 + 0
+     : nat
+0 + 0
+     : nat
+Nat.add 0 0
+     : nat
+File "./output/Notations5.v", line 438, characters 13-18:
+The command has indeed failed with message:
+Unknown interpretation for notation "_ + _".

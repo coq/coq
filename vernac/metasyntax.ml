@@ -2056,16 +2056,13 @@ let add_abbreviation ~local user_warns env ident (vars,c) modl =
 (**********************************************************************)
 (* Activating/deactivating notations                                  *)
 
-let load_notation_toggle _ _ = ()
-
-let open_notation_toggle _ (local,(on,all,pat)) =
+let cache_notation_toggle (local,(on,all,pat)) =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   toggle_notations ~on ~all ~verbose:(not !Flags.quiet) (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) pat
 
-let cache_notation_toggle o =
-  load_notation_toggle 1 o;
-  open_notation_toggle 1 o
+let open_notation_toggle i o =
+  if Int.equal i 1 then cache_notation_toggle o
 
 let subst_notation_toggle (subst,(local,(on,all,pat))) =
   let {notation_entry_pattern; interp_rule_key_pattern; use_pattern;
@@ -2082,7 +2079,6 @@ let inNotationActivation : locality_flag * (bool * bool * notation_query_pattern
   declare_object {(default_object "NOTATION-TOGGLE") with
       cache_function = cache_notation_toggle;
       open_function = simple_open open_notation_toggle;
-      load_function = load_notation_toggle;
       subst_function = subst_notation_toggle;
       classify_function = classify_notation_toggle}
 
