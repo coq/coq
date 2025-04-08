@@ -185,15 +185,15 @@ let args_options = Arg.align [
   "--no-externals", arg_set (fun p -> { p with externals = false }),
   " No links to Rocq standard library";
   "--external", arg_url_path (fun url lp -> Index.add_external_library lp url),
-  "<url>+<d> set URL for external library <d>";
+  "<url> <d>  Set URL for external library <d>";
   "--coqlib_url", arg_string (fun p u -> { p with coqlib_url = u }),
   "<url> Set URL for Rocq standard library (default: " ^ Coq_config.wwwstdlib ^ ")";
   "--coqlib", arg_string (fun p d -> { p with coqlib = Some d }),
   "<dir> Set the path where Rocq files are installed";
   "-R", arg_path (fun p l -> { p with paths = l :: !prefs.paths }),
-  "<dir>+<coqdir> map physical dir to Rocq dir";
+  "<dir> <coqdir>  Map physical dir to Rocq dir";
   "-Q", arg_path (fun p l -> { p with paths = l :: !prefs.paths }),
-  "<dir>+<coqdir> Map physical dir to Rocq dir";
+  "<dir> <coqdir>  Map physical dir to Rocq dir";
   "--latin1", arg_set (fun p -> {p with encoding = { charset = "iso-8859-1";
                                                      inputenc = "latin1";
                                                      latin1 = true;
