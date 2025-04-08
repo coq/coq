@@ -232,8 +232,9 @@ val pr_goal_emacs : proof:Proof.t option -> int -> int -> Pp.t
 
 val pr_typing_flags : Declarations.typing_flags -> Pp.t
 
-(** Tells if flag "Printing Goal Names" is activated *)
-val print_goal_names : unit -> bool
+(** Tells if goal name should be printed, i.e., either "Printing Goal Names" flag is activated,
+    or the evar was given a name. *)
+val print_goal_name : evar_map -> Evar.t -> bool
 
 module Debug :
 sig

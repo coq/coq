@@ -45,7 +45,8 @@ let { Goptions.get = should_gname } =
     ~value:false
     ()
 
-let print_goal_names = should_gname (* for export *)
+let print_goal_name sigma ev =
+  should_gname () || Evd.evar_has_ident ev sigma
 
 (**********************************************************************)
 (** Terms                                                             *)
@@ -575,12 +576,12 @@ let pr_goal_tag g =
 
 (* display a goal name *)
 let pr_goal_name sigma g =
-  if should_gname() then str " " ++ Pp.surround (pr_existential_key (Global.env ()) sigma g)
+  if print_goal_name sigma g then str " " ++ Pp.surround (pr_existential_key (Global.env ()) sigma g)
   else mt ()
 
 let pr_goal_header nme sigma g =
   str "goal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
-  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key (Global.env ()) sigma g) else mt ())
+  ++ (if print_goal_name sigma g then str " " ++ Pp.surround (pr_existential_key (Global.env ()) sigma g) else mt ())
 
 (* display the conclusion of a goal *)
 let pr_concl n ?diffs sigma g =

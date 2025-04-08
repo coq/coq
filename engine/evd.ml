@@ -948,6 +948,7 @@ let evar_source evi = evi.evar_source
 
 let evar_names evd = EvNames.state evd.evar_names
 let evar_ident evk evd = EvNames.ident evk evd.evar_names
+let evar_has_ident evk evd = match evar_ident evk evd with Some _ -> true | None -> false
 let evar_key id evd = EvNames.key id evd.evar_names
 
 let get_aliased_evars evd = evd.evar_flags.aliased_evars
