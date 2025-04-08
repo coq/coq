@@ -182,19 +182,22 @@ let pp_with ft pp =
     | Pp_hovbox n -> Format.pp_open_box ft n
   in
   let rec pp_cmd = let open Format in function
-    | Ppcmd_empty             -> ()
-    | Ppcmd_glue sl           -> List.iter pp_cmd sl
-    | Ppcmd_string str        -> let n = utf8_length str in
-                                 pp_print_as ft n str
-    | Ppcmd_box(bty,ss)       -> cpp_open_box bty ;
-                                 if not (over_max_boxes ()) then pp_cmd ss;
-                                 pp_close_box ft ()
-    | Ppcmd_print_break(m,n)  -> pp_print_break ft m n
-    | Ppcmd_force_newline     -> pp_force_newline ft ()
-    | Ppcmd_comment coms      -> List.iter (pr_com ft) coms
-    | Ppcmd_tag(tag, s)       -> pp_open_stag ft (String_tag tag);
-                                 pp_cmd s;
-                                 pp_close_stag ft ()
+    | Ppcmd_empty -> ()
+    | Ppcmd_glue sl -> List.iter pp_cmd sl
+    | Ppcmd_string str ->
+      let n = utf8_length str in
+      pp_print_as ft n str
+    | Ppcmd_box(bty,ss) ->
+      cpp_open_box bty ;
+      if not (over_max_boxes ()) then pp_cmd ss;
+      pp_close_box ft ()
+    | Ppcmd_print_break(m,n) -> pp_print_break ft m n
+    | Ppcmd_force_newline -> pp_force_newline ft ()
+    | Ppcmd_comment coms -> List.iter (pr_com ft) coms
+    | Ppcmd_tag(tag, s) ->
+      pp_open_stag ft (String_tag tag);
+      pp_cmd s;
+      pp_close_stag ft ()
   in
   pp_cmd pp
 
