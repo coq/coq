@@ -7,10 +7,6 @@ printf "Category? (type a prefix)\n"
 (cd doc/changelog && ls -d */)
 read -r where
 
-where="doc/changelog/$where"
-if ! [ -d "$where" ]; then where=$(echo "$where"*); fi
-where="$where/$PR-$(git rev-parse --abbrev-ref HEAD | tr / -).rst"
-
 printf "Type? (type first letter)\n"
 printf "[A]dded \t[C]hanged \t[D]eprecated \t[F]ixed \t[R]emoved\n"
 read -r type_first_letter
@@ -24,6 +20,10 @@ case "$type_first_letter" in
   *) printf "Invalid input!\n"
      exit 1;;
 esac
+
+where="doc/changelog/$where"
+if ! [ -d "$where" ]; then where=$(echo "$where"*); fi
+where="${where}/${PR}-$(git rev-parse --abbrev-ref HEAD | tr / -)-${type_full}.rst"
 
 printf "Fixes? (space separated list of bug numbers)\n"
 read -r fixes_list
