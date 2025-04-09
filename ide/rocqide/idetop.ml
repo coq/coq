@@ -195,7 +195,7 @@ let process_goal short sigma g =
   let evi = Evd.find_undefined sigma g in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let min_env = Environ.reset_context env in
-  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env sigma g)) else None in
+  let name = if Printer.print_goal_name sigma g then Some (Names.Id.to_string (Termops.evar_suggested_name env sigma g)) else None in
   let ccl =
     pr_letype_env ~goal_concl_style:true env sigma (Evd.evar_concl evi)
   in
@@ -215,7 +215,7 @@ let process_goal short sigma g =
 
 let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
   let env = Global.env () in
-  let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env nsigma ng)) else None in
+  let name = if Printer.print_goal_name nsigma ng then Some (Names.Id.to_string (Termops.evar_suggested_name env nsigma ng)) else None in
   let og_s = match oldp, diff_goal_map with
   | Some oldp, Some diff_goal_map -> Proof_diffs.map_goal ng diff_goal_map
   | None, _ | _, None -> None

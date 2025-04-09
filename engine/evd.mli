@@ -365,6 +365,8 @@ val downcast : Evar.t-> etypes -> evar_map -> evar_map
 
 val evar_ident : Evar.t -> evar_map -> Id.t option
 
+val evar_has_ident : Evar.t -> evar_map -> bool
+
 val rename : Evar.t -> Id.t -> evar_map -> evar_map
 
 val evar_key : Id.t -> evar_map -> Evar.t
