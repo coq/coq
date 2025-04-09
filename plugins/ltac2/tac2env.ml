@@ -345,6 +345,9 @@ let std_prefix =
 let ltac1_prefix =
   MPfile (DirPath.make (List.map Id.of_string ["Ltac1"; "Ltac2"]))
 
+let rewrite_prefix =
+  MPfile (DirPath.make (List.map Id.of_string ["Rewrite"; "Ltac2"]))
+
 (** Generic arguments *)
 
 type var_quotation_kind =

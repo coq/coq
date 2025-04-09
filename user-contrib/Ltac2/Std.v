@@ -56,6 +56,19 @@ Ltac2 Type red_flags := {
   rConst : reference list
 }.
 
+Ltac2 Type reduction := [
+| Red
+| Hnf
+| Simpl (red_flags, (pattern * occurrences) option)
+| Cbv (red_flags)
+| Cbn (red_flags)
+| Lazy (red_flags)
+| Unfold ((reference * occurrences) list)
+| Fold (constr list)
+| Pattern ((constr * occurrences) list)
+| Comp (bool, (pattern * occurrences) option) (** [true] = native *)
+].
+
 Ltac2 Type 'a not_implemented.
 
 Ltac2 Type rec intro_pattern := [
@@ -181,11 +194,44 @@ Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr 
 Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_vm".
 Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_native".
 
+Ltac2 eval_reduction (r : reduction) : constr -> constr :=
+  match r with
+  | Red => eval_red
+  | Hnf => eval_hnf
+  | Simpl flags c_in => eval_simpl flags c_in
+  | Cbv flags        => eval_cbv flags
+  | Cbn flags        => eval_cbn flags
+  | Lazy flags       => eval_lazy flags
+  | Unfold r_in      => eval_unfold r_in
+  | Fold cs          => eval_fold cs
+  | Pattern c_in     => eval_pattern c_in
+  | Comp false p_in  => eval_vm p_in
+  | Comp true p_in   => eval_native p_in
+  end.
+
+Ltac2 eval_reduction_in (r : reduction) : clause -> unit :=
+  match r with
+  | Red => red
+  | Hnf => hnf
+  | Simpl flags c_in => simpl flags c_in
+  | Cbv flags        => cbv flags
+  | Cbn flags        => cbn flags
+  | Lazy flags       => lazy flags
+  | Unfold r_in      => unfold r_in
+  | Fold cs          => fold cs
+  | Pattern c_in     => pattern c_in
+  | Comp false p_in  => vm p_in
+  | Comp true p_in   => native p_in
+  end.
+
 Ltac2 @ external change : pattern option -> (constr array -> constr) -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_change".
 
 Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "rocq-runtime.plugins.ltac2" "tac_rewrite".
 
 Ltac2 @ external setoid_rewrite : orientation -> (unit -> constr_with_bindings) -> occurrences -> ident option -> unit := "rocq-runtime.plugins.ltac2" "tac_setoid_rewrite".
+
+Ltac2 @ external rewrite_strat : rewstrategy -> ident option -> unit :=
+  "rocq-runtime.plugins.ltac2" "tac_rewrite_strat".
 
 Ltac2 @ external reflexivity : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_reflexivity".
 

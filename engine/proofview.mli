@@ -178,6 +178,9 @@ val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
     it's a specialized "bind". *)
 val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
 
+(** Maps a tactic over its result. *)
+val tclMAP : ('a -> 'b) -> 'a tactic -> 'b tactic
+
 (** [tclIGNORE t] has the same operational content as [t], but drops
     the returned value. *)
 val tclIGNORE : 'a tactic -> unit tactic

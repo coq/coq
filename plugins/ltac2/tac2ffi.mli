@@ -130,6 +130,10 @@ val of_sort : ESorts.t -> valexpr
 val to_sort : valexpr -> ESorts.t
 val sort : ESorts.t repr
 
+val of_rewstrategy : Rewrite.strategy -> valexpr
+val to_rewstrategy : valexpr -> Rewrite.strategy
+val rewstrategy : Rewrite.strategy repr
+
 val of_pp : Pp.t -> valexpr
 val to_pp : valexpr -> Pp.t
 val pp : Pp.t repr

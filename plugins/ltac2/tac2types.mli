@@ -94,3 +94,19 @@ type rewriting =
 type assertion =
 | AssertType of intro_pattern option * constr * unit thunk option
 | AssertValue of Id.t * constr
+
+type red_flag = Names.GlobRef.t Genredexpr.glob_red_flag
+
+type red_context = (Pattern.constr_pattern * occurrences) option
+
+type red_expr =
+| Red
+| Hnf
+| Simpl of red_flag * red_context
+| Cbv of red_flag
+| Cbn of red_flag
+| Lazy of red_flag
+| Unfold of (Names.GlobRef.t * occurrences) list
+| Fold of constr list
+| Pattern of (constr * occurrences) list
+| Comp of (bool * red_context)

@@ -66,7 +66,7 @@ let to_red_strength = function
   | ValInt 1 -> Head
   | _ -> assert false
 
-let to_red_flag v = match Value.to_tuple v with
+let to_red_flag v : Tac2types.red_flag = match Value.to_tuple v with
 | [| strength; beta; iota; fix; cofix; zeta; delta; const |] ->
   {
     rStrength = to_red_strength strength;
@@ -82,11 +82,45 @@ let to_red_flag v = match Value.to_tuple v with
 
 let red_flags = make_to_repr to_red_flag
 
-let pattern_with_occs = pair pattern occurrences
-
 let constr_with_occs = pair constr occurrences
 
 let reference_with_occs = pair reference occurrences
+
+let to_red_context = to_option (to_pair to_pattern to_occurrences)
+
+let red_context = make_to_repr to_red_context
+
+let to_reduction v : Tac2types.red_expr = match v with
+| ValInt 0 -> Red
+| ValInt 1 -> Hnf
+| ValBlk (0, [|flags; occs|]) ->
+  let flags = to_red_flag flags in
+  let occs = to_red_context occs in
+  Simpl (flags, occs)
+| ValBlk (1, [|flags|]) ->
+  let flags = to_red_flag flags in
+  Cbv flags
+| ValBlk (2, [|flags|]) ->
+  let flags = to_red_flag flags in
+  Cbn flags
+| ValBlk (3, [|flags|]) ->
+  let flags = to_red_flag flags in
+  Lazy flags
+| ValBlk (4, [|occs|]) ->
+  let occs = to_list (to_pair to_reference to_occurrences) occs in
+  Unfold occs
+| ValBlk (5, [|cs|]) ->
+  Fold (to_list to_constr cs)
+| ValBlk (6, [|occs|]) ->
+  let occs = to_list (to_pair to_constr to_occurrences) occs in
+  Pattern occs
+| ValBlk (7, [|native; occs|]) ->
+  let native = to_bool native in
+  let occs = to_red_context occs in
+  Comp (native, occs)
+| _ -> assert false
+
+let reduction = make_to_repr to_reduction
 
 let rec to_intro_pattern v = match Value.to_block v with
 | (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
@@ -340,7 +374,7 @@ let () =
 
 let () =
   define "tac_simpl"
-    (red_flags @-> option pattern_with_occs @-> clause @-> tac unit)
+    (red_flags @-> red_context @-> clause @-> tac unit)
     Tac2tactics.simpl
 
 let () =
@@ -369,12 +403,12 @@ let () =
 
 let () =
   define "tac_vm"
-    (option pattern_with_occs @-> clause @-> tac unit)
+    (red_context @-> clause @-> tac unit)
     Tac2tactics.vm
 
 let () =
   define "tac_native"
-    (option pattern_with_occs @-> clause @-> tac unit)
+    (red_context @-> clause @-> tac unit)
     Tac2tactics.native
 
 (** Reduction functions *)
@@ -385,7 +419,7 @@ let () = define "eval_hnf" (constr @-> tac constr) Tac2tactics.eval_hnf
 
 let () =
   define "eval_simpl"
-    (red_flags @-> option pattern_with_occs @-> constr @-> tac constr)
+    (red_flags @-> red_context @-> constr @-> tac constr)
     Tac2tactics.eval_simpl
 
 let () =
@@ -414,12 +448,12 @@ let () =
 
 let () =
   define "eval_vm"
-    (option pattern_with_occs @-> constr @-> tac constr)
+    (red_context @-> constr @-> tac constr)
     Tac2tactics.eval_vm
 
 let () =
   define "eval_native"
-    (option pattern_with_occs @-> constr @-> tac constr)
+    (red_context @-> constr @-> tac constr)
     Tac2tactics.eval_native
 
 let () =
@@ -436,6 +470,11 @@ let () =
   define "tac_setoid_rewrite"
     (bool @-> uthaw constr_with_bindings @--> occurrences @-> option ident @-> tac unit)
     Tac2tactics.setoid_rewrite
+
+let () =
+  define "tac_rewrite_strat"
+    (rewstrategy @-> option ident @-> tac unit)
+    Tac2tactics.rewrite_strat
 
 let () =
   define "tac_inversion"
@@ -456,6 +495,141 @@ let tac_intro id mv =
   Tactics.intro_move id mv
 let () =
   define "tac_intro" (option ident @-> option move_location @-> tac unit) tac_intro
+
+(** Rewrite *)
+
+let () =
+  define "rewstrat_id"
+    (unit @-> tac rewstrategy)
+    (fun _ -> return Rewrite.Strategies.id)
+
+let () =
+  define "rewstrat_fail"
+    (unit @-> tac rewstrategy)
+    (fun _ -> return Rewrite.Strategies.fail)
+
+let () =
+  define "rewstrat_refl"
+    (unit @-> tac rewstrategy)
+    (fun _ -> return Rewrite.Strategies.refl)
+
+let () =
+  define "rewstrat_progress"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.progress s))
+
+let () =
+  define "rewstrat_seq"
+    (rewstrategy @-> rewstrategy @-> tac rewstrategy)
+    (fun s0 s1 -> return (Rewrite.Strategies.seq s0 s1))
+
+let () =
+  define "rewstrat_seqs"
+    (list rewstrategy @-> tac rewstrategy)
+    (fun ss -> return (List.fold_left Rewrite.Strategies.seq Rewrite.Strategies.id ss))
+
+let () =
+  define "rewstrat_choice"
+    (rewstrategy @-> rewstrategy @-> tac rewstrategy)
+    (fun s0 s1 -> return (Rewrite.Strategies.choice s0 s1))
+
+let () =
+  define "rewstrat_choices"
+    (list rewstrategy @-> tac rewstrategy)
+    (fun ss -> return (List.fold_left Rewrite.Strategies.choice Rewrite.Strategies.fail ss))
+
+let () =
+  define "rewstrat_try"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.try_ s))
+
+(* (rewstrategy -> rewstrategy) -> rewstrategy *)
+let () =
+  define "rewstrat_fix"
+    (closure @-> tac rewstrategy)
+    (fun f ->
+       let f s = Proofview.tclMAP to_rewstrategy (Tac2val.apply f [of_rewstrategy s]) in
+       Rewrite.Strategies.fix_tac f
+    )
+
+let () =
+  define "rewstrat_any"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.any s))
+
+let () =
+  define "rewstrat_repeat"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.repeat s))
+
+let () =
+  define "rewstrat_one_subterm"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.one_subterm s))
+
+let () =
+  define "rewstrat_all_subterms"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.all_subterms s))
+
+let () =
+  define "rewstrat_bottomup"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.bottomup s))
+
+let () =
+  define "rewstrat_topdown"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.topdown s))
+
+let () =
+  define "rewstrat_innermost"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.innermost s))
+
+let () =
+  define "rewstrat_outermost"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.outermost s))
+
+let () =
+  define "rewstrat_hints"
+    (ident @-> tac rewstrategy)
+    (fun i -> return (Rewrite.Strategies.hints (Id.to_string i)))
+
+let () =
+  define "rewstrat_old_hints"
+    (ident @-> tac rewstrategy)
+    (fun i -> return (Rewrite.Strategies.old_hints (Id.to_string i)))
+
+let () =
+  define "rewstrat_reduce"
+    (reduction @-> tac rewstrategy)
+    (fun r -> Proofview.tclMAP Rewrite.Strategies.reduce (Tac2tactics.mk_red_expr r))
+
+let () =
+  define "rewstrat_one_lemma"
+    (preterm @-> bool @-> tac rewstrategy)
+    (fun c l2r ->
+       let c env sigma = Pretyping.understand_uconstr env sigma c in
+       return (Rewrite.Strategies.one_lemma c l2r None AllOccurrences)
+    )
+
+let () =
+  define "rewstrat_lemmas"
+    (list preterm @-> tac rewstrategy)
+    (fun cs ->
+       let mk_c c = (); fun env sigma -> Pretyping.understand_uconstr env sigma c in
+       let cs = List.map (fun c -> (mk_c c, true, None)) cs in
+       return (Rewrite.Strategies.lemmas cs)
+    )
+
+let () =
+  define "rewstrat_fold"
+    (preterm @-> tac rewstrategy)
+    (fun c ->
+       return (Rewrite.Strategies.fold_glob c.term)
+    )
 
 (*
 

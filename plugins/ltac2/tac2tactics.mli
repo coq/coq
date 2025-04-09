@@ -49,6 +49,9 @@ val rewrite :
 val setoid_rewrite :
   orientation -> constr_with_bindings tactic -> occurrences -> Id.t option -> unit tactic
 
+val rewrite_strat :
+  Rewrite.strategy -> Id.t option -> unit tactic
+
 val symmetry : clause -> unit tactic
 
 val forward : bool -> unit tactic option option ->
@@ -59,10 +62,12 @@ val assert_ : assertion -> unit tactic
 val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
   Name.t -> (Evd.evar_map option * constr) -> clause -> unit tactic
 
-val reduce : Redexpr.red_expr -> clause -> unit tactic
+val mk_red_expr : Tac2types.red_expr -> Redexpr.red_expr tactic
+
+val reduce : Tac2types.red_expr -> clause -> unit tactic
 
 val simpl : GlobRef.t glob_red_flag ->
-  (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
+  Tac2types.red_context -> clause -> unit tactic
 
 val cbv : GlobRef.t glob_red_flag -> clause -> unit tactic
 
@@ -74,16 +79,16 @@ val unfold : (GlobRef.t * occurrences) list -> clause -> unit tactic
 
 val pattern : (constr * occurrences) list -> clause -> unit tactic
 
-val vm : (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
+val vm : Tac2types.red_context -> clause -> unit tactic
 
-val native : (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
+val native : Tac2types.red_context -> clause -> unit tactic
 
 val eval_red : constr -> constr tactic
 
 val eval_hnf : constr -> constr tactic
 
 val eval_simpl : GlobRef.t glob_red_flag ->
-  (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
+  Tac2types.red_context -> constr -> constr tactic
 
 val eval_cbv : GlobRef.t glob_red_flag -> constr -> constr tactic
 
@@ -97,9 +102,9 @@ val eval_fold : constr list -> constr -> constr tactic
 
 val eval_pattern : (EConstr.t * occurrences) list -> constr -> constr tactic
 
-val eval_vm : (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
+val eval_vm : Tac2types.red_context -> constr -> constr tactic
 
-val eval_native : (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
+val eval_native : Tac2types.red_context -> constr -> constr tactic
 
 val discriminate : evars_flag -> destruction_arg option -> unit tactic
 

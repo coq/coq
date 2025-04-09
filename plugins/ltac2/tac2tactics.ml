@@ -192,6 +192,9 @@ let setoid_rewrite orient c occs id =
   let occs = mk_occurrences occs in
   Rewrite.cl_rewrite_clause (delayed_of_tactic c) orient occs id
 
+let rewrite_strat strat clause =
+  Rewrite.cl_rewrite_clause_strat strat clause
+
 let symmetry cl =
   let cl = mk_clause cl in
   Tactics.intros_symmetry cl
@@ -228,65 +231,82 @@ let get_evaluable_reference = function
 | GlobRef.ConstRef cst -> Proofview.tclUNIT (Evaluable.EvalConstRef cst)
 | r -> Proofview.tclZERO (Tacred.NotEvaluableRef r)
 
+let mk_flags flags =
+  let rConsts = Proofview.Monad.List.map get_evaluable_reference flags.rConst in
+  Proofview.tclMAP (fun rConst -> { flags with rConst }) rConsts
+
+let mk_red_expr : (Tac2types.red_expr -> Redexpr.red_expr Proofview.tactic) =
+  function
+  | Red -> Proofview.tclUNIT Red
+  | Hnf -> Proofview.tclUNIT Hnf
+  | Tac2types.Simpl (flags, occs) ->
+    mk_flags flags >>= fun flags ->
+    let occs = Option.map map_pattern_with_occs occs in
+    Proofview.tclUNIT (Genredexpr.Simpl (flags, occs))
+  | Cbv flags ->
+    Proofview.tclMAP
+      (fun flags -> Cbv flags)
+      (mk_flags flags)
+  | Cbn flags ->
+    Proofview.tclMAP
+      (fun flags -> Cbn flags)
+      (mk_flags flags)
+  | Lazy flags ->
+    Proofview.tclMAP
+      (fun flags -> Lazy flags)
+      (mk_flags flags)
+  | Unfold refs ->
+    let map (gr, occs) = get_evaluable_reference gr >>= fun gr ->
+      Proofview.tclUNIT (mk_occurrences occs, gr)
+    in
+    Proofview.tclMAP (fun refs -> Unfold refs) (Proofview.Monad.List.map map refs)
+  | Fold cs -> Proofview.tclUNIT (Fold cs)
+  | Pattern occs ->
+    let occs = List.map (fun (c, occs) -> (mk_occurrences occs, c)) occs in
+    Proofview.tclUNIT (Pattern occs)
+  | Comp (false, occs) ->
+    let occs = Option.map map_pattern_with_occs occs in
+    Proofview.tclUNIT (CbvVm occs)
+  | Comp (true, occs) ->
+    let occs = Option.map map_pattern_with_occs occs in
+    Proofview.tclUNIT (CbvNative occs)
+
 let reduce r cl =
   let cl = mk_clause cl in
+  mk_red_expr r >>= fun r ->
   Tactics.reduce r cl
 
 let simpl flags where cl =
-  let where = Option.map map_pattern_with_occs where in
-  let cl = mk_clause cl in
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
-  Tactics.reduce (Simpl (flags, where)) cl
+  reduce (Simpl (flags, where)) cl
 
 let cbv flags cl =
-  let cl = mk_clause cl in
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
-  Tactics.reduce (Cbv flags) cl
+  reduce (Cbv flags) cl
 
 let cbn flags cl =
-  let cl = mk_clause cl in
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
-  Tactics.reduce (Cbn flags) cl
+  reduce (Cbn flags) cl
 
 let lazy_ flags cl =
-  let cl = mk_clause cl in
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
-  Tactics.reduce (Lazy flags) cl
+  reduce (Lazy flags) cl
 
 let unfold occs cl =
-  let cl = mk_clause cl in
-  let map (gr, occ) =
-    let occ = mk_occurrences occ in
-    get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
-  in
-  Proofview.Monad.List.map map occs >>= fun occs ->
-  Tactics.reduce (Unfold occs) cl
+  reduce (Unfold occs) cl
 
 let pattern where cl =
-  let where = List.map (fun (c, occ) -> (mk_occurrences occ, c)) where in
-  let cl = mk_clause cl in
-  Tactics.reduce (Pattern where) cl
+  reduce (Pattern where) cl
 
 let vm where cl =
-  let where = Option.map map_pattern_with_occs where in
-  let cl = mk_clause cl in
-  Tactics.reduce (CbvVm where) cl
+  reduce (Comp (false, where)) cl
 
 let native where cl =
-  let where = Option.map map_pattern_with_occs where in
-  let cl = mk_clause cl in
-  Tactics.reduce (CbvNative where) cl
+  reduce (Comp (false, where)) cl
 
 let eval_fun red c =
+  mk_red_expr red >>= fun red ->
   Tac2core.pf_apply begin fun env sigma ->
-  let (redfun, _) = Redexpr.reduction_of_red_expr env red in
-  let (sigma, ans) = redfun env sigma c in
-  Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-  Proofview.tclUNIT ans
+    let (redfun, _) = Redexpr.reduction_of_red_expr env red in
+    let (sigma, ans) = redfun env sigma c in
+    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+    Proofview.tclUNIT ans
   end
 
 let eval_red c =
@@ -296,48 +316,31 @@ let eval_hnf c =
   eval_fun Hnf c
 
 let eval_simpl flags where c =
-  let where = Option.map map_pattern_with_occs where in
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
   eval_fun (Simpl (flags, where)) c
 
 let eval_cbv flags c =
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
   eval_fun (Cbv flags) c
 
 let eval_cbn flags c =
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
   eval_fun (Cbn flags) c
 
 let eval_lazy flags c =
-  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
-  let flags = { flags with rConst } in
   eval_fun (Lazy flags) c
 
 let eval_unfold occs c =
-  let map (gr, occ) =
-    let occ = mk_occurrences occ in
-    get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
-  in
-  Proofview.Monad.List.map map occs >>= fun occs ->
   eval_fun (Unfold occs) c
 
 let eval_fold cl c =
   eval_fun (Fold cl) c
 
 let eval_pattern where c =
-  let where = List.map (fun (pat, occ) -> (mk_occurrences occ, pat)) where in
   eval_fun (Pattern where) c
 
 let eval_vm where c =
-  let where = Option.map map_pattern_with_occs where in
-  eval_fun (CbvVm where) c
+  eval_fun (Comp (false, where)) c
 
 let eval_native where c =
-  let where = Option.map map_pattern_with_occs where in
-  eval_fun (CbvNative where) c
+  eval_fun (Comp (false, where)) c
 
 let on_destruction_arg tac ev arg =
   Proofview.Goal.enter begin fun gl ->

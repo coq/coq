@@ -181,6 +181,9 @@ val std_prefix : ModPath.t
 val ltac1_prefix : ModPath.t
 (** Path where the Ltac1 legacy FFI is defined. *)
 
+val rewrite_prefix : ModPath.t
+(** Path where rewrite strategies are defined in Ltac2 plugin. *)
+
 (** {5 Generic arguments} *)
 
 val wit_ltac2_constr : (raw_tacexpr, Id.Set.t * glb_tacexpr, Util.Empty.t) genarg_type
