@@ -121,23 +121,29 @@ let ret_accu = Obj.repr (ref ())
 
 type accu_val = { mutable acc_atm : atom; acc_arg : t list }
 
-external set_tag : Obj.t -> int -> unit = "coq_obj_set_tag"
+(** Returns a pointer to the code of a partial application of [accumulate], yet also recognized as an unscannable block *)
+external get_proxy_accu : (accu_val -> t -> t) -> Obj.t = "coq_proxy_accu"
 
-let mk_accu (a : atom) : t =
-  let rec accumulate data x =
-    if Obj.repr x == ret_accu then Obj.repr data
-    else
-      let data = { data with acc_arg = x :: data.acc_arg } in
-      let ans = Obj.repr (accumulate data) in
-      let () = set_tag ans accumulate_tag in
-      ans
-  in
-  let acc = { acc_atm = a; acc_arg = [] } in
-  let ans = Obj.repr (accumulate acc) in
-  (** FIXME: use another representation for accumulators, this causes naked
-      pointers. *)
-  let () = set_tag ans accumulate_tag in
-  (Obj.obj ans : t)
+[@@@warning "-69"]
+type accu_clos = { clos_addr : Obj.t; clos_arity : int; clos_env : Obj.t }
+
+let proxy_accu = ref None
+
+let mk_accu data =
+  let ans = { clos_addr = Option.get !proxy_accu; clos_arity = 2; clos_env = Obj.repr data } in
+  (* [ans] is indistinguishable from [accumulate data] *)
+  (Obj.magic ans : t)
+
+let accumulate data x =
+  if Obj.repr x == ret_accu then (Obj.magic data : t)
+  else mk_accu { data with acc_arg = x :: data.acc_arg }
+
+let () =
+  proxy_accu := Some (get_proxy_accu accumulate)
+
+let mk_accu a : t =
+  let data = { acc_atm = a; acc_arg = [] } in
+  mk_accu data
 
 let get_accu (k : accumulator) =
   (Obj.magic k : Obj.t -> accu_val) ret_accu

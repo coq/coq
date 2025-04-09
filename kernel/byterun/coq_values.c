@@ -107,13 +107,32 @@ value coq_tcode_array(value tcodes) {
   CAMLreturn(res);
 }
 
-CAMLprim value coq_obj_set_tag (value arg, value new_tag)
-{
-#if OCAML_VERSION >= 50000
-// Placeholder used by native_compute
-  abort();
-#else
-  Tag_val (arg) = Int_val (new_tag);
-#endif
-  return Val_unit;
+code_t coq_accumulate_addr;
+
+value coq_proxy_accu(value clos) {
+  value v;
+  CAMLassert(Tag_val(clos) == Closure_tag && Arity_closinfo(Closinfo_val(clos)) == 2);
+  /* Field 2 of the closure contains the code pointer for the arity-2 direct call. */
+  coq_accumulate_addr = ((code_t *)clos)[2];
+  /* The following assembly block does not perform any meaningful computation;
+     it just returns a pointer to the inner code (notice the initial "jmp").
+     The inner code translates the call "foo x" (i.e., "%apply x foo") into
+     "accumulate foo.2 x". For both calls, the two arguments are stored in %rax
+     and %rbx, while register %rdi is caller-saved. */
+  asm("jmp 1f\n\t"
+      ".align 8\n\t"
+      ".quad 3067\n"
+      "2:\n\t"
+      "mov %%rax, %%rdi\n\t"
+      "mov 16(%%rbx), %%rax\n\t"
+      "mov %%rdi, %%rbx\n\t"
+      "mov coq_accumulate_addr@GOTPCREL(%%rip), %%rdi\n\t"
+      "jmp *(%%rdi)\n"
+      "1:\n\t"
+      "lea 2b(%%rip), %0\n\t"
+      : "=r"(v));
+  /* v is a pointer that can be used as field 0 of an OCaml closure. But it is
+     also a pointer to a block that is ignored by the garbage collector (notice
+     the header 3067). So, v can be put inside closures that do not have tag 247. */
+  return v;
 }
