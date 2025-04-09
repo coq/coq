@@ -483,6 +483,7 @@ let gallina_kw_to_hide =
     "Implicit" space+ "Arguments"
   | "Arguments"
   | "Ltac"
+  | "Ltac2"
   | "From"
   | "Require"
   | "Import"
