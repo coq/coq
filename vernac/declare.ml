@@ -746,7 +746,7 @@ let declare_variable ~name ~kind ~typing_flags d =
           Global.push_section_context uctx;
           let mk_anon_names u =
             let qs, us = UVars.Instance.to_array u in
-            Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
+            {UVars.quals = Array.make (Array.length qs) Anonymous; UVars.univs = Array.make (Array.length us) Anonymous}
           in
           Global.push_section_context
             (UVars.UContext.of_context_set mk_anon_names Sorts.QVar.Set.empty body_uctx);

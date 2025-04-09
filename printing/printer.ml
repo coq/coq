@@ -188,7 +188,7 @@ let u_ident = Id.of_string "u"
 
 let universe_binders_with_opt_names orig names =
   let open Univ in
-  let qorig, uorig = UVars.AbstractContext.names orig in
+  let {UVars.quals = qorig; UVars.univs = uorig} = UVars.AbstractContext.names orig in
   let qorig, uorig as orig = Array.to_list qorig, Array.to_list uorig in
   let qdecl, udecl = match names with
   | None -> orig

@@ -357,7 +357,7 @@ let sort_context_set uctx =
 let constraints uctx = snd uctx.local
 
 let compute_instance_binders uctx inst =
-  let (qrev,urev) = snd uctx.names in
+  let (qrev, urev) = snd uctx.names in
   let qinst, uinst = Instance.to_array inst in
   let qmap = function
     | QVar q ->
@@ -370,7 +370,7 @@ let compute_instance_binders uctx inst =
     try Name (Option.get (Level.Map.find lvl urev).uname)
     with Option.IsNone | Not_found -> Anonymous
   in
-  Array.map qmap qinst, Array.map umap uinst
+  {quals = Array.map qmap qinst; univs =  Array.map umap uinst}
 
 let context uctx =
   let qvars = QState.undefined uctx.sort_variables in

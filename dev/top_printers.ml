@@ -302,7 +302,7 @@ let ppnamedcontextval e =
   pp (pr_named_context env sigma (named_context_of_val e))
 
 let ppaucontext auctx =
-  let qnas, unas = AbstractContext.names auctx in
+  let {quals = qnas; univs = unas} = AbstractContext.names auctx in
   let prgen pr var_index nas l = match var_index l with
     | Some n -> (match nas.(n) with
         | Anonymous -> pr l

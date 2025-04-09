@@ -274,8 +274,13 @@ let in_punivs x = (x, Instance.empty)
 let eq_puniverses f (x, u) (y, u') =
   f x y && Instance.equal u u'
 
-type bound_names = Names.Name.t array * Names.Name.t array
-
+type bound_names = {
+  quals: Names.Name.t array;
+  univs: Names.Name.t array;
+}
+let empty_bound_names = {quals = [||]; univs =  [||]}
+let append_bound_names {quals = qnames; univs = unames} {quals = qnames'; univs = unames'} =
+  {quals = Array.append qnames qnames'; univs = Array.append unames unames'}
 (** A context of universe levels with universe constraints,
     representing local universe variables and constraints *)
 
@@ -285,36 +290,36 @@ struct
 
   let make names (univs, _ as x) : t =
     let qs, us = Instance.to_array univs in
-    assert (Array.length (fst names) = Array.length qs && Array.length(snd names) = Array.length us);
+    assert (Array.length names.quals = Array.length qs && Array.length names.univs = Array.length us);
     (names, x)
 
   (** Universe contexts (variables as a list) *)
-  let empty = (([||], [||]), (Instance.empty, Constraints.empty))
+  let empty = (empty_bound_names, (Instance.empty, Constraints.empty))
   let is_empty (_, (univs, csts)) = Instance.is_empty univs && Constraints.is_empty csts
 
   let pr prq prl ?variance (_, (univs, csts) as uctx) =
     if is_empty uctx then mt() else
       h (Instance.pr prq prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl csts))
 
-  let hcons ((qnames, unames), (univs, csts)) =
+  let hcons ({quals = qnames; univs = unames}, (univs, csts)) =
     let hqnames, qnames = Hashcons.hashcons_array Names.Name.hcons qnames in
     let hunames, unames = Hashcons.hashcons_array Names.Name.hcons unames in
     let hunivs, univs = Instance.hcons univs in
     let hcsts, csts = Constraints.hcons csts in
-    Hashset.Combine.combine4 hqnames hunames hunivs hcsts, ((qnames, unames), (univs, csts))
+    Hashset.Combine.combine4 hqnames hunames hunivs hcsts, ({quals = qnames; univs = unames}, (univs, csts))
 
   let names ((names, _) : t) = names
   let instance (_, (univs, _csts)) = univs
   let constraints (_, (_univs, csts)) = csts
 
-  let union ((qna, una), (univs, csts)) ((qna', una'), (univs', csts')) =
-    (Array.append qna qna', Array.append una una'), (Instance.append univs univs', Constraints.union csts csts')
+  let union (names, (univs, csts)) (names', (univs', csts')) =
+    append_bound_names names names', (Instance.append univs univs', Constraints.union csts csts')
 
   let size (_,(x,_)) = Instance.length x
 
-  let refine_names (qnames',unames') ((qnames, unames), x) =
+  let refine_names names' (names, x) =
     let merge_names = Array.map2 Names.(fun old refined -> match refined with Anonymous -> old | Name _ -> refined) in
-    ((merge_names qnames qnames', merge_names unames unames'), x)
+    ({quals = merge_names names.quals names'.quals; univs = merge_names names.univs names'.univs}, x)
 
   let sort_levels a =
     Array.sort Level.compare a; a
@@ -355,31 +360,31 @@ struct
 
   let make names csts : t = names, csts
 
-  let instantiate inst ((qnames,unames), cst) =
+  let instantiate inst (names, cst) =
     let q, u = Instance.to_array inst in
-    assert (Array.length q == Array.length qnames && Array.length u = Array.length unames);
+    assert (Array.length q == Array.length names.quals && Array.length u = Array.length names.univs);
     subst_instance_constraints inst cst
 
   let names (nas, _) = nas
 
-  let hcons ((qnames,unames), cst) =
+  let hcons ({quals = qnames; univs = unames}, cst) =
     let hqnames, qnames = Hashcons.hashcons_array Names.Name.hcons qnames in
     let hunames, unames = Hashcons.hashcons_array Names.Name.hcons unames in
     let hcst, cst = Constraints.hcons cst in
-    Hashset.Combine.combine3 hqnames hunames hcst, ((qnames, unames), cst)
+    Hashset.Combine.combine3 hqnames hunames hcst, ({quals = qnames; univs = unames}, cst)
 
-  let empty = (([||],[||]), Constraints.empty)
+  let empty = (empty_bound_names, Constraints.empty)
 
-  let is_constant ((qnas,unas),_) =
-    Array.is_empty qnas && Array.is_empty unas
+  let is_constant (names,_) =
+    Array.is_empty names.quals && Array.is_empty names.univs
 
   let is_empty (_, cst as ctx) =
     is_constant ctx && Constraints.is_empty cst
 
-  let union ((qnas,unas), cst) ((qnas',unas'), cst') =
-    ((Array.append qnas qnas', Array.append unas unas'), Constraints.union cst cst')
+  let union (names, cst) (names', cst') =
+    (append_bound_names names names', Constraints.union cst cst')
 
-  let size ((qnas,unas), _) = Array.length qnas, Array.length unas
+  let size (names, _) = Array.length names.quals, Array.length names.univs
 
   let repr (names, cst as self) : UContext.t =
     let inst = Instance.abstract_instance (size self) in

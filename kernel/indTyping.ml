@@ -315,7 +315,7 @@ let check_no_increment ~template_univs u =
 
 let make_template_univ_names (u:UVars.Instance.t) : UVars.bound_names =
   let qlen, ulen = UVars.Instance.length u in
-  Array.make qlen Anonymous, Array.make ulen Anonymous
+  {quals = Array.make qlen Anonymous; univs = Array.make ulen Anonymous}
 
 let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes with
 | Monomorphic_ind_entry | Polymorphic_ind_entry _ -> mie, None, None
