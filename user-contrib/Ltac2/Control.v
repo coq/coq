@@ -33,7 +33,10 @@ Ltac2 @ external numgoals : unit -> int := "rocq-runtime.plugins.ltac2" "numgoal
 
 Ltac2 @ external dispatch : (unit -> unit) list -> unit := "rocq-runtime.plugins.ltac2" "dispatch".
 Ltac2 @ external extend : (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit := "rocq-runtime.plugins.ltac2" "extend".
-Ltac2 @ external enter : (unit -> unit) -> unit := "rocq-runtime.plugins.ltac2" "enter".
+Ltac2 @ external independent : (unit -> unit) -> unit := "rocq-runtime.plugins.ltac2" "independent".
+
+Ltac2 enter := independent.
+(** Alias for [independent]. *)
 
 Ltac2 @ external focus : int -> int -> (unit -> 'a) -> 'a := "rocq-runtime.plugins.ltac2" "focus".
 Ltac2 @ external cycle : int -> unit := "rocq-runtime.plugins.ltac2" "cycle".
