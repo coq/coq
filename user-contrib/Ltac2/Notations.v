@@ -101,7 +101,7 @@ Ltac2 Notation unshelve := Control.unshelve.
 
 Ltac2 cycle := Control.cycle.
 
-Ltac2 Notation "only" startgoal(tactic) endgoal(opt(seq("-", tactic))) ":" tac(thunk(tactic)) :=
+Ltac2 Notation "only" startgoal(tactic(0)) endgoal(opt(seq("-", tactic(0)))) ":" tac(thunk(tactic)) :=
   Control.focus startgoal (Option.default startgoal endgoal) tac.
 
 Ltac2 progress0 tac := Control.enter (fun _ => Control.progress tac).
