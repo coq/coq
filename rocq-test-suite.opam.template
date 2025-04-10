@@ -1,0 +1,4 @@
+build: [
+  [ "dune" "exec" "-p" name "-j" jobs "test-suite/tools/coq_config_to_make.exe" "rocq" "test-suite/test_suite_config.inc" ]
+  [ make "-C" "test-suite" "-j" jobs "TIMED=1" "ROCQ_EXE=rocq" ]
+]
