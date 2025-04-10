@@ -20,6 +20,8 @@
 # The "run" target runs all tests that have not been run yet. To force
 # all tests to be run, use the "clean" target.
 
+.DEFAULT_GOAL:=all
+
 ###########################################################################
 # Includes, see below for generation
 ###########################################################################
