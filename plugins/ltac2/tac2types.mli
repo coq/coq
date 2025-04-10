@@ -102,3 +102,4 @@ type format =
 | FmtIdent
 | FmtLiteral of string
 | FmtAlpha
+| FmtAlpha0

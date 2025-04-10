@@ -300,12 +300,16 @@ let () =
   define "format_alpha" (format @-> ret format) @@ fun s ->
   FmtAlpha :: s
 
+let () =
+  define "format_alpha0" (format @-> ret format) @@ fun s ->
+  FmtAlpha0 :: s
+
 let arity_of_format fmt =
   let open Tac2types in
   let fold accu = function
     | FmtLiteral _ -> accu
     | FmtString | FmtInt | FmtConstr | FmtIdent -> 1 + accu
-    | FmtAlpha -> 2 + accu
+    | FmtAlpha | FmtAlpha0 -> 2 + accu
   in
   List.fold_left fold 0 fmt
 
@@ -343,6 +347,10 @@ let () =
     | FmtAlpha ->
       let (f, x, args) = pop2 args in
       Tac2val.apply_val f [of_unit (); x] >>= fun pp ->
+      eval (Pp.app accu (to_pp pp)) args fmt
+    | FmtAlpha0 ->
+      let (f, x, args) = pop2 args in
+      Tac2val.apply_val f [x] >>= fun pp ->
       eval (Pp.app accu (to_pp pp)) args fmt
   in
   let eval v = eval (Pp.mt ()) v fmt in

@@ -88,6 +88,9 @@ Ltac2 @ external literal : string -> ('a, 'b, 'c, 'd) format ->
 Ltac2 @ external alpha : ('a, 'b, 'c, 'd) format ->
   (('b -> 'r -> 'c) -> 'r -> 'a, 'b, 'c, 'd) format := "rocq-runtime.plugins.ltac2" "format_alpha".
 
+Ltac2 @ external alpha0 : ('a, 'b, 'c, 'd) format ->
+  (('r -> 'c) -> 'r -> 'a, 'b, 'c, 'd) format := "rocq-runtime.plugins.ltac2" "format_alpha0".
+
 Ltac2 @ external kfprintf : (message -> 'r) -> ('a, unit, message, 'r) format -> 'a :=
   "rocq-runtime.plugins.ltac2" "format_kfprintf".
 
