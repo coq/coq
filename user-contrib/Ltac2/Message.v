@@ -82,6 +82,9 @@ Ltac2 @ external constr : ('a, 'b, 'c, 'd) format ->
 Ltac2 @ external ident : ('a, 'b, 'c, 'd) format ->
   (ident -> 'a, 'b, 'c, 'd) format := "rocq-runtime.plugins.ltac2" "format_ident".
 
+Ltac2 @ external message : ('a, 'b, 'c, 'd) format ->
+  (message -> 'a, 'b, 'c, 'd) format := "rocq-runtime.plugins.ltac2" "format_message".
+
 Ltac2 @ external literal : string -> ('a, 'b, 'c, 'd) format ->
   ('a, 'b, 'c, 'd) format := "rocq-runtime.plugins.ltac2" "format_literal".
 

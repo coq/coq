@@ -600,6 +600,7 @@ let parse_format (s : string) : format list =
     | 's' -> parse (i + 1) (FmtString :: accu)
     | 'i' -> parse (i + 1) (FmtInt :: accu)
     | 'I' -> parse (i + 1) (FmtIdent :: accu)
+    | 'm' -> parse (i + 1) (FmtMessage :: accu)
     | 't' -> parse (i + 1) (FmtConstr :: accu)
     | 'a' -> parse (i + 1) (FmtAlpha :: accu)
     | 'A' -> parse (i + 1) (FmtAlpha0 :: accu)
@@ -623,6 +624,8 @@ let of_format accu = function
   CAst.make @@ CTacApp (global_ref (kername format_prefix "alpha"), [accu])
 | FmtAlpha0 ->
   CAst.make @@ CTacApp (global_ref (kername format_prefix "alpha0"), [accu])
+| FmtMessage ->
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "message"), [accu])
 
 let of_format { v = fmt; loc } =
   let fmt =

@@ -16,6 +16,7 @@ Ltac2 Eval ignore (printf "%t" '(1 + 1 = 0)).
 Ltac2 Eval ignore (printf "%%").
 Ltac2 Eval ignore (printf "%a" dummy 18).
 Ltac2 Eval ignore (printf "%A" dummy0 18).
+Ltac2 Eval ignore (printf "%m!" (fprintf "%s %s" "hello" "world")).
 
 (** More complex tests *)
 
@@ -35,6 +36,7 @@ Fail Ltac2 Eval printf "%a" (fun _ _ => ()).
 Fail Ltac2 Eval printf "%A" (fun _ => ()).
 Fail Ltac2 Eval printf "%a" (fun _ i => Message.of_int i) "foo".
 Fail Ltac2 Eval printf "%A" Message.of_int "foo".
+Fail Ltac2 Eval printf "%m" 0.
 
 Import Message.
 

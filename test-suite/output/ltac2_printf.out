@@ -14,7 +14,7 @@ dummy
 - : unit = ()
 dummy
 - : unit = ()
-ok foodummy bar yes
+hello world!
 - : unit = ()
 ok foodummy bar yes
 - : unit = ()
@@ -22,44 +22,50 @@ ok foodummy bar yes
 - : unit = ()
 ok foodummy bar yes
 - : unit = ()
-File "./output/ltac2_printf.v", line 30, characters 28-33:
+ok foodummy bar yes
+- : unit = ()
+File "./output/ltac2_printf.v", line 31, characters 28-33:
 The command has indeed failed with message:
 This expression has type string but an expression was expected of type 
 int
-File "./output/ltac2_printf.v", line 31, characters 28-29:
+File "./output/ltac2_printf.v", line 32, characters 28-29:
 The command has indeed failed with message:
 This expression has type int but an expression was expected of type 
 string
-File "./output/ltac2_printf.v", line 32, characters 28-33:
-The command has indeed failed with message:
-This expression has type string but an expression was expected of type 
-ident
 File "./output/ltac2_printf.v", line 33, characters 28-33:
 The command has indeed failed with message:
 This expression has type string but an expression was expected of type 
+ident
+File "./output/ltac2_printf.v", line 34, characters 28-33:
+The command has indeed failed with message:
+This expression has type string but an expression was expected of type 
 constr
-File "./output/ltac2_printf.v", line 34, characters 40-42:
+File "./output/ltac2_printf.v", line 35, characters 40-42:
 The command has indeed failed with message:
 This expression has type unit but an expression was expected of type 
 message
-File "./output/ltac2_printf.v", line 35, characters 38-40:
+File "./output/ltac2_printf.v", line 36, characters 38-40:
 The command has indeed failed with message:
 This expression has type unit but an expression was expected of type 
 message
-File "./output/ltac2_printf.v", line 36, characters 58-63:
+File "./output/ltac2_printf.v", line 37, characters 58-63:
 The command has indeed failed with message:
 This expression has type string but an expression was expected of type 
 int
-File "./output/ltac2_printf.v", line 37, characters 43-48:
+File "./output/ltac2_printf.v", line 38, characters 43-48:
 The command has indeed failed with message:
 This expression has type string but an expression was expected of type 
 int
+File "./output/ltac2_printf.v", line 39, characters 28-29:
+The command has indeed failed with message:
+This expression has type int but an expression was expected of type 
+message
 - : unit = ()
 - : unit = ()
-File "./output/ltac2_printf.v", line 51, characters 0-81:
+File "./output/ltac2_printf.v", line 53, characters 0-81:
 The command has indeed failed with message:
 Uncaught Ltac2 exception: Assertion_failure
-File "./output/ltac2_printf.v", line 52, characters 0-81:
+File "./output/ltac2_printf.v", line 54, characters 0-81:
 The command has indeed failed with message:
 Uncaught Ltac2 exception: Assertion_failure
 - : string = ""

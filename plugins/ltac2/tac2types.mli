@@ -103,3 +103,4 @@ type format =
 | FmtLiteral of string
 | FmtAlpha
 | FmtAlpha0
+| FmtMessage
