@@ -565,7 +565,9 @@ let print_ltac_body qid tac =
   | mods ->
     let pr_one mp =
       let qid = try Nametab.shortest_qualid_of_module mp
-        with Not_found -> Nametab.shortest_qualid_of_dir (Libnames.path_of_string (ModPath.to_string mp))
+        with Not_found ->
+        try Nametab.shortest_qualid_of_dir (DirOpenModule mp)
+        with Not_found -> Nametab.shortest_qualid_of_dir (DirOpenModtype mp)
       in
       pr_qualid qid
     in

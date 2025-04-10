@@ -36,6 +36,8 @@ type full_path
 
 val eq_full_path : full_path -> full_path -> bool
 
+val compare_full_path : full_path -> full_path -> int
+
 (** Constructors of [full_path] *)
 val make_path : DirPath.t -> Id.t -> full_path
 

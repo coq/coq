@@ -128,10 +128,10 @@ let push_typedef visibility sp kn (_, def) = match def with
   Tac2env.push_type visibility sp kn
 | GTydAlg { galg_constructors = cstrs } ->
   (* Register constructors *)
-  let iter (warn, c, _) =
+  let iter (user_warns, c, _) =
     let spc = change_sp_label sp c in
     let knc = change_kn_label kn c in
-    Tac2env.push_constructor visibility spc knc
+    Tac2env.push_constructor ?user_warns visibility spc knc
   in
   Tac2env.push_type visibility sp kn;
   List.iter iter cstrs
@@ -159,7 +159,7 @@ let define_typedef kn (params, def as qdef) = match def with
   (* Define constructors *)
   let constant = ref 0 in
   let nonconstant = ref 0 in
-  let iter (warn, c, args) =
+  let iter (_warn, c, args) =
     let knc = change_kn_label kn c in
     let tag = if List.is_empty args then next constant else next nonconstant in
     let data = {
@@ -168,7 +168,7 @@ let define_typedef kn (params, def as qdef) = match def with
       cdata_args = args;
       cdata_indx = Some tag;
     } in
-    Tac2env.define_constructor ?warn knc data
+    Tac2env.define_constructor knc data
   in
   Tac2env.define_type kn qdef;
   List.iter iter cstrs
@@ -236,7 +236,8 @@ let push_typext vis prefix def =
   let iter data =
     let spc = Libnames.add_path_suffix prefix.obj_path data.edata_name in
     let knc = KerName.make prefix.obj_mp (Label.of_id data.edata_name) in
-    Tac2env.push_constructor vis spc knc
+    let user_warns = data.edata_warn in
+    Tac2env.push_constructor ?user_warns vis spc knc
   in
   List.iter iter def.typext_expr
 
@@ -249,7 +250,7 @@ let define_typext mp def =
       cdata_args = data.edata_args;
       cdata_indx = None;
     } in
-    Tac2env.define_constructor ?warn:data.edata_warn knc cdata
+    Tac2env.define_constructor knc cdata
   in
   List.iter iter def.typext_expr
 

@@ -192,9 +192,7 @@ let get_constructor env var = match var with
 | RelId qid ->
   let c = try Some (Tac2env.locate_constructor qid) with Not_found -> None in
   begin match c with
-  | Some knc ->
-    Tac2env.constructor_user_warn knc ;
-    Other knc
+  | Some knc -> Other knc
   | None ->
     CErrors.user_err ?loc:qid.CAst.loc (str "Unbound constructor " ++ pr_qualid qid)
   end

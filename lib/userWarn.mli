@@ -21,6 +21,8 @@ val drop_qf : 'a with_qf -> t
 val with_empty_qf : t -> 'a with_qf
 val map_qf : ('a -> 'b) -> 'a with_qf -> 'b with_qf
 
+val is_empty : t -> bool
+val is_empty_qf : _ with_qf -> bool
 val empty : t
 
 val make_warn : note:string -> ?cats:string -> unit -> warn

@@ -22,6 +22,10 @@ let with_empty_qf { depr; warn } = { depr_qf = Option.map Deprecation.with_empty
 let empty = { depr = None; warn = [] }
 let map_qf f { depr_qf; warn_qf } = { depr_qf = Option.map (Deprecation.map_qf f) depr_qf; warn_qf }
 
+let is_empty { depr; warn } = Option.is_empty depr && CList.is_empty warn
+
+let is_empty_qf { depr_qf; warn_qf } = Option.is_empty depr_qf && CList.is_empty warn_qf
+
 let make_warn ~note ?cats () =
   let l = String.split_on_char ',' (Option.default "" cats) in
   let l =
