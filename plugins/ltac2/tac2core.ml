@@ -14,6 +14,7 @@ open Names
 open Genarg
 open Tac2val
 open Tac2ffi
+open Tac2extffi
 open Tac2env
 open Tac2expr
 open Tac2entries.Pltac
@@ -67,9 +68,6 @@ let preterm_flags =
   }
 
 (** Standard values *)
-
-let val_format = Tac2print.val_format
-let format = repr_ext val_format
 
 let core_prefix path n = KerName.make path (Label.of_id (Id.of_string_soft n))
 
@@ -280,30 +278,30 @@ let () = define "format_stop" (ret format) []
 
 let () =
   define "format_string" (format @-> ret format) @@ fun s ->
-  Tac2print.FmtString :: s
+  FmtString :: s
 
 let () =
   define "format_int" (format @-> ret format) @@ fun s ->
-  Tac2print.FmtInt :: s
+  FmtInt :: s
 
 let () =
   define "format_constr" (format @-> ret format) @@ fun s ->
-  Tac2print.FmtConstr :: s
+  FmtConstr :: s
 
 let () =
   define "format_ident" (format @-> ret format) @@ fun s ->
-  Tac2print.FmtIdent :: s
+  FmtIdent :: s
 
 let () =
   define "format_literal" (string @-> format @-> ret format) @@ fun lit s ->
-  Tac2print.FmtLiteral lit :: s
+  FmtLiteral lit :: s
 
 let () =
   define "format_alpha" (format @-> ret format) @@ fun s ->
-  Tac2print.FmtAlpha :: s
+  FmtAlpha :: s
 
 let arity_of_format fmt =
-  let open Tac2print in
+  let open Tac2types in
   let fold accu = function
     | FmtLiteral _ -> accu
     | FmtString | FmtInt | FmtConstr | FmtIdent -> 1 + accu
@@ -313,7 +311,7 @@ let arity_of_format fmt =
 
 let () =
   define "format_kfprintf" (closure @-> format @-> tac valexpr) @@ fun k fmt ->
-  let open Tac2print in
+  let open Tac2types in
   let pop1 l = match l with [] -> assert false | x :: l -> (x, l) in
   let pop2 l = match l with [] | [_] -> assert false | x :: y :: l -> (x, y, l) in
   let arity = arity_of_format fmt in

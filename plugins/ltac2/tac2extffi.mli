@@ -16,3 +16,5 @@ val qhyp : quantified_hypothesis repr
 val bindings : bindings repr
 
 val constr_with_bindings : constr_with_bindings repr
+
+val format : format list repr
