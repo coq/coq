@@ -60,7 +60,7 @@ sort > desired <<EOT
 ./orphan_test_test2_test/mlihtml/type_Test_aux.html
 ./orphan_test_test2_test/mlihtml/type_Test.html
 EOT
-(coqc -config | grep -q "NATIVE_COMPILER_DEFAULT=yes") || sed -i.bak '/\.coq-native/d' desired
+(rocq -config | grep -q "NATIVE_COMPILER_DEFAULT=yes") || sed -i.bak '/\.coq-native/d' desired
 diff -u desired actual
 
 (cd "$(find tmp -name coq-test-suite)" && find .) | sort > actual
