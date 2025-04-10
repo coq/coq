@@ -13,6 +13,7 @@ type 'a with_qf = { depr : t; use_instead : 'a option }
 
 let drop_qf { depr } = depr
 let with_empty_qf depr = { depr; use_instead = None }
+let map_qf f { depr; use_instead } = { depr; use_instead = Option.map f use_instead }
 
 let make ?since ?note () = { since ; note }
 let make_with_qf depr ?use_instead () = { depr; use_instead }

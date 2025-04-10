@@ -19,6 +19,7 @@ type 'a with_qf = { depr_qf : 'a Deprecation.with_qf option; warn_qf : warn list
 
 val drop_qf : 'a with_qf -> t
 val with_empty_qf : t -> 'a with_qf
+val map_qf : ('a -> 'b) -> 'a with_qf -> 'b with_qf
 
 val empty : t
 
@@ -31,3 +32,8 @@ val create_depr_and_user_warnings : ?default:CWarnings.status ->
   object_name:string -> warning_name_base:string ->
   ('a -> Pp.t) -> unit ->
   ?loc:Loc.t -> 'a -> t -> unit
+
+val create_depr_and_user_warnings_qf : ?default:CWarnings.status ->
+  object_name:string -> warning_name_base:string ->
+  pp_qf:('qf -> Pp.t) -> ('a -> Pp.t) -> unit ->
+  ?loc:Loc.t -> 'a -> 'qf with_qf -> unit

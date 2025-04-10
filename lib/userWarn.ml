@@ -20,6 +20,7 @@ type 'a with_qf = { depr_qf : 'a Deprecation.with_qf option; warn_qf : warn list
 let drop_qf { depr_qf; warn_qf } = { depr = Option.map Deprecation.drop_qf depr_qf; warn = warn_qf }
 let with_empty_qf { depr; warn } = { depr_qf = Option.map Deprecation.with_empty_qf depr; warn_qf = warn}
 let empty = { depr = None; warn = [] }
+let map_qf f { depr_qf; warn_qf } = { depr_qf = Option.map (Deprecation.map_qf f) depr_qf; warn_qf }
 
 let make_warn ~note ?cats () =
   let l = String.split_on_char ',' (Option.default "" cats) in
@@ -68,3 +69,14 @@ let create_depr_and_user_warnings ?default ~object_name ~warning_name_base pp ()
   fun ?loc x w ->
     w.depr |> Option.iter (fun depr -> depr_warning ?loc (x,depr));
     w.warn |> List.iter (fun w -> user_warning ?loc w)
+
+let create_depr_and_user_warnings_qf ?default ~object_name ~warning_name_base ~pp_qf pp () =
+  let depr_warning = Deprecation.create_warning_with_qf ?default
+      ~object_name ~warning_name_if_no_since:("deprecated-"^warning_name_base) ~pp_qf pp
+  in
+  let user_warning = create_warning ?default
+      ~warning_name_if_no_cats:("warn-"^warning_name_base) ()
+  in
+  fun ?loc x w ->
+    w.depr_qf |> Option.iter (fun depr -> depr_warning ?loc (x,depr));
+    w.warn_qf |> List.iter (fun w -> user_warning ?loc w)
