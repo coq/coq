@@ -295,8 +295,8 @@ let option_object name stage act =
       (* Ruled out by classify_function *)
       assert false
   in
-  let open_option i  (l, _ as o) = match l with
-    | OptExport -> if Int.equal i 1 then cache_option o
+  let open_option  (l, _ as o) = match l with
+    | OptExport -> cache_option o
     | OptGlobal -> ()
     | OptLocal | OptDefault ->
       (* Ruled out by classify_function *)

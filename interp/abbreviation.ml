@@ -100,7 +100,7 @@ let inAbbreviation : Id.t -> (bool * abbreviation) -> obj =
   declare_named_object {(default_object "ABBREVIATION") with
     cache_function = cache_abbreviation;
     load_function = load_abbreviation;
-    open_function = simple_open open_abbreviation;
+    open_function = filtered_open open_abbreviation;
     subst_function = subst_abbreviation;
     classify_function = classify_abbreviation }
 
