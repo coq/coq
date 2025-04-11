@@ -13,11 +13,14 @@ jobs:
       - name: 🔭 Checkout code
         uses: actions/checkout@v4
 
-      - name: 😈 Evil hack
+      - name: 😈 Evil hacks
         run: rm rocq-prover.opam
 
       - name: 😈😈 Evil hack 2
         run: rm test-suite/success/rewrule.v
+
+      - name: 😈😈😈 Evil hack 3
+        run: rm rocq-doc.opam
 
       - name: 🐫 Setup OCaml
         uses: ocaml/setup-ocaml@v3
