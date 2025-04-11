@@ -12,7 +12,7 @@ open Names
 open Tac2expr
 
 (** Quoted variants of Ltac syntactic categories. Contrarily to the former, they
-    sometimes allow anti-quotations. Used for notation scopes. *)
+    sometimes allow anti-quotations. Used for notation syntax classes. *)
 
 type 'a or_anti =
 | QExpr of 'a

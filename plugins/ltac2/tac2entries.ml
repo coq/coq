@@ -583,15 +583,15 @@ type 'a token =
 | TacTerm of string
 | TacNonTerm of Name.t * 'a
 
-type scope_rule =
-| ScopeRule : (raw_tacexpr, _, 'a) Procq.Symbol.t * ('a -> raw_tacexpr) -> scope_rule
+type syntax_class_rule =
+| SyntaxRule : (raw_tacexpr, _, 'a) Procq.Symbol.t * ('a -> raw_tacexpr) -> syntax_class_rule
 
-type scope_interpretation = sexpr list -> scope_rule
+type syntax_class_interpretation = sexpr list -> syntax_class_rule
 
-let scope_table : scope_interpretation Id.Map.t ref = ref Id.Map.empty
+let syntax_class_table : syntax_class_interpretation Id.Map.t ref = ref Id.Map.empty
 
-let register_scope id s =
-  scope_table := Id.Map.add id s !scope_table
+let register_syntax_class id s =
+  syntax_class_table := Id.Map.add id s !syntax_class_table
 
 module ParseToken =
 struct
@@ -601,15 +601,15 @@ let loc_of_token = function
 | SexprInt {loc} -> loc
 | SexprRec (loc, _, _) -> Some loc
 
-let parse_scope = function
+let parse_syntax_class = function
 | SexprRec (_, {loc;v=Some id}, toks) ->
-  if Id.Map.mem id !scope_table then
-    Id.Map.find id !scope_table toks
+  if Id.Map.mem id !syntax_class_table then
+    Id.Map.find id !syntax_class_table toks
   else
-    CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Names.Id.print id)
+    CErrors.user_err ?loc (str "Unknown syntactic class" ++ spc () ++ Names.Id.print id)
 | SexprStr {v=str} ->
   let v_unit = CAst.make @@ CTacCst (AbsKn (Tuple 0)) in
-  ScopeRule (Procq.Symbol.token (Tok.PIDENT (Some str)), (fun _ -> v_unit))
+  SyntaxRule (Procq.Symbol.token (Tok.PIDENT (Some str)), (fun _ -> v_unit))
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
@@ -623,27 +623,27 @@ let parse_token = function
     let () = check_lowercase (CAst.make ?loc:na.CAst.loc id) in
     Name id
   in
-  let scope = parse_scope tok in
-  TacNonTerm (na, scope)
+  let syntax_class = parse_syntax_class tok in
+  TacNonTerm (na, syntax_class)
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
 
-let rec print_scope = function
+let rec print_syntax_class = function
 | SexprStr s -> str s.CAst.v
 | SexprInt i -> int i.CAst.v
 | SexprRec (_, {v=na}, []) -> Option.cata Id.print (str "_") na
 | SexprRec (_, {v=na}, e) ->
-  Option.cata Id.print (str "_") na ++ str "(" ++ pr_sequence print_scope e ++ str ")"
+  Option.cata Id.print (str "_") na ++ str "(" ++ pr_sequence print_syntax_class e ++ str ")"
 
 let print_token = function
 | SexprStr {v=s} -> quote (str s)
-| SexprRec (_, {v=na}, [tok]) -> print_scope tok
+| SexprRec (_, {v=na}, [tok]) -> print_syntax_class tok
 | _ -> assert false
 
 end
 
-let parse_scope = ParseToken.parse_scope
+let parse_syntax_class = ParseToken.parse_syntax_class
 
 type synext = {
   synext_kn : KerName.t;
@@ -658,11 +658,11 @@ type krule =
   (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Procq.Rule.t *
   ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
 
-let rec get_rule (tok : scope_rule token list) : krule = match tok with
+let rec get_rule (tok : syntax_class_rule token list) : krule = match tok with
 | [] -> KRule (Procq.Rule.stop, fun k loc -> k loc [])
-| TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
+| TacNonTerm (na, SyntaxRule (syntax_class, inj)) :: tok ->
   let KRule (rule, act) = get_rule tok in
-  let rule = Procq.Rule.next rule scope in
+  let rule = Procq.Rule.next rule syntax_class in
   let act k e = act (fun loc acc -> k loc ((na, inj e) :: acc)) in
   KRule (rule, act)
 | TacTerm t :: tok ->
@@ -793,16 +793,16 @@ let inTac2Abbreviation : Id.t -> abbreviation -> obj =
      subst_function = subst_abbreviation;
      classify_function = classify_abbreviation}
 
-let rec string_of_scope = function
+let rec string_of_syntax_class = function
 | SexprStr s -> Printf.sprintf "str(%s)" s.CAst.v
 | SexprInt i -> Printf.sprintf "int(%i)" i.CAst.v
 | SexprRec (_, {v=na}, []) -> Option.cata Id.to_string "_" na
 | SexprRec (_, {v=na}, e) ->
-  Printf.sprintf "%s(%s)" (Option.cata Id.to_string "_" na) (String.concat " " (List.map string_of_scope e))
+  Printf.sprintf "%s(%s)" (Option.cata Id.to_string "_" na) (String.concat " " (List.map string_of_syntax_class e))
 
 let string_of_token = function
 | SexprStr {v=s} -> Printf.sprintf "str(%s)" s
-| SexprRec (_, {v=na}, [tok]) -> string_of_scope tok
+| SexprRec (_, {v=na}, [tok]) -> string_of_syntax_class tok
 | _ -> assert false
 
 let make_fresh_key tokens =

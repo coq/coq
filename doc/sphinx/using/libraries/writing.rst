@@ -40,7 +40,7 @@ deprecated compatibility alias using :cmd:`Notation (abbreviation)`
              Library File (transitively required) @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
              Ltac2 alias @qualid is deprecated since @string__since. @string__note.
              Ltac2 definition @qualid is deprecated since @string__since. @string__note.
-             Ltac2 notation {+ @ltac2_scope } is deprecated since @string__since. @string__note.
+             Ltac2 notation {+ @ltac2_syntax_class } is deprecated since @string__since. @string__note.
              Ltac2 constructor @qualid is deprecated since @string__since. @string__note.
              Notation @string is deprecated since @string__since. @string__note. Use @qualid__use instead.
              Tactic @qualid is deprecated since @string__since. @string__note.
