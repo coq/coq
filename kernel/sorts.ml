@@ -10,10 +10,6 @@
 
 open Univ
 
-type family = InSProp | InProp | InSet | InType | InQSort
-
-let all_families = [InSProp; InProp; InSet; InType; InQSort]
-
 module QVar =
 struct
   type repr =
@@ -111,6 +107,12 @@ module Quality = struct
       | _, QSProp -> 1
       | QType, QType -> 0
 
+    let eliminates_to a b = match a, b with
+      | _, QSProp -> true
+      | (QType | QProp), QProp -> true
+      | QType, _  -> true
+      | _, _ -> false
+
     let pr = function
       | QProp -> Pp.str "Prop"
       | QSProp -> Pp.str "SProp"
@@ -121,6 +123,7 @@ module Quality = struct
       | QProp -> 1
       | QType -> 2
 
+    let all = [QSProp; QProp; QType]
   end
 
   let equal a b = match a, b with
@@ -134,11 +137,20 @@ module Quality = struct
     | _, QVar _ -> 1
     | QConstant a, QConstant b -> Constants.compare a b
 
+  let eliminates_to a b = match a, b with
+    | QConstant QType, _ -> true
+    | QVar q, QVar q' -> QVar.equal q q' (* "trivial" check *)
+    | QConstant a, QConstant b -> Constants.eliminates_to a b
+    | _, (QVar _ | QConstant _) -> false
+
   let pr prv = function
     | QVar v -> prv v
     | QConstant q -> Constants.pr q
 
   let raw_pr q = pr QVar.raw_pr q
+
+  let all_constants = List.map (fun q -> QConstant q) Constants.all
+  let all = var (-1) :: all_constants
 
   let hash = let open Hashset.Combine in function
     | QConstant q -> Constants.hash q
@@ -180,6 +192,10 @@ module Quality = struct
   let qsprop = snd @@ hcons (QConstant QSProp)
   let qprop = snd @@ hcons (QConstant QProp)
   let qtype = snd @@ hcons (QConstant QType)
+
+  let is_qsprop = equal qsprop
+  let is_qprop = equal qprop
+  let is_qtype = equal qtype
 
   module Self = struct type nonrec t = t let compare = compare end
   module Set = CSet.Make(Self)
@@ -275,6 +291,11 @@ let qsort q u = QSort (q, u)
 let sort_of_univ u =
   if Universe.is_type0 u then set else Type u
 
+let univ_of_sort s =
+  match s with
+  | SProp | Prop | Set -> Universe.type0
+  | Type u | QSort (_, u) -> u
+
 let make q u =
   let open Quality in
   match q with
@@ -301,6 +322,15 @@ let compare s1 s2 =
       let c = QVar.compare q1 q2 in
       if Int.equal c 0 then Universe.compare u1 u2 else c
     | QSort _, (Prop | Set | Type _) -> 1
+
+let quality s =
+  match s with
+  | SProp -> Quality.qsprop
+  | Prop -> Quality.qprop
+  | Set | Type _ -> Quality.qtype
+  | QSort (q,_) -> Quality.QVar q
+
+let eliminates_to s1 s2 = Quality.eliminates_to (quality s1) (quality s2)
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
@@ -345,46 +375,11 @@ let subst_fn (fq,fu) = function
     | QConstant QProp -> prop
     | QConstant QType -> sort_of_univ (fu v)
 
-let family = function
-  | SProp -> InSProp
-  | Prop -> InProp
-  | Set -> InSet
-  | Type _ -> InType
-  | QSort _ -> InQSort
-
 let quality = let open Quality in function
-| Set | Type _ -> QConstant QType
-| Prop -> QConstant QProp
-| SProp -> QConstant QSProp
+| Set | Type _ -> qtype
+| Prop -> qprop
+| SProp -> qsprop
 | QSort (q, _) -> QVar q
-
-let family_compare a b = match a,b with
-  | InSProp, InSProp -> 0
-  | InSProp, _ -> -1
-  | _, InSProp -> 1
-  | InProp, InProp -> 0
-  | InProp, _ -> -1
-  | _, InProp -> 1
-  | InSet, InSet -> 0
-  | InSet, _ -> -1
-  | _, InSet -> 1
-  | InType, InType -> 0
-  | InType, _ -> -1
-  | _, InType -> 1
-  | InQSort, InQSort -> 0
-
-let family_equal a b =  match a, b with
-  | InSProp, InSProp | InProp, InProp | InSet, InSet | InType, InType -> true
-  | InQSort, InQSort -> true
-  | (InSProp | InProp | InSet | InType | InQSort), _ -> false
-
-let family_leq a b =
-  family_equal a b
-  || match a, b with
-  | InSProp, _ -> true
-  | InProp, InSet -> true
-  | _, InType -> true
-  | _ -> false
 
 open Hashset.Combine
 
@@ -400,7 +395,7 @@ let hash = function
     let h' = QVar.hash q in
     combinesmall 3 (combine h h')
 
-module Hsorts =
+module HSorts =
   Hashcons.Make(
     struct
       type nonrec t = t
@@ -421,7 +416,7 @@ module Hsorts =
         | (SProp | Prop | Set | Type _ | QSort _), _ -> false
     end)
 
-let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons ()
+let hcons = Hashcons.simple_hcons HSorts.generate HSorts.hcons ()
 
 (** On binders: is this variable proof relevant *)
 type relevance = Relevant | Irrelevant | RelevanceVar of QVar.t
@@ -430,10 +425,6 @@ let relevance_equal r1 r2 = match r1,r2 with
   | Relevant, Relevant | Irrelevant, Irrelevant -> true
   | RelevanceVar q1, RelevanceVar q2 -> QVar.equal q1 q2
   | (Relevant | Irrelevant | RelevanceVar _), _ -> false
-
-let relevance_of_sort_family = function
-  | InSProp -> Irrelevant
-  | _ -> Relevant
 
 let relevance_hash = function
   | Relevant -> 0
@@ -463,12 +454,15 @@ let debug_print = function
   | QSort (q, u) -> Pp.(str "QSort(" ++ QVar.raw_pr q ++ str ","
                         ++ spc() ++ Univ.Universe.raw_pr u ++ str ")")
 
-let pr_sort_family = function
-  | InSProp -> Pp.(str "SProp")
-  | InProp -> Pp.(str "Prop")
-  | InSet -> Pp.(str "Set")
-  | InType -> Pp.(str "Type")
-  | InQSort -> Pp.(str "Type") (* FIXME? *)
+let pr prv pru = function
+  | SProp -> Pp.(str "SProp")
+  | Prop -> Pp.(str "Prop")
+  | Set -> Pp.(str "Set")
+  | Type u -> Pp.(str "Type@{" ++ pru u ++ str "}")
+  | QSort (q, u) -> Pp.(str "Type@{" ++ prv q ++ str "|"
+                        ++ spc() ++ pru u ++ str "}")
+
+let raw_pr = pr QVar.raw_pr Univ.Universe.raw_pr
 
 type pattern =
   | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option

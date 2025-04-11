@@ -13,7 +13,6 @@
 open Util
 open Names
 open Evd
-open Term
 open Constr
 open Context
 open Termops
@@ -484,8 +483,8 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     if List.mem_assoc k evlist || Evd.mem sigma0 k then evlist else
     let n = max 0 (SList.length a - nenv) in
     (* FIXME? this is not the right environment in general *)
-    let k_ty = Retyping.get_sort_family_of env sigma (Evd.evar_concl (Evd.find_undefined sigma k)) in
-    let is_prop = k_ty = InProp in
+    let k_ty = Retyping.get_sort_quality_of env sigma (Evd.evar_concl (Evd.find_undefined sigma k)) in
+    let is_prop = UnivGen.QualityOrSet.is_prop k_ty in
     let t = abs_evar n k in
     (k, (n, t, is_prop)) :: put evlist t
   | _ -> EConstr.fold sigma put evlist c in

@@ -563,7 +563,7 @@ let rec check_glob env sigma g c = match DAst.get g, Constr.kind c with
      let sigma,ty = check_glob env sigma ty ty' in
      sigma, mkArray (u,t,def,ty)
   | Glob_term.GSort s, Constr.Sort s' ->
-     let sigma,s = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family s) in
+     let sigma,s = Glob_ops.fresh_glob_sort_quality sigma s in
      let s = EConstr.ESorts.kind sigma s in
      if not (Sorts.equal s s') then raise NotAValidPrimToken;
      sigma,mkSort s
@@ -622,7 +622,7 @@ let rec constr_of_glob to_post post env sigma g = match DAst.get g with
       let sigma, ty' = constr_of_glob to_post post env sigma ty in
        sigma, mkArray (u',t',def',ty')
   | Glob_term.GSort gs ->
-      let sigma,c = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family gs) in
+      let sigma,c = Glob_ops.fresh_glob_sort_quality sigma gs in
       let c = EConstr.ESorts.kind sigma c in
       sigma,mkSort c
   | _ ->

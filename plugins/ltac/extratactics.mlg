@@ -278,43 +278,37 @@ let seff id = VtSideff ([id.CAst.v], VtLater)
 
 }
 
-(*VERNAC ARGUMENT EXTEND sort_family
-| [ "Set" ] -> { InSet }
-| [ "Prop" ] -> { InProp }
-| [ "Type" ] -> { InType }
-END*)
-
 VERNAC COMMAND EXTEND DeriveInversionClear
-| #[ polymorphic; ] [ "Derive" "Inversion_clear" identref(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Inversion_clear" identref(na) "with" constr(c) "Sort" sort_quality_or_set(s) ]
   => { seff na }
   -> {
       add_inversion_lemma_exn ~poly:polymorphic na c s false inv_clear_tac }
 
 | #[ polymorphic; ] [ "Derive" "Inversion_clear" identref(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.InProp false inv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c UnivGen.QualityOrSet.prop false inv_clear_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
-| #[ polymorphic; ] [ "Derive" "Inversion" identref(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Inversion" identref(na) "with" constr(c) "Sort" sort_quality_or_set(s) ]
   => { seff na }
   -> {
       add_inversion_lemma_exn ~poly:polymorphic na c s false inv_tac }
 
 | #[ polymorphic; ] [ "Derive" "Inversion" identref(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.InProp false inv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c UnivGen.QualityOrSet.prop false inv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
-| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion" identref(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion" identref(na) "with" constr(c) "Sort" sort_quality_or_set(s) ]
   => { seff na }
   -> {
       add_inversion_lemma_exn ~poly:polymorphic na c s true dinv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversionClear
-| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion_clear" identref(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion_clear" identref(na) "with" constr(c) "Sort" sort_quality_or_set(s) ]
   => { seff na }
   -> {
       add_inversion_lemma_exn ~poly:polymorphic na c s true dinv_clear_tac }

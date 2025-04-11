@@ -55,7 +55,7 @@ let wit_ref = make0 "ref"
 
 let wit_smart_global = make0 ~dyn:(val_tag (topwit wit_ref)) "smart_global"
 
-let wit_sort_family = make0 "sort_family"
+let wit_sort_quality_or_set = make0 "sort_quality_or_set"
 
 let wit_constr =
   make0 "constr"
@@ -94,7 +94,7 @@ let () =
   register_grammar wit_hyp Prim.hyp;
   register_grammar wit_ref Prim.reference;
   register_grammar wit_smart_global Prim.smart_global;
-  register_grammar wit_sort_family Constr.sort_family;
+  register_grammar wit_sort_quality_or_set Constr.sort_quality_or_set;
   register_grammar wit_constr Constr.constr;
   register_grammar wit_open_binders Constr.open_binders;
   ()

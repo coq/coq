@@ -126,17 +126,13 @@ val constructor_alltags : env -> constructor -> bool list
 val constructor_has_local_defs : env -> constructor -> bool
 val inductive_has_local_defs : env -> inductive -> bool
 
-val sorts_below : Sorts.family -> Sorts.family list
+val constant_sorts_below : Sorts.Quality.t -> UnivGen.QualityOrSet.t list
 
-val sorts_for_schemes : mind_specif -> Sorts.family list
+val sorts_for_schemes : mind_specif -> UnivGen.QualityOrSet.t list
 
-type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+val is_squashed : evar_map -> (mind_specif * EInstance.t) -> Inductive.squash option
 
-val quality_leq : Sorts.Quality.t -> Sorts.Quality.t -> bool
-
-val is_squashed : evar_map -> (mind_specif * EInstance.t) -> squash option
-
-val squash_elim_sort : evar_map -> squash -> ESorts.t -> evar_map
+val squash_elim_sort : evar_map -> Inductive.squash -> ESorts.t -> evar_map
 (** Take into account elimination constraints. When there is an
     elimination constraint and the predicate is underspecified, i.e. a
     QSort, we make a non-canonical choice for the return type.
@@ -144,12 +140,12 @@ val squash_elim_sort : evar_map -> squash -> ESorts.t -> evar_map
 
 val is_allowed_elimination : evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> bool
 
-val make_allowed_elimination : env -> evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> evar_map option
+val make_allowed_elimination : evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> evar_map option
 (** Returns [Some sigma'] if the elimination can be allowed, possibly adding constraints in [sigma'] *)
 
-val elim_sort : mind_specif -> Sorts.family
+val elim_sort : mind_specif -> Sorts.Quality.t
 
-val top_allowed_sort : env -> inductive -> Sorts.family
+val top_allowed_sort : env -> inductive -> Sorts.Quality.t
 
 (** (Co)Inductive records with primitive projections do not have eta-conversion,
     hence no dependent elimination. *)

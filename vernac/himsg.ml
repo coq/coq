@@ -540,8 +540,11 @@ let explain_ill_formed_fix_body env sigma names i = function
             Name id -> Id.print id
           | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
      str "Recursive call to " ++ called ++ str " has not enough arguments"
-  | FixpointOnIrrelevantInductive ->
-    strbrk "Fixpoints on proof irrelevant inductive types should produce proof irrelevant values"
+  | FixpointOnNonEliminable (s, s') ->
+     str "Cannot define a fixpoint on " ++ Printer.pr_sort sigma s ++
+       strbrk " on a value living in " ++ Printer.pr_sort sigma s' ++
+       str ": " ++ Printer.pr_sort sigma s ++ str " does not eliminate in " ++
+       Printer.pr_sort sigma s'
 
 let explain_ill_formed_cofix_body env sigma = function
   (* CoFixpoint guard errors *)

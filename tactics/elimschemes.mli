@@ -12,7 +12,7 @@ open Ind_tables
 
 (** Induction/recursion schemes *)
 
-val elim_scheme : dep:bool -> to_kind:Sorts.family -> individual scheme_kind
+val elim_scheme : dep:bool -> to_kind:UnivGen.QualityOrSet.t -> individual scheme_kind
 
 (** Case analysis schemes *)
 
