@@ -18,20 +18,23 @@ open Names
 type t =
   | SelectAlreadyFocused
   | SelectNth of int
-  | SelectList of (int * int) list
+  | SelectList of Proofview.goal_range_selector list
   | SelectId of Id.t
   | SelectAll
 
-let pr_range_selector (i, j) =
-  if i = j then Pp.int i
-  else Pp.(int i ++ str "-" ++ int j)
+let pr_id_selector id =
+  Pp.(str "[" ++ Id.print id ++ str "]")
+
+let pr_range_selector = let open Proofview in function
+  | RangeSelector (i, j) -> if i = j then Pp.int i else Pp.(int i ++ str "-" ++ int j)
+  | IdSelector id -> pr_id_selector id
 
 let pr_goal_selector = let open Pp in function
   | SelectAlreadyFocused -> str "!"
   | SelectAll -> str "all"
   | SelectNth i -> int i
   | SelectList l -> prlist_with_sep pr_comma pr_range_selector l
-  | SelectId id -> str "[" ++ Id.print id ++ str "]"
+  | SelectId id -> pr_id_selector id
 
 let parse_goal_selector = function
   | "!" -> SelectAlreadyFocused
@@ -58,7 +61,7 @@ let { Goptions.get = get_default_goal_selector } =
 (* Select a subset of the goals *)
 let tclSELECT ?nosuchgoal g tac = match g with
   | SelectNth i -> Proofview.tclFOCUS ?nosuchgoal i i tac
-  | SelectList l -> Proofview.tclFOCUSLIST ?nosuchgoal l tac
+  | SelectList l -> Proofview.tclFOCUSSELECTORLIST ?nosuchgoal l tac
   | SelectId id -> Proofview.tclFOCUSID ?nosuchgoal id tac
   | SelectAll -> tac
   | SelectAlreadyFocused ->

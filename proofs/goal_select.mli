@@ -18,7 +18,7 @@ open Names
 type t =
   | SelectAlreadyFocused
   | SelectNth of int
-  | SelectList of (int * int) list
+  | SelectList of Proofview.goal_range_selector list
   | SelectId of Id.t
   | SelectAll
 

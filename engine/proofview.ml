@@ -158,6 +158,15 @@ let cleared_alias evd g =
   let state = get_state g in
   Option.map (fun g -> goal_with_state g state) (Evarutil.advance evd evk)
 
+(* Returns [ev, Some n] if [n] is the index of evar [ev] with name [id] in the
+   list of currently focused goals, or [ev, None] if [ev] is shelved.
+   Raises [Not_found] if the evar does not exist. *)
+let find_evar_in_pv id pv =
+  let ev = Evd.evar_key id pv.solution in
+  let comb = CList.map drop_state pv.comb in
+  try ev, Some (CList.index Evar.equal ev comb)
+  with Not_found -> ev, None
+
 (** [undefined defs l] is the list of goals in [l] which are still
     unsolved (after advancing cleared goals). Note that order matters. *)
 let undefined_evars defs l =
@@ -351,11 +360,19 @@ let tclBREAK = Proof.break
 
 (** {7 Focusing tactics} *)
 
+(** Represents a range selector as accepted by [tclFOCUSSELECTORLIST]. *)
+type goal_range_selector =
+  | RangeSelector of (int * int)
+  | IdSelector of Names.Id.t
+
 exception NoSuchGoals of int
+exception CannotSelectShelvedAndFocused
 
 let _ = CErrors.register_handler begin function
   | NoSuchGoals n ->
     Some (str "No such " ++ str (String.plural n "goal") ++ str ".")
+  | CannotSelectShelvedAndFocused ->
+     Some (str "Cannot simultaneously select shelved and unshelved goals.")
   | _ -> None
 end
 
@@ -379,6 +396,27 @@ let tclFOCUS ?nosuchgoal i j t =
 
 let tclTRYFOCUS i j t = tclFOCUS ~nosuchgoal:(tclUNIT ()) i j t
 
+(** Like {!tclFOCUS} but selects goals on the shelf, applies [t], and shelves
+    generated subgoals.
+    This method assumes that the list [evs] is a list of existing evars. *)
+let tclFOCUSSHELF ?(nosuchgoal=tclZERO (NoSuchGoals 1)) evs t =
+  if CList.is_empty evs then nosuchgoal
+  else
+    let open Proof in
+    Comb.get >>= fun initial_comb ->
+    Comb.set (CList.map with_empty_state evs) >>
+    t >>= fun result ->
+    Comb.get >>= fun subgoals ->
+    Comb.set initial_comb >>
+    let subgoals = CList.filter_map (fun ev ->
+      let ev = drop_state ev in
+      (* If ev is still undefined, leave it on its original shelf *)
+      if (CList.mem_f Evar.equal ev evs) then None else Some ev)
+      subgoals
+    in
+    Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution (undefined_evars pv.solution subgoals) }) >>
+    return result
+
 let tclFOCUSLIST ?(nosuchgoal=tclZERO (NoSuchGoals 0)) l t =
   let open Proof in
   Comb.get >>= fun comb ->
@@ -401,37 +439,40 @@ let tclFOCUSLIST ?(nosuchgoal=tclZERO (NoSuchGoals 0)) l t =
       Comb.set (CList.rev_append left (sub @ right)) >>
       tclFOCUS mi mj t
 
+let tclFOCUSSELECTORLIST ?(nosuchgoal=tclZERO (NoSuchGoals 0)) l t =
+  let open Proof in
+  Pv.get >>= fun initial ->
+  try
+    let (ranges, shelved_evars) =
+      CList.partition_map (function
+          | RangeSelector r -> Left r
+          | IdSelector id ->
+             match find_evar_in_pv id initial with
+             | ev, Some n -> Left (n, n) (* goal is focused with index n *)
+             | ev, None -> Right ev (* goal is shelved *)) l in
+    match CList.is_empty ranges, CList.is_empty shelved_evars with
+    | true, true -> nosuchgoal
+    | true, false -> tclFOCUSSHELF ~nosuchgoal shelved_evars t
+    | false, true -> tclFOCUSLIST ~nosuchgoal ranges t
+    | false, false -> tclZERO CannotSelectShelvedAndFocused
+  with Not_found -> nosuchgoal
+
 (** Like {!tclFOCUS} but selects a single goal by name. *)
 let tclFOCUSID ?(nosuchgoal=tclZERO (NoSuchGoals 1)) id t =
   let open Proof in
   Pv.get >>= fun initial ->
   try
-    let ev = Evd.evar_key id initial.solution in
-    try
-      let comb = CList.map drop_state initial.comb in
-      let n = CList.index Evar.equal ev comb in
-      (* goal is already under focus *)
+    match find_evar_in_pv id initial with
+    | ev, Some n ->
+      (* Goal is under focus with index n *)
       let (focused,context) = focus n n initial in
       Pv.set focused >>
         t >>= fun result ->
       Pv.modify (fun next -> unfocus context next) >>
         return result
-    with Not_found ->
-      (* otherwise, save current focus and work purely on the shelve *)
-      Comb.set [with_empty_state ev] >>
-      t >>= fun result ->
-      Comb.get >>= fun gls' ->
-      Comb.set initial.comb >>
-      let gls' = CList.filter_map (fun ev' ->
-          let ev' = drop_state ev' in
-          (* if ev' is still undefined, leave it on its original shelf *)
-          if (Evar.equal ev ev') then None else Some ev')
-          gls'
-      in
-      Pv.modify (fun pv ->
-          { pv with
-            solution = Evd.shelve pv.solution (undefined_evars pv.solution gls') }) >>
-      return result
+    | ev, None ->
+       (* Goal is shelved. *)
+       tclFOCUSSHELF ~nosuchgoal [ev] t
   with Not_found -> nosuchgoal
 
 (** {7 Dispatching on goals} *)

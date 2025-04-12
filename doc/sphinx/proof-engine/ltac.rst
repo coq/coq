@@ -424,8 +424,8 @@ Selectors can also be used nested within a tactic expression with the
 
    .. prodn::
       goal_selector ::= {+, @range_selector }
-      | [ @ident ]
       range_selector ::= @natural
+      | [ @ident ]
       | @natural - @natural
 
    Applies :token:`ltac_expr3` to the selected goals.  (At the beginning of a

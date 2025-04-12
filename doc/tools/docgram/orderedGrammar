@@ -2293,11 +2293,11 @@ toplevel_selector: [
 
 goal_selector: [
 | LIST1 range_selector SEP ","
-| "[" ident "]"
 ]
 
 range_selector: [
 | natural
+| "[" ident "]"
 | natural "-" natural
 ]
 
