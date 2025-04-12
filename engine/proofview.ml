@@ -362,6 +362,7 @@ let tclBREAK = Proof.break
 
 (** Represents a range selector as accepted by [tclFOCUSSELECTORLIST]. *)
 type goal_range_selector =
+  | NthSelector of int
   | RangeSelector of (int * int)
   | IdSelector of Names.Id.t
 
@@ -445,6 +446,7 @@ let tclFOCUSSELECTORLIST ?(nosuchgoal=tclZERO (NoSuchGoals 0)) l t =
   try
     let (ranges, shelved_evars) =
       CList.partition_map (function
+          | NthSelector n -> Left (n, n)
           | RangeSelector r -> Left r
           | IdSelector id ->
              match find_evar_in_pv id initial with

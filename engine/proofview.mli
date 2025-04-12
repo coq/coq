@@ -246,6 +246,7 @@ val tclBREAK : (Exninfo.iexn -> Exninfo.iexn option) -> 'a tactic -> 'a tactic
 
 (** Represents a range selector as accepted by [tclFOCUSSELECTORLIST]. *)
 type goal_range_selector =
+  | NthSelector of int
   | RangeSelector of (int * int)
   | IdSelector of Names.Id.t
 

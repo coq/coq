@@ -26,7 +26,8 @@ let pr_id_selector id =
   Pp.(str "[" ++ Id.print id ++ str "]")
 
 let pr_range_selector = let open Proofview in function
-  | RangeSelector (i, j) -> if i = j then Pp.int i else Pp.(int i ++ str "-" ++ int j)
+  | NthSelector i -> Pp.int i
+  | RangeSelector (i, j) -> Pp.(int i ++ str "-" ++ int j)
   | IdSelector id -> pr_id_selector id
 
 let pr_goal_selector = let open Pp in function

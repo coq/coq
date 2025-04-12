@@ -1003,7 +1003,7 @@ GRAMMAR EXTEND Gram
   GLOBAL: toplevel_selector goal_selector;
   range_selector:
     [ [ n = natural ; "-" ; m = natural -> { Proofview.RangeSelector (n, m) }
-      | n = natural -> { Proofview.RangeSelector (n, n) }
+      | n = natural -> { Proofview.NthSelector n }
       | test_bracket_ident; "["; id = ident; "]" -> { Proofview.IdSelector id } ] ]
   ;
   goal_selector:
@@ -1011,7 +1011,7 @@ GRAMMAR EXTEND Gram
       if List.length l == 1 then
         (* Special cases for SelectNth and SelectId. *)
         match List.hd l with
-        | RangeSelector (n, m) when n == m -> SelectNth n
+        | NthSelector n -> SelectNth n
         | IdSelector id -> SelectId id
         | _ -> SelectList l
       else SelectList l } ] ]
