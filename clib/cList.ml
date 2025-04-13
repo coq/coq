@@ -294,6 +294,18 @@ let partitioni p =
   in
   aux 0
 
+(* Remove for OCaml version >= 4.12 *)
+let partition_map p l =
+  let rec aux left right = function
+  | [] -> (rev left, rev right)
+  | x :: l ->
+     match p x with
+     | (Some v, None) -> aux (v :: left) right l
+     | (None, Some v) -> aux left (v :: right) l
+     | _ -> failwith "List.partition_map"
+  in
+  aux [] [] l
+
 (** {6 Applying functorially} *)
 
 let rec map_loop f p = function

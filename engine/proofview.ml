@@ -445,13 +445,14 @@ let tclFOCUSSELECTORLIST ?(nosuchgoal=tclZERO (NoSuchGoals 0)) l t =
   Pv.get >>= fun initial ->
   try
     let (ranges, shelved_evars) =
+      (* TODO: Use [Either.t] when OCaml version >= 4.12 *)
       CList.partition_map (function
-          | NthSelector n -> Left (n, n)
-          | RangeSelector r -> Left r
+          | NthSelector n -> (Some (n, n), None)
+          | RangeSelector r -> (Some r, None)
           | IdSelector id ->
              match find_evar_in_pv id initial with
-             | ev, Some n -> Left (n, n) (* goal is focused with index n *)
-             | ev, None -> Right ev (* goal is shelved *)) l in
+             | ev, Some n -> (Some (n, n), None) (* goal is focused with index n *)
+             | ev, None -> (None, Some ev) (* goal is shelved *)) l in
     match CList.is_empty ranges, CList.is_empty shelved_evars with
     | true, true -> nosuchgoal
     | true, false -> tclFOCUSSHELF ~nosuchgoal shelved_evars t
