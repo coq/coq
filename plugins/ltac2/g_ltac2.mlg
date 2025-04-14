@@ -446,11 +446,11 @@ GRAMMAR EXTEND Gram
       | id = Prim.ident -> { CAst.make ~loc (Some id) }
     ] ]
   ;
-  ltac2_scope:
+  ltac2_syntax_class:
     [ [ s = Prim.string -> { SexprStr (CAst.make ~loc s) }
       | n = Prim.integer -> { SexprInt (CAst.make ~loc n) }
       | id = syn_node -> { SexprRec (loc, id, []) }
-      | id = syn_node; "("; tok = LIST1 ltac2_scope SEP "," ; ")" ->
+      | id = syn_node; "("; tok = LIST1 ltac2_syntax_class SEP "," ; ")" ->
         { SexprRec (loc, id, tok) }
     ] ]
   ;
@@ -460,7 +460,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   tac2def_syn:
-    [ [ toks = LIST1 ltac2_scope; n = syn_level; ":=";
+    [ [ toks = LIST1 ltac2_syntax_class; n = syn_level; ":=";
         e = ltac2_expr ->
         { (toks, n, e) }
     ] ]
@@ -472,7 +472,7 @@ GRAMMAR EXTEND Gram
   ;
 END
 
-(* Quotation scopes used by notations *)
+(* Quotation entries used by notations *)
 
 {
 

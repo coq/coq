@@ -1766,11 +1766,11 @@ SPLICE: [
 | subprf
 ]
 
-ltac2_scope: [
+ltac2_syntax_class: [
 | REPLACE syn_node      (* Ltac2 plugin *)
 | WITH name TAG Ltac2
-| REPLACE syn_node "(" LIST1 ltac2_scope SEP "," ")"      (* Ltac2 plugin *)
-| WITH name "(" LIST1 ltac2_scope SEP "," ")" TAG Ltac2
+| REPLACE syn_node "(" LIST1 ltac2_syntax_class SEP "," ")"      (* Ltac2 plugin *)
+| WITH name "(" LIST1 ltac2_syntax_class SEP "," ")" TAG Ltac2
 ]
 
 tac2mode: [

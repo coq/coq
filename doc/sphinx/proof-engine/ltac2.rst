@@ -1245,7 +1245,7 @@ Match on values
 Notations
 ---------
 
-.. cmd:: Ltac2 Notation {+ @ltac2_scope } {? : @natural } := @ltac2_expr
+.. cmd:: Ltac2 Notation {+ @ltac2_syntax_class } {? : @natural } := @ltac2_expr
 
    .. todo seems like name maybe should use lident rather than ident, considering:
 
@@ -1436,35 +1436,35 @@ notation definition.
 
 Syntactic classes are described with a form of S-expression:
 
-   .. insertprodn ltac2_scope ltac2_scope
+   .. insertprodn ltac2_syntax_class ltac2_syntax_class
 
    .. prodn::
-      ltac2_scope ::= @string
+      ltac2_syntax_class ::= @string
       | @integer
       | @name
-      | @name ( {+, @ltac2_scope } )
+      | @name ( {+, @ltac2_syntax_class } )
 
 .. todo no syn class for ints or strings?
    parm names are not reserved (e.g the var can be named "list1")
 
 Metasyntactic operations that can be applied to other syntactic classes are:
 
-  :n:`opt(@ltac2_scope)`
-    Parses an optional :token:`ltac2_scope`.  The associated value is either :n:`None` or
+  :n:`opt(@ltac2_syntax_class)`
+    Parses an optional :token:`ltac2_syntax_class`.  The associated value is either :n:`None` or
     enclosed in :n:`Some`
 
-  :n:`list1(@ltac2_scope {? , @string })`
-    Parses a list of one or more :token:`ltac2_scope`\s.  If :token:`string` is specified,
+  :n:`list1(@ltac2_syntax_class {? , @string })`
+    Parses a list of one or more :token:`ltac2_syntax_class`\s.  If :token:`string` is specified,
     items must be separated by :token:`string`.
 
-  :n:`list0(@ltac2_scope {? , @string })`
-    Parses a list of zero or more :token:`ltac2_scope`\s.  If :token:`string` is specified,
+  :n:`list0(@ltac2_syntax_class {? , @string })`
+    Parses a list of zero or more :token:`ltac2_syntax_class`\s.  If :token:`string` is specified,
     items must be separated by :token:`string`.  For zero items, the associated value
     is an empty list.
 
-  :n:`seq({+, @ltac2_scope })`
-    Parses the :token:`ltac2_scope`\s in order.  The associated value is a tuple,
-    omitting :token:`ltac2_scope`\s that are :token:`string`\s.
+  :n:`seq({+, @ltac2_syntax_class })`
+    Parses the :token:`ltac2_syntax_class`\s in order.  The associated value is a tuple,
+    omitting :token:`ltac2_syntax_class`\s that are :token:`string`\s.
     `self` and `next` are not permitted within `seq`.
 
 The following classes represent nonterminals with some special handling.  The
@@ -1525,9 +1525,9 @@ table further down lists the classes that that are handled plainly.
   :n:`next`
     parses an Ltac2 expression at the next level and returns it as is.
 
-  :n:`thunk(@ltac2_scope)`
-    Used for semantic effect only, parses the same as :token:`ltac2_scope`.
-    If :n:`e` is the parsed expression for :token:`ltac2_scope`, `thunk`
+  :n:`thunk(@ltac2_syntax_class)`
+    Used for semantic effect only, parses the same as :token:`ltac2_syntax_class`.
+    If :n:`e` is the parsed expression for :token:`ltac2_syntax_class`, `thunk`
     returns :n:`fun () => e`.
 
   :n:`pattern`
