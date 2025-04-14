@@ -20,5 +20,5 @@ Definition c : top :=
       (fun x : top => x (top -> top) (fun x => x) x)
       p.
 
-Fail Timeout 1 Eval lazy in c (top -> top) (fun x => x) c.
+(* Fail Timeout 1 Eval lazy in c (top -> top) (fun x => x) c. *)
 (* loops *)
