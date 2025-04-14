@@ -57,8 +57,6 @@ let parse_user_entry s sep =
   in
   parse s sep table
 
-let no_code = { code = ""; loc = None }
-
 let rhs_loc n =
   { loc_start = Parsing.rhs_start_pos n; loc_end = Parsing.rhs_end_pos n }
 
@@ -459,8 +457,9 @@ doc_gram_rules:
 | doc_gram_rule PIPE doc_gram_rules { $1 :: $3 }
 ;
 
+/* hack: put the location in the dummy code data */
 doc_gram_rule:
-| doc_gram_symbols_opt { { gprod_symbs = $1; gprod_body = no_code; } }
+| doc_gram_symbols_opt { { gprod_symbs = $1; gprod_body = { code = ""; loc = Some (rhs_loc 1) }; } }
 ;
 
 doc_gram_symbols_opt:
