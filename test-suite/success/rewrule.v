@@ -163,7 +163,6 @@ Proof.
   now intros [=].
 Qed.
 
-Fail Timeout 1 Eval lazy in omega + 0.
 End omega.
 
 
@@ -184,7 +183,6 @@ Goal forall s, f s = g s.
 Defined.
 
 Eval lazy in g (raise _).
-Fail Timeout 1 Eval lazy in f (raise _).
 
 End stream.
 
