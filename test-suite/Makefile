@@ -42,8 +42,9 @@ CONFIG_TO_MAKE_EXE:=../_build/$(DUNE_CONTEXT)/test-suite/tools/coq_config_to_mak
 ROCQ_EXE:=../_build/install/$(DUNE_CONTEXT)/bin/rocq
 
 $(TEST_SUITE_CONFIG_FILE):
-	dune build $(CONFIG_TO_MAKE_EXE)
-	$(CONFIG_TO_MAKE_EXE) $(ROCQ_EXE) > $@
+	$(SHOW) 'coq_config_to_make > $@'
+	$(HIDE)dune build $(CONFIG_TO_MAKE_EXE)
+	$(HIDE)$(CONFIG_TO_MAKE_EXE) $(ROCQ_EXE) > $@
 endif
 
 #######################################################################
@@ -179,8 +180,9 @@ SUBSYSTEMS := $(VSUBSYSTEMS) misc ide ide coqchk output-coqchk coqwc coq-makefil
 
 # EJGA: This seems dangerous as first target...
 .csdp.cache: .csdp.cache.test-suite
-	cp $< $@
-	chmod u+w $@
+	$(SHOW) 'cp $< $@'
+	$(HIDE)cp $< $@
+	$(HIDE)chmod u+w $@
 
 PREREQUISITELOG = $(addsuffix .log,$(wildcard prerequisite/*.v)) .csdp.cache
 
@@ -650,7 +652,8 @@ misc: $(patsubst %.sh,%.log,$(wildcard misc/*.sh))
 misc/universes.log: misc/universes/all_stdlib.v
 
 misc/universes/all_stdlib.v:
-	cd misc/universes && ./build_all_stdlib.sh > all_stdlib.v
+	$(SHOW) 'build_all_stdlib'
+	$(HIDE)cd misc/universes && ./build_all_stdlib.sh > all_stdlib.v
 
 $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	@echo "TEST      $<"
