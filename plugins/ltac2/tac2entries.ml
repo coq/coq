@@ -337,10 +337,22 @@ let check_lowercase {loc;v=id} =
   if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
     user_err ?loc (str "The identifier " ++ Id.print id ++ str " must be lowercase")
 
+let pp_not_value_reason = function
+  | MutString -> str "(it contains a string literal, and strings are mutable)"
+  | Application -> str "(it contains an application)"
+  | MutDef kn -> str "(it contains mutable definition " ++ pr_tacref Id.Set.empty kn
+  | MutCtor kn -> str "(it contains a constructor of type " ++ pr_typref kn ++ str " which has mutable fields)"
+  | MutProj kn -> str "(it contains a mutable projection from type " ++ pr_typref kn ++ str ")"
+  | MaybeValButNotSupported -> mt()
+
 let check_value ?loc e =
-  if not (is_value e) then
+  match check_value e with
+  | None -> ()
+  | Some reason ->
+    let ppreason = pp_not_value_reason reason in
     user_err ?loc
-      (str "Tactic definition must be a syntactical value." ++ spc() ++
+      (str "Tactic definition must be a syntactical value" ++
+       (if ismt ppreason then mt() else spc() ++ ppreason) ++ str "." ++ spc() ++
        str "Consider using a thunk.")
 
 let check_ltac_exists {loc;v=id} =

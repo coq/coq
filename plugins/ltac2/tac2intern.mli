@@ -33,9 +33,17 @@ val genintern : ?check_unused:bool ->
   raw_tacexpr ->
   glb_tacexpr
 
+type not_value_reason =
+  | MutString
+  | Application
+  | MutDef of ltac_constant
+  | MutCtor of type_constant
+  | MutProj of type_constant
+  | MaybeValButNotSupported
+
 (** Check that a term is a value. Only values are safe to marshall between
     processes. *)
-val is_value : glb_tacexpr -> bool
+val check_value : glb_tacexpr -> not_value_reason option
 
 val is_pure_constructor : type_constant -> bool
 

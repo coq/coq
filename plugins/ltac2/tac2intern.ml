@@ -119,21 +119,35 @@ let is_pure_field kn i =
     is_pure (List.nth fields i)
   | GTydAlg _ | GTydOpn | GTydDef _ -> assert false
 
-let rec is_value = function
-| GTacAtm (AtmInt _) | GTacVar _ | GTacPrm _ -> true
-| GTacFun (bnd,_) -> assert (not (CList.is_empty bnd)); true
-| GTacAtm (AtmStr _) | GTacApp _ -> false
-| GTacRef kn -> not (Tac2env.interp_global kn).gdata_mutable
-| GTacCst (Tuple _, _, el) -> List.for_all is_value el
-| GTacCst (_, _, []) -> true
-| GTacOpn (_, el) -> List.for_all is_value el
-| GTacCst (Other kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
+type not_value_reason =
+  | MutString
+  | Application
+  | MutDef of ltac_constant
+  | MutCtor of type_constant
+  | MutProj of type_constant
+  | MaybeValButNotSupported
+
+let rec check_value = function
+| GTacAtm (AtmInt _) | GTacVar _ | GTacPrm _ -> None
+| GTacFun (bnd,_) -> assert (not (CList.is_empty bnd)); None
+| GTacAtm (AtmStr _) -> Some MutString
+| GTacApp _ -> Some Application
+| GTacRef kn ->
+  if (Tac2env.interp_global kn).gdata_mutable then Some (MutDef kn)
+  else None
+| GTacCst (Tuple _, _, el) -> List.find_map check_value el
+| GTacCst (_, _, []) -> None
+| GTacOpn (_, el) -> List.find_map check_value el
+| GTacCst (Other kn, _, el) ->
+  if is_pure_constructor kn then List.find_map check_value el
+  else Some (MutCtor kn)
 | GTacLet (_, bnd, e) ->
   (* in the recursive case the bnd are guaranteed to be values but it doesn't hurt to check *)
-  is_value e && List.for_all (fun (_, e) -> is_value e) bnd
-| GTacPrj (kn,e,i) -> is_pure_field kn i && is_value e
+  List.find_map (fun (_, e) -> check_value e) ((Anonymous,e)::bnd)
+| GTacPrj (kn,e,i) -> if is_pure_field kn i then check_value e
+  else Some (MutProj kn)
 | GTacCse _ | GTacSet _ | GTacExt _
-| GTacWth _ | GTacFullMatch _ -> false
+| GTacWth _ | GTacFullMatch _ -> Some MaybeValButNotSupported
 
 let is_rec_rhs = function
 | GTacFun _ -> true
@@ -1398,7 +1412,7 @@ and intern_let env loc ids el tycon e =
   let fold body (na, exp, tc, e) =
     let tc = Option.map (intern_type env) tc in
     let (e, t) = intern_rec env tc e in
-    let t = if is_value e then abstract_var env t else monomorphic t in
+    let t = if Option.is_empty (check_value e) then abstract_var env t else monomorphic t in
     (exp body, (na, e, t))
   in
   let (e, elp) = List.fold_left_map fold e el in
