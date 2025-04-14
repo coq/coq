@@ -895,9 +895,7 @@ let inTac2Redefinition : redefinition -> obj =
   declare_object
     {(default_object "TAC2-REDEFINITION") with
      cache_function  = perform_redefinition;
-     (* should this be simple_open ie only redefine when importing the
-        module containing the redef instead of a parent? *)
-     open_function   = filtered_open (fun _ -> perform_redefinition);
+     open_function   = simple_open perform_redefinition;
      subst_function = subst_redefinition;
      classify_function = classify_redefinition;
     }
