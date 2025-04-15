@@ -1007,14 +1007,7 @@ GRAMMAR EXTEND Gram
       | test_bracket_ident; "["; id = ident; "]" -> { Proofview.IdSelector id } ] ]
   ;
   goal_selector:
-  [ [ l = LIST1 range_selector SEP "," -> { let open Goal_select in
-      if List.length l == 1 then
-        (* Special cases for SelectNth and SelectId. *)
-        match List.hd l with
-        | NthSelector n -> SelectNth n
-        | IdSelector id -> SelectId id
-        | _ -> SelectList l
-      else SelectList l } ] ]
+  [ [ l = LIST1 range_selector SEP "," -> { Goal_select.SelectList l } ] ]
   ;
   toplevel_selector:
     [ [ sel = goal_selector; ":" -> { sel }

@@ -351,7 +351,13 @@ VERNAC { tactic_mode } EXTEND VernacSolve STATE proof
 | [ ltac_selector_opt(g) ltac_info_opt(info) tactic(t) ltac_use_default(with_end_tac) ] =>
     { classify_as_proofstep } -> {
     let g = Option.default (Goal_select.get_default_goal_selector ()) g in
-    let global = match g with Goal_select.SelectAll | Goal_select.SelectList _ -> true | _ -> false in
+    let global =
+      let open Goal_select in
+      match g with
+      | SelectAll -> true
+      | SelectList [NthSelector _] -> false
+      | SelectList _ -> true
+      | _ -> false in
     let t = Tacinterp.hide_interp { Tacinterp.global; ast = t; } in
     ComTactic.solve g ~info t ~with_end_tac
   }

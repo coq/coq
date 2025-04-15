@@ -183,7 +183,7 @@ val background_subgoals : t -> Evar.t list
 (* returns the set of all goals in the proof *)
 val all_goals : t -> Evar.Set.t
 
-(** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
+(** [solve (select_nth n) tac] applies tactic [tac] to the [n]th
     subgoal of the current focused proof. [solve SelectAll
     tac] applies [tac] to all subgoals. *)
 
