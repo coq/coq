@@ -27,6 +27,7 @@ let wit_preterm = Arg.create "preterm"
 
 (** Syntactic quoting of expressions. *)
 
+module Refs = struct
 let prefix_gen n =
   MPfile (DirPath.make (List.map Id.of_string [n; "Ltac2"]))
 
@@ -41,6 +42,36 @@ let std_core n = kername Tac2env.std_prefix n
 let rocq_core n = kername Tac2env.rocq_prefix n
 let control_core n = kername control_prefix n
 let pattern_core n = kername pattern_prefix n
+
+let t_unit = rocq_core "unit"
+let v_unit = Tac2ffi.of_unit ()
+
+let t_int = rocq_core "int"
+let t_string = rocq_core "string"
+let t_array = rocq_core "array"
+let t_list = rocq_core "list"
+let t_constr = rocq_core "constr"
+let t_preterm = rocq_core "preterm"
+let t_pattern = rocq_core "pattern"
+let t_ident = rocq_core "ident"
+let t_option = rocq_core "option"
+let t_exn = rocq_core "exn"
+let t_reference = std_core "reference"
+
+let c_nil = rocq_core "[]"
+let c_cons = rocq_core "::"
+
+let c_none = rocq_core "None"
+let c_some = rocq_core "Some"
+
+let t_bool = rocq_core "bool"
+let c_true = rocq_core "true"
+let c_false = rocq_core "false"
+
+end
+open Refs
+
+(** Quoters *)
 
 let in_constr mods n =
   let mp = List.fold_left (fun mp mod_ -> MPdot (mp, Label.of_id @@ Id.of_string mod_))

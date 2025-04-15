@@ -153,7 +153,7 @@ GRAMMAR EXTEND Gram
       | qid = Prim.qualid -> { pattern_of_qualid qid }
       (* | "["; "]" -> { CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_nil), []) } *)
       | p1 = tac2pat; "::"; p2 = tac2pat ->
-        { CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_cons), [p1; p2])}
+        { CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2quote.Refs.c_cons), [p1; p2])}
       | p = tac2pat; "|"; pl = LIST1 tac2pat SEP "|" ->
         { let pl = p :: pl in
           CAst.make ~loc @@ CPatOr pl }
@@ -169,8 +169,8 @@ GRAMMAR EXTEND Gram
       | "{"; a = tac2rec_fieldpats; "}" -> { CAst.make ~loc @@ CPatRecord a }
       | "["; pats = LIST0 tac2pat SEP ";"; "]" ->
         {
-          let nil = CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_nil), []) in
-          let cons hd tl = CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_cons), [hd;tl]) in
+          let nil = CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2quote.Refs.c_nil), []) in
+          let cons hd tl = CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2quote.Refs.c_cons), [hd;tl]) in
           List.fold_right cons pats nil
         }
     ] ]
@@ -207,7 +207,7 @@ GRAMMAR EXTEND Gram
           CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) } ]
     | "2" RIGHTA
       [ e1 = ltac2_expr; "::"; e2 = ltac2_expr ->
-        { CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Other Tac2core.Core.c_cons)), [e1; e2]) }
+        { CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Other Tac2quote.Refs.c_cons)), [e1; e2]) }
       ]
     | "1" LEFTA
       [ e = ltac2_expr; el = LIST1 ltac2_expr LEVEL "0" ->

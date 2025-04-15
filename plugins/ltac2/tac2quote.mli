@@ -18,6 +18,37 @@ open Tac2expr
 (** Contrarily to Tac2ffi, which lives on the semantic level, this module
     manipulates pure syntax of Ltac2. Its main purpose is to write notations. *)
 
+module Refs : sig
+  (** Standard values *)
+
+  val t_unit : type_constant
+  val v_unit : Tac2val.valexpr
+
+  val t_list : type_constant
+  val c_nil : ltac_constructor
+  val c_cons : ltac_constructor
+
+  val t_option : type_constant
+  val c_none : ltac_constructor
+  val c_some : ltac_constructor
+
+  val t_int : type_constant
+  val t_string : type_constant
+  val t_array : type_constant
+
+  val t_bool : type_constant
+  val c_true : ltac_constructor
+  val c_false : ltac_constructor
+
+  val t_constr : type_constant
+  val t_preterm : type_constant
+  val t_pattern : type_constant
+  val t_ident : type_constant
+  val t_exn : type_constant
+  val t_reference : type_constant
+
+end
+
 val constructor : ?loc:Loc.t -> ltac_constructor -> raw_tacexpr list -> raw_tacexpr
 
 val thunk : raw_tacexpr -> raw_tacexpr
