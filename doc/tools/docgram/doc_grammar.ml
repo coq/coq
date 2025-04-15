@@ -839,19 +839,19 @@ let create_edit_map g op edits =
     match edits with
     | [] -> map
     | edit :: tl ->
-      let (key, binding) = edit in
+      let (loc, key, binding) = edit in
       let all_nts_ref, all_nts_def = get_refdef_nts g in
       (match op with
       (* todo: messages should tell you which edit file causes the error *)
       | "SPLICE" ->
         if not (StringSet.mem key all_nts_def) then
-          error "Undefined nt '%s' in SPLICE\n" key
+          error "%aUndefined nt '%s' in SPLICE\n" pploc loc key
       | "DELETE" ->
         if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
-          error "Unused/undefined nt '%s' in DELETE\n" key;
+          error "%aUnused/undefined nt '%s' in DELETE\n" pploc loc key;
       | "RENAME" ->
         if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
-          error "Unused/undefined  nt '%s' in RENAME\n" key;
+          error "%aUnused/undefined  nt '%s' in RENAME\n" pploc loc key;
       | _ -> ());
       aux tl (StringMap.add key binding map)
   in
@@ -1073,9 +1073,9 @@ let edit_all_prods g op eprods =
       match eprods with
       | [] -> res
       | (loc,[Snterm old_nt; Snterm new_nt]) :: tl when num = 2 ->
-        aux tl ((old_nt, new_nt) :: res)
+        aux tl ((loc, old_nt, new_nt) :: res)
       | (loc,[Snterm old_nt]) :: tl when num = 1 ->
-        aux tl ((old_nt, op) :: res)
+        aux tl ((loc, old_nt, op) :: res)
       | (loc,eprod) :: tl ->
         error "Production '%s: %s' must have only %d nonterminal(s)\n"
             op (prod_to_str eprod) num;
