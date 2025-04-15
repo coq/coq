@@ -23,3 +23,47 @@ Ltac2 Eval
   let s := Env.instantiate (Std.ConstructRef s) in
   constr:($s 0)
 .
+Print Acc.
+
+Ltac2 Eval
+  let acc := Option.get (Env.get [@Corelib; @Init; @Wf; @Acc]) in
+  let acc := match acc with
+  | Std.IndRef acc => acc
+  | _ => Control.throw Not_found
+  end in
+  let data := Ind.data acc in
+  let () :=
+    if Int.equal (Ind.nparams data) 3 (* A, R, x are parameters. *)
+    then () else Control.throw Not_found in
+  let () :=
+    if Int.equal (Ind.nparams_uniform data) 2 (* A, R are recursively uniform parameters. *)
+    then () else Control.throw Not_found in
+  let () :=
+    if Int.equal (Array.get (Ind.constructor_nargs data) 0) 1
+    then () else Control.throw Not_found in
+  ()
+.
+
+Inductive ltac2_ind_test (A B: Type) (f : A -> B) (a : A) (b:= f a) : A -> B -> Type
+  := c0 (a0 : A) (b0 := f a0) : ltac2_ind_test A B f a a0 b0.
+
+Ltac2 Eval
+  let acc := Option.get (Env.get [@ind; @ltac2_ind_test]) in
+  let acc := match acc with
+  | Std.IndRef acc => acc
+  | _ => Control.throw Not_found
+  end in
+  let data := Ind.data acc in
+  let () :=
+    if Int.equal (Ind.nparams data) 4 (* A, B, f, a are parameters. *)
+    then () else Control.throw Not_found in
+  let () :=
+    if Int.equal (Array.get (Ind.constructor_nargs data) 0) 1
+                 (* a0 is the only argument of c0. *)
+    then () else Control.throw Not_found in
+  let () :=
+    if Int.equal (Array.get (Ind.constructor_ndecls data) 0) 2
+                 (* a0 and b0 can both be bound when pattern matching. *)
+    then () else Control.throw Not_found in
+  ()
+.
