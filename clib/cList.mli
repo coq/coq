@@ -101,7 +101,7 @@ val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
 val partitioni : (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
 (** Like [List.partition] but with an index starting from [0] *)
 
-val partition_map : ('a -> ('b option * 'c option)) -> 'a list -> ('b list * 'c list)
+val partition_map : ('a -> ('b, 'c) CSig.union) -> 'a list -> ('b list * 'c list)
 (** Like [List.partition_map] but made available here for OCaml < 4.12 *)
 
 (** {6 Applying functorially} *)

@@ -299,10 +299,10 @@ let partition_map p l =
   let rec aux left right = function
   | [] -> (rev left, rev right)
   | x :: l ->
+     let open CSig in
      match p x with
-     | (Some v, None) -> aux (v :: left) right l
-     | (None, Some v) -> aux left (v :: right) l
-     | _ -> failwith "List.partition_map"
+     | Inl v -> aux (v :: left) right l
+     | Inr v -> aux left (v :: right) l
   in
   aux [] [] l
 
