@@ -1308,29 +1308,6 @@ let () =
     (ind_data @-> ret int) @@ fun (_, mib) ->
   mib.Declarations.mind_nparams_rec
 
-type local_context = (binder * (EConstr.t option)) list
-
-let rel_ctxt_to_local : Constr.rel_context -> local_context =
-  let open Context in
-  let open Context.Rel.Declaration in
-  let open Evd.MiniEConstr in
-  (List.map
-    (function
-      | LocalAssum ({binder_name; binder_relevance}, constr) ->
-        ({binder_name;
-          binder_relevance = ERelevance.make binder_relevance
-         }, of_constr constr), None
-      | LocalDef ({binder_name; binder_relevance}, constr, def) ->
-        ({binder_name;
-          binder_relevance = ERelevance.make binder_relevance
-         }, of_constr constr), Some (of_constr def)
-    ))
-
-let () =
-  define "ind_param_ctx"
-    (ind_data @-> ret (list (pair binder (option constr)))) @@ fun (_, mib) ->
-  rel_ctxt_to_local mib.Declarations.mind_params_ctxt
-
 let () =
   define "constructor_inductive"
     (constructor @-> ret inductive)
@@ -1354,22 +1331,6 @@ let () =
     (ind_data @-> ret (array int)) @@ fun ((_,i),mib) ->
   let open Declarations in
   mib.mind_packets.(i).mind_consnrealdecls
-
-let () =
-  define "constructor_types"
-    (ind_data @-> ret (array constr)) @@ fun ((_,i),mib) ->
-  let open Declarations in
-  Array.map Evd.MiniEConstr.of_constr mib.mind_packets.(i).mind_user_lc
-
-let () =
-  define "arity_ctx"
-    (ind_data @-> ret (list (pair binder (option constr)))) @@ fun ((_,i),mib) ->
-  rel_ctxt_to_local mib.mind_packets.(i).mind_arity_ctxt
-
-let () =
-  define "arity_sort"
-    (ind_data @-> ret sort) @@ fun ((_,i),mib) ->
-  EConstr.ESorts.make mib.mind_packets.(i).mind_sort
 
 let () =
   define "ind_get_projections" (ind_data @-> ret (option (array projection)))
