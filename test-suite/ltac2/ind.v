@@ -23,7 +23,6 @@ Ltac2 Eval
   let s := Env.instantiate (Std.ConstructRef s) in
   constr:($s 0)
 .
-Print Acc.
 
 Ltac2 Eval
   let acc := Option.get (Env.get [@Corelib; @Init; @Wf; @Acc]) in
