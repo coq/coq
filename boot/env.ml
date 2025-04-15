@@ -157,13 +157,16 @@ let init_with ~coqlib =
 
 let initialized () = !env_ref
 
-let maybe_init ~boot ~coqlib =
+let ignored_coqlib_msg = "Command line options -boot and -coqlib are incompatible, ignored -coqlib."
+
+let maybe_init ~warn_ignored_coqlib ~boot ~coqlib =
   match boot, coqlib with
-  | true, None -> Ok Boot
+  | true, None -> Boot
   | false, (None | Some _ as coqlib) ->
-    Ok (Env (init_with ~coqlib))
+    (Env (init_with ~coqlib))
   | true, Some _ ->
-    Error "Command line options -boot and -coqlib are incompatible."
+    warn_ignored_coqlib ();
+    Boot
 
 let coqlib { lib; _ } = lib
 let corelib { core; _ } = core
@@ -238,15 +241,15 @@ let query_needs_env : Usage.query -> string option = function
   | PrintWhere -> Some "-where"
   | PrintConfig -> Some "-config"
 
-let print_queries_maybe_init ~boot ~coqlib usage = function
-  | [] -> maybe_init ~boot ~coqlib
+let print_queries_maybe_init ~warn_ignored_coqlib ~boot ~coqlib usage = function
+  | [] -> Ok (maybe_init ~warn_ignored_coqlib ~boot ~coqlib)
   | _ :: _ as qs ->
     let needs_env = CList.find_map query_needs_env qs in
     let res = match boot, needs_env with
     | true, Some q -> Error ("Command line option -boot is not compatible with " ^ q ^ ".")
     | true, None ->
-      (* produces Error if coqlib and boot used together *)
-      maybe_init ~boot ~coqlib
+      (* warn_ignored_coqlib if coqlib and boot used together *)
+      Ok (maybe_init ~warn_ignored_coqlib ~boot ~coqlib)
     | false, None -> Ok Boot
     | false, Some _ -> Ok (Env (init_with ~coqlib))
     in

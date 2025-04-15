@@ -341,9 +341,8 @@ let init ~make_separator_hack args =
   Makefile.set_noglob args.Args.noglob;
   (* Add to the findlib search path, common with sysinit/coqinit *)
   let ml_path = args.Args.ml_path in
-  let rocqenv = match Boot.Env.maybe_init ~boot:args.boot ~coqlib:args.coqlib with
-    | Ok x -> x
-    | Error msg -> CErrors.user_err Pp.(str msg)
+  let rocqenv = Boot.Env.maybe_init ~boot:args.boot ~coqlib:args.coqlib
+      ~warn_ignored_coqlib:CWarnings.warn_ignored_coqlib
   in
   let ml_path = match rocqenv with
     | Boot -> ml_path

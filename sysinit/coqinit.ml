@@ -135,10 +135,14 @@ let boot_env usage opts =
   in
   let boot = opts.pre.boot in
   let coqlib = opts.config.coqlib in
+  let warn_ignored_coqlib = CWarnings.warn_ignored_coqlib in
   match opts.main with
-  | Run -> with_err (Boot.Env.maybe_init ~boot ~coqlib)
+  | Run -> Boot.Env.maybe_init ~boot ~coqlib ~warn_ignored_coqlib
   | Queries qs ->
-    let _ = with_err (Boot.Env.print_queries_maybe_init ~boot ~coqlib (Some usage) qs) in
+    let _ : Boot.Env.maybe_env =
+      with_err
+        (Boot.Env.print_queries_maybe_init ~warn_ignored_coqlib ~boot ~coqlib (Some usage) qs)
+    in
     exit 0
 
 let init_load_paths (coqenv:Boot.Env.maybe_env) opts =

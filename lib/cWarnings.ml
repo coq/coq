@@ -446,3 +446,9 @@ module CoreCategories = struct
   let internal = make "internal"
 
 end
+
+let warn_ignored_coqlib = create ~name:"boot-ignored-coqlib" ~category:CoreCategories.fragile
+    Pp.(fun () -> str Boot.Env.ignored_coqlib_msg)
+
+(* loc doesn't make sense for this warning and gets in the way *)
+let warn_ignored_coqlib () = warn_ignored_coqlib ()
