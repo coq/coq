@@ -18,11 +18,17 @@ Ltac2 Eval
   (* Check the number of constructors *)
   let nconstr := Ind.nconstructors data in
   let () := if Int.equal nconstr 2 then () else Control.throw Not_found in
+  (* Check that we can get the inductive type from a pattern match expression *)
+  let tm := '(match 0 with 0 => 0 | S n => n end) in
+  let ind := match Constr.Unsafe.kind tm with
+   | Constr.Unsafe.Case case _ _ _ _ => Constr.Unsafe.Case.inductive case
+   | _ => Control.throw Not_found end in
+  (if Ind.equal ind nat then () else Control.throw Not_found);
   (* Create a fresh instance *)
   let s := Ind.get_constructor data 1 in
   let s := Env.instantiate (Std.ConstructRef s) in
-  constr:($s 0)
-.
+  constr:($s 0).
+  
 
 Ltac2 Eval
   let acc := Option.get (Env.get [@Corelib; @Init; @Wf; @Acc]) in

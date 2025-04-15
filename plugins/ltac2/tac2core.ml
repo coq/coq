@@ -740,6 +740,10 @@ let () =
   with e when CErrors.noncritical e ->
     throw err_notfound
 
+let () =
+  define "case_to_inductive" (case @-> ret inductive) @@ fun case ->
+  case.ci_ind
+
 let () = define "constr_cast_default" (ret valexpr) (of_cast DEFAULTcast)
 let () = define "constr_cast_vm" (ret valexpr) (of_cast VMcast)
 let () = define "constr_cast_native" (ret valexpr) (of_cast NATIVEcast)
