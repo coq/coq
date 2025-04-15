@@ -820,7 +820,7 @@ vernac_control: [
 ]
 
 decorated_vernac: [
-| quoted_attributes vernac
+| quoted_attributes LIST0 legacy_attr vernac_aux
 ]
 
 quoted_attributes: [
@@ -852,10 +852,6 @@ legacy_attr: [
 | "NonCumulative"
 | "Private"
 | "Program"
-]
-
-vernac: [
-| LIST0 legacy_attr vernac_aux
 ]
 
 vernac_aux: [

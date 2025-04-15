@@ -1808,10 +1808,6 @@ control_command: [ ]
 
 (* move all commands under "command" *)
 
-DELETE: [
-| vernac
-]
-
 vernac_aux: [
 | DELETE gallina "."
 | DELETE gallina_ext "."
