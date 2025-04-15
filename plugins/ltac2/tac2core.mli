@@ -14,6 +14,10 @@ val throw : ?info:Exninfo.info -> exn -> 'a Proofview.tactic
 
 val pf_apply : ?catch_exceptions:bool -> (Environ.env -> Evd.evar_map -> 'a Proofview.tactic) -> 'a Proofview.tactic
 
+val constr_flags : Pretyping.inference_flags
+val open_constr_no_classes_flags : Pretyping.inference_flags
+val preterm_flags : Pretyping.inference_flags
+
 module type MapType = sig
   (** to have less boilerplate we use S.elt rather than declaring a toplevel type t *)
   module S : CSig.USetS
