@@ -176,3 +176,20 @@ Module Test3.
   (* Import/Export does assume idempotence (!) Change1 only got imported once. *)
   Ltac2 Eval assert_eq_int (Orig.x()) 1.
 End Test3.
+
+Module Depth.
+  Ltac2 mutable x () := 0.
+  Module Outer.
+    Module Inner.
+      Ltac2 Set x := fun () => 1.
+    End Inner.
+  End Outer.
+
+  Ltac2 Eval assert_eq_int (x()) 0.
+
+  Import Outer.
+  Ltac2 Eval assert_eq_int (x()) 0.
+
+  Import Inner.
+  Ltac2 Eval assert_eq_int (x()) 1.
+End Depth.
