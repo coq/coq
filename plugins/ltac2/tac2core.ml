@@ -1052,7 +1052,7 @@ let () =
 
 (** (unit -> unit) -> unit *)
 let () =
-  define "enter" (closure @-> tac unit) @@ fun f ->
+  define "independent" (closure @-> tac unit) @@ fun f ->
   let f = Proofview.tclIGNORE (thaw f) in
   Proofview.tclINDEPENDENT f
 
