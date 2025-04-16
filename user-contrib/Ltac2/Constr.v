@@ -45,7 +45,12 @@ Module Unsafe.
 (** Low-level access to kernel terms. Use with care! *)
 
 Ltac2 Type case.
-(** A value of [case] is data carried by a pattern match expression that contains a reference to the inductive type being matched on. Given an inductive type, one can use the [case] function below to construct pattern match expressions on that type, or given a pattern match expression one can use the [Case.inductive] function to get the inductive type associated to the pattern match. *)
+(** A value of [case] is data carried by a pattern match expression that
+    contains a reference to the inductive type being matched on. Given an
+    inductive type, one can use the [case] function below to construct pattern
+    match expressions on that type, or given a pattern match expression one can
+    use the [Case.inductive] function to get the inductive type associated to
+    the pattern match. *)
 
 Ltac2 Type case_invert := [
 | NoInvert
