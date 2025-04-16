@@ -86,8 +86,12 @@ val initialized : unit -> maybe_env option
 val init_with : coqlib:string option -> t
 
 (** Init if boot:false, possibly with a user provided coqlib.
-    Incompatible arguments produce [Error] (ie with boot:true and coqlib:Some) *)
-val maybe_init : boot:bool -> coqlib:string option -> (maybe_env, string) result
+    Incompatible arguments run [warn_ignored_coqlib] (ie with boot:true and coqlib:Some) *)
+val maybe_init : warn_ignored_coqlib:(unit -> unit) ->
+  boot:bool -> coqlib:string option -> maybe_env
+
+(** Usual messsage used for warn_ignored_coqlib *)
+val ignored_coqlib_msg : string
 
 (** If the query list is empty, behave as [maybe_init].
     Otherwise, print the queries.
@@ -98,7 +102,8 @@ val maybe_init : boot:bool -> coqlib:string option -> (maybe_env, string) result
     If there are queries and none need an environment,
     returns [Ok Boot] even if [boot] was [false].
 *)
-val print_queries_maybe_init : boot:bool -> coqlib:string option ->
+val print_queries_maybe_init : warn_ignored_coqlib:(unit -> unit) ->
+  boot:bool -> coqlib:string option ->
   Usage.specific_usage option -> Usage.query list -> (maybe_env, string) result
 
 (** [stdlib directory] *)

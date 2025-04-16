@@ -131,3 +131,5 @@ module CoreCategories : sig
   val internal : category
 
 end
+
+val warn_ignored_coqlib : unit -> unit
