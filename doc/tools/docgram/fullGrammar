@@ -31,10 +31,10 @@ sort: [
 | "Type" "@{" universe "}"
 ]
 
-sort_family: [
-| "Set"
+sort_quality_or_set: [
 | "Prop"
 | "SProp"
+| "Set"
 | "Type"
 ]
 
@@ -615,15 +615,15 @@ command: [
 | "Functional" "Case" fun_scheme_arg      (* funind plugin *)
 | "Generate" "graph" "for" reference      (* funind plugin *)
 | "Hint" "Rewrite" orient LIST1 constr ":" LIST1 preident
-| "Hint" "Rewrite" orient LIST1 constr "using" tactic ":" LIST1 preident
+| "Hint" "Rewrite" orient LIST1 constr "using" generic_tactic ":" LIST1 preident
 | "Hint" "Rewrite" orient LIST1 constr
-| "Hint" "Rewrite" orient LIST1 constr "using" tactic
-| "Derive" "Inversion_clear" identref "with" constr "Sort" sort_family
+| "Hint" "Rewrite" orient LIST1 constr "using" generic_tactic
+| "Derive" "Inversion_clear" identref "with" constr "Sort" sort_quality_or_set
 | "Derive" "Inversion_clear" identref "with" constr
-| "Derive" "Inversion" identref "with" constr "Sort" sort_family
+| "Derive" "Inversion" identref "with" constr "Sort" sort_quality_or_set
 | "Derive" "Inversion" identref "with" constr
-| "Derive" "Dependent" "Inversion" identref "with" constr "Sort" sort_family
-| "Derive" "Dependent" "Inversion_clear" identref "with" constr "Sort" sort_family
+| "Derive" "Dependent" "Inversion" identref "with" constr "Sort" sort_quality_or_set
+| "Derive" "Dependent" "Inversion_clear" identref "with" constr "Sort" sort_quality_or_set
 | "Declare" "Left" "Step" constr
 | "Declare" "Right" "Step" constr
 | "Unshelve"
@@ -1075,7 +1075,7 @@ scheme: [
 ]
 
 scheme_kind: [
-| scheme_type "for" smart_global "Sort" sort_family
+| scheme_type "for" smart_global "Sort" sort_quality_or_set
 ]
 
 scheme_type: [
@@ -2013,7 +2013,7 @@ function_fix_definition: [
 ]
 
 fun_scheme_arg: [
-| identref ":=" "Induction" "for" reference "Sort" sort_family      (* funind plugin *)
+| identref ":=" "Induction" "for" reference "Sort" sort_quality_or_set      (* funind plugin *)
 ]
 
 orient: [
@@ -2929,11 +2929,11 @@ syn_node: [
 | Prim.ident      (* ltac2 plugin *)
 ]
 
-ltac2_scope: [
+ltac2_syntax_class: [
 | Prim.string      (* ltac2 plugin *)
 | Prim.integer      (* ltac2 plugin *)
 | syn_node      (* ltac2 plugin *)
-| syn_node "(" LIST1 ltac2_scope SEP "," ")"      (* ltac2 plugin *)
+| syn_node "(" LIST1 ltac2_syntax_class SEP "," ")"      (* ltac2 plugin *)
 ]
 
 syn_level: [
@@ -2942,7 +2942,7 @@ syn_level: [
 ]
 
 tac2def_syn: [
-| LIST1 ltac2_scope syn_level ":=" ltac2_expr6      (* ltac2 plugin *)
+| LIST1 ltac2_syntax_class syn_level ":=" ltac2_expr6      (* ltac2 plugin *)
 ]
 
 globref: [

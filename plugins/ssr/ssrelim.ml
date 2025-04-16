@@ -205,7 +205,7 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
     let sigma, elim, elimty =
       if not is_case then
         let sigma, elim = Evd.fresh_global env sigma
-            (Indrec.lookup_eliminator env (kn,i) (EConstr.ESorts.family sigma sort))
+            (Indrec.lookup_eliminator env (kn,i) (EConstr.ESorts.quality_or_set sigma sort))
         in
         let elimty = Retyping.get_type_of env sigma elim in
         sigma, elim, elimty

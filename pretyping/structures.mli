@@ -87,7 +87,7 @@ type t =
   | Const_cs of Names.GlobRef.t
   | Proj_cs of Names.Projection.Repr.t
   | Prod_cs
-  | Sort_cs of Sorts.family
+  | Sort_cs of UnivGen.QualityOrSet.t
   | Default_cs
 
 val equal : Environ.env -> t -> t -> bool

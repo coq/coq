@@ -140,8 +140,14 @@ let parse_opts = function
   | "-debug-shim" :: rest -> { debug_shim = true }, rest
   | args -> { debug_shim = false }, args
 
+(* warning will be produced by the worker *)
+let warn_ignored_coqlib () = ()
+
 let boot_env opts =
-  match Boot.Env.print_queries_maybe_init ~boot:opts.boot ~coqlib:opts.coqlib None opts.queries with
+  match Boot.Env.print_queries_maybe_init ~boot:opts.boot ~coqlib:opts.coqlib
+          ~warn_ignored_coqlib
+          None opts.queries
+  with
   | Ok env -> env
   | Error msg -> Printf.eprintf "%s\n%!" msg; exit 1
 

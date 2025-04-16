@@ -583,7 +583,7 @@ rewrite_rule: [
 ]
 
 scheme_kind: [
-| scheme_type "for" reference "Sort" sort_family
+| scheme_type "for" reference "Sort" sort_quality_or_set
 ]
 
 scheme_type: [
@@ -593,7 +593,7 @@ scheme_type: [
 | "Case"
 ]
 
-sort_family: [
+sort_quality_or_set: [
 | "Prop"
 | "SProp"
 | "Set"
@@ -897,11 +897,11 @@ command: [
 | "Functional" "Scheme" func_scheme_def LIST0 ( "with" func_scheme_def )
 | "Functional" "Case" func_scheme_def      (* funind plugin *)
 | "Generate" "graph" "for" qualid      (* funind plugin *)
-| "Hint" "Rewrite" OPT [ "->" | "<-" ] LIST1 one_term OPT ( "using" ltac_expr ) OPT ( ":" LIST1 ident )
-| "Derive" "Inversion_clear" ident "with" one_term OPT ( "Sort" sort_family )
-| "Derive" "Inversion" ident "with" one_term OPT ( "Sort" sort_family )
-| "Derive" "Dependent" "Inversion" ident "with" one_term "Sort" sort_family
-| "Derive" "Dependent" "Inversion_clear" ident "with" one_term "Sort" sort_family
+| "Hint" "Rewrite" OPT [ "->" | "<-" ] LIST1 one_term OPT ( "using" generic_tactic ) OPT ( ":" LIST1 ident )
+| "Derive" "Inversion_clear" ident "with" one_term OPT ( "Sort" sort_quality_or_set )
+| "Derive" "Inversion" ident "with" one_term OPT ( "Sort" sort_quality_or_set )
+| "Derive" "Dependent" "Inversion" ident "with" one_term "Sort" sort_quality_or_set
+| "Derive" "Dependent" "Inversion_clear" ident "with" one_term "Sort" sort_quality_or_set
 | "Declare" "Left" "Step" one_term
 | "Declare" "Right" "Step" one_term
 | "Number" "Notation" qualid qualid qualid OPT ( "(" LIST1 number_modifier SEP "," ")" ) ":" scope_name
@@ -986,7 +986,7 @@ command: [
 | "Ltac2" OPT "mutable" OPT "rec" tac2def_body LIST0 ( "with" tac2def_body )
 | "Ltac2" "Type" OPT "rec" tac2typ_def LIST0 ( "with" tac2typ_def )
 | "Ltac2" "@" "external" ident ":" ltac2_type ":=" string string
-| "Ltac2" "Notation" LIST1 ltac2_scope OPT ( ":" natural ) ":=" ltac2_expr      (* ltac2 plugin *)
+| "Ltac2" "Notation" LIST1 ltac2_syntax_class OPT ( ":" natural ) ":=" ltac2_expr      (* ltac2 plugin *)
 | "Ltac2" "Set" qualid OPT [ "as" ident ] ":=" ltac2_expr
 | "Ltac2" "Notation" ident ":=" ltac2_expr      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr      (* ltac2 plugin *)
@@ -2037,11 +2037,11 @@ tac2rec_field: [
 | OPT "mutable" ident ":" ltac2_type      (* ltac2 plugin *)
 ]
 
-ltac2_scope: [
+ltac2_syntax_class: [
 | string      (* ltac2 plugin *)
 | integer      (* ltac2 plugin *)
 | name      (* Ltac2 plugin *)
-| name "(" LIST1 ltac2_scope SEP "," ")"      (* Ltac2 plugin *)
+| name "(" LIST1 ltac2_syntax_class SEP "," ")"      (* Ltac2 plugin *)
 ]
 
 ltac2_expr: [
@@ -2161,7 +2161,7 @@ atomic_tac2pat: [
 ]
 
 func_scheme_def: [
-| ident ":=" "Induction" "for" qualid "Sort" sort_family      (* funind plugin *)
+| ident ":=" "Induction" "for" qualid "Sort" sort_quality_or_set      (* funind plugin *)
 ]
 
 rewrite_occs: [

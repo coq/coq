@@ -246,12 +246,13 @@ let init_load_path_std env ~default_ml () =
 
 let init_load_path ~boot ~coqlib ~vo_path ~ml_path =
   let default_ml = CList.is_empty ml_path in
-  let coqenv = Boot.Env.maybe_init ~boot ~coqlib in
+  let coqenv = Boot.Env.maybe_init ~boot ~coqlib
+      ~warn_ignored_coqlib:CWarnings.warn_ignored_coqlib
+  in
   let () = match coqenv with
-    | Ok Boot -> ()
-    | Ok (Env env) ->
+    | Boot -> ()
+    | Env env ->
       init_load_path_std env ~default_ml:(CList.is_empty ml_path) ()
-    | Error msg -> CErrors.user_err (Pp.str msg)
   in
   let () = if not default_ml then Nativelib.include_dirs := ml_path in
   (* always add current directory *)

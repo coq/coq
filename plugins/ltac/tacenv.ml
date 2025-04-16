@@ -172,7 +172,7 @@ let inMD : tacdef -> obj =
   declare_named_object_gen {(default_object "TAC-DEFINITION") with
      cache_function = cache_md;
      load_function = load_md;
-     open_function = simple_open open_md;
+     open_function = filtered_open open_md;
      subst_function = subst_md;
      classify_function = classify_md}
 
@@ -214,7 +214,9 @@ let inReplace : tacreplace -> obj =
   declare_named_object_gen {(default_object "TAC-REDEFINITION") with
      cache_function = cache_replace;
      load_function = load_replace;
-     open_function = simple_open open_replace;
+     (* should this be simple_open ie only redefine when importing the
+        module containing the redef instead of a parent? *)
+     open_function = filtered_open open_replace;
      subst_function = subst_replace;
      classify_function = classify_replace}
 

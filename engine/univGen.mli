@@ -14,6 +14,35 @@ open Environ
 open Univ
 open UVars
 
+module QualityOrSet : sig
+  type t = Qual of Sorts.Quality.t | Set
+
+  val equal : t -> t -> bool
+  val compare : t -> t -> int
+  val of_quality : Sorts.Quality.t -> t
+  val of_sort : Sorts.t -> t
+  val quality : t -> Sorts.Quality.t
+
+  val eliminates_to : t -> t -> bool
+
+  val set : t
+
+  val qtype : t
+  val prop : t
+  val sprop : t
+
+  val is_type : t -> bool
+  val is_set : t -> bool
+  val is_prop : t -> bool
+  val is_sprop : t -> bool
+
+  val pr : (Sorts.QVar.t -> Pp.t) -> t -> Pp.t
+  val raw_pr : t -> Pp.t
+
+  val all_constants : t list
+  val all : t list
+end
+
 type univ_length_mismatch = {
   gref : GlobRef.t;
   actual : int * int;
@@ -52,9 +81,8 @@ val fresh_instance : AbstractContext.t -> Instance.t in_sort_context_set
 val fresh_instance_from : ?loc:Loc.t -> AbstractContext.t -> (GlobRef.t * Instance.t) option ->
   Instance.t in_sort_context_set
 
-val fresh_sort_in_family : Sorts.family ->
-  Sorts.t in_sort_context_set
-(** NB: InQSort is treated as InType *)
+val fresh_sort_quality : QualityOrSet.t -> Sorts.t in_sort_context_set
+(** NB: QSort is treated as QType *)
 
 val fresh_constant_instance : env -> Constant.t ->
   pconstant in_sort_context_set

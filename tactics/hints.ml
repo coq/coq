@@ -1209,9 +1209,9 @@ let load_autohint _ h =
   | AddMode { gref; mode } ->
     if superglobal then add_mode name gref mode
 
-let open_autohint i h =
+let open_autohint h =
   let superglobal = superglobal h in
-  if Int.equal i 1 then match h.hint_action with
+  match h.hint_action with
   | AddHints hints ->
     let () =
       if not superglobal then
@@ -1231,7 +1231,7 @@ let open_autohint i h =
     if not superglobal then add_mode h.hint_name gref mode
 
 let cache_autohint o =
-  load_autohint 1 o; open_autohint 1 o
+  load_autohint 1 o; open_autohint o
 
 let subst_autohint (subst, obj) =
   let subst_key gr =

@@ -36,16 +36,16 @@ val perform_eval : pstate:Declare.Proof.t option -> raw_tacexpr -> unit
 
 (** {5 Notations} *)
 
-type scope_rule =
-| ScopeRule : (raw_tacexpr, _, 'a) Procq.Symbol.t * ('a -> raw_tacexpr) -> scope_rule
+type syntax_class_rule =
+| SyntaxRule : (raw_tacexpr, _, 'a) Procq.Symbol.t * ('a -> raw_tacexpr) -> syntax_class_rule
 
-type scope_interpretation = sexpr list -> scope_rule
+type syntax_class_interpretation = sexpr list -> syntax_class_rule
 
-val register_scope : Id.t -> scope_interpretation -> unit
-(** Create a new scope with the provided name *)
+val register_syntax_class : Id.t -> syntax_class_interpretation -> unit
+(** Create a new syntax class with the provided name *)
 
-val parse_scope : sexpr -> scope_rule
-(** Use this to interpret the subscopes for interpretation functions *)
+val parse_syntax_class : sexpr -> syntax_class_rule
+(** Use this to interpret the syntax class arguments for interpretation functions *)
 
 (** {5 Inspecting} *)
 

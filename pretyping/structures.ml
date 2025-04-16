@@ -149,14 +149,14 @@ type t =
     Const_cs of GlobRef.t
   | Proj_cs of Names.Projection.Repr.t
   | Prod_cs
-  | Sort_cs of Sorts.family
+  | Sort_cs of UnivGen.QualityOrSet.t
   | Default_cs
 
 let equal env p1 p2 = match p1, p2 with
   | Const_cs gr1, Const_cs gr2 -> Environ.QGlobRef.equal env gr1 gr2
   | Proj_cs p1, Proj_cs p2 -> Environ.QProjection.Repr.equal env p1 p2
   | Prod_cs, Prod_cs -> true
-  | Sort_cs s1, Sort_cs s2 -> Sorts.family_equal s1 s2
+  | Sort_cs s1, Sort_cs s2 -> UnivGen.QualityOrSet.equal s1 s2
   | Default_cs, Default_cs -> true
   | _ -> false
 
@@ -164,7 +164,7 @@ let compare p1 p2 = match p1, p2 with
   | Const_cs gr1, Const_cs gr2 -> GlobRef.CanOrd.compare gr1 gr2
   | Proj_cs p1, Proj_cs p2 -> Projection.Repr.CanOrd.compare p1 p2
   | Prod_cs, Prod_cs -> 0
-  | Sort_cs s1, Sort_cs s2 -> Sorts.family_compare s1 s2
+  | Sort_cs s1, Sort_cs s2 -> UnivGen.QualityOrSet.compare s1 s2
   | Default_cs, Default_cs -> 0
   | _ -> Stdlib.compare p1 p2
 
@@ -177,7 +177,7 @@ let rec of_constr sigma t =
   | Lambda (_, _, b) -> let patt, _, _ = of_constr sigma b in patt, None, []
   | Prod (_,_,_) -> Prod_cs, None, [t]
   | Proj (p, _, c) -> Proj_cs (Names.Projection.repr p), None, [c]
-  | Sort s -> Sort_cs (EConstr.ESorts.family sigma s), None, []
+  | Sort s -> Sort_cs (EConstr.ESorts.quality_or_set sigma s), None, []
   | _ -> Const_cs (fst @@ EConstr.destRef sigma t) , None, []
 
 let print = function
@@ -185,7 +185,7 @@ let print = function
   | Proj_cs p -> Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef (Names.Projection.Repr.constant p))
   | Prod_cs -> str "forall _, _"
   | Default_cs -> str "_"
-  | Sort_cs s -> Sorts.pr_sort_family s
+  | Sort_cs s -> UnivGen.QualityOrSet.pr Sorts.QVar.raw_pr s
 
 end
 

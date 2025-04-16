@@ -12,7 +12,7 @@ open Names
 open Constr
 open Environ
 
-type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * Sorts.family
+type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * UnivGen.QualityOrSet.t
 
 (** See also Auto_ind_decl, Indrec, Eqscheme, Ind_tables, ... *)
 

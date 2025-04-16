@@ -240,8 +240,8 @@ let apply ~name ~poly env t sp =
   let ans = Logic_monad.NonLogical.run ans in
   match ans with
   | Nil (e, info) -> Exninfo.iraise (TacticFailure e, info)
-  | Cons ((r, (state, _), status, info), _) ->
-    r, state, status, Trace.to_tree info)
+  | Cons ((r, (state, env), status, info), _) ->
+    r, state, env, status, Trace.to_tree info)
     ()
 
 

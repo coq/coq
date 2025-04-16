@@ -128,6 +128,7 @@ Require Import ssreflect.
 
  - Properties of functions:
       injective f <-> f is injective.
+     injective2 f <-> f(x,y) is injective.
        cancel f g <-> g is a left inverse of f / f is a right inverse of g.
       pcancel f g <-> g is a left inverse of f where g is partial.
       ocancel f g <-> g is a left inverse of f where f is partial.
@@ -142,7 +143,8 @@ Require Import ssreflect.
     right_inverse e inv op <-> inv is a right inverse for op wrt identity e
                                i.e., x op (i x) = e.
          self_inverse e op <-> each x is its own op-inverse (x op x = e).
-             idempotent op <-> op is idempotent for op (x op x = x).
+          idempotent_op op <-> op is idempotent for op (x op x = x).
+          idempotent_fun f <-> f is idempotent (i.e., f \o f =1 f).
               associative op <-> op is associative, i.e.,
                                x op (y op z) = (x op y) op z.
             commutative op <-> op is commutative (x op y = y op x).
@@ -386,12 +388,7 @@ Canonical wrap T x := @Wrap T x.
 
 Prenex Implicits unwrap wrap Wrap.
 
-(**
- fun_scope below is deprecated and should eventually be
- removed. Use function_scope instead.                    **)
-Declare Scope fun_scope.
-Delimit Scope fun_scope with FUN.
-Open Scope fun_scope.
+Delimit Scope function_scope with FUN.
 Open Scope function_scope.
 
 (**  Notations for argument transpose  **)
@@ -508,6 +505,11 @@ Proof. by []. Qed.
 
 Lemma omapEbind : omap f = obind (olift f).
 Proof. by []. Qed.
+
+Lemma omap_id (x : option rT) : omap id x = x. Proof. by case: x. Qed.
+
+Lemma eq_omap (h : aT -> rT) : f =1 h -> omap f =1 omap h.
+Proof. by move=> Ef [?|] //=; rewrite Ef. Qed.
 
 Lemma omapEapp : omap f = oapp (olift f) None.
 Proof. by []. Qed.
@@ -691,8 +693,21 @@ Proof. by move=> fK <-. Qed.
 
 End Injections.
 
+Definition injective2 (rT aT1 aT2 : Type) (f : aT1 -> aT2 -> rT) :=
+  forall (x1 x2 : aT1) (y1 y2 : aT2), f x1 y1 = f x2 y2 ->
+    (x1 = x2) * (y1 = y2).
+Arguments injective2 [rT aT1 aT2] f.
+
 Lemma Some_inj {T : nonPropType} : injective (@Some T).
 Proof. by move=> x y []. Qed.
+
+Lemma inj_omap {aT rT : Type} (f : aT -> rT) :
+  injective f -> injective (omap f).
+Proof. by move=> injf [?|] [?|] //= [/injf->]. Qed.
+
+Lemma omapK {aT rT : Type} (f : aT -> rT) (g : rT -> aT) :
+  cancel f g -> cancel (omap f) (omap g).
+Proof. by move=> fK [?|] //=; rewrite fK. Qed.
 
 Lemma of_voidK T : pcancel (of_void T) [fun _ => None].
 Proof. by case. Qed.
@@ -843,10 +858,19 @@ End SopSisT.
 
 Section SopSisS.
 Implicit Type op :  S -> S -> S.
-Definition idempotent op := forall x, op x x = x.
+Definition idempotent_op op := forall x, op x x = x.
 Definition associative op := forall x y z, op x (op y z) = op (op x y) z.
 Definition interchange op1 op2 :=
   forall x y z t, op1 (op2 x y) (op2 z t) = op2 (op1 x z) (op1 y t).
 End SopSisS.
 
 End OperationProperties.
+
+#[deprecated(since="9.1", use=idempotent_op)]
+Notation idempotent:= idempotent_op (only parsing).
+
+Definition idempotent_fun (U : Type) (f : U -> U) := f \o f =1 f.
+
+Lemma inr_inj {A B} : injective (@inr A B). Proof. by move=> ? ? []. Qed.
+
+Lemma inl_inj {A B} : injective (@inl A B). Proof. by move=> ? ? []. Qed.

@@ -14,6 +14,67 @@ open Constr
 open Univ
 open UVars
 
+module QualityOrSet = struct
+  type t = Qual of Quality.t | Set
+
+  let equal a b = match a, b with
+    | Qual a, Qual b -> Quality.equal a b
+    | Set, Set -> true
+    | Qual _, Set | Set, Qual _ -> false
+
+  let compare a b = match a, b with
+    | Qual a, Qual b -> Quality.compare a b
+    | Set, Set -> 0
+    | Qual _, Set -> 1
+    | Set, Qual _ -> -1
+
+  let eliminates_to a b =
+    let to_qual = function
+      | Set -> Quality.qtype
+      | Qual q -> q
+    in Quality.eliminates_to (to_qual a) (to_qual b)
+
+  let of_quality q = Qual q
+  let of_sort s = match s with
+    | Sorts.Set -> Set
+    | s -> of_quality (Sorts.quality s)
+  let quality q = match q with
+    | Set -> Quality.qtype
+    | Qual q -> q
+
+  let set = Set
+
+  let qtype = Qual Quality.qtype
+  let prop = Qual Quality.qprop
+  let sprop = Qual Quality.qsprop
+
+  let is_type q = match q with
+    | Set -> false
+    | Qual q -> Quality.is_qtype q
+
+  let is_set q = match q with
+    | Set -> true
+    | Qual _ -> false
+
+  let is_prop q = match q with
+    | Set -> false
+    | Qual q -> Quality.is_qprop q
+
+  let is_sprop q = match q with
+    | Set -> false
+    | Qual q -> Quality.is_qsprop q
+
+  let pr prv q = match q with
+    | Set -> Pp.str"Set"
+    | Qual q -> Quality.pr prv q
+
+  let raw_pr = pr Sorts.QVar.raw_pr
+
+  let all_constants = Set :: List.map (fun q -> Qual q) Quality.all_constants
+  let all = Set :: List.map (fun q -> Qual q) Quality.all
+end
+
+
 type sort_context_set = (Sorts.QVar.Set.t * Univ.Level.Set.t) * Univ.Constraints.t
 
 type 'a in_sort_context_set = 'a * sort_context_set
@@ -134,13 +195,15 @@ let constr_of_monomorphic_global env gr =
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
 
-let fresh_sort_in_family = function
-  | InSProp -> Sorts.sprop, empty_sort_context
-  | InProp -> Sorts.prop, empty_sort_context
-  | InSet -> Sorts.set, empty_sort_context
-  | InType | InQSort (* Treat as Type *) ->
-    let u = fresh_level () in
-      sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u),Constraints.empty)
+let fresh_sort_quality =
+  let open QualityOrSet in
+  function
+  | Qual (QConstant QSProp) -> Sorts.sprop, empty_sort_context
+  | Qual (QConstant QProp) -> Sorts.prop, empty_sort_context
+  | Set -> Sorts.set, empty_sort_context
+  | Qual (QConstant QType | QVar _ (* Treat as Type *)) ->
+     let u = fresh_level () in
+     sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u), Constraints.empty)
 
 let new_global_univ () =
   let u = fresh_level () in

@@ -625,13 +625,7 @@ let solve_remaining_by env sigma holes by =
     in
     (* Only solve independent holes *)
     let indep = List.map_filter map holes in
-    let ist = { Geninterp.lfun = Id.Map.empty
-              ; poly = false
-              ; extra = Geninterp.TacStore.empty } in
-    let solve_tac =
-      Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
-    in
-    let solve_tac = tclCOMPLETE solve_tac in
+    let solve_tac = tclCOMPLETE (Gentactic.interp tac) in
     let solve sigma evk =
       let evi =
         try Some (Evd.find_undefined sigma evk)
@@ -933,16 +927,16 @@ let fold_match ?(force=false) env sigma c =
       let env' = push_rel_context ctx env in
         env', ctx, pred
     in
-    let sortp = Retyping.get_sort_family_of env' sigma body in
-    let sortc = Retyping.get_sort_family_of env sigma cty in
+    let sortp = Retyping.get_sort_quality_of env' sigma body in
+    let sortc = Retyping.get_sort_quality_of env sigma cty in
     let dep = not (noccurn sigma 1 body) in
     let pred = if dep then p else
         it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
     in
     let sk =
       (* not sure how correct this is *)
-      if sortp == Sorts.InProp then
-        if sortc == Sorts.InProp then
+      if UnivGen.QualityOrSet.is_prop sortp then
+        if UnivGen.QualityOrSet.is_prop sortc then
           if dep then case_dep
           else case_nodep
         else (

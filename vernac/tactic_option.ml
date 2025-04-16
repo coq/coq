@@ -78,7 +78,8 @@ let declare_tactic_option ?default name =
       { (default_object name) with
         cache_function = cache;
         load_function = load;
-        open_function = simple_open import;
+        (* can't simple_open: crappy behaviour when superglobal *)
+        open_function = filtered_open import;
         classify_function = classify;
         subst_function = subst}
   in

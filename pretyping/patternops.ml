@@ -44,7 +44,7 @@ let rec constr_pattern_eq env (p1:constr_pattern) p2 = match p1, p2 with
 | PLetIn (v1, b1, t1, c1), PLetIn (v2, b2, t2, c2) ->
   Name.equal v1 v2 && constr_pattern_eq env b1 b2 &&
   Option.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) t1 t2 && constr_pattern_eq env c1 c2
-| PSort s1, PSort s2 -> Sorts.family_equal s1 s2
+| PSort s1, PSort s2 -> UnivGen.QualityOrSet.equal s1 s2
 | PMeta m1, PMeta m2 -> Option.equal Id.equal m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
   constr_pattern_eq env t1 t2 && constr_pattern_eq env l1 l2 && constr_pattern_eq env r1 r2
@@ -152,7 +152,7 @@ let pattern_of_constr ~broken env sigma t =
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
-    | Sort s -> PSort (EConstr.ESorts.family sigma (EConstr.ESorts.make s))
+    | Sort s -> PSort (EConstr.ESorts.quality_or_set sigma (EConstr.ESorts.make s))
     | Cast (c,_,_)      -> pattern_of_constr env c
     | LetIn (na,c,t,b) -> PLetIn (na.binder_name,
                                   pattern_of_constr env c,Some (pattern_of_constr env t),
@@ -474,7 +474,7 @@ let rec pat_of_raw metas vars : _ -> pkind constr_pattern_r = DAst.with_loc_val 
                Option.map (pat_of_raw metas vars) t,
                pat_of_raw metas (na::vars) c2)
   | GSort gs ->
-     (try PSort (Glob_ops.glob_sort_family gs)
+     (try PSort (Glob_ops.glob_sort_quality gs)
       with Glob_ops.ComplexSort -> user_err ?loc (str "Unexpected universe in pattern."))
   | GHole _ -> PMeta None
   | GGenarg (GenArg (Glbwit tag, _) as g) -> begin match kind with

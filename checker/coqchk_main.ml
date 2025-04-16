@@ -417,9 +417,8 @@ let init_with_argv argv =
     parse_args argv;
     Option.iter (fun file -> init_profile ~file) !profile;
     if CDebug.(get_flag misc) then Printexc.record_backtrace true;
-    let coqenv = match Boot.Env.maybe_init ~boot:!boot ~coqlib:!coqlib with
-      | Ok x -> x
-      | Error msg -> CErrors.user_err Pp.(str msg)
+    let coqenv = Boot.Env.maybe_init ~boot:!boot ~coqlib:!coqlib
+        ~warn_ignored_coqlib:CWarnings.warn_ignored_coqlib
     in
     Flags.if_verbose (fun () -> print_header coqenv ()) ();
     let () = match coqenv with

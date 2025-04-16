@@ -11,7 +11,6 @@
 {
 
 open Pp
-open Genarg
 open Stdarg
 open Tacarg
 open Extraargs
@@ -221,38 +220,21 @@ TACTIC EXTEND rewrite_star
 
 {
 
-let add_rewrite_hint ~locality ~poly bases ort t lcsr =
-  let env = Global.env() in
-  let sigma = Evd.from_env env in
-  let f ce =
-    let c, ctx = Constrintern.interp_constr env sigma ce in
-    let c = EConstr.to_constr sigma c in
-    let ctx =
-      let ctx = UState.context_set ctx in
-        if poly then ctx
-        else (* This is a global universe context that shouldn't be
-                refreshed at every use of the hint, declare it globally. *)
-          (Global.push_context_set ctx;
-           Univ.ContextSet.empty)
-    in
-      CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
-  let eqs = List.map f lcsr in
-  let add_hints base = add_rew_rules ~locality base eqs in
-  List.iter add_hints bases
-
 let classify_hint _ = VtSideff ([], VtLater)
 
 }
 
+(* XXX get this out of ltac plugin (need to bring orient with it) *)
+
 VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY { classify_hint }
 | #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" ne_preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o None l }
-| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" generic_tactic(t)
     ":" ne_preident_list(bl) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic bl o (Some t) l }
 | #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o None l }
-| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
+| #[ polymorphic; locality = hint_locality; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" generic_tactic(t) ] ->
   { add_rewrite_hint ~locality ~poly:polymorphic ["core"] o (Some t) l }
 END
 
@@ -296,43 +278,37 @@ let seff id = VtSideff ([id.CAst.v], VtLater)
 
 }
 
-(*VERNAC ARGUMENT EXTEND sort_family
-| [ "Set" ] -> { InSet }
-| [ "Prop" ] -> { InProp }
-| [ "Type" ] -> { InType }
-END*)
-
 VERNAC COMMAND EXTEND DeriveInversionClear
-| #[ polymorphic; ] [ "Derive" "Inversion_clear" identref(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Inversion_clear" identref(na) "with" constr(c) "Sort" sort_quality_or_set(s) ]
   => { seff na }
   -> {
       add_inversion_lemma_exn ~poly:polymorphic na c s false inv_clear_tac }
 
 | #[ polymorphic; ] [ "Derive" "Inversion_clear" identref(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.InProp false inv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c UnivGen.QualityOrSet.prop false inv_clear_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
-| #[ polymorphic; ] [ "Derive" "Inversion" identref(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Inversion" identref(na) "with" constr(c) "Sort" sort_quality_or_set(s) ]
   => { seff na }
   -> {
       add_inversion_lemma_exn ~poly:polymorphic na c s false inv_tac }
 
 | #[ polymorphic; ] [ "Derive" "Inversion" identref(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.InProp false inv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c UnivGen.QualityOrSet.prop false inv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
-| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion" identref(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion" identref(na) "with" constr(c) "Sort" sort_quality_or_set(s) ]
   => { seff na }
   -> {
       add_inversion_lemma_exn ~poly:polymorphic na c s true dinv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversionClear
-| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion_clear" identref(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion_clear" identref(na) "with" constr(c) "Sort" sort_quality_or_set(s) ]
   => { seff na }
   -> {
       add_inversion_lemma_exn ~poly:polymorphic na c s true dinv_clear_tac }

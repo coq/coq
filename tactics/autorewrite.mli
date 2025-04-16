@@ -13,11 +13,17 @@
 open Constr
 open Equality
 
-(** Rewriting rules before tactic interpretation *)
-type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) CAst.t
+type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Gentactic.raw_generic_tactic option) CAst.t
 
 (** To add rewriting rules to a base *)
 val add_rew_rules : locality:Hints.hint_locality -> string -> raw_rew_rule list -> unit
+
+val add_rewrite_hint
+  : locality:Libobject.locality
+  -> poly:bool
+  -> string list
+  -> bool
+  -> Gentactic.raw_generic_tactic option -> Constrexpr.constr_expr list -> unit
 
 (** The AutoRewrite tactic.
    The optional conditions tell rewrite how to handle matching and side-condition solving.
@@ -32,7 +38,7 @@ sig
    type t
    val rew_lemma : t -> Univ.ContextSet.t * constr
    val rew_l2r : t -> bool
-   val rew_tac : t -> Genarg.glob_generic_argument option
+   val rew_tac : t -> Gentactic.glob_generic_tactic option
 end
 
 val find_rewrites : string -> RewRule.t list

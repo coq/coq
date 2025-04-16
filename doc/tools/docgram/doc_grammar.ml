@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Coqpp_parser
+
 open Coqpp_ast
 
 let exit_code = ref 0
@@ -191,11 +191,15 @@ let get_first m_prod prods =
   in
   find_first_r prods 0
 
-let find_first edit prods nt =
+let pploc out = function
+  | None -> ()
+  | Some loc -> Printf.fprintf out "File %s line %d: " loc.loc_start.pos_fname loc.loc_start.pos_lnum
+
+let find_first ~loc edit prods nt =
   try
     get_first edit prods
   with Not_found ->
-    error "Can't find '%s' in edit for '%s'\n" (prod_to_str edit) nt;
+    error "%aCan't find '%s' in edit for '%s'\n" pploc loc (prod_to_str edit) nt;
     raise Not_found
 
 module DocGram = struct
@@ -425,9 +429,9 @@ let rec cvt_gram_sym = function
   | GSymbProd ll ->
     let cvt = List.map cvt_gram_prod ll in
     (match cvt with
-    | (Snterm x :: []) :: [] -> Snterm x
-    | (Sterm x :: []) :: []  -> Sterm x
-    | _ -> Sprod cvt)
+    | (_, Snterm x :: []) :: [] -> Snterm x
+    | (_, Sterm x :: []) :: []  -> Sterm x
+    | _ -> Sprod (List.map snd cvt))
 
 and cvt_gram_sym_list l =
   let get_sym = function
@@ -467,7 +471,7 @@ and cvt_gram_sym_list l =
   | [] -> []
 
 and cvt_gram_prod p =
- List.concat (List.map (fun x -> let _, gs = x in cvt_gram_sym_list gs)  p.gprod_symbs)
+ p.gprod_body.loc, List.concat (List.map (fun x -> let _, gs = x in cvt_gram_sym_list gs)  p.gprod_symbs)
 
 
 let add_symdef nt file symdef_map =
@@ -552,23 +556,24 @@ let read_mlg g is_edit ast file level_renames symdef_map =
   let locals = ref StringSet.empty in
   let dup_renames = ref StringMap.empty in
   let add_prods nt prods gramext_globals =
-    if not is_edit then
-      if NTMap.mem nt !g.map && not (List.mem nt gramext_globals) && nt <> "command" && nt <> "simple_tactic" then begin
-        let new_name = String.uppercase_ascii (Filename.remove_extension (Filename.basename file)) ^ "_" ^ nt in
-        dup_renames := StringMap.add nt new_name !dup_renames;
-        if false then Printf.printf "** dup local sym %s -> %s in %s\n" nt new_name file
-      end;
-      add_symdef nt file symdef_map;
+    if not is_edit &&
+       NTMap.mem nt g.map && not (List.mem nt gramext_globals) &&
+       nt <> "command" && nt <> "simple_tactic" then begin
+      let new_name = String.uppercase_ascii (Filename.remove_extension (Filename.basename file)) ^ "_" ^ nt in
+      dup_renames := StringMap.add nt new_name !dup_renames;
+      if false then Printf.printf "** dup local sym %s -> %s in %s\n" nt new_name file
+    end;
+    add_symdef nt file symdef_map;
     let plugin = get_plugin_name file in
     let prods = if not is_edit &&
-        not (List.mem file autoloaded_mlgs) &&
-        plugin <> "" then
-      List.map (fun p -> p @ [Sedit2 ("TAG", plugin)]) prods
-    else
-      prods
+                   not (List.mem file autoloaded_mlgs) &&
+                   plugin <> "" then
+        List.map (fun (loc,p) -> loc, p @ [Sedit2 ("TAG", plugin)]) prods
+      else
+        prods
     in
     (* todo: doesn't yet work perfectly with SPLICE *)
-(*    let prods = if not is_edit then List.map (fun p -> p @ [Sedit2 ("FILE", file)]) prods else prods in*)
+    (*    let prods = if not is_edit then List.map (fun p -> p @ [Sedit2 ("FILE", file)]) prods else prods in*)
     res := (nt, prods) :: !res
   in
   let prod_loop = function
@@ -617,10 +622,10 @@ let read_mlg g is_edit ast file level_renames symdef_map =
               let cvted = List.map cvt_gram_prod rule.grule_prods in
               (* edit names for levels *)
               (* See https://camlp5.github.io/doc/html/grammars.html#b:Associativity *)
-              let edited = List.map (edit_SELF nt cur_level next_level right_assoc false) cvted in
+              let edited = List.map (fun (loc,prod) -> loc, edit_SELF nt cur_level next_level right_assoc false prod) cvted in
               let prods_to_add =
                 if cur_level <> nt && i+1 < len then
-                  edited @ [[Snterm next_level]]
+                  edited @ [None,[Snterm next_level]]
                 else
                   edited
               in
@@ -636,16 +641,16 @@ let read_mlg g is_edit ast file level_renames symdef_map =
       | Some c -> String.trim c.code
       in
       add_prods node
-        (List.map (fun r -> cvt_ext r.vernac_toks) vernac_ext.vernacext_rules) []
+        (List.map (fun r -> None, cvt_ext r.vernac_toks) vernac_ext.vernacext_rules) []
     | VernacArgumentExt vernac_argument_ext ->
       add_prods vernac_argument_ext.vernacargext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) vernac_argument_ext.vernacargext_rules) []
+        (List.map (fun r -> None, cvt_ext r.tac_toks) vernac_argument_ext.vernacargext_rules) []
     | TacticExt tactic_ext ->
       add_prods "simple_tactic"
-        (List.map (fun r -> cvt_ext r.tac_toks) tactic_ext.tacext_rules) []
+        (List.map (fun r -> None, cvt_ext r.tac_toks) tactic_ext.tacext_rules) []
     | ArgumentExt argument_ext ->
       add_prods argument_ext.argext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) argument_ext.argext_rules) []
+        (List.map (fun r -> None, cvt_ext r.tac_toks) argument_ext.argext_rules) []
     | _ -> ()
   in
 
@@ -658,12 +663,12 @@ let read_mlg_edit file =
   let fdir = dir file in
   let level_renames = ref StringMap.empty in (* ignored *)
   let symdef_map = ref StringMap.empty in (* ignored *)
-  let prods, _, _ = read_mlg (g_empty ()) true (parse_file fdir) fdir level_renames symdef_map in
+  let prods, _, _ = read_mlg !(g_empty ()) true (Coqpp_parser.parse_file fdir) fdir level_renames symdef_map in
   prods
 
 let add_rule g nt prods file =
   let ent = try NTMap.find nt !g.map with Not_found -> [] in
-  let nodups = List.concat (List.map (fun prod ->
+  let nodups = List.concat (List.map (fun (_,prod) ->
       if has_match prod ent then begin
         if !show_warn then
           warn "%s: Duplicate production '%s -> %s'\n" file nt (prod_to_str prod);
@@ -700,7 +705,7 @@ let rec edit_prod g top edit_map prod =
       | "DELETE" -> []
       | "SPLICE" ->
         begin
-          try let splice_prods = NTMap.find nt !g.map in
+          try let splice_prods = NTMap.find nt g.map in
             match splice_prods with
             | [] -> error "Empty splice for '%s'\n" nt; []
             | [p] -> List.rev (remove_Sedit2 p)
@@ -738,7 +743,7 @@ let rec edit_prod g top edit_map prod =
     with Not_found -> false
   in
   let get_splice_prods nt =
-    try NTMap.find nt !g.map
+    try NTMap.find nt g.map
     with Not_found -> (error "Missing nt '%s' for splice\n" nt; [])
   in
 
@@ -771,11 +776,11 @@ let read_mlg_files g args symdef_map =
   let last_autoloaded = List.hd (List.rev autoloaded_mlgs) in
   List.iter (fun file ->
     (* todo: ??? does nt renaming, deletion and splicing *)
-    let rules, locals, dup_renames = read_mlg g false (parse_file file) file level_renames symdef_map in
+    let rules, locals, dup_renames = read_mlg !g false (Coqpp_parser.parse_file file) file level_renames symdef_map in
     let numprods = List.fold_left (fun num rule ->
         let nt, prods = rule in
         (* rename local duplicates *)
-        let prods = List.map (fun prod -> List.hd (edit_prod g true dup_renames prod)) prods in
+        let prods = List.map (fun (loc,prod) -> loc, List.hd (edit_prod !g true dup_renames prod)) prods in
         let nt = try StringMap.find nt dup_renames with Not_found -> nt in
 (*        if NTMap.mem nt !g.map && (StringSet.mem nt locals) &&*)
 (*            StringSet.cardinal (StringSet.of_list (StringMap.find nt !symdef_map)) > 1 then*)
@@ -917,7 +922,7 @@ let apply_splice g edit_map =
           List.iter (fun prod -> Printf.eprintf "  %s\n" (prod_to_str prod)) prods;
           (nt, prods)
         end else begin
-          let (nt', prods') = edit_rule g edit_map nt prods in
+          let (nt', prods') = edit_rule !g edit_map nt prods in
           if nt' = nt && prods' = prods then
             (nt, prods)
           else
@@ -1052,7 +1057,7 @@ let maybe_add_nt g insert_after name sym queue =
 let apply_rename_delete g edit_map =
   List.iter (fun b -> let (nt, _) = b in
       let prods = try NTMap.find nt !g.map  with Not_found -> [] in
-      let (nt', prods') = edit_rule g edit_map nt prods in
+      let (nt', prods') = edit_rule !g edit_map nt prods in
       if nt' = "" then
         g_remove g nt
       else if nt <> nt' then
@@ -1067,11 +1072,11 @@ let edit_all_prods g op eprods =
     let rec aux eprods res =
       match eprods with
       | [] -> res
-      | [Snterm old_nt; Snterm new_nt] :: tl when num = 2 ->
+      | (loc,[Snterm old_nt; Snterm new_nt]) :: tl when num = 2 ->
         aux tl ((old_nt, new_nt) :: res)
-      | [Snterm old_nt] :: tl when num = 1 ->
+      | (loc,[Snterm old_nt]) :: tl when num = 1 ->
         aux tl ((old_nt, op) :: res)
-      | eprod :: tl ->
+      | (loc,eprod) :: tl ->
         error "Production '%s: %s' must have only %d nonterminal(s)\n"
             op (prod_to_str eprod) num;
         aux tl res
@@ -1080,7 +1085,7 @@ let edit_all_prods g op eprods =
     match op with
     | "SPLICE" ->
       let rv = apply_splice g edit_map in
-      let cause = Printf.sprintf "from SPLICE of '%s'" (prod_to_str (List.hd eprods)) in
+      let cause = Printf.sprintf "from SPLICE of '%s'" (prod_to_str (snd (List.hd eprods))) in
       NTMap.iter (fun nt rule -> check_for_duplicates cause rule (NTMap.find nt g_old_map) nt) !g.map;
       rv
     | "RENAME"
@@ -1105,14 +1110,14 @@ let edit_all_prods g op eprods =
       !g.order; true
   | _ -> false
 
-let edit_single_prod g edit0 prods nt =
+let edit_single_prod g ~loc edit0 prods nt =
   let rec edit_single_prod_r edit prods nt seen =
     match edit with
     | [] -> prods
     | Sedit "ADD_OPT" :: sym :: tl ->
       let prods' = (try
           let pfx = List.rev seen in
-          let posn = find_first edit0 prods nt in
+          let posn = find_first ~loc edit0 prods nt in
           let prods = insert_after posn [pfx @ (Sopt sym :: tl)] prods in
           let prods = remove_prod (pfx @ (sym :: tl)) prods nt in
           remove_prod (pfx @ tl) prods nt
@@ -1123,7 +1128,7 @@ let edit_single_prod g edit0 prods nt =
       let prods' = (try
         let nt = maybe_add_nt g (ref nt) name sym (Queue.create ()) in
         let pfx = List.rev seen in
-        let posn = find_first edit0 prods nt in
+        let posn = find_first ~loc edit0 prods nt in
         let prods = insert_after posn [pfx @ (Snterm nt :: tl)] prods in
         remove_prod (pfx @ (sym :: tl)) prods nt
       with Not_found -> prods) in
@@ -1146,74 +1151,73 @@ let apply_edit_file g edits =
     g_add_prod_after g (Some src_nt) dest_nt oprod;
     remove_prod oprod prods src_nt      (* remove orig prod *)
   in
-  List.iter (fun b ->
-      let (nt, eprod) = b in
+  List.iter (fun (nt,eprod) ->
       if not (edit_all_prods g nt eprod) then begin
         let rec aux eprod prods add_nt =
           let g_old_map = !g.map in
           let rv = match eprod with
           | [] -> prods, add_nt
-          | (Snterm "DELETE" :: oprod) :: tl ->
+          | (loc, Snterm "DELETE" :: oprod) :: tl ->
             aux tl (remove_prod oprod prods nt) add_nt
-          | (Snterm "DELETENT" :: _) :: tl ->  (* note this doesn't remove references *)
+          | (loc, Snterm "DELETENT" :: _) :: tl ->  (* note this doesn't remove references *)
             if not (NTMap.mem nt !g.map) then
               error "DELETENT for undefined nonterminal '%s'\n" nt;
             g_remove g nt;
             aux tl prods false
-          | (Snterm "MOVETO" :: Snterm dest_nt :: oprod) :: tl ->
+          | (loc, Snterm "MOVETO" :: Snterm dest_nt :: oprod) :: tl ->
             let prods = try (* add "nt -> dest_nt" production *)
-              let posn = find_first oprod prods nt in
+              let posn = find_first ~loc oprod prods nt in
               if List.mem [Snterm dest_nt] prods then prods
                 else insert_after posn [[Snterm dest_nt]] prods (* insert new prod *)
             with Not_found -> prods in
             let prods' = moveto nt dest_nt oprod prods in
             aux tl prods' add_nt
-          | [Snterm "COPYALL"; Snterm dest_nt] :: tl ->
+          | (loc, [Snterm "COPYALL"; Snterm dest_nt]) :: tl ->
             if NTMap.mem dest_nt !g.map then
               error "COPYALL target nonterminal '%s' already exists\n" dest_nt;
             g_maybe_add g dest_nt prods;
             aux tl prods add_nt
-          | [Snterm "MOVEALLBUT"; Snterm dest_nt] :: tl ->
-            List.iter (fun tlprod ->
+          | (loc, [Snterm "MOVEALLBUT"; Snterm dest_nt]) :: tl ->
+            List.iter (fun (loc,tlprod) ->
                 if not (List.mem tlprod prods) then
                   error "MOVEALLBUT for %s can't find '%s'\n" nt (prod_to_str tlprod))
               tl;
             let prods' = List.fold_left (fun prods oprod ->
-                if not (List.mem oprod tl) then begin
+                if not (CList.exists (fun (_,x) -> x = oprod) tl) then begin
                   moveto nt dest_nt oprod prods
                 end else
                   prods)
               prods prods in
             prods', add_nt
-          | (Snterm "OPTINREF" :: _) :: tl ->
+          | (loc, Snterm "OPTINREF" :: _) :: tl ->
             if not (has_match [] prods) then
               error "OPTINREF but no empty production for %s\n" nt;
             global_repl g [(Snterm nt)] [(Sopt (Snterm nt))];
             aux tl (remove_prod [] prods nt) add_nt
-          | (Snterm "INSERTALL" :: syms) :: tl ->
+          | (loc, Snterm "INSERTALL" :: syms) :: tl ->
             aux tl (List.map (fun p -> syms @ p) prods) add_nt
-          | (Snterm "APPENDALL" :: syms) :: tl ->
+          | (loc, Snterm "APPENDALL" :: syms) :: tl ->
             aux tl (List.map (fun p -> p @ syms) prods) add_nt
-          | (Snterm "PRINT" :: _) :: tl ->
+          | (loc, Snterm "PRINT" :: _) :: tl ->
             pr_prods nt prods;
             aux tl prods add_nt
-          | (Snterm "EDIT" :: oprod) :: tl ->
-            aux tl (edit_single_prod g oprod prods nt) add_nt
-          | (Snterm "REPLACE" :: oprod) :: (Snterm "WITH" :: rprod) :: tl ->
+          | (loc, Snterm "EDIT" :: oprod) :: tl ->
+            aux tl (edit_single_prod ~loc g oprod prods nt) add_nt
+          | (loc, Snterm "REPLACE" :: oprod) :: (loc', Snterm "WITH" :: rprod) :: tl ->
             report_undef_nts g rprod "";
             (* todo: check result not already present *)
             let prods' = (try
-              let posn = find_first oprod prods nt in
+              let posn = find_first ~loc oprod prods nt in
               let prods = insert_after posn [rprod] prods in  (* insert new prod *)
               remove_prod oprod prods nt      (* remove orig prod *)
               with Not_found -> prods)
             in
             aux tl prods' add_nt
-          | (Snterm "REPLACE" :: _ as eprod) :: tl ->
+          | (loc, (Snterm "REPLACE" :: _ as eprod)) :: tl ->
             error "Missing WITH after '%s' in '%s'\n" (prod_to_str eprod) nt;
             aux tl prods add_nt
           (* todo: check for unmatched editing keywords here *)
-          | prod :: tl ->
+          | (loc, prod) :: tl ->
             (* add a production *)
             if has_match prod prods then
               error "Duplicate production '%s -> %s'\n" nt (prod_to_str prod);
@@ -1221,7 +1225,7 @@ let apply_edit_file g edits =
             aux tl (prods @ [prod]) add_nt
           in
           if eprod <> [] then begin
-            let cause = Printf.sprintf "from '%s'" (prod_to_str (List.hd eprod)) in
+            let cause = Printf.sprintf "from '%s'" (prod_to_str (snd (List.hd eprod))) in
             NTMap.iter (fun nt rule ->
               let old_rule = try NTMap.find nt g_old_map with Not_found -> [] in
               check_for_duplicates cause rule old_rule nt) !g.map;
@@ -1327,7 +1331,7 @@ let reorder_grammar eg reordered_rules file =
       try
         (* only keep nts and prods in common with editedGrammar *)
         let eg_prods = NTMap.find nt !eg.map in
-        let prods = List.filter (fun prod -> (has_match prod eg_prods)) prods in
+        let prods = List.filter (fun (_,prod) -> (has_match prod eg_prods)) prods in
         if NTMap.mem nt !og.map && !show_warn then
           warn "%s: Duplicate nonterminal '%s'\n" file nt;
         add_rule og nt prods file
@@ -1702,7 +1706,7 @@ let process_grammar args =
 
   (* rename nts with levels *)
   List.iter (fun b -> let (nt, prod) = b in
-      let (_, prod) = edit_rule g level_renames nt prod in
+      let (_, prod) = edit_rule !g level_renames nt prod in
       g_update_prods g nt prod)
     (NTMap.bindings !g.map);
 

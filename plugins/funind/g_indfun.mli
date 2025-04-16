@@ -34,7 +34,7 @@ val function_fix_definition :
   Vernacexpr.fixpoint_expr Loc.located Procq.Entry.t
 
 val wit_fun_scheme_arg :
-  (Names.lident * Libnames.qualid * Sorts.family) Genarg.vernac_genarg_type
+  (Names.lident * Libnames.qualid * UnivGen.QualityOrSet.t) Genarg.vernac_genarg_type
 
 val fun_scheme_arg :
-  (Names.lident * Libnames.qualid * Sorts.family) Procq.Entry.t
+  (Names.lident * Libnames.qualid * UnivGen.QualityOrSet.t) Procq.Entry.t

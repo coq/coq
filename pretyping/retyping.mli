@@ -38,8 +38,8 @@ val get_type_of_constr : ?polyprop:bool -> ?lax:bool
 val get_sort_of :
   ?polyprop:bool -> env -> evar_map -> types -> ESorts.t
 
-val get_sort_family_of :
-  ?polyprop:bool -> env -> evar_map -> types -> Sorts.family
+val get_sort_quality_of :
+  ?polyprop:bool -> env -> evar_map -> types -> UnivGen.QualityOrSet.t
 
 (** Makes an unsafe judgment from a constr *)
 val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment
@@ -60,7 +60,6 @@ val relevance_of_projection_repr : env -> Names.Projection.Repr.t EConstr.punive
 val relevance_of_term : env -> evar_map -> constr -> ERelevance.t
 val relevance_of_type : env -> evar_map -> types -> ERelevance.t
 val relevance_of_sort : ESorts.t -> ERelevance.t
-val relevance_of_sort_family : evar_map -> Sorts.family -> ERelevance.t
 
 val is_term_irrelevant : env -> Evd.evar_map -> Evd.econstr -> bool
 
