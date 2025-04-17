@@ -897,13 +897,15 @@ provided that the following side conditions hold:
     + for :math:`i=1… n` we have that :math:`C_i` is a type of constructor of :math:`I_{q_i}` which
       satisfies the positivity condition for :math:`I_1 … I_k` and :math:`c_i ∉  E`.
 
-One can remark that there is a constraint between the sort of the
-arity of the inductive type and the sort of the type of its
-constructors which will always be satisfied for the impredicative
-sorts :math:`\SProp` and :math:`\Prop` but may fail to define
-inductive type on sort :math:`\Set` and generate constraints
-between universes for inductive types in the Type hierarchy.
+Additionally, for :math:`j=1… k` the following universe constraints must be satisfied,
+or :math:`s_j` must be an impredicative sort (`SProp`, `Prop`, or if `-impredicative-set` was used `Set`)
+and the `j`\th inductive may not be eliminated to larger sorts:
 
+- for each (non parameter) constructor argument, the universe of its type must be smaller than :math:`s_j`
+- if `-indices-matter` was used, for each index the universe of its type must be smaller than :math:`s_j`
+- if there are 2 or more constructors, `Set` must be smaller than :math:`s_j`
+- unless the inductive is a primitive record, and unless :flag:`Definitional UIP` was used,
+  if there is 1 constructor, `Prop` must be smaller than :math:`s_j` (essentially this means :math:`s_j` must not be `SProp`)
 
 .. example::
 
