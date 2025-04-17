@@ -193,13 +193,12 @@ let grammar_extend e ext =
   camlp5_state := ByEXTEND (Entry.name e, undo, redo) :: !camlp5_state;
   redo ()
 
-let grammar_extend_sync e ext =
-  camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
-  safe_extend e ext
-
-let grammar_extend_sync_reinit e reinit ext =
-  camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
-  safe_extend e ext
+let grammar_extend_sync rule =
+  camlp5_state := ByGrammar rule :: !camlp5_state;
+  match rule with
+  (* NB: ocaml 4.14 is not smart enough to factorize these 2 GADT match cases *)
+  | ExtendRule (e, ext) -> safe_extend e ext
+  | ExtendRuleReinit (e, _, ext) -> safe_extend e ext
 
 (** Remove extensions
 
@@ -406,12 +405,6 @@ let create_grammar_command name interp : _ grammar_command =
 let create_entry_command name : 'a entry_command =
   EntryCommand.create name
 
-let iter_extend_sync = function
-  | ExtendRule (e, ext) ->
-    grammar_extend_sync e ext
-  | ExtendRuleReinit (e, reinit, ext) ->
-    grammar_extend_sync_reinit e reinit ext
-
 let extend_grammar_command tag g =
   let modify = GrammarInterpMap.find tag !grammar_interp in
   let grammar_state = match !grammar_stack with
@@ -419,7 +412,7 @@ let extend_grammar_command tag g =
   | (_, st) :: _ -> st
   in
   let (rules, st) = modify.gext_fun g grammar_state in
-  let () = List.iter iter_extend_sync rules in
+  let () = List.iter grammar_extend_sync rules in
   let nb = List.length rules in
   grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
 
