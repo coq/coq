@@ -118,8 +118,8 @@ GRAMMAR EXTEND Gram
     ]
   ;
   decorated_vernac:
-    [ [ a = quoted_attributes ; fv = vernac ->
-        { let (f, v) = fv in (List.append a f, v) } ] ]
+    [ [ a = quoted_attributes ; a' = LIST0 legacy_attr; v = vernac_aux ->
+        { (List.append a a', v) } ] ]
   ;
   quoted_attributes:
     [ [ l = LIST0 [ "#[" ; a = attribute_list ; "]" -> { a } ] -> { List.flatten l } ]
@@ -160,9 +160,6 @@ GRAMMAR EXTEND Gram
       | IDENT "Program" ->
         { CAst.make ~loc ("program", VernacFlagEmpty) }
       ] ]
-  ;
-  vernac:
-    [ [ attrs = LIST0 legacy_attr; v = vernac_aux -> { (attrs, v) } ] ]
   ;
   vernac_aux:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)

@@ -94,7 +94,7 @@ let full_grammar () =
   let proof_modes = List.map (fun (_,Pvernac.ProofMode e) -> Any e.command_entry)
       (CString.Map.bindings (Pvernac.list_proof_modes()))
   in
-  let entries = (Any vernac_control) :: (Any noedit_mode) :: proof_modes in
+  let entries = (Any main_entry) :: (Any noedit_mode) :: proof_modes in
   Procq.Entry.accumulate_in entries
 
 let same_entry (Procq.Entry.Any e) (Procq.Entry.Any e') = (Obj.magic e) == (Obj.magic e')
