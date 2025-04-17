@@ -107,6 +107,7 @@ let coqpath () =
   in
   let rocqpath = getenv_else "ROCQPATH" (fun () -> "") in
   let coqpath = getenv_else "COQPATH" (fun () -> "") in
+  let coqpath = if String.equal coqpath rocqpath then "" else coqpath in
   let () = if coqpath <> "" then warn_deprecated_coq_var ~rocq:"ROCQPATH" ~coq:"COQPATH" () in
   make_search_path rocqpath @ make_search_path coqpath
 
