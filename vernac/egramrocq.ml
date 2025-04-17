@@ -104,31 +104,25 @@ let find_position_gen current ensure assoc lev =
   | None ->
     current, (ReuseFirst, None, None, None)
   | Some n ->
-    let after = ref None in
-    let init = ref None in
     let rec add_level q = function
-      | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
+      | (p,_,_ as pa)::l when p > n ->
+        let updated, res = add_level (Some p) l in
+        pa :: updated, res
       | (p,a,reinit)::l when Int.equal p n ->
         if reinit then
           let a' = create_assoc assoc in
-          (init := Some (a', q); (p,a',false)::l)
+          let updated = (p,a',false)::l in
+          updated, (ReuseLevel n, None, None, Some (a', q))
         else if admissible_assoc (a,assoc) then
           raise_notrace Exit
         else
           error_level_assoc p a (Option.get assoc)
-      | l -> after := q; (n,create_assoc assoc,ensure)::l
+      | l ->
+        let assoc = create_assoc assoc in
+        let updated = (n,assoc,ensure)::l in
+        updated, (create_pos q, Some assoc, Some (constr_level n), None)
     in
-    try
-      let updated = add_level None current in
-      let assoc = create_assoc assoc in
-      begin match !init with
-        | None ->
-          (* Create the entry *)
-          updated, (create_pos !after, Some assoc, Some (constr_level n), None)
-        | _ ->
-          (* The reinit flag has been updated *)
-          updated, (ReuseLevel n, None, None, !init)
-      end
+    try add_level None current
     with
     (* Nothing has changed *)
       Exit ->
