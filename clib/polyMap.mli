@@ -52,6 +52,8 @@ module Make (Tag:Tag) : sig
 
     val modify : 'a tag -> ('a value -> 'a value) -> t -> t
 
+    val remove : 'a tag -> t -> t
+
   end
   module Map(V:ValueS) : MapS with type 'a value := 'a V.t
 

@@ -235,7 +235,7 @@ let rec remove_grammars n =
            redo();
            camlp5_state := ByEXTEND (name, undo,redo) :: !camlp5_state
        | ByEntry (tag, name, e) :: t ->
-           estate := Unsafe.clear_entry !estate e;
+           estate := Unsafe.remove_entry !estate e;
            camlp5_state := t;
            let EntryData.Ex entries =
              try EntryDataMap.find tag !camlp5_entries

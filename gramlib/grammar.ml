@@ -155,7 +155,7 @@ module type ExtS = sig
   val safe_delete_rule : EState.t -> 'a Entry.t -> 'a Production.t -> EState.t
 
   module Unsafe : sig
-    val clear_entry : EState.t -> 'a Entry.t -> EState.t
+    val remove_entry : EState.t -> 'a Entry.t -> EState.t
   end
 
 end
@@ -1878,16 +1878,8 @@ module Production = struct
 end
 
 module Unsafe = struct
-
-  let clear_entry estate e =
-    modify_entry estate e (fun data -> {
-          estart = (fun _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-          econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-          edesc = match data.edesc with
-            | Dlevels _ -> Dlevels []
-            | Dparser _ -> data.edesc;
-        })
-
+  let remove_entry estate e =
+    EState.remove (DMap.tag_of_onetag e.etag) estate
 end
 
 let safe_extend = extend_entry

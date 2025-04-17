@@ -158,7 +158,7 @@ module type ExtS = sig
   val safe_delete_rule : EState.t -> 'a Entry.t -> 'a Production.t -> EState.t
 
   module Unsafe : sig
-    val clear_entry : EState.t -> 'a Entry.t -> EState.t
+    val remove_entry : EState.t -> 'a Entry.t -> EState.t
   end
 
 end
