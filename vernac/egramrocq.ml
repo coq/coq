@@ -99,12 +99,16 @@ let create_pos = function
   | None -> NewFirst
   | Some lev -> NewAfter lev
 
+let reinit_pos = let open Gramlib.Gramext in function
+| None -> First
+| Some n -> After (constr_level n)
+
 let find_position_gen current ensure assoc lev =
   match lev with
   | None ->
     current, (ReuseFirst, None, None, None)
   | Some n ->
-    let rec add_level q = function
+    let rec add_level previous = function
       | (p,_,_ as pa)::l when p > n ->
         let updated, res = add_level (Some p) l in
         pa :: updated, res
@@ -112,7 +116,7 @@ let find_position_gen current ensure assoc lev =
         if reinit then
           let a' = create_assoc assoc in
           let updated = (p,a',false)::l in
-          updated, (ReuseLevel n, None, None, Some (a', q))
+          updated, (ReuseLevel n, None, None, Some (a', reinit_pos previous))
         else if admissible_assoc (a,assoc) then
           raise_notrace Exit
         else
@@ -120,7 +124,7 @@ let find_position_gen current ensure assoc lev =
       | l ->
         let assoc = create_assoc assoc in
         let updated = (n,assoc,ensure)::l in
-        updated, (create_pos q, Some assoc, Some (constr_level n), None)
+        updated, (create_pos previous, Some assoc, Some (constr_level n), None)
     in
     try add_level None current
     with
@@ -538,9 +542,7 @@ let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
   match reinit with
   | None ->
     ExtendRule (target_entry where forpat, empty)
-  | Some (assoc, pos) ->
-    let pos = match pos with None -> Gramlib.Gramext.First | Some n -> Gramlib.Gramext.After (constr_level n) in
-    let reinit = (assoc, pos) in
+  | Some reinit ->
     ExtendRuleReinit (target_entry where forpat, reinit, empty)
 
 let different_levels (custom,opt_level) (custom',string_level) =
@@ -602,12 +604,8 @@ let extend_constr state forpat ng =
       | ReuseLevel n -> Procq.Reuse (Some (constr_level n), [r])
     in
     let r = match reinit with
-      | None ->
-        ExtendRule (entry, rule)
-      | Some (assoc, pos) ->
-        let pos = match pos with None -> Gramlib.Gramext.First | Some n -> Gramlib.Gramext.After (constr_level n) in
-        let reinit = (assoc, pos) in
-        ExtendRuleReinit (entry, reinit, rule)
+      | None -> ExtendRule (entry, rule)
+      | Some reinit -> ExtendRuleReinit (entry, reinit, rule)
     in
     (accu @ empty_rules @ [r], state)
   in
