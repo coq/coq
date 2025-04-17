@@ -683,7 +683,8 @@ A typical workflow for fixing a failing resolution will hence go like this:
       Set Rewrite Output Constraints.
       rewrite hin.
 
-   This produces new subgoals corresponding to the constraints to solve. There are dependent
+   This produces new subgoals corresponding to the constraints to solve. Beware that the exact
+   order of the produced goals is unspecified, so one should not rely on it. There are dependent
    subgoals `?r` and `?r0` for relations to infer. We can use :tacn:`shelve_unifiable` so
    that these dependent existential variables for unknown relations are not considered as goals:
    typeclass resolution should infer them during resolution of the `Proper` constraints instead.
