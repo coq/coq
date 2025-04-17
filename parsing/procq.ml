@@ -25,6 +25,30 @@ let estate = ref EState.empty
 
 let gstate () = { GState.estate = !estate; kwstate = !keyword_state; }
 
+let no_add_kw = { add_kw = fun () _ -> () }
+
+(* TODO use this for ssr instead of messing with set_keyword_state
+   (needs some API design) *)
+let _safe_extend_no_kw e ext =
+  let estate', () = safe_extend no_add_kw !estate () e ext in
+  estate := estate'
+
+let add_kw = { add_kw = CLexer.add_keyword_tok }
+
+let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
+  let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
+  let estate, entry = Entry.make "epsilon" !estate in
+  let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
+  let estate, kwstate = safe_extend add_kw estate !keyword_state entry ext in
+  let strm = Stream.empty () in
+  let strm = Parsable.make strm in
+  try Some (Entry.parse entry strm {estate;kwstate}) with e when CErrors.noncritical e -> None
+
+let safe_extend e ext =
+  let estate', kwstate' = safe_extend add_kw !estate !keyword_state e ext in
+  estate := estate';
+  keyword_state := kwstate'
+
 module Parsable = struct
   include Parsable
   let consume x len = consume x len !keyword_state
@@ -159,21 +183,6 @@ let grammar_delete e r =
     (fun lev ->
       List.iter (fun pil -> estate := safe_delete_rule !estate e pil) (List.rev lev))
     (List.rev data)
-
-let no_add_kw = { add_kw = fun () _ -> () }
-
-(* TODO use this for ssr instead of messing with set_keyword_state
-   (needs some API design) *)
-let _safe_extend_no_kw e ext =
-  let estate', () = safe_extend no_add_kw !estate () e ext in
-  estate := estate'
-
-let add_kw = { add_kw = CLexer.add_keyword_tok }
-
-let safe_extend e ext =
-  let estate', kwstate' = safe_extend add_kw !estate !keyword_state e ext in
-  estate := estate';
-  keyword_state := kwstate'
 
 let grammar_delete_reinit e reinit d =
   grammar_delete e d;
@@ -365,13 +374,6 @@ module Module =
     let module_expr = Entry.make "module_expr"
     let module_type = Entry.make "module_type"
   end
-
-let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
-  let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
-  let entry = Entry.make "epsilon" in
-  let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
-  safe_extend entry ext;
-  try Some (parse_string entry "") with e when CErrors.noncritical e -> None
 
 (** Synchronized grammar extensions *)
 
