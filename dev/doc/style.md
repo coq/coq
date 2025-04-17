@@ -15,8 +15,8 @@
     ... in
   ```
   ```ocaml
-  let
-    x = ...
+  let x =
+    ...
   in
   ```
 - but: no extra indentation before a `in` coming on next line,
@@ -29,9 +29,7 @@
    | [] | [a] -> ...
    | a::b::l -> ...
   ```
-- in a one-line `match`, it is preferred to have no `|` in front of
-  the first case (this saves spaces for the match to hold in the line)
-- from about 8.2, the tendency is to use the following format which
+- the tendency is to use the following format which
   limit excessive indentation while providing an interesting "block" aspect
   ```ocaml
   type t =
@@ -47,6 +45,7 @@
   | B x -> ...
   ```
 - add spaces around `=` and `==` (make the code "breathe")
+  (note that use of ocaml stdlib `=` is discouraged)
 - the common usage is to write `let x,y = ... in ...` rather than
   `let (x,y) = ... in ...`
 - parenthesizing with either `(` and `)` or with `begin` and `end` is
@@ -69,10 +68,20 @@
     instr4
   end
   ```
+- avoid semicolon after single branch `if`, ie instead of
+  ~~~ocaml
+  if foo then bar;
+  baz
+  ~~~
+  do
+  ~~~ocaml
+  let () = if foo then bar in
+  baz
+  ~~~
 - if the first branch raises an exception, avoid the `else`, i.e.
   use
   ```ocaml
-  if condition then error "foo";
+  let () = if condition then error "foo" in
   bar
   ```
   instead of
@@ -102,10 +111,9 @@
 
 ## Coding methodology
 
-- no `try ... with _ -> ...` which catches even `Sys.Break` (Ctrl-C),
+- no catchall `try ... with _ -> ...` which catches even `Sys.Break` (Ctrl-C),
   `Out_of_memory`, `Stack_overflow`, etc.
-  at least, use `try with e when Errors.noncritical e -> ...`
-  (to be detailed, Pierre L. ?)
+  at least, use `try with e when CErrors.noncritical e -> ...`
 - do not abuse fancy combinators: sometimes what a `let rec` loop
   does is more readable and simpler to grasp than what a `fold` does
 - do not break abstractions: if an internal property is hidden
@@ -123,7 +131,7 @@
   absolutely clear that `=` will implement the intended equality, and
   with the right complexity)
 - any new general-purpose enough combinator on list should be put in
-  `cList.ml`, on type option in `cOpt.ml`, etc.
+  `cList.ml`, on type option in `option.ml`, etc.
 - unless for a good reason not to do so, follow the style of the
   surrounding code in the same file as much as possible,
   the general guidelines are otherwise "let spacing breathe" (we
@@ -135,8 +143,9 @@
   welcome if it can make comments more readable (then
   `toggle-enable-multibyte-characters` can help when using the
   debugger in emacs)
-- all of initial `open File`, or of small-scope `File.(...)`, or
-  per-ident `File.foo` are common practices
+- all of initial `open Module`, or of small-scope `let open Module in` or `Module.(...)`, or
+  per-ident `Module.foo` are common practices.
+  `open Module` in the middle of a file should probably be avoided (keep global opens at the top)
 
 ## Choice of variable names
 
@@ -144,15 +153,15 @@
 - be consistent with the naming adopted in the functions from the
   same file, or with the naming used elsewhere by similar functions
 - use variable names which express meaning
-- keep `cst` for constants and avoid it for constructors which is
+- keep `cst` or `con` for constants and avoid it for constructors which is
   otherwise a source of confusion
-- for constructors, use `cstr` in type constructor (resp. `cstru` in
+- for constructors, use `ctor` in type constructor (resp. `ctoru` in
   constructor puniverse); avoid `constr` for `constructor` which
   could be think as the name of an arbitrary Constr.t
 - for inductive types, use `ind` in the type inductive (resp `indu`
   in inductive puniverse)
 - for `env`, use `env`
-- for `evar_map`, use `sigma`, with tolerance into `evm` and `evd`
+- for `evar_map`, use `sigma`, with tolerance for `evm` and `evd`
 - for `named_context` or `rel_context`, use `ctxt` or `ctx` (or `sign`)
 - for formal/actual indices of inductive types: `realdecls`, `realargs`
 - for formal/actual parameters of inductive types: `paramdecls`, `paramargs`
@@ -172,10 +181,7 @@
   ```ocaml
   match ... with Case1 -> match ... with SubCase -> ... | Case2 -> ...
   ```
-  parentheses are needed around the `try` and the inner `match`
-- even if streams are lazy, the `Pp.(++)` combinator is strict and
-  forces the evaluation of its arguments (use a `lazy` or a `fun () ->`)
-  to make it lazy explicitly
+  parentheses (or `begin`/`end` which looks nicer) are needed around the `try` and the inner `match`
 - in
   ```ocaml
   if ... then ... else ... ++ ...
@@ -188,7 +194,7 @@
 - in `let myspecialfun = mygenericfun args`, be sure that it does not
   do side-effect; prefer otherwise
   ```ocaml
-  let mygenericfun arg = mygenericfun args arg
+  let myspecialfun arg = mygenericfun args arg
   ```
   to ensure that the function is evaluated at
-  runtime
+  runtime.
