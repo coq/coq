@@ -45,6 +45,7 @@ module Entry = struct
   let print fmt e = print fmt e !estate
   let is_empty e = is_empty e !estate
   let accumulate_in e = accumulate_in e !estate
+  let all_in () = all_in () !estate
 end
 
 module Lookahead =

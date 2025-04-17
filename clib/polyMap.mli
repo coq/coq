@@ -52,6 +52,10 @@ module Make (Tag:Tag) : sig
 
     val modify : 'a tag -> ('a value -> 'a value) -> t -> t
 
+    type 'acc fold = { fold : 'a. 'a onetag -> 'a value -> 'acc -> 'acc }
+
+    val fold : 'acc fold -> t -> 'acc -> 'acc
+
   end
   module Map(V:ValueS) : MapS with type 'a value := 'a V.t
 

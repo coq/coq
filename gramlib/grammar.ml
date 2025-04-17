@@ -67,6 +67,7 @@ module type S = sig
     val is_empty : 'a t -> bool with_estate
     type any_t = Any : 'a t -> any_t
     val accumulate_in : any_t list -> any_t list CString.Map.t with_estate
+    val all_in : unit -> any_t list CString.Map.t with_estate
   end
 
   module rec Symbol : sig
@@ -242,6 +243,7 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
      significant slowdowns on most developments)
 *)
 type ('t,'a) entry_data = {
+  eentry : 'a ty_entry;
   edesc : 'a ty_desc;
   estart : 't -> int -> 'a parser_t;
   econtinue : 't -> int -> int -> 'a -> 'a parser_t;
@@ -1604,6 +1606,7 @@ let make_start_parser_of_entry entry desc =
   | Dparser p -> fun gstate levn strm -> p gstate.kwstate strm
 
 let make_entry_data entry desc = {
+  eentry = entry;
   edesc = desc;
   estart = make_start_parser_of_entry entry desc;
   econtinue = make_continue_parser_of_entry entry desc;
@@ -1714,6 +1717,7 @@ module Entry = struct
   let make n estate =
     let e, otag = fresh n in
     let estate = add_entry otag estate e {
+        eentry = e;
         edesc = Dlevels [];
         estart = empty_entry n;
         econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
@@ -1730,6 +1734,7 @@ module Entry = struct
   let of_parser n { parser_fun = p } estate =
     let e, otag = fresh n in
     let estate = add_entry otag estate e {
+        eentry = e;
         estart = (fun gstate _ (strm:_ LStream.t) -> p gstate.kwstate strm);
         econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
         edesc = Dparser p;
@@ -1775,6 +1780,14 @@ module Entry = struct
         elev
 
   let same_entry (Any e) (Any e') = Option.has_some (eq_entry e e')
+
+  let all_in () estate =
+    let add_entry (Any e as a) acc = String.Map.update e.ename (function
+        | None -> Some [a]
+        | Some l -> Some (a::l))
+        acc
+    in
+    EState.fold { fold = fun _ data acc -> add_entry (Any data.eentry) acc} estate String.Map.empty
 
   let accumulate_in initial estate =
     let add_visited visited (Any e as any) =
@@ -1881,6 +1894,7 @@ module Unsafe = struct
 
   let clear_entry estate e =
     modify_entry estate e (fun data -> {
+          eentry = data.eentry;
           estart = (fun _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
           econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
           edesc = match data.edesc with
