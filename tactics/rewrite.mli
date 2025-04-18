@@ -104,6 +104,39 @@ val apply_strategy :
   bool * constr ->
   evars -> rewrite_result
 
+module Strategies :
+sig
+  val fail : strategy
+  val id : strategy
+  val refl : strategy
+  val progress : strategy -> strategy
+  val seq : strategy -> strategy -> strategy
+  val choice : strategy -> strategy -> strategy
+  val try_ : strategy -> strategy
+
+  val fix_tac : (strategy -> strategy Proofview.tactic) -> strategy Proofview.tactic
+  val fix : (strategy -> strategy) -> strategy
+
+  val any : strategy -> strategy
+  val repeat : strategy -> strategy
+  val all_subterms : strategy -> strategy
+  val one_subterm : strategy -> strategy
+  val bottomup : strategy -> strategy
+  val topdown : strategy -> strategy
+  val innermost : strategy -> strategy
+  val outermost : strategy -> strategy
+
+  val one_lemma : delayed_open_constr -> bool -> Gentactic.glob_generic_tactic option -> Locus.occurrences -> strategy
+  val lemmas : (delayed_open_constr * bool * Gentactic.glob_generic_tactic option) list -> strategy
+
+  val old_hints : string -> strategy
+  val hints : string -> strategy
+  val reduce : Redexpr.red_expr -> strategy
+
+  val fold : constr -> strategy
+  val fold_glob : Glob_term.glob_constr -> strategy
+end
+
 module Internal :
 sig
 val build_signature :
