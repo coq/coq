@@ -116,9 +116,9 @@ let cast_arg wit v = Taccoerce.Value.cast (Genarg.topwit wit) v
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
-let frozen_lexer = ref (Procq.get_keyword_state ()) ;;
+let frozen_lexer = ref None ;;
 let () = Mltop.add_init_function "rocq-runtime.plugins.ssreflect" (fun () ->
-    frozen_lexer := Procq.get_keyword_state ())
+    frozen_lexer := Some (Procq.freeze ()))
 
 let tacltop = (LevelLe 5)
 
@@ -1746,7 +1746,8 @@ type ssrarg = ssrfwdview * (ssreqid * (cpattern ssragens * ssripats))
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
 let () = Mltop.add_init_function "rocq-runtime.plugins.ssreflect" (fun () ->
-      Procq.set_keyword_state !frozen_lexer) ;;
+      Procq.unfreeze_only_keywords (Option.get !frozen_lexer);
+      frozen_lexer := None) ;;
 
 module Internal = struct
   let register_ssrtac = register_ssrtac
