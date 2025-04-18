@@ -294,6 +294,18 @@ let partitioni p =
   in
   aux 0
 
+(* Remove for OCaml version >= 4.12 *)
+let partition_map p l =
+  let rec aux left right = function
+  | [] -> (rev left, rev right)
+  | x :: l ->
+     let open CSig in
+     match p x with
+     | Inl v -> aux (v :: left) right l
+     | Inr v -> aux left (v :: right) l
+  in
+  aux [] [] l
+
 (** {6 Applying functorially} *)
 
 let rec map_loop f p = function

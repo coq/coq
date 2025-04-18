@@ -17,21 +17,23 @@ open Names
    similar, they do not seem to mean the same thing. *)
 type t =
   | SelectAlreadyFocused
-  | SelectNth of int
-  | SelectList of (int * int) list
-  | SelectId of Id.t
+  | SelectList of Proofview.goal_range_selector list
   | SelectAll
 
-let pr_range_selector (i, j) =
-  if i = j then Pp.int i
-  else Pp.(int i ++ str "-" ++ int j)
+let select_nth n = SelectList [NthSelector n]
+
+let pr_id_selector id =
+  Pp.(str "[" ++ Id.print id ++ str "]")
+
+let pr_range_selector = let open Proofview in function
+  | NthSelector i -> Pp.int i
+  | RangeSelector (i, j) -> Pp.(int i ++ str "-" ++ int j)
+  | IdSelector id -> pr_id_selector id
 
 let pr_goal_selector = let open Pp in function
   | SelectAlreadyFocused -> str "!"
   | SelectAll -> str "all"
-  | SelectNth i -> int i
   | SelectList l -> prlist_with_sep pr_comma pr_range_selector l
-  | SelectId id -> str "[" ++ Id.print id ++ str "]"
 
 let parse_goal_selector = function
   | "!" -> SelectAlreadyFocused
@@ -41,7 +43,7 @@ let parse_goal_selector = function
       begin try
               let i = int_of_string i in
               if i < 0 then CErrors.user_err Pp.(str err_msg);
-              SelectNth i
+              select_nth i
         with Failure _ -> CErrors.user_err Pp.(str err_msg)
       end
 
@@ -52,14 +54,14 @@ let { Goptions.get = get_default_goal_selector } =
     parse_goal_selector
     (fun v -> Pp.string_of_ppcmds @@ pr_goal_selector v)
     ~key:["Default";"Goal";"Selector"]
-    ~value:(SelectNth 1)
+    ~value:(select_nth 1)
     ()
 
 (* Select a subset of the goals *)
 let tclSELECT ?nosuchgoal g tac = match g with
-  | SelectNth i -> Proofview.tclFOCUS ?nosuchgoal i i tac
-  | SelectList l -> Proofview.tclFOCUSLIST ?nosuchgoal l tac
-  | SelectId id -> Proofview.tclFOCUSID ?nosuchgoal id tac
+  | SelectList [NthSelector i] -> Proofview.tclFOCUS ?nosuchgoal i i tac
+  | SelectList [IdSelector id] -> Proofview.tclFOCUSID ?nosuchgoal id tac
+  | SelectList l -> Proofview.tclFOCUSSELECTORLIST ?nosuchgoal l tac
   | SelectAll -> tac
   | SelectAlreadyFocused ->
     let open Proofview.Notations in

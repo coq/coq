@@ -244,14 +244,21 @@ val tclBREAK : (Exninfo.iexn -> Exninfo.iexn option) -> 'a tactic -> 'a tactic
 
 (** {7 Focusing tactics} *)
 
+(** Represents a range selector as accepted by [tclFOCUSSELECTORLIST]. *)
+type goal_range_selector =
+  | NthSelector of int
+  | RangeSelector of (int * int)
+  | IdSelector of Names.Id.t
+
+exception NoSuchGoals of int
+exception CannotSelectShelvedAndFocused
+
 (** [tclFOCUS i j t] applies [t] after focusing on the goals number
     [i] to [j] (see {!focus}). The rest of the goals is restored after
     the tactic action. If the specified range doesn't correspond to
     existing goals, fails with the [nosuchgoal] argument, by default
     raising [NoSuchGoals] (a user error). This exception is caught at
     toplevel with a default message. *)
-exception NoSuchGoals of int
-
 val tclFOCUS : ?nosuchgoal:'a tactic -> int -> int -> 'a tactic -> 'a tactic
 
 (** [tclFOCUSLIST li t] applies [t] on the list of focused goals
@@ -264,6 +271,24 @@ val tclFOCUS : ?nosuchgoal:'a tactic -> int -> int -> 'a tactic -> 'a tactic
     If the set of such goals is empty, it will fail with [nosuchgoal],
     by default raising [NoSuchGoals 0]. *)
 val tclFOCUSLIST : ?nosuchgoal:'a tactic ->  (int * int) list -> 'a tactic -> 'a tactic
+
+(** [tclFOCUSSELECTORLIST l t] applies [t] on the list of goal selectors
+    described by [l]. Each element of [l] is either a range selector
+    [RangeSelector (i, j)] denoting the focused goals numbered from [i] to [j]
+    (inclusive, starting from 1), or a named selector [IdSelector id] targetting
+    a goal which may or may not be shelved.
+
+    All selected goals must be in focus, or all selected goals must be shelved.
+    If that is not the case, this method will fail with [CannotSelectShelvedAndFocused].
+    This restriction is due to the fact that tactics applied to shelved goals
+    must shelve their subgoals, and it is currently hard to keep track of
+    subgoals.
+
+    If all selected goals are in focus, then [tclFOCUSLIST] is called by
+    converting each goal selector to a range.
+
+    If all selected goals are shelved, then [tclFOCUSSHELF] is called. *)
+val tclFOCUSSELECTORLIST : ?nosuchgoal:'a tactic -> goal_range_selector list -> 'a tactic -> 'a tactic
 
 (** [tclFOCUSID x t] applies [t] on a (single) focused goal like
     {!tclFOCUS}. The goal is found by its name rather than its

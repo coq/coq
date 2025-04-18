@@ -1357,16 +1357,11 @@ simple_reserv: [
 range_selector: [
 | natural "-" natural
 | natural
-]
-
-range_selector_or_nth: [
-| natural "-" natural OPT [ "," LIST1 range_selector SEP "," ]
-| natural OPT [ "," LIST1 range_selector SEP "," ]
+| test_bracket_ident "[" ident "]"
 ]
 
 goal_selector: [
-| range_selector_or_nth
-| test_bracket_ident "[" ident "]"
+| LIST1 range_selector SEP ","
 ]
 
 toplevel_selector: [

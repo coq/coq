@@ -424,8 +424,8 @@ Selectors can also be used nested within a tactic expression with the
 
    .. prodn::
       goal_selector ::= {+, @range_selector }
-      | [ @ident ]
       range_selector ::= @natural
+      | [ @ident ]
       | @natural - @natural
 
    Applies :token:`ltac_expr3` to the selected goals.  (At the beginning of a
@@ -453,6 +453,13 @@ Selectors can also be used nested within a tactic expression with the
 .. exn:: No such goal.
    :name: No such goal. (Goal selector)
    :undocumented:
+
+.. exn:: Cannot simultaneously select shelved and unshelved goals.
+
+   This error occurs if you try to select both shelved goals and focused goals
+   in the same selector list, e.g. by doing :n:`1, [A]: @tactic` when `A` is
+   shelved. To work around this error, first :cmd:`Unshelve` the desired goals.
+
 
 .. _reordering_goals_ex:
 

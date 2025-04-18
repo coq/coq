@@ -2167,7 +2167,7 @@ let update_sigma_univs ugraph p =
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let by tac = map_fold ~f:(Proof.solve (Goal_select.SelectNth 1) None tac)
+let by tac = map_fold ~f:(Proof.solve (Goal_select.select_nth 1) None tac)
 
 let build_constant_by_tactic ~name ?warn_incomplete ~sigma ~sign ~poly (typ : EConstr.t) tac =
   let loc = fallback_loc ~warn:false name None in

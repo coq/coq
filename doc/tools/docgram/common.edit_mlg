@@ -929,13 +929,6 @@ match_rule: [
 | DELETE "_" "=>" ltac_expr5
 ]
 
-goal_selector: [
-| REPLACE range_selector_or_nth  (* depends on whether range_selector_or_nth is deleted first *)
-| WITH LIST1 range_selector SEP ","
-]
-
-range_selector_or_nth: [ | DELETENT ]
-
 firstorder_rhs: [
 | firstorder_using
 | "with" LIST1 preident

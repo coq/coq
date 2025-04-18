@@ -62,6 +62,32 @@ Goal Prop.
   exact True.
 Qed.
 
+Goal True /\ True /\ True.
+Proof.
+  split. 2: split.
+  1: refine ?[A].
+  2: refine ?[B].
+  3: refine ?[C].
+
+  (* Success because all A, B, and C are on the shelf. *)
+  [A], [B], [C]: shelve.
+  Succeed [A], [B], [C]: exact I.
+
+  (* Fails because C is shelved, but A and B are not. *)
+  Unshelve.
+  [C]: shelve.
+  Fail [A], [C]: exact I.
+  Fail [B], [C]: exact I.
+  Fail 1, [C]: exact I.
+  Fail 1-2, [C]: exact I.
+  Fail [C], 2: exact I.
+  Fail [C], 1-2: exact I.
+
+  (* Success because A, B and C are unshelved. *)
+  Unshelve.
+  [A], [B], [C]: exact I.
+Qed.
+
 (* Strict focusing! *)
 Set Default Goal Selector "!".
 
