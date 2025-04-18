@@ -375,6 +375,8 @@ let check_cast env c ct k expected_type =
     | NATIVEcast ->
       let sigma = Genlambda.empty_evars env in
       Nativeconv.native_conv CUMUL sigma env ct expected_type
+    | ERASEcast ->
+      Eraseconv.erase_conv CUMUL env ct expected_type
   in
   match ans with
   | Result.Ok () -> ()

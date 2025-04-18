@@ -180,6 +180,8 @@ GRAMMAR EXTEND Gram
                  { CAst.make ~loc @@ CCast(c1, Some VMcast, c2) }
       | c1 = term; "<<:"; c2 = term LEVEL "200" ->
                  { CAst.make ~loc @@ CCast(c1, Some NATIVEcast, c2) }
+      | c1 = term; "<<<:"; c2 = term LEVEL "200" ->
+                 { CAst.make ~loc @@ CCast(c1, Some ERASEcast, c2) }
       | c1 = term; ":>"; c2 = term LEVEL "200" ->
                  { CAst.make ~loc @@ CCast(c1, None, c2) }
       | c1 = term; ":"; c2 = term LEVEL "200" ->

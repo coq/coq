@@ -34,7 +34,7 @@ type existential_key = Evar.t
 type metavariable = int
 
 (* This defines the strategy to use for verifiying a Cast *)
-type cast_kind = VMcast | NATIVEcast | DEFAULTcast
+type cast_kind = VMcast | NATIVEcast | DEFAULTcast | ERASEcast
 
 (* This defines Cases annotations *)
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
@@ -1221,6 +1221,7 @@ let hash_cast_kind = function
 | VMcast -> 0
 | NATIVEcast -> 1
 | DEFAULTcast -> 2
+| ERASEcast -> 3
 
 (* Exported hashing fonction on constr, used mainly in plugins.
    Slight differences from [snd (hash_term t)] above: it ignores binders. *)
