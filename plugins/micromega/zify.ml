@@ -23,20 +23,23 @@ let debug_zify = CDebug.create ~name:"zify" ()
 let zify str =
   EConstr.of_constr
     (UnivGen.constr_of_monomorphic_global (Global.env ())
-       (Rocqlib.lib_ref ("ZifyClasses." ^ str)))
+       (Rocqlib.lib_ref ("TifyClasses." ^ str)))
 
 (** classes *)
-let rocq_InjTyp = lazy (Rocqlib.lib_ref "ZifyClasses.InjTyp")
+let rocq_InjTyp = lazy (Rocqlib.lib_ref "TifyClasses.InjTyp")
 
-let rocq_BinOp = lazy (Rocqlib.lib_ref "ZifyClasses.BinOp")
-let rocq_UnOp = lazy (Rocqlib.lib_ref "ZifyClasses.UnOp")
-let rocq_CstOp = lazy (Rocqlib.lib_ref "ZifyClasses.CstOp")
-let rocq_BinRel = lazy (Rocqlib.lib_ref "ZifyClasses.BinRel")
-let rocq_PropBinOp = lazy (Rocqlib.lib_ref "ZifyClasses.PropBinOp")
-let rocq_PropUOp = lazy (Rocqlib.lib_ref "ZifyClasses.PropUOp")
-let rocq_BinOpSpec = lazy (Rocqlib.lib_ref "ZifyClasses.BinOpSpec")
-let rocq_UnOpSpec = lazy (Rocqlib.lib_ref "ZifyClasses.UnOpSpec")
-let rocq_Saturate = lazy (Rocqlib.lib_ref "ZifyClasses.Saturate")
+let rocq_BinOp = lazy (Rocqlib.lib_ref "TifyClasses.BinOp")
+let rocq_UnOp = lazy (Rocqlib.lib_ref "TifyClasses.UnOp")
+let rocq_CstOp = lazy (Rocqlib.lib_ref "TifyClasses.CstOp")
+let rocq_BinRel = lazy (Rocqlib.lib_ref "TifyClasses.BinRel")
+let rocq_PropBinOp = lazy (Rocqlib.lib_ref "TifyClasses.PropBinOp")
+let rocq_PropUOp = lazy (Rocqlib.lib_ref "TifyClasses.PropUOp")
+let rocq_BinOpSpec = lazy (Rocqlib.lib_ref "TifyClasses.BinOpSpec")
+let rocq_UnOpSpec = lazy (Rocqlib.lib_ref "TifyClasses.UnOpSpec")
+let rocq_Saturate = lazy (Rocqlib.lib_ref "TifyClasses.Saturate")
+
+(* Z *)
+let rocq_Z = lazy (Rocqlib.lib_ref "num.Z.type")
 
 (* morphism like lemma *)
 
@@ -84,11 +87,6 @@ let get_type_of env evd e =
   Tacred.cbv_beta env evd (Retyping.get_type_of env evd e)
 
 (* arguments are dealt with in a second step *)
-
-let rec find_option pred l =
-  match l with
-  | [] -> raise Not_found
-  | e :: l -> ( match pred e with Some r -> r | None -> find_option pred l )
 
 module ConstrMap = struct
   open Names.GlobRef
@@ -639,7 +637,7 @@ module MakeTable (E : Elt) : S = struct
   let safe_ref evd c =
     try
       fst (EConstr.destRef evd c)
-    with DestKO -> CErrors.user_err Pp.(str "Add Zify "++str E.name ++ str ": the term "++
+    with DestKO -> CErrors.user_err Pp.(str "Add Tify "++str E.name ++ str ": the term "++
                                           gl_pr_constr c ++ str " should be a global reference")
 
   let register_hint evd t elt =
@@ -772,7 +770,7 @@ let init_cache () =
 
 open EInjT
 
-(** Get constr of lemma and projections in ZifyClasses. *)
+(** Get constr of lemma and projections in TifyClasses. *)
 
 (** Module [CstrTable] records terms  [x] injected into [inj x]
     together with the corresponding type constraint.
@@ -1107,11 +1105,43 @@ let classify_prop env evd e =
   | _ -> OTHEROP (e, [||])
 
 
+
 let check_target_inj evd inj d =
   match inj , target_inj d with
   | None , _ -> true
   | Some _ , None -> false
   | Some i1 , Some i2 -> EInjT.eq_inj evd i1 i2
+
+type score =
+  | FullMatch
+  | PartialMatch
+  | NoMatch
+
+let le_score s1 s2 =
+  match s1, s2 with
+  | _ , FullMatch -> true
+  | FullMatch , _ -> false
+  | _   , PartialMatch -> true
+  | PartialMatch, _    -> false
+  | NoMatch , NoMatch  -> true
+
+
+let score_operator pref evd d =
+  match d with
+  | BinRel d -> if EConstr.eq_constr evd pref d.deriv.EBinRelT.target
+                then FullMatch else NoMatch
+  | BinOp d  -> begin
+     match EConstr.eq_constr evd pref d.deriv.EBinOpT.target1 ,
+           EConstr.eq_constr evd pref d.deriv.EBinOpT.target2 with
+         | false, false -> NoMatch
+         | false, true | true,false -> PartialMatch
+         | true , true -> FullMatch
+    end
+  | UnOp  d  ->
+     if EConstr.eq_constr evd pref d.deriv.EUnOpT.target1
+     then FullMatch else NoMatch
+  | CstOp d  -> FullMatch
+  |   _      -> FullMatch
 
 
 (** [match_operator env evd hd arg inj (t,d)]
@@ -1120,33 +1150,58 @@ let check_target_inj evd inj d =
      - If t = Application _, then
        we extract the relevant number of arguments from arg
        and check for convertibility *)
-let match_operator env evd hd args inj (t, d) =
-  let decomp t i =
+let match_operator pref env evd hd args (inj: EInjT.t option) (t, d) =
+  let decomp s t i =
     let n = Array.length args in
     let t' = EConstr.mkApp (hd, Array.sub args 0 (n - i)) in
-    if is_convertible env evd t' t then Some (d, t) else None
+    if is_convertible env evd t' t then Some (s, (d, t)) else None
   in
 
   if check_target_inj evd inj d
   then
-  match t with
-  | OtherTerm t -> Some (d, t)
-  | Application t -> (
-    match d with
-    | CstOp _ -> decomp t 0
-    | UnOp _ -> decomp t 1
-    | BinOp _ -> decomp t 2
-    | BinRel _ -> decomp t 2
-    | PropOp _ -> decomp t 2
-    | PropUnOp _ -> decomp t 1
-    | _ -> None )
+    let s = score_operator pref evd d in
+    match t with
+    | OtherTerm t -> Some (s, (d, t))
+    | Application t ->
+       (match d with
+      | CstOp _ -> decomp s t 0
+      | UnOp _ -> decomp s t 1
+      | BinOp _ -> decomp s t 2
+      | BinRel _ -> decomp s t 2
+      | PropOp _ -> decomp s t 2
+      | PropUnOp _ -> decomp s t 1
+      | _ -> None )
   else None
+
+let find_best p l =
+
+  let best s r v =
+    match v with
+    | None -> Some(s,r)
+    | Some(s',r') -> if le_score s s'
+                     then v else Some(s,r) in
+  let get_result v =
+    match v with
+    | None -> raise Not_found
+    | Some(_,r) -> r in
+
+  let rec find res l =
+    match l with
+    | [] -> get_result res
+    | e::l -> match p e with
+              | None -> find res l
+              | Some(s',r') ->
+                 if s' = FullMatch then r'
+                 else  find (best s' r' res) l in
+  find None l
+
+
 
 let pp_trans_expr env evd e res =
   debug_zify (fun () -> Pp.(str "\ntrans_expr " ++ pp_prf evd e.inj e.constr res));
   res
 
-let rec trans_expr env evd e =
+let rec trans_expr dtyp env evd e =
   let inj = e.inj in
   let e = e.constr in
   try
@@ -1154,8 +1209,8 @@ let rec trans_expr env evd e =
     if is_constant then evd, Term
     else
       let k, t =
-        find_option
-          (match_operator env evd c a (Some inj))
+        find_best
+          (match_operator dtyp env evd c a (Some inj))
           (ConstrMap.find_all evd c !table_cache)
       in
       let n = Array.length a in
@@ -1164,7 +1219,7 @@ let rec trans_expr env evd e =
         ECstOpT.(if c'.is_construct then evd, Term else evd, Prf (c'.cst, c'.cstinj))
       | UnOp {deriv = unop} ->
         let evd, prf =
-          trans_expr env evd
+          trans_expr dtyp env evd
             { constr = a.(n - 1)
             ; typ = unop.EUnOpT.source1
             ; inj = unop.EUnOpT.inj1_t }
@@ -1172,13 +1227,13 @@ let rec trans_expr env evd e =
         app_unop env evd e unop a.(n - 1) prf
       | BinOp {deriv = binop} ->
         let evd, prf1 =
-          trans_expr env evd
+          trans_expr dtyp env evd
             { constr = a.(n - 2)
             ; typ = binop.EBinOpT.source1
             ; inj = binop.EBinOpT.inj1 }
         in
         let evd, prf2 =
-          trans_expr env evd
+          trans_expr dtyp env evd
             { constr = a.(n - 1)
             ; typ = binop.EBinOpT.source2
             ; inj = binop.EBinOpT.inj2 }
@@ -1187,9 +1242,9 @@ let rec trans_expr env evd e =
       | d -> evd, mkvar evd inj e
   with Not_found | DestKO -> evd, mkvar evd inj e
 
-let trans_expr env evd e =
+let trans_expr dtyp env evd e =
   try
-    let evd, prf = trans_expr env evd e in
+    let evd, prf = trans_expr dtyp env evd e in
     evd, pp_trans_expr env evd e prf
   with Not_found ->
     raise
@@ -1286,33 +1341,33 @@ let trans_un_prop op_constr op_iff p1 prf1 =
       ( EConstr.mkApp (op_constr, [|p1'|])
       , EConstr.mkApp (op_iff, [|p1; p1'; prf|]) )
 
-let rec trans_prop env evd e =
+let rec trans_prop dtyp env evd e =
   match classify_prop env evd e with
   | BINOP ({op_constr; op_iff}, p1, p2) ->
-    let evd, prf1 = trans_prop env evd p1 in
-    let evd, prf2 = trans_prop env evd p2 in
+    let evd, prf1 = trans_prop dtyp env evd p1 in
+    let evd, prf2 = trans_prop dtyp env evd p2 in
     evd, trans_bin_prop op_constr op_iff p1 prf1 p2 prf2
   | UNOP ({op_constr; op_iff}, p1) ->
-    let evd, prf1 = trans_prop env evd p1 in
+    let evd, prf1 = trans_prop dtyp env evd p1 in
     evd, trans_un_prop op_constr op_iff p1 prf1
   | OTHEROP (c, a) -> (
     try
       let k, t =
-        find_option
-          (match_operator env evd c a None)
+        find_best
+          (match_operator dtyp env evd c a None)
           (ConstrMap.find_all evd c !table_cache)
       in
       let n = Array.length a in
       match k with
       | BinRel {decl = br; deriv = rop} ->
         let evd, a1 =
-          trans_expr env evd
+          trans_expr dtyp env evd
             { constr = a.(n - 2)
             ; typ = rop.EBinRelT.source
             ; inj = rop.EBinRelT.inj }
         in
         let evd, a2 =
-          trans_expr env evd
+          trans_expr dtyp env evd
             { constr = a.(n - 1)
             ; typ = rop.EBinRelT.source
             ; inj = rop.EBinRelT.inj }
@@ -1321,9 +1376,9 @@ let rec trans_prop env evd e =
       | _ -> evd, IProof
     with Not_found | DestKO -> evd, IProof )
 
-let trans_check_prop env evd t =
+let trans_check_prop dtyp env evd t =
   if is_prop env evd t then
-    let evd, p = trans_prop env evd t in
+    let evd, p = trans_prop dtyp env evd t in
     evd, Some p
   else evd, None
 
@@ -1331,11 +1386,11 @@ let get_hyp_typ = function
   | NamedDecl.LocalDef (h, _, ty) | NamedDecl.LocalAssum (h, ty) ->
     (h.Context.binder_name, EConstr.of_constr ty)
 
-let trans_hyps env evd l =
+let trans_hyps dtyp env evd l =
   List.fold_left
     (fun (evd, acc) decl ->
       let h, ty = get_hyp_typ decl in
-      match trans_check_prop env evd ty with
+      match trans_check_prop dtyp env evd ty with
       | evd, None -> evd, acc
       | evd, Some p' -> evd, (h, ty, p') :: acc)
     (evd, []) l
@@ -1413,21 +1468,21 @@ let do_let tac (h : Constr.named_declaration) =
           let x = id.Context.binder_name in
           ignore
             (let eq = Lazy.force eq in
-             find_option
-               (match_operator env evd eq
+             find_best
+               (match_operator (* eq ??? *) eq env evd eq
                   [|EConstr.of_constr ty; EConstr.mkVar x; EConstr.of_constr t|] None)
                (ConstrMap.find_all evd eq !table_cache));
           tac x (EConstr.of_constr t) (EConstr.of_constr ty)
         with Not_found -> Tacticals.tclIDTAC)
 
-let iter_let_aux tac =
+let iter_let_aux  tac =
   Proofview.Goal.enter (fun gl ->
       let env = Tacmach.pf_env gl in
       let sign = Environ.named_context env in
       init_cache ();
-      Tacticals.tclMAP (do_let tac) sign)
+      Tacticals.tclMAP (do_let  tac) sign)
 
-let iter_let (tac : Ltac_plugin.Tacinterp.Value.t) =
+let iter_let  (tac : Ltac_plugin.Tacinterp.Value.t) =
   iter_let_aux (fun (id : Names.Id.t) t ty ->
       Ltac_plugin.Tacinterp.Value.apply tac
         [ Ltac_plugin.Tacinterp.Value.of_constr (EConstr.mkVar id)
@@ -1436,16 +1491,17 @@ let iter_let (tac : Ltac_plugin.Tacinterp.Value.t) =
 
 let elim_let = iter_let_aux elim_binding
 
-let zify_tac =
+
+let tify_op (ty:GlobRef.t) =
   Proofview.Goal.enter (fun gl ->
-      Rocqlib.check_required_library ["Stdlib"; "micromega"; "ZifyClasses"];
-      Rocqlib.check_required_library ["Stdlib"; "micromega"; "ZifyInst"];
+      Rocqlib.check_required_library ["Stdlib"; "micromega"; "TifyClasses"];
       init_cache ();
       let evd = Tacmach.project gl in
       let env = Tacmach.pf_env gl in
       let sign = Environ.named_context env in
-      let evd, concl = trans_check_prop env evd (Tacmach.pf_concl gl) in
-      let evd, hyps = trans_hyps env evd sign in
+      let dtyp   = EConstr.of_constr (UnivGen.constr_of_monomorphic_global env ty) in
+      let evd, concl = trans_check_prop dtyp env evd (Tacmach.pf_concl gl) in
+      let evd, hyps = trans_hyps dtyp env evd sign in
       let l = CstrTable.get () in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd)
         (tclTHENOpt concl trans_concl
@@ -1453,6 +1509,8 @@ let zify_tac =
               (Tacticals.tclTHENLIST
                  (List.rev_map (fun (h, p, t) -> trans_hyp h p t) hyps))
               (CstrTable.gen_cstr l))))
+
+let zify_op = fun () -> tify_op (Lazy.force rocq_Z)
 
 type pscript = Set of Names.Id.t * EConstr.t | Pose of Names.Id.t * EConstr.t
 

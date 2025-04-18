@@ -99,6 +99,7 @@ module Hash : sig
   val hash_elt : ('a -> int) -> int -> 'a -> int
 end
 
+val pp_smt_num : out_channel -> Q.t -> unit
 val all_pairs : ('a -> 'a -> 'b) -> 'a list -> 'b list
 val is_sublist : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val extract : ('a -> 'b option) -> 'a list -> ('b * 'a) option * 'a list

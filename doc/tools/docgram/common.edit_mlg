@@ -1233,13 +1233,13 @@ printable: [
 | INSERTALL "Print"
 ]
 
-add_zify: [
+add_tify: [
 | [ "InjTyp" | "BinOp" | "UnOp" | "CstOp" | "BinRel" | "UnOpSpec" | "BinOpSpec" ]  TAG Micromega
 | [ "PropOp" | "PropBinOp" | "PropUOp" | "Saturate" ]TAG Micromega
 ]
 
-show_zify: [
-| [ "InjTyp" | "BinOp" | "UnOp" | "CstOp" | "BinRel" | "UnOpSpec" | "BinOpSpec" | "Spec" ]  TAG Micromega
+show_tify: [
+| [ "InjTyp" | "BinOp" | "UnOp" | "CstOp" | "BinRel" | "UnOpSpec" | "BinOpSpec"  ]  TAG Micromega
 ]
 
 command: [
@@ -1392,8 +1392,19 @@ command: [
 | DELETE "Add" "Zify" "BinOpSpec" reference      (* micromega plugin *)
 | DELETE "Add" "Zify" "UnOpSpec" reference      (* micromega plugin *)
 | DELETE "Add" "Zify" "Saturate" reference      (* micromega plugin *)
-| "Add" "Zify" add_zify reference  TAG Micromega
-
+| "Add" "Zify" add_tify reference  TAG Micromega
+| DELETE "Add" "Tify" "InjTyp" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "BinOp" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "UnOp" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "CstOp" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "BinRel" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "PropOp" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "PropBinOp" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "PropUOp" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "BinOpSpec" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "UnOpSpec" reference      (* micromega plugin *)
+| DELETE "Add" "Tify" "Saturate" reference      (* micromega plugin *)
+| "Add" "Tify" add_tify reference  TAG Micromega
 | DELETE "Show" "Zify" "InjTyp"      (* micromega plugin *)
 | DELETE "Show" "Zify" "BinOp"      (* micromega plugin *)
 | DELETE "Show" "Zify" "UnOp"      (* micromega plugin *)
@@ -1402,7 +1413,16 @@ command: [
 | DELETE "Show" "Zify" "UnOpSpec"      (* micromega plugin *)
 | DELETE "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
 (* keep this one | "Show" "Zify" "Spec"      (* micromega plugin *)*)
-| "Show" "Zify" show_zify  TAG Micromega
+| "Show" "Zify" show_tify  TAG Micromega
+| DELETE "Show" "Tify" "InjTyp"      (* micromega plugin *)
+| DELETE "Show" "Tify" "BinOp"      (* micromega plugin *)
+| DELETE "Show" "Tify" "UnOp"      (* micromega plugin *)
+| DELETE "Show" "Tify" "CstOp"      (* micromega plugin *)
+| DELETE "Show" "Tify" "BinRel"      (* micromega plugin *)
+| DELETE "Show" "Tify" "UnOpSpec"      (* micromega plugin *)
+| DELETE "Show" "Tify" "BinOpSpec"      (* micromega plugin *)
+(* keep this one | "Show" "Tify" "Spec"      (* micromega plugin *)*)
+| "Show" "Tify" show_tify  TAG Micromega
 | REPLACE "Goal" lconstr
 | WITH "Goal" type
 ]
@@ -1854,6 +1874,8 @@ ltac_defined_tactics: [
 | "tauto"
 | "time_constr" ltac_expr5
 | "zify"
+| "rify"
+| "tify" qualid
 ]
 
 (* todo: need careful review; assume that "[" ... "]" are literals *)

@@ -1,6 +1,3 @@
-(* *** DO NOT EDIT *** *)
-(* This file is extracted from test-suite/output/MExtraction.v in the stdlib *)
-(* *** DO NOT EDIT *** *)
 
 type __ = Obj.t
 
@@ -60,6 +57,12 @@ module Coq__1 = struct
 end
 include Coq__1
 
+(** val map : ('a1 -> 'a2) -> 'a1 list -> 'a2 list **)
+
+let rec map f = function
+| [] -> []
+| a::l0 -> (f a)::(map f l0)
+
 (** val nth : nat -> 'a1 list -> 'a1 -> 'a1 **)
 
 let rec nth n0 l default =
@@ -77,12 +80,6 @@ let rec rev_append l l' =
   match l with
   | [] -> l'
   | a::l0 -> rev_append l0 (a::l')
-
-(** val map : ('a1 -> 'a2) -> 'a1 list -> 'a2 list **)
-
-let rec map f = function
-| [] -> []
-| a::l0 -> (f a)::(map f l0)
 
 (** val fold_left : ('a1 -> 'a2 -> 'a1) -> 'a2 list -> 'a1 -> 'a1 **)
 
@@ -113,10 +110,121 @@ type z =
 
 module Pos =
  struct
+  (** val succ : positive -> positive **)
+
+  let rec succ = function
+  | XI p -> XO (succ p)
+  | XO p -> XI p
+  | XH -> XO XH
+
+  (** val add : positive -> positive -> positive **)
+
+  let rec add x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q0 -> XO (add_carry p q0)
+       | XO q0 -> XI (add p q0)
+       | XH -> XO (succ p))
+    | XO p ->
+      (match y with
+       | XI q0 -> XI (add p q0)
+       | XO q0 -> XO (add p q0)
+       | XH -> XI p)
+    | XH -> (match y with
+             | XI q0 -> XO (succ q0)
+             | XO q0 -> XI q0
+             | XH -> XO XH)
+
+  (** val add_carry : positive -> positive -> positive **)
+
+  and add_carry x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q0 -> XI (add_carry p q0)
+       | XO q0 -> XO (add_carry p q0)
+       | XH -> XI (succ p))
+    | XO p ->
+      (match y with
+       | XI q0 -> XO (add_carry p q0)
+       | XO q0 -> XI (add p q0)
+       | XH -> XO (succ p))
+    | XH ->
+      (match y with
+       | XI q0 -> XI (succ q0)
+       | XO q0 -> XO (succ q0)
+       | XH -> XI XH)
+
+  (** val pred_double : positive -> positive **)
+
+  let rec pred_double = function
+  | XI p -> XI (XO p)
+  | XO p -> XI (pred_double p)
+  | XH -> XH
+
   type mask =
   | IsNul
   | IsPos of positive
   | IsNeg
+
+  (** val mul : positive -> positive -> positive **)
+
+  let rec mul x y =
+    match x with
+    | XI p -> add y (XO (mul p y))
+    | XO p -> XO (mul p y)
+    | XH -> y
+
+  (** val iter : ('a1 -> 'a1) -> 'a1 -> positive -> 'a1 **)
+
+  let rec iter f x = function
+  | XI n' -> f (iter f (iter f x n') n')
+  | XO n' -> iter f (iter f x n') n'
+  | XH -> f x
+
+  (** val compare_cont : comparison -> positive -> positive -> comparison **)
+
+  let rec compare_cont r x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q0 -> compare_cont r p q0
+       | XO q0 -> compare_cont Gt p q0
+       | XH -> Gt)
+    | XO p ->
+      (match y with
+       | XI q0 -> compare_cont Lt p q0
+       | XO q0 -> compare_cont r p q0
+       | XH -> Gt)
+    | XH -> (match y with
+             | XH -> r
+             | _ -> Lt)
+
+  (** val compare : positive -> positive -> comparison **)
+
+  let compare =
+    compare_cont Eq
+
+  (** val eqb : positive -> positive -> bool **)
+
+  let rec eqb p q0 =
+    match p with
+    | XI p2 -> (match q0 with
+                | XI q1 -> eqb p2 q1
+                | _ -> false)
+    | XO p2 -> (match q0 with
+                | XO q1 -> eqb p2 q1
+                | _ -> false)
+    | XH -> (match q0 with
+             | XH -> true
+             | _ -> false)
+
+  (** val of_succ_nat : nat -> positive **)
+
+  let rec of_succ_nat = function
+  | O -> XH
+  | S x -> succ (of_succ_nat x)
  end
 
 module Coq_Pos =
@@ -248,20 +356,6 @@ module Coq_Pos =
     | XO p -> XO (mul p y)
     | XH -> y
 
-  (** val iter : ('a1 -> 'a1) -> 'a1 -> positive -> 'a1 **)
-
-  let rec iter f x = function
-  | XI n' -> f (iter f (iter f x n') n')
-  | XO n' -> iter f (iter f x n') n'
-  | XH -> f x
-
-  (** val size_nat : positive -> nat **)
-
-  let rec size_nat = function
-  | XI p2 -> S (size_nat p2)
-  | XO p2 -> S (size_nat p2)
-  | XH -> S O
-
   (** val compare_cont : comparison -> positive -> positive -> comparison **)
 
   let rec compare_cont r x y =
@@ -285,33 +379,26 @@ module Coq_Pos =
   let compare =
     compare_cont Eq
 
-  (** val max : positive -> positive -> positive **)
-
-  let max p p' =
-    match compare p p' with
-    | Gt -> p
-    | _ -> p'
-
-  (** val eqb : positive -> positive -> bool **)
-
-  let rec eqb p q0 =
-    match p with
-    | XI p2 -> (match q0 with
-                | XI q1 -> eqb p2 q1
-                | _ -> false)
-    | XO p2 -> (match q0 with
-                | XO q1 -> eqb p2 q1
-                | _ -> false)
-    | XH -> (match q0 with
-             | XH -> true
-             | _ -> false)
-
   (** val leb : positive -> positive -> bool **)
 
   let leb x y =
     match compare x y with
     | Gt -> false
     | _ -> true
+
+  (** val size_nat : positive -> nat **)
+
+  let rec size_nat = function
+  | XI p2 -> S (size_nat p2)
+  | XO p2 -> S (size_nat p2)
+  | XH -> S O
+
+  (** val max : positive -> positive -> positive **)
+
+  let max p p' =
+    match compare p p' with
+    | Gt -> p
+    | _ -> p'
 
   (** val gcdn : nat -> positive -> positive -> positive **)
 
@@ -340,12 +427,6 @@ module Coq_Pos =
 
   let gcd a b =
     gcdn (Coq__1.add (size_nat a) (size_nat b)) a b
-
-  (** val of_succ_nat : nat -> positive **)
-
-  let rec of_succ_nat = function
-  | O -> XH
-  | S x -> succ (of_succ_nat x)
  end
 
 module N =
@@ -354,7 +435,7 @@ module N =
 
   let of_nat = function
   | O -> N0
-  | S n' -> Npos (Coq_Pos.of_succ_nat n')
+  | S n' -> Npos (Pos.of_succ_nat n')
  end
 
 (** val pow_pos : ('a1 -> 'a1 -> 'a1) -> 'a1 -> positive -> 'a1 **)
@@ -378,13 +459,13 @@ module Z =
   let succ_double = function
   | Z0 -> Zpos XH
   | Zpos p -> Zpos (XI p)
-  | Zneg p -> Zneg (Coq_Pos.pred_double p)
+  | Zneg p -> Zneg (Pos.pred_double p)
 
   (** val pred_double : z -> z **)
 
   let pred_double = function
   | Z0 -> Zneg XH
-  | Zpos p -> Zpos (Coq_Pos.pred_double p)
+  | Zpos p -> Zpos (Pos.pred_double p)
   | Zneg p -> Zneg (XI p)
 
   (** val pos_sub : positive -> positive -> z **)
@@ -400,11 +481,11 @@ module Z =
       (match y with
        | XI q0 -> pred_double (pos_sub p q0)
        | XO q0 -> double (pos_sub p q0)
-       | XH -> Zpos (Coq_Pos.pred_double p))
+       | XH -> Zpos (Pos.pred_double p))
     | XH ->
       (match y with
        | XI q0 -> Zneg (XO q0)
-       | XO q0 -> Zneg (Coq_Pos.pred_double q0)
+       | XO q0 -> Zneg (Pos.pred_double q0)
        | XH -> Z0)
 
   (** val add : z -> z -> z **)
@@ -415,13 +496,13 @@ module Z =
     | Zpos x' ->
       (match y with
        | Z0 -> x
-       | Zpos y' -> Zpos (Coq_Pos.add x' y')
+       | Zpos y' -> Zpos (Pos.add x' y')
        | Zneg y' -> pos_sub x' y')
     | Zneg x' ->
       (match y with
        | Z0 -> x
        | Zpos y' -> pos_sub y' x'
-       | Zneg y' -> Zneg (Coq_Pos.add x' y'))
+       | Zneg y' -> Zneg (Pos.add x' y'))
 
   (** val opp : z -> z **)
 
@@ -443,18 +524,18 @@ module Z =
     | Zpos x' ->
       (match y with
        | Z0 -> Z0
-       | Zpos y' -> Zpos (Coq_Pos.mul x' y')
-       | Zneg y' -> Zneg (Coq_Pos.mul x' y'))
+       | Zpos y' -> Zpos (Pos.mul x' y')
+       | Zneg y' -> Zneg (Pos.mul x' y'))
     | Zneg x' ->
       (match y with
        | Z0 -> Z0
-       | Zpos y' -> Zneg (Coq_Pos.mul x' y')
-       | Zneg y' -> Zpos (Coq_Pos.mul x' y'))
+       | Zpos y' -> Zneg (Pos.mul x' y')
+       | Zneg y' -> Zpos (Pos.mul x' y'))
 
   (** val pow_pos : z -> positive -> z **)
 
   let pow_pos z0 =
-    Coq_Pos.iter (mul z0) (Zpos XH)
+    Pos.iter (mul z0) (Zpos XH)
 
   (** val pow : z -> z -> z **)
 
@@ -472,11 +553,11 @@ module Z =
              | Zpos _ -> Lt
              | Zneg _ -> Gt)
     | Zpos x' -> (match y with
-                  | Zpos y' -> Coq_Pos.compare x' y'
+                  | Zpos y' -> Pos.compare x' y'
                   | _ -> Gt)
     | Zneg x' ->
       (match y with
-       | Zneg y' -> compOpp (Coq_Pos.compare x' y')
+       | Zneg y' -> compOpp (Pos.compare x' y')
        | _ -> Lt)
 
   (** val leb : z -> z -> bool **)
@@ -493,13 +574,6 @@ module Z =
     | Lt -> true
     | _ -> false
 
-  (** val gtb : z -> z -> bool **)
-
-  let gtb x y =
-    match compare x y with
-    | Gt -> true
-    | _ -> false
-
   (** val eqb : z -> z -> bool **)
 
   let eqb x y =
@@ -508,10 +582,10 @@ module Z =
              | Z0 -> true
              | _ -> false)
     | Zpos p -> (match y with
-                 | Zpos q0 -> Coq_Pos.eqb p q0
+                 | Zpos q0 -> Pos.eqb p q0
                  | _ -> false)
     | Zneg p -> (match y with
-                 | Zneg q0 -> Coq_Pos.eqb p q0
+                 | Zneg q0 -> Pos.eqb p q0
                  | _ -> false)
 
   (** val max : z -> z -> z **)
@@ -521,23 +595,11 @@ module Z =
     | Lt -> m
     | _ -> n0
 
-  (** val abs : z -> z **)
-
-  let abs = function
-  | Zneg p -> Zpos p
-  | x -> x
-
-  (** val to_N : z -> n **)
-
-  let to_N = function
-  | Zpos p -> Npos p
-  | _ -> N0
-
   (** val of_nat : nat -> z **)
 
   let of_nat = function
   | O -> Z0
-  | S n1 -> Zpos (Coq_Pos.of_succ_nat n1)
+  | S n1 -> Zpos (Pos.of_succ_nat n1)
 
   (** val of_N : n -> z **)
 
@@ -592,6 +654,25 @@ module Z =
   let div a b =
     let q0,_ = div_eucl a b in q0
 
+  (** val gtb : z -> z -> bool **)
+
+  let gtb x y =
+    match compare x y with
+    | Gt -> true
+    | _ -> false
+
+  (** val abs : z -> z **)
+
+  let abs = function
+  | Zneg p -> Zpos p
+  | x -> x
+
+  (** val to_N : z -> n **)
+
+  let to_N = function
+  | Zpos p -> Npos p
+  | _ -> N0
+
   (** val gcd : z -> z -> z **)
 
   let gcd a b =
@@ -607,6 +688,11 @@ module Z =
        | Z0 -> abs a
        | Zpos b0 -> Zpos (Coq_Pos.gcd a0 b0)
        | Zneg b0 -> Zpos (Coq_Pos.gcd a0 b0))
+
+  (** val lcm : z -> z -> z **)
+
+  let lcm a b =
+    abs (mul a (div b (gcd a b)))
  end
 
 type 'c pExpr =
@@ -1083,7 +1169,7 @@ let rec map_bformula _ fct = function
 | TT k -> TT k
 | FF k -> FF k
 | X (k, p) -> X (k, p)
-| A (k, a, t0) -> A (k, (fct a), t0)
+| A (k, a, t1) -> A (k, (fct a), t1)
 | AND (k0, f1, f2) ->
   AND (k0, (map_bformula k0 fct f1), (map_bformula k0 fct f2))
 | OR (k0, f1, f2) ->
@@ -1114,21 +1200,21 @@ let cnf_ff =
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) -> ('a1, 'a2)
     clause -> ('a1, 'a2) clause option **)
 
-let rec add_term unsat deduce t0 = function
+let rec add_term unsat deduce t1 = function
 | [] ->
-  (match deduce (fst t0) (fst t0) with
-   | Some u -> if unsat u then None else Some (t0::[])
-   | None -> Some (t0::[]))
+  (match deduce (fst t1) (fst t1) with
+   | Some u -> if unsat u then None else Some (t1::[])
+   | None -> Some (t1::[]))
 | t'::cl0 ->
-  (match deduce (fst t0) (fst t') with
+  (match deduce (fst t1) (fst t') with
    | Some u ->
      if unsat u
      then None
-     else (match add_term unsat deduce t0 cl0 with
+     else (match add_term unsat deduce t1 cl0 with
            | Some cl' -> Some (t'::cl')
            | None -> None)
    | None ->
-     (match add_term unsat deduce t0 cl0 with
+     (match add_term unsat deduce t1 cl0 with
       | Some cl' -> Some (t'::cl')
       | None -> None))
 
@@ -1139,8 +1225,8 @@ let rec add_term unsat deduce t0 = function
 let rec or_clause unsat deduce cl1 cl2 =
   match cl1 with
   | [] -> Some cl2
-  | t0::cl ->
-    (match add_term unsat deduce t0 cl2 with
+  | t1::cl ->
+    (match add_term unsat deduce t1 cl2 with
      | Some cl' -> or_clause unsat deduce cl cl'
      | None -> None)
 
@@ -1148,9 +1234,9 @@ let rec or_clause unsat deduce cl1 cl2 =
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1,
     'a2) cnf -> ('a1, 'a2) cnf **)
 
-let xor_clause_cnf unsat deduce t0 f =
+let xor_clause_cnf unsat deduce t1 f =
   fold_left (fun acc e ->
-    match or_clause unsat deduce t0 e with
+    match or_clause unsat deduce t1 e with
     | Some cl -> cl::acc
     | None -> acc) f []
 
@@ -1158,10 +1244,10 @@ let xor_clause_cnf unsat deduce t0 f =
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1,
     'a2) cnf -> ('a1, 'a2) cnf **)
 
-let or_clause_cnf unsat deduce t0 f =
-  match t0 with
+let or_clause_cnf unsat deduce t1 f =
+  match t1 with
   | [] -> f
-  | _::_ -> xor_clause_cnf unsat deduce t0 f
+  | _::_ -> xor_clause_cnf unsat deduce t1 f
 
 (** val or_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1,
@@ -1269,7 +1355,7 @@ let rec xcnf unsat deduce normalise1 negate0 pol0 _ = function
 | TT _ -> if pol0 then cnf_tt else cnf_ff
 | FF _ -> if pol0 then cnf_ff else cnf_tt
 | X (_, _) -> cnf_ff
-| A (_, x, t0) -> if pol0 then normalise1 x t0 else negate0 x t0
+| A (_, x, t1) -> if pol0 then normalise1 x t1 else negate0 x t1
 | AND (k0, e1, e2) ->
   mk_and unsat deduce (fun x x0 x1 ->
     xcnf unsat deduce normalise1 negate0 x x0 x1) k0 pol0 e1 e2
@@ -1301,21 +1387,21 @@ let rec xcnf unsat deduce normalise1 negate0 pol0 _ = function
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) -> ('a1, 'a2)
     clause -> (('a1, 'a2) clause, 'a2 trace) sum **)
 
-let rec radd_term unsat deduce t0 = function
+let rec radd_term unsat deduce t1 = function
 | [] ->
-  (match deduce (fst t0) (fst t0) with
-   | Some u -> if unsat u then Inr (Push ((snd t0), Null)) else Inl (t0::[])
-   | None -> Inl (t0::[]))
+  (match deduce (fst t1) (fst t1) with
+   | Some u -> if unsat u then Inr (Push ((snd t1), Null)) else Inl (t1::[])
+   | None -> Inl (t1::[]))
 | t'::cl0 ->
-  (match deduce (fst t0) (fst t') with
+  (match deduce (fst t1) (fst t') with
    | Some u ->
      if unsat u
-     then Inr (Push ((snd t0), (Push ((snd t'), Null))))
-     else (match radd_term unsat deduce t0 cl0 with
+     then Inr (Push ((snd t1), (Push ((snd t'), Null))))
+     else (match radd_term unsat deduce t1 cl0 with
            | Inl cl' -> Inl (t'::cl')
            | Inr l -> Inr l)
    | None ->
-     (match radd_term unsat deduce t0 cl0 with
+     (match radd_term unsat deduce t1 cl0 with
       | Inl cl' -> Inl (t'::cl')
       | Inr l -> Inr l))
 
@@ -1326,8 +1412,8 @@ let rec radd_term unsat deduce t0 = function
 let rec ror_clause unsat deduce cl1 cl2 =
   match cl1 with
   | [] -> Inl cl2
-  | t0::cl ->
-    (match radd_term unsat deduce t0 cl2 with
+  | t1::cl ->
+    (match radd_term unsat deduce t1 cl2 with
      | Inl cl' -> ror_clause unsat deduce cl cl'
      | Inr l -> Inr l)
 
@@ -1335,10 +1421,10 @@ let rec ror_clause unsat deduce cl1 cl2 =
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
     'a2) clause list -> ('a1, 'a2) clause list * 'a2 trace **)
 
-let xror_clause_cnf unsat deduce t0 f =
+let xror_clause_cnf unsat deduce t1 f =
   fold_left (fun pat e ->
     let acc,tg = pat in
-    (match ror_clause unsat deduce t0 e with
+    (match ror_clause unsat deduce t1 e with
      | Inl cl -> (cl::acc),tg
      | Inr l -> acc,(Merge (tg, l))))
     f ([],Null)
@@ -1347,10 +1433,10 @@ let xror_clause_cnf unsat deduce t0 f =
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
     'a2) clause list -> ('a1, 'a2) clause list * 'a2 trace **)
 
-let ror_clause_cnf unsat deduce t0 f =
-  match t0 with
+let ror_clause_cnf unsat deduce t1 f =
+  match t1 with
   | [] -> f,Null
-  | _::_ -> xror_clause_cnf unsat deduce t0 f
+  | _::_ -> xror_clause_cnf unsat deduce t1 f
 
 (** val ror_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause list ->
@@ -1360,9 +1446,9 @@ let rec ror_cnf unsat deduce f f' =
   match f with
   | [] -> cnf_tt,Null
   | e::rst ->
-    let rst_f',t0 = ror_cnf unsat deduce rst f' in
+    let rst_f',t1 = ror_cnf unsat deduce rst f' in
     let e_f',t' = ror_clause_cnf unsat deduce e f' in
-    (rev_append rst_f' e_f'),(Merge (t0, t'))
+    (rev_append rst_f' e_f'),(Merge (t1, t'))
 
 (** val ror_cnf_opt :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1,
@@ -1452,8 +1538,8 @@ let rec rxcnf unsat deduce normalise1 negate0 polarity _ = function
 | TT _ -> if polarity then cnf_tt,Null else cnf_ff,Null
 | FF _ -> if polarity then cnf_ff,Null else cnf_tt,Null
 | X (_, _) -> cnf_ff,Null
-| A (_, x, t0) ->
-  ratom (if polarity then normalise1 x t0 else negate0 x t0) t0
+| A (_, x, t1) ->
+  ratom (if polarity then normalise1 x t1 else negate0 x t1) t1
 | AND (k0, e1, e2) ->
   rxcnf_and unsat deduce (fun x x0 x1 ->
     rxcnf unsat deduce normalise1 negate0 x x0 x1) polarity k0 e1 e2
@@ -1489,7 +1575,7 @@ let rec aformula to_constr _ = function
 | TT b -> to_constr.mkTT b
 | FF b -> to_constr.mkFF b
 | X (_, p) -> p
-| A (b, x, t0) -> to_constr.mkA b x t0
+| A (b, x, t1) -> to_constr.mkA b x t1
 | AND (k0, f1, f2) ->
   to_constr.mkAND k0 (aformula to_constr k0 f1) (aformula to_constr k0 f2)
 | OR (k0, f1, f2) ->
@@ -1563,8 +1649,8 @@ let mk_arrow o k f1 f2 =
     'a4) tFormula -> ('a1, 'a2, 'a3, 'a4) tFormula **)
 
 let rec abst_simpl to_constr needA _ = function
-| A (k, x, t0) ->
-  if needA t0 then A (k, x, t0) else X (k, (to_constr.mkA k x t0))
+| A (k, x, t1) ->
+  if needA t1 then A (k, x, t1) else X (k, (to_constr.mkA k x t1))
 | AND (k0, f1, f2) ->
   AND (k0, (abst_simpl to_constr needA k0 f1),
     (abst_simpl to_constr needA k0 f2))
@@ -1673,8 +1759,8 @@ let rec abst_form to_constr needA pol0 _ = function
 | TT k -> if pol0 then TT k else X (k, (to_constr.mkTT k))
 | FF k -> if pol0 then X (k, (to_constr.mkFF k)) else FF k
 | X (k, p) -> X (k, p)
-| A (k, x, t0) ->
-  if needA t0 then A (k, x, t0) else X (k, (to_constr.mkA k x t0))
+| A (k, x, t1) ->
+  if needA t1 then A (k, x, t1) else X (k, (to_constr.mkA k x t1))
 | AND (k0, f1, f2) ->
   abst_and to_constr (abst_form to_constr needA) pol0 k0 f1 f2
 | OR (k0, f1, f2) ->
@@ -1955,8 +2041,8 @@ let cnf_of_list cO ceqb cleb l tg =
     -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool)
     -> 'a1 formula -> 'a2 -> ('a1 nFormula, 'a2) cnf **)
 
-let cnf_normalise cO cI cplus ctimes cminus copp ceqb cleb t0 tg =
-  let f = normalise cO cI cplus ctimes cminus copp ceqb t0 in
+let cnf_normalise cO cI cplus ctimes cminus copp ceqb cleb t1 tg =
+  let f = normalise cO cI cplus ctimes cminus copp ceqb t1 in
   if check_inconsistent cO ceqb cleb f
   then cnf_ff
   else cnf_of_list cO ceqb cleb (xnormalise copp f) tg
@@ -1966,8 +2052,8 @@ let cnf_normalise cO cI cplus ctimes cminus copp ceqb cleb t0 tg =
     -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool)
     -> 'a1 formula -> 'a2 -> ('a1 nFormula, 'a2) cnf **)
 
-let cnf_negate cO cI cplus ctimes cminus copp ceqb cleb t0 tg =
-  let f = normalise cO cI cplus ctimes cminus copp ceqb t0 in
+let cnf_negate cO cI cplus ctimes cminus copp ceqb cleb t1 tg =
+  let f = normalise cO cI cplus ctimes cminus copp ceqb t1 in
   if check_inconsistent cO ceqb cleb f
   then cnf_tt
   else cnf_of_list cO ceqb cleb (xnegate copp f) tg
@@ -2008,10 +2094,10 @@ let map_Formula c_of_S f =
     'a1 psatz **)
 
 let simpl_cone cO cI ctimes ceqb e = match e with
-| PsatzSquare t0 ->
-  (match t0 with
+| PsatzSquare t1 ->
+  (match t1 with
    | Pc c -> if ceqb cO c then PsatzZ else PsatzC (ctimes c c)
-   | _ -> PsatzSquare t0)
+   | _ -> PsatzSquare t1)
 | PsatzMulE (t1, t2) ->
   (match t1 with
    | PsatzMulE (x, x0) ->
@@ -2061,65 +2147,50 @@ let simpl_cone cO cI ctimes ceqb e = match e with
            | _ -> PsatzAdd (t1, t2)))
 | _ -> e
 
-type q = { qnum : z; qden : positive }
+module PositiveSet =
+ struct
+  type tree =
+  | Leaf
+  | Node of tree * bool * tree
 
-(** val qeq_bool : q -> q -> bool **)
+  type t = tree
 
-let qeq_bool x y =
-  Z.eqb (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
+  (** val empty : t **)
 
-(** val qle_bool : q -> q -> bool **)
+  let empty =
+    Leaf
 
-let qle_bool x y =
-  Z.leb (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
+  (** val mem : positive -> t -> bool **)
 
-(** val qplus : q -> q -> q **)
+  let rec mem i = function
+  | Leaf -> false
+  | Node (l, o, r) ->
+    (match i with
+     | XI i0 -> mem i0 r
+     | XO i0 -> mem i0 l
+     | XH -> o)
 
-let qplus x y =
-  { qnum = (Z.add (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden)));
-    qden = (Coq_Pos.mul x.qden y.qden) }
+  (** val add : positive -> t -> t **)
 
-(** val qmult : q -> q -> q **)
+  let rec add i = function
+  | Leaf ->
+    (match i with
+     | XI i0 -> Node (Leaf, false, (add i0 Leaf))
+     | XO i0 -> Node ((add i0 Leaf), false, Leaf)
+     | XH -> Node (Leaf, true, Leaf))
+  | Node (l, o, r) ->
+    (match i with
+     | XI i0 -> Node (l, o, (add i0 r))
+     | XO i0 -> Node ((add i0 l), o, r)
+     | XH -> Node (l, true, r))
+ end
 
-let qmult x y =
-  { qnum = (Z.mul x.qnum y.qnum); qden = (Coq_Pos.mul x.qden y.qden) }
-
-(** val qopp : q -> q **)
-
-let qopp x =
-  { qnum = (Z.opp x.qnum); qden = x.qden }
-
-(** val qminus : q -> q -> q **)
-
-let qminus x y =
-  qplus x (qopp y)
-
-(** val qinv : q -> q **)
-
-let qinv x =
-  match x.qnum with
-  | Z0 -> { qnum = Z0; qden = XH }
-  | Zpos p -> { qnum = (Zpos x.qden); qden = p }
-  | Zneg p -> { qnum = (Zneg x.qden); qden = p }
-
-(** val qpower_positive : q -> positive -> q **)
-
-let qpower_positive =
-  pow_pos qmult
-
-(** val qpower : q -> z -> q **)
-
-let qpower q0 = function
-| Z0 -> { qnum = (Zpos XH); qden = XH }
-| Zpos p -> qpower_positive q0 p
-| Zneg p -> qinv (qpower_positive q0 p)
-
-type 'a t =
+type 'a t0 =
 | Empty
 | Elt of 'a
-| Branch of 'a t * 'a * 'a t
+| Branch of 'a t0 * 'a * 'a t0
 
-(** val find : 'a1 -> 'a1 t -> positive -> 'a1 **)
+(** val find : 'a1 -> 'a1 t0 -> positive -> 'a1 **)
 
 let rec find default vm p =
   match vm with
@@ -2131,7 +2202,7 @@ let rec find default vm p =
      | XO p2 -> find default l p2
      | XH -> e)
 
-(** val singleton : 'a1 -> positive -> 'a1 -> 'a1 t **)
+(** val singleton : 'a1 -> positive -> 'a1 -> 'a1 t0 **)
 
 let rec singleton default x v =
   match x with
@@ -2139,7 +2210,7 @@ let rec singleton default x v =
   | XO p -> Branch ((singleton default p v), default, Empty)
   | XH -> Elt v
 
-(** val vm_add : 'a1 -> positive -> 'a1 -> 'a1 t -> 'a1 t **)
+(** val vm_add : 'a1 -> positive -> 'a1 -> 'a1 t0 -> 'a1 t0 **)
 
 let rec vm_add default x v = function
 | Empty -> singleton default x v
@@ -2153,28 +2224,6 @@ let rec vm_add default x v = function
    | XI p -> Branch (l, o, (vm_add default p v r))
    | XO p -> Branch ((vm_add default p v l), o, r)
    | XH -> Branch (l, v, r))
-
-(** val zeval_const : z pExpr -> z option **)
-
-let rec zeval_const = function
-| PEc c -> Some c
-| PEX _ -> None
-| PEadd (e1, e2) ->
-  map_option2 (fun x y -> Some (Z.add x y)) (zeval_const e1) (zeval_const e2)
-| PEsub (e1, e2) ->
-  map_option2 (fun x y -> Some (Z.sub x y)) (zeval_const e1) (zeval_const e2)
-| PEmul (e1, e2) ->
-  map_option2 (fun x y -> Some (Z.mul x y)) (zeval_const e1) (zeval_const e2)
-| PEopp e0 -> map_option (fun x -> Some (Z.opp x)) (zeval_const e0)
-| PEpow (e1, n0) ->
-  map_option (fun x -> Some (Z.pow x (Z.of_N n0))) (zeval_const e1)
-
-type zWitness = z psatz
-
-(** val zWeakChecker : z nFormula list -> z psatz -> bool **)
-
-let zWeakChecker =
-  check_normalised_formulas Z0 (Zpos XH) Z.add Z.mul Z.eqb Z.leb
 
 (** val psub1 : z pol -> z pol -> z pol **)
 
@@ -2191,9 +2240,9 @@ let popp1 =
 let padd1 =
   padd0 Z0 Z.add Z.eqb
 
-(** val normZ : z pExpr -> z pol **)
+(** val norm0 : z pExpr -> z pol **)
 
-let normZ =
+let norm0 =
   norm Z0 (Zpos XH) Z.add Z.mul Z.sub Z.opp Z.eqb
 
 (** val zunsat : z nFormula -> bool **)
@@ -2208,10 +2257,10 @@ let zdeduce =
 
 (** val xnnormalise : z formula -> z nFormula **)
 
-let xnnormalise t0 =
-  let { flhs = lhs; fop = o; frhs = rhs } = t0 in
-  let lhs0 = normZ lhs in
-  let rhs0 = normZ rhs in
+let xnnormalise t1 =
+  let { flhs = lhs; fop = o; frhs = rhs } = t1 in
+  let lhs0 = norm0 lhs in
+  let rhs0 = norm0 rhs in
   (match o with
    | OpEq -> (psub1 rhs0 lhs0),Equal
    | OpNEq -> (psub1 rhs0 lhs0),NonEqual
@@ -2220,52 +2269,33 @@ let xnnormalise t0 =
    | OpLt -> (psub1 rhs0 lhs0),Strict
    | OpGt -> (psub1 lhs0 rhs0),Strict)
 
-(** val xnormalise0 : z nFormula -> z nFormula list **)
+(** val xis_integral : (positive -> bool) -> positive -> z pol -> bool **)
 
-let xnormalise0 = function
-| e,o ->
-  (match o with
-   | Equal ->
-     ((psub1 e (Pc (Zpos XH))),NonStrict)::(((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
-   | NonEqual -> (e,Equal)::[]
-   | Strict -> ((psub1 (Pc Z0) e),NonStrict)::[]
-   | NonStrict -> ((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
+let rec xis_integral e jmp = function
+| Pc _ -> true
+| Pinj (j, p2) -> xis_integral e (Coq_Pos.add j jmp) p2
+| PX (p2, _, q0) ->
+  (&&) ((&&) (xis_integral e jmp p2) (e jmp))
+    (xis_integral e (Coq_Pos.succ jmp) q0)
 
-(** val cnf_of_list0 :
-    'a1 -> z nFormula list -> (z nFormula * 'a1) list list **)
+(** val get : PositiveSet.t -> positive -> bool **)
 
-let cnf_of_list0 tg l =
-  fold_right (fun x acc -> if zunsat x then acc else ((x,tg)::[])::acc)
-    cnf_tt l
+let get s x =
+  PositiveSet.mem x s
 
-(** val normalise0 : z formula -> 'a1 -> (z nFormula, 'a1) cnf **)
+(** val oget : PositiveSet.t option -> positive -> bool **)
 
-let normalise0 t0 tg =
-  let f = xnnormalise t0 in
-  if zunsat f then cnf_ff else cnf_of_list0 tg (xnormalise0 f)
+let oget s x =
+  match s with
+  | Some s0 -> PositiveSet.mem x s0
+  | None -> true
 
-(** val xnegate0 : z nFormula -> z nFormula list **)
+(** val is_integral : PositiveSet.t option -> z pol -> bool **)
 
-let xnegate0 = function
-| e,o ->
-  (match o with
-   | NonEqual ->
-     ((psub1 e (Pc (Zpos XH))),NonStrict)::(((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
-   | Strict -> ((psub1 e (Pc (Zpos XH))),NonStrict)::[]
-   | x -> (e,x)::[])
-
-(** val negate : z formula -> 'a1 -> (z nFormula, 'a1) cnf **)
-
-let negate t0 tg =
-  let f = xnnormalise t0 in
-  if zunsat f then cnf_tt else cnf_of_list0 tg (xnegate0 f)
-
-(** val cnfZ :
-    kind -> (z formula, 'a1, 'a2, 'a3) tFormula -> (z nFormula, 'a1)
-    cnf * 'a1 trace **)
-
-let cnfZ k f =
-  rxcnf zunsat zdeduce normalise0 negate true k f
+let is_integral e pol0 =
+  match e with
+  | Some e0 -> xis_integral (get e0) XH pol0
+  | None -> true
 
 (** val ceiling : z -> z -> z **)
 
@@ -2274,6 +2304,8 @@ let ceiling a b =
   (match r with
    | Z0 -> q0
    | _ -> Z.add q0 (Zpos XH))
+
+type zWitness = z psatz
 
 type zArithProof =
 | DoneProof
@@ -2349,9 +2381,8 @@ let eval_Psatz0 =
 (** val valid_cut_sign : op1 -> bool **)
 
 let valid_cut_sign = function
-| Equal -> true
-| NonStrict -> true
-| _ -> false
+| NonEqual -> false
+| _ -> true
 
 (** val bound_var : positive -> z formula **)
 
@@ -2360,8 +2391,8 @@ let bound_var v =
 
 (** val mk_eq_pos : positive -> positive -> positive -> z formula **)
 
-let mk_eq_pos x y t0 =
-  { flhs = (PEX x); fop = OpEq; frhs = (PEsub ((PEX y), (PEX t0))) }
+let mk_eq_pos x y t1 =
+  { flhs = (PEX x); fop = OpEq; frhs = (PEsub ((PEX y), (PEX t1))) }
 
 (** val max_var : positive -> z pol -> positive **)
 
@@ -2376,73 +2407,217 @@ let rec max_var jmp = function
 let max_var_nformulae l =
   fold_left (fun acc f -> Coq_Pos.max acc (max_var XH (fst f))) l XH
 
-(** val zChecker : z nFormula list -> zArithProof -> bool **)
+(** val add0 : positive -> PositiveSet.t option -> PositiveSet.t option **)
 
-let rec zChecker l = function
+let add0 x = function
+| Some s0 -> Some (PositiveSet.add x s0)
+| None -> None
+
+(** val zChecker :
+    PositiveSet.t option -> z nFormula list -> zArithProof -> bool **)
+
+let rec zChecker is_integer l = function
 | DoneProof -> false
 | RatProof (w, pf0) ->
   (match eval_Psatz0 l w with
-   | Some f -> if zunsat f then true else zChecker (f::l) pf0
+   | Some f -> if zunsat f then true else zChecker is_integer (f::l) pf0
    | None -> false)
 | CutProof (w, pf0) ->
   (match eval_Psatz0 l w with
    | Some f ->
-     (match genCuttingPlane f with
-      | Some cp -> zChecker ((nformula_of_cutting_plane cp)::l) pf0
-      | None -> true)
+     if is_integral is_integer (fst f)
+     then (match genCuttingPlane f with
+           | Some cp ->
+             let f0 = nformula_of_cutting_plane cp in
+             if zunsat f0 then true else zChecker is_integer (f0::l) pf0
+           | None -> true)
+     else false
    | None -> false)
 | SplitProof (p, pf1, pf2) ->
-  (match genCuttingPlane (p,NonStrict) with
-   | Some cp1 ->
-     (match genCuttingPlane ((popp1 p),NonStrict) with
-      | Some cp2 ->
-        (&&) (zChecker ((nformula_of_cutting_plane cp1)::l) pf1)
-          (zChecker ((nformula_of_cutting_plane cp2)::l) pf2)
-      | None -> false)
-   | None -> false)
+  if is_integral is_integer p
+  then (match genCuttingPlane (p,NonStrict) with
+        | Some cp1 ->
+          (match genCuttingPlane ((popp1 p),NonStrict) with
+           | Some cp2 ->
+             (&&)
+               (zChecker is_integer ((nformula_of_cutting_plane cp1)::l) pf1)
+               (zChecker is_integer ((nformula_of_cutting_plane cp2)::l) pf2)
+           | None -> false)
+        | None -> false)
+  else false
 | EnumProof (w1, w2, pf0) ->
   (match eval_Psatz0 l w1 with
    | Some f1 ->
      (match eval_Psatz0 l w2 with
       | Some f2 ->
-        (match genCuttingPlane f1 with
-         | Some p ->
-           let p2,op3 = p in
-           let e1,z1 = p2 in
-           (match genCuttingPlane f2 with
-            | Some p3 ->
-              let p4,op4 = p3 in
-              let e2,z2 = p4 in
-              if (&&) ((&&) (valid_cut_sign op3) (valid_cut_sign op4))
-                   (is_pol_Z0 (padd1 e1 e2))
-              then let rec label pfs lb ub =
-                     match pfs with
-                     | [] -> Z.gtb lb ub
-                     | pf1::rsr ->
-                       (&&) (zChecker (((psub1 e1 (Pc lb)),Equal)::l) pf1)
-                         (label rsr (Z.add lb (Zpos XH)) ub)
-                   in label pf0 (Z.opp z1) z2
-              else false
-            | None -> true)
-         | None -> true)
+        if (&&) (is_integral is_integer (fst f1))
+             (is_integral is_integer (fst f2))
+        then (match genCuttingPlane f1 with
+              | Some p ->
+                let p2,op3 = p in
+                let e1,z1 = p2 in
+                (match genCuttingPlane f2 with
+                 | Some p3 ->
+                   let p4,op4 = p3 in
+                   let e2,z2 = p4 in
+                   if (&&) ((&&) (valid_cut_sign op3) (valid_cut_sign op4))
+                        (is_pol_Z0 (padd1 e1 e2))
+                   then let rec label pfs lb ub =
+                          match pfs with
+                          | [] -> Z.gtb lb ub
+                          | pf1::rsr ->
+                            (&&)
+                              (zChecker is_integer
+                                (((psub1 e1 (Pc lb)),Equal)::l) pf1)
+                              (label rsr (Z.add lb (Zpos XH)) ub)
+                        in label pf0 (Z.opp z1) z2
+                   else false
+                 | None -> true)
+              | None -> true)
+        else false
       | None -> false)
    | None -> false)
 | ExProof (x, prf) ->
   let fr = max_var_nformulae l in
-  if Coq_Pos.leb x fr
+  if (&&) (Coq_Pos.leb x fr) (oget is_integer x)
   then let z0 = Coq_Pos.succ fr in
-       let t0 = Coq_Pos.succ z0 in
-       let nfx = xnnormalise (mk_eq_pos x z0 t0) in
+       let t1 = Coq_Pos.succ z0 in
+       let nfx = xnnormalise (mk_eq_pos x z0 t1) in
        let posz = xnnormalise (bound_var z0) in
-       let post = xnnormalise (bound_var t0) in
-       zChecker (nfx::(posz::(post::l))) prf
+       let post = xnnormalise (bound_var t1) in
+       zChecker (add0 z0 (add0 t1 is_integer)) (nfx::(posz::(post::l))) prf
   else false
+
+(** val zeval_const : z pExpr -> z option **)
+
+let rec zeval_const = function
+| PEc c -> Some c
+| PEX _ -> None
+| PEadd (e1, e2) ->
+  map_option2 (fun x y -> Some (Z.add x y)) (zeval_const e1) (zeval_const e2)
+| PEsub (e1, e2) ->
+  map_option2 (fun x y -> Some (Z.sub x y)) (zeval_const e1) (zeval_const e2)
+| PEmul (e1, e2) ->
+  map_option2 (fun x y -> Some (Z.mul x y)) (zeval_const e1) (zeval_const e2)
+| PEopp e0 -> map_option (fun x -> Some (Z.opp x)) (zeval_const e0)
+| PEpow (e1, n0) ->
+  map_option (fun x -> Some (Z.pow x (Z.of_N n0))) (zeval_const e1)
+
+(** val zWeakChecker : z nFormula list -> z psatz -> bool **)
+
+let zWeakChecker =
+  check_normalised_formulas Z0 (Zpos XH) Z.add Z.mul Z.eqb Z.leb
+
+(** val normZ : z pExpr -> z pol **)
+
+let normZ =
+  norm Z0 (Zpos XH) Z.add Z.mul Z.sub Z.opp Z.eqb
+
+(** val cnf_of_list0 :
+    'a1 -> z nFormula list -> (z nFormula * 'a1) list list **)
+
+let cnf_of_list0 tg l =
+  fold_right (fun x acc -> if zunsat x then acc else ((x,tg)::[])::acc)
+    cnf_tt l
+
+(** val xnormalise0 : z nFormula -> z nFormula list **)
+
+let xnormalise0 = function
+| e,o ->
+  (match o with
+   | Equal ->
+     ((psub1 e (Pc (Zpos XH))),NonStrict)::(((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
+   | NonEqual -> (e,Equal)::[]
+   | Strict -> ((psub1 (Pc Z0) e),NonStrict)::[]
+   | NonStrict -> ((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
+
+(** val normalise0 : z formula -> 'a1 -> (z nFormula, 'a1) cnf **)
+
+let normalise0 t1 tg =
+  let f = xnnormalise t1 in
+  if zunsat f then cnf_ff else cnf_of_list0 tg (xnormalise0 f)
+
+(** val xnegate0 : z nFormula -> z nFormula list **)
+
+let xnegate0 = function
+| e,o ->
+  (match o with
+   | NonEqual ->
+     ((psub1 e (Pc (Zpos XH))),NonStrict)::(((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
+   | Strict -> ((psub1 e (Pc (Zpos XH))),NonStrict)::[]
+   | x -> (e,x)::[])
+
+(** val negate : z formula -> 'a1 -> (z nFormula, 'a1) cnf **)
+
+let negate t1 tg =
+  let f = xnnormalise t1 in
+  if zunsat f then cnf_tt else cnf_of_list0 tg (xnegate0 f)
+
+(** val cnfZ :
+    kind -> (z formula, 'a1, 'a2, 'a3) tFormula -> (z nFormula, 'a1)
+    cnf * 'a1 trace **)
+
+let cnfZ k f =
+  rxcnf zunsat zdeduce normalise0 negate true k f
 
 (** val zTautoChecker : z formula bFormula -> zArithProof list -> bool **)
 
 let zTautoChecker f w =
   tauto_checker zunsat zdeduce normalise0 negate (fun cl ->
-    zChecker (map fst cl)) f w
+    zChecker None (map fst cl)) f w
+
+type q = { qnum : z; qden : positive }
+
+(** val qeq_bool : q -> q -> bool **)
+
+let qeq_bool x y =
+  Z.eqb (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
+
+(** val qle_bool : q -> q -> bool **)
+
+let qle_bool x y =
+  Z.leb (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden))
+
+(** val qplus : q -> q -> q **)
+
+let qplus x y =
+  { qnum = (Z.add (Z.mul x.qnum (Zpos y.qden)) (Z.mul y.qnum (Zpos x.qden)));
+    qden = (Coq_Pos.mul x.qden y.qden) }
+
+(** val qmult : q -> q -> q **)
+
+let qmult x y =
+  { qnum = (Z.mul x.qnum y.qnum); qden = (Coq_Pos.mul x.qden y.qden) }
+
+(** val qopp : q -> q **)
+
+let qopp x =
+  { qnum = (Z.opp x.qnum); qden = x.qden }
+
+(** val qminus : q -> q -> q **)
+
+let qminus x y =
+  qplus x (qopp y)
+
+(** val qinv : q -> q **)
+
+let qinv x =
+  match x.qnum with
+  | Z0 -> { qnum = Z0; qden = XH }
+  | Zpos p -> { qnum = (Zpos x.qden); qden = p }
+  | Zneg p -> { qnum = (Zneg x.qden); qden = p }
+
+(** val qpower_positive : q -> positive -> q **)
+
+let qpower_positive =
+  pow_pos qmult
+
+(** val qpower : q -> z -> q **)
+
+let qpower q0 = function
+| Z0 -> { qnum = (Zpos XH); qden = XH }
+| Zpos p -> qpower_positive q0 p
+| Zneg p -> qinv (qpower_positive q0 p)
 
 type qWitness = q psatz
 
@@ -2454,15 +2629,15 @@ let qWeakChecker =
 
 (** val qnormalise : q formula -> 'a1 -> (q nFormula, 'a1) cnf **)
 
-let qnormalise t0 tg =
+let qnormalise t1 tg =
   cnf_normalise { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH }
-    qplus qmult qminus qopp qeq_bool qle_bool t0 tg
+    qplus qmult qminus qopp qeq_bool qle_bool t1 tg
 
 (** val qnegate : q formula -> 'a1 -> (q nFormula, 'a1) cnf **)
 
-let qnegate t0 tg =
+let qnegate t1 tg =
   cnf_negate { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH } qplus
-    qmult qminus qopp qeq_bool qle_bool t0 tg
+    qmult qminus qopp qeq_bool qle_bool t1 tg
 
 (** val qunsat : q nFormula -> bool **)
 
@@ -2525,25 +2700,19 @@ let rec q_of_Rcst = function
 | CInv r0 -> qinv (q_of_Rcst r0)
 | COpp r0 -> qopp (q_of_Rcst r0)
 
-type rWitness = q psatz
-
-(** val rWeakChecker : q nFormula list -> q psatz -> bool **)
-
-let rWeakChecker =
-  check_normalised_formulas { qnum = Z0; qden = XH } { qnum = (Zpos XH);
-    qden = XH } qplus qmult qeq_bool qle_bool
+type rWitness = zArithProof
 
 (** val rnormalise : q formula -> 'a1 -> (q nFormula, 'a1) cnf **)
 
-let rnormalise t0 tg =
+let rnormalise t1 tg =
   cnf_normalise { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH }
-    qplus qmult qminus qopp qeq_bool qle_bool t0 tg
+    qplus qmult qminus qopp qeq_bool qle_bool t1 tg
 
 (** val rnegate : q formula -> 'a1 -> (q nFormula, 'a1) cnf **)
 
-let rnegate t0 tg =
+let rnegate t1 tg =
   cnf_negate { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH } qplus
-    qmult qminus qopp qeq_bool qle_bool t0 tg
+    qmult qminus qopp qeq_bool qle_bool t1 tg
 
 (** val runsat : q nFormula -> bool **)
 
@@ -2555,9 +2724,104 @@ let runsat =
 let rdeduce =
   nformula_plus_nformula { qnum = Z0; qden = XH } qplus qeq_bool
 
-(** val rTautoChecker : rcst formula bFormula -> rWitness list -> bool **)
+type 'form eFormula =
+| IsZ of bool * positive
+| IsF of 'form
+
+(** val map_eFormula :
+    ('a1 -> 'a2) -> 'a1 formula eFormula -> 'a2 formula eFormula **)
+
+let map_eFormula f = function
+| IsZ (b, x) -> IsZ (b, x)
+| IsF f1 -> IsF (map_Formula f f1)
+
+(** val lcm0 : q pol -> z **)
+
+let rec lcm0 = function
+| Pc q0 -> Zpos q0.qden
+| Pinj (_, p2) -> lcm0 p2
+| PX (p2, _, q0) -> Z.lcm (lcm0 p2) (lcm0 q0)
+
+(** val polZ : z -> q pol -> z pol **)
+
+let rec polZ lcm1 = function
+| Pc q0 -> Pc (Z.div (Z.mul q0.qnum lcm1) (Zpos q0.qden))
+| Pinj (x, p2) -> Pinj (x, (polZ lcm1 p2))
+| PX (p2, i, q0) -> PX ((polZ lcm1 p2), i, (polZ lcm1 q0))
+
+(** val nformulaZ : q nFormula -> z nFormula **)
+
+let nformulaZ = function
+| p,o -> (polZ (lcm0 p) p),o
+
+(** val xcollect_isZ :
+    PositiveSet.t -> z nFormula list -> (q nFormula eFormula * unit0) list ->
+    PositiveSet.t * z nFormula list **)
+
+let rec xcollect_isZ s acc = function
+| [] -> s,acc
+| p::l0 ->
+  let e,_ = p in
+  (match e with
+   | IsZ (b, x) -> xcollect_isZ (if b then PositiveSet.add x s else s) acc l0
+   | IsF f -> xcollect_isZ s ((nformulaZ f)::acc) l0)
+
+(** val qCheck : (q nFormula eFormula * unit0) list -> zArithProof -> bool **)
+
+let qCheck l =
+  let s,cl = xcollect_isZ PositiveSet.empty [] l in zChecker (Some s) cl
+
+(** val erunsat : q nFormula eFormula -> bool **)
+
+let erunsat = function
+| IsZ (_, _) -> false
+| IsF f0 -> runsat f0
+
+(** val erdeduce :
+    q nFormula eFormula -> q nFormula eFormula -> q nFormula eFormula option **)
+
+let erdeduce f1 f2 =
+  match f1 with
+  | IsZ (_, _) -> None
+  | IsF f3 ->
+    (match f2 with
+     | IsZ (_, _) -> None
+     | IsF f4 ->
+       (match rdeduce f3 f4 with
+        | Some f -> Some (IsF f)
+        | None -> None))
+
+(** val map_cnf : ('a2 -> 'a3) -> ('a2, 'a1) cnf -> ('a3, 'a1) cnf **)
+
+let map_cnf f l =
+  map (map (fun pat -> let a,t1 = pat in (f a),t1)) l
+
+(** val eRnormalise :
+    q formula eFormula -> 'a1 -> (q nFormula eFormula, 'a1) cnf **)
+
+let eRnormalise f t1 =
+  match f with
+  | IsZ (b, z0) -> (((IsZ ((negb b), z0)),t1)::[])::[]
+  | IsF f0 -> map_cnf (fun x -> IsF x) (rnormalise f0 t1)
+
+(** val eRnegate :
+    q formula eFormula -> 'a1 -> (q nFormula eFormula, 'a1) cnf **)
+
+let eRnegate f t1 =
+  match f with
+  | IsZ (b, z0) -> (((IsZ (b, z0)),t1)::[])::[]
+  | IsF f0 -> map_cnf (fun x -> IsF x) (rnegate f0 t1)
+
+(** val cnfR :
+    kind -> (q formula eFormula, 'a1, 'a2, 'a3) tFormula -> (q nFormula
+    eFormula, 'a1) cnf * 'a1 trace **)
+
+let cnfR k f =
+  rxcnf erunsat erdeduce eRnormalise eRnegate true k f
+
+(** val rTautoChecker :
+    rcst formula eFormula bFormula -> rWitness list -> bool **)
 
 let rTautoChecker f w =
-  tauto_checker runsat rdeduce rnormalise rnegate (fun cl ->
-    rWeakChecker (map fst cl))
-    (map_bformula IsProp (map_Formula q_of_Rcst) f) w
+  tauto_checker erunsat erdeduce eRnormalise eRnegate qCheck
+    (map_bformula IsProp (map_eFormula q_of_Rcst) f) w

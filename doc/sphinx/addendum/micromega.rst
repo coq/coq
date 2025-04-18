@@ -153,17 +153,15 @@ For each conjunct :math:`C_i`, the tactic calls an oracle which searches for
 :gdef:`cone expression` that is normalized by the :tacn:`ring` tactic
 (see :ref:`theringandfieldtacticfamilies`) and checked to be :math:`-1`.
 
-`lra`: a decision procedure for linear real and rational arithmetic
+`lra`: a decision procedure for mixed integer linear arithmetic
 -------------------------------------------------------------------
 
 .. tacn:: lra
 
-   This tactic is searching for *linear* refutations. As a result, this tactic explores a subset of the *Cone*
-   defined as
-
-   .. math::
-
-      \mathit{LinCone}(S) =\left\{ \left. \sum_{p \in S} \alpha_p \times p~\right|~\alpha_p \mbox{ are positive constants} \right\}
+   The tactics solves mixed integer arithmetic goals i.e. goals where variables range over either the reals or the integers.
+   In addition to standard linear arithmetic constraints over :g:`R`, the tactic supports the predicate :g:`isZ: R -> Prop`
+   such that :g:`IsZ x` restricts the range of  :g:`x` to be an integer.
+   See  :tacn:`rify` to pre-process the goal.
 
    The deductive power of :tacn:`lra` overlaps with the one of :tacn:`field`
    tactic *e.g.*, :math:`x = 10 * x / 10` is solved by :tacn:`lra`.
@@ -357,12 +355,57 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    See the :ref:`example below <lra_example>` and comments in
    `plugin/micromega/coq_micromega.mli`.
 
-`zify`: pre-processing of arithmetic goals
-------------------------------------------
+`tify`: pre-processing of arithmetic goals (generalise `zify`)
+--------------------------------------------------------------
+
+.. tacn:: tify @qualid
+
+   The tactic :tacn:`tify` :g:`T` injects the goal towards the type
+   :g:`T`. It can be extended with new types and operators by
+   declaring and registering new typeclass instances using the
+   following commands.  The typeclass declarations can be found in the
+   module ``TifyClasses``.
+
+.. cmd:: Add Tify @add_tify @qualid
+
+   .. insertprodn add_tify add_tify
+
+   .. prodn::
+      add_tify ::= {| InjTyp | BinOp | UnOp | CstOp | BinRel | UnOpSpec | BinOpSpec }
+      | {| PropOp | PropBinOp | PropUOp | Saturate }
+
+   Registers an instance of the specified typeclass.
+   The typeclass type (e.g. :g:`BinOp Z.mul` or :g:`BinRel (@eq Z)`) has the additional constraint that
+   the non-implicit argument (here, :g:`Z.mul` or :g:`(@eq Z)`)
+   is either a :n:`@reference` (here, :g:`Z.mul`) or the application of a :n:`@reference` (here, :g:`@eq`) to a sequence of :n:`@one_term`.
+
+   This command supports attributes :attr:`local`, :attr:`export` and :attr:`global`.
+   In sections only :attr:`local` is supported, outside sections the default is :attr:`global`.
+
+.. cmd:: Show Tify @show_tify
+
+   .. insertprodn show_tify show_tify
+
+   .. prodn::
+      show_tify ::= {| InjTyp | BinOp | UnOp | CstOp | BinRel | UnOpSpec | BinOpSpec }
+
+   Prints instances for the specified typeclass.  For instance, :cmd:`Show Tify` ``InjTyp``
+   prints the list of types that supported by :tacn:`tify` e.g.,
+   :g:`Z`, :g:`nat`, :g:`positive` and :g:`N`.
+
+.. tacn:: tify_elim_let
+          tify_iter_let @ltac_expr
+          tify_iter_specs
+          tify_op @qualid
+          tify_saturate
+
+   For internal use only (it may change without notice).
+
 
 .. tacn:: zify
 
-   This tactic is internally called by :tacn:`lia` to support additional types, e.g., :g:`nat`, :g:`positive` and :g:`N`.
+   This tactic is internally called by :tacn:`lia` and calls tacn:`tify Z` to inject towards :g:`Z`
+   additional types, e.g., :g:`nat`, :g:`positive` and :g:`N`.
    Additional support is provided by the following modules:
 
    + For boolean operators (e.g., :g:`Nat.leb`), require the module :g:`ZifyBool`.
@@ -386,35 +429,6 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
      - :g:`Z.euclidean_division_equations_cleanup`, removing impossible hypotheses introduced by the above passes, such as those presupposing :g:`x <> x`
      - :g:`Z.euclidean_division_equations_find_duplicate_quotients`, which heuristically adds equations of the form :g:`q1 = q2 \/ q1 <> q2` when it seems that two quotients might be equal, allowing :g:`nia` to prove more goals, including those relating :g:`Z.quot` and :g:`Z.modulo` to :g:`Z.quot` and :g:`Z.rem`.
 
-   The :tacn:`zify` tactic can be extended with new types and operators by declaring and registering new typeclass instances using the following commands.
-   The typeclass declarations can be found in the module ``ZifyClasses`` and the default instances can be found in the module ``ZifyInst``.
-
-.. cmd:: Add Zify @add_zify @qualid
-
-   .. insertprodn add_zify add_zify
-
-   .. prodn::
-      add_zify ::= {| InjTyp | BinOp | UnOp | CstOp | BinRel | UnOpSpec | BinOpSpec }
-      | {| PropOp | PropBinOp | PropUOp | Saturate }
-
-   Registers an instance of the specified typeclass.
-   The typeclass type (e.g. :g:`BinOp Z.mul` or :g:`BinRel (@eq Z)`) has the additional constraint that
-   the non-implicit argument (here, :g:`Z.mul` or :g:`(@eq Z)`)
-   is either a :n:`@reference` (here, :g:`Z.mul`) or the application of a :n:`@reference` (here, :g:`@eq`) to a sequence of :n:`@one_term`.
-
-   This command supports attributes :attr:`local`, :attr:`export` and :attr:`global`.
-   In sections only :attr:`local` is supported, outside sections the default is :attr:`global`.
-
-.. cmd:: Show Zify @show_zify
-
-   .. insertprodn show_zify show_zify
-
-   .. prodn::
-      show_zify ::= {| InjTyp | BinOp | UnOp | CstOp | BinRel | UnOpSpec | BinOpSpec | Spec }
-
-   Prints instances for the specified typeclass.  For instance, :cmd:`Show Zify` ``InjTyp``
-   prints the list of types that supported by :tacn:`zify` i.e.,
-   :g:`Z`, :g:`nat`, :g:`positive` and :g:`N`.
 
 .. tacn:: zify_elim_let
           zify_iter_let @ltac_expr
@@ -422,7 +436,21 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
           zify_op
           zify_saturate
 
-   For internal use only (it may change without notice).
+   For internal use only and deprecated by their tacn:`tify` variants  (it may change without notice).
+
+.. cmd:: Add Zify @add_tify @qualid
+
+   These commands are deprecated, use :g:`Add Tify` instead.
+
+.. cmd:: Show Zify @show_tify
+
+   These commands are deprecated, use :g:`Show Tify` instead.
+
+
+.. tacn:: rify
+
+   This tactic (found in module ``Rify``) and defined as tacn:`tify` :g:`R` can used to pre-process goals for tacn:`lra`.
+   In particular, it introduces the predicate :g:`isZ` when injecting variables from :g:`Z` to :g:`R`.
 
 .. _lra_example:
 
