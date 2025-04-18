@@ -673,10 +673,10 @@ let inter_wf_paths = Rtree.inter Declareops.eq_recarg inter_recarg Norec
 
 let incl_wf_paths = Rtree.incl Declareops.eq_recarg inter_recarg Norec
 
-let spec_of_tree t =
+let spec_of_tree internal t =
   if is_norec_path t
   then Not_subterm
-  else Subterm (Int.Set.empty, Strict, t)
+  else Subterm (internal, Strict, t)
 
 let merge_internal_subterms l1 l2 =
   Int.Set.union l1 l2
@@ -820,10 +820,10 @@ let branches_specif renv c_spec ci =
       (fun i nca -> (* i+1-th cstructor has arity nca *)
          let lvra = lazy
            (match Lazy.force c_spec with
-                Subterm (_,_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
+                Subterm (internal,_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
                   let vra = Array.of_list (Lazy.force subterms).(i) in
                   assert (Int.equal nca (Array.length vra));
-                  Array.map spec_of_tree vra
+                  Array.map (spec_of_tree internal) vra
               | Dead_code -> Array.make nca Dead_code
               | Internally_bound_subterm _ as x -> Array.make nca x
               | Subterm _ | Not_subterm -> Array.make nca Not_subterm) in
@@ -1098,12 +1098,12 @@ let rec subterm_specif ?evars renv stack t =
     | Proj (p, _, c) ->
       let subt = subterm_specif ?evars renv stack c in
       (match subt with
-       | Subterm (_, _s, wf) ->
+       | Subterm (internal, _s, wf) ->
          (* We take the subterm specs of the constructor of the record *)
          let wf_args = (dest_subterms wf).(0) in
          (* We extract the tree of the projected argument *)
          let n = Projection.arg p in
-         spec_of_tree (List.nth wf_args n)
+         spec_of_tree internal (List.nth wf_args n)
        | Dead_code -> Dead_code
        | Not_subterm -> Not_subterm
        | Internally_bound_subterm n -> Internally_bound_subterm n)
@@ -1144,9 +1144,9 @@ and primitive_specif ?evars renv op args =
     let arg = List.nth args 1 in (* the result is a strict subterm of the second argument *)
     let subt = subterm_specif ?evars renv [] arg in
     begin match subt with
-    | Subterm (_, _s, wf) ->
+    | Subterm (internal, _s, wf) ->
       let wf_args = (dest_subterms wf).(0) in
-      spec_of_tree (List.nth wf_args 0) (* first and only parameter of `array` *)
+      spec_of_tree internal (List.nth wf_args 0) (* first and only parameter of `array` *)
     | Dead_code -> Dead_code
     | Not_subterm -> Not_subterm
     | Internally_bound_subterm n -> Internally_bound_subterm n
