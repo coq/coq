@@ -609,6 +609,50 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
     ise_rev_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
+(* Removes the last group of applicative stack nodes or one node if the last node is not applicative. *)
+let ise_stack2_once env evd f flags pbty (term1, sk1) (term2, sk2) =
+  let ise_rev_stack2 i revsk1 revsk2 =
+    match revsk1, revsk2 with
+    | [], [] -> (* We want to see a non-applicative node*) (UnifFailure (i, NotSameHead))
+    | Stack.Case cse1 :: q1, Stack.Case cse2 :: q2 ->
+      let (ci1, u1, pms1, (t1,_), br1) = Stack.expand_case env evd cse1 in
+      let (ci2, u2, pms2, (t2,_), br2) = Stack.expand_case env evd cse2 in
+      let hd1 = mkIndU (ci1.ci_ind, u1) in
+      let hd2 = mkIndU (ci2.ci_ind, u2) in
+      let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in
+      ise_and i [
+          (fun i -> compare_heads CONV env i ~nargs:FullyApplied hd1 hd2);
+          (fun i -> f env i pbty (Stack.zip i (term1, List.rev q1)) (Stack.zip i (term2, List.rev q2)));
+          (fun i -> ise_array2 i (fun ii -> f env ii CONV) pms1 pms2);
+          (fun i -> fctx i t1 t2);
+          (fun i -> ise_array2 i fctx br1 br2);
+        ]
+    | Stack.Proj (p1,_)::q1, Stack.Proj (p2,_)::q2 ->
+       if QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
+         then f env i pbty (Stack.zip i (term1, List.rev q1)) (Stack.zip i (term2, List.rev q2))
+       else (UnifFailure (i, NotSameHead))
+    | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
+      Stack.Fix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
+      if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+        ise_and i [
+          (fun i -> f env i pbty (Stack.zip i (term1, List.rev q1)) (Stack.zip i (term2, List.rev q2)));
+          (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
+          (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
+          (fun i -> exact_ise_stack2 env i f a1 a2)]
+        else (UnifFailure (i, NotSameHead))
+    | Stack.App a1 :: _, Stack.App a2 :: _ ->
+       begin match ise_app_rev_stack2 env f i revsk1 revsk2 with
+       |_,(UnifFailure _ as e) -> e
+       |(l1, l2), Success i' ->
+          f env i' pbty (Stack.zip i' (whd_betaiota_deltazeta_for_iota_state
+               flags.open_ts env i' (term1, List.rev l1)))
+            (Stack.zip i' (whd_betaiota_deltazeta_for_iota_state
+               flags.open_ts env i' (term2, List.rev l2)))
+       end
+    |_, _ -> (UnifFailure (i, NotSameHead))
+  in ise_rev_stack2 evd (List.rev sk1) (List.rev sk2)
+
+
 let compare_heads pbty env evd ~nargs term term' =
   compare_heads pbty env evd ~nargs:(NumArgs nargs) term term'
 
@@ -1004,7 +1048,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
       match x with | Success _ -> Inl x | _ -> Inr false
     with _ -> Inr false in
   let () = debug_unification (fun () -> Pp.(v 0 (pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ()))) in
-  match (flex_kind_of_term flags env evd term1 sk1,
+  if (Stack.not_purely_applicative sk1) && (Stack.not_purely_applicative sk2) then
+    ise_stack2_once env evd (evar_conv_x flags) flags pbty appr1 appr2
+  else match (flex_kind_of_term flags env evd term1 sk1,
          flex_kind_of_term flags env evd term2 sk2) with
     | Flexible (sp1,al1), Flexible (sp2,al2) ->
       (* Notations:
@@ -1163,7 +1209,6 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                       flags.open_ts env i (v2', applicative_stack)) in
           let rhs_is_already_stuck =
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
-
           let b = EConstr.isLambda i term1 || rhs_is_already_stuck
             && (not (Stack.not_purely_applicative sk1')) in
           ise_try i [
