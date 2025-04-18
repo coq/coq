@@ -155,7 +155,9 @@ module type ExtS = sig
   val safe_delete_rule : EState.t -> 'a Entry.t -> 'a Production.t -> EState.t
 
   module Unsafe : sig
-    val clear_entry : EState.t -> 'a Entry.t -> EState.t
+    val existing_entry : EState.t -> 'a Entry.t -> EState.t
+    val existing_of_parser : EState.t -> 'a Entry.t -> 'a Entry.parser_fun -> EState.t
+    val remove_entry : EState.t -> 'a Entry.t -> EState.t
   end
 
 end
@@ -1612,7 +1614,7 @@ let make_entry_data entry desc = {
 (* Extend syntax *)
 
 let modify_entry estate e f = try EState.modify (DMap.tag_of_onetag e.etag) f estate
-  with Not_found -> assert false
+  with Not_found -> CErrors.anomaly Pp.(str "modify_entry: " ++ str e.ename ++ str " not found")
 
 let add_entry otag estate e v =
   assert (not (EState.mem (DMap.tag_of_onetag e.etag) estate));
@@ -1711,13 +1713,15 @@ module Entry = struct
     let etag = DMap.make () in
     { ename = n; etag }, etag
 
+  let empty_entry_val n = {
+    edesc = Dlevels [];
+    estart = empty_entry n;
+    econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+  }
+
   let make n estate =
     let e, otag = fresh n in
-    let estate = add_entry otag estate e {
-        edesc = Dlevels [];
-        estart = empty_entry n;
-        econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-      }
+    let estate = add_entry otag estate e (empty_entry_val n)
     in
     estate, e
 
@@ -1726,16 +1730,18 @@ module Entry = struct
   let parse_token_stream (e : 'a t) ts gstate : 'a =
     start_parser_of_entry gstate e 0 ts
   let name e = e.ename
+
   type 'a parser_fun = { parser_fun : L.keyword_state -> (L.keyword_state,te) LStream.t -> 'a }
-  let of_parser n { parser_fun = p } estate =
+  let of_parser_val { parser_fun = p } = {
+    estart = (fun gstate _ (strm:_ LStream.t) -> p gstate.kwstate strm);
+    econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+    edesc = Dparser p;
+  }
+  let of_parser n p estate =
     let e, otag = fresh n in
-    let estate = add_entry otag estate e {
-        estart = (fun gstate _ (strm:_ LStream.t) -> p gstate.kwstate strm);
-        econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-        edesc = Dparser p;
-      }
-    in
+    let estate = add_entry otag estate e (of_parser_val p) in
     estate, e
+
   let print ppf e estate = fprintf ppf "%a@." (print_entry estate) e
 
   let is_empty e estate = match (get_entry estate e).edesc with
@@ -1878,16 +1884,14 @@ module Production = struct
 end
 
 module Unsafe = struct
+  let existing_entry estate e =
+    add_entry e.etag estate e (Entry.empty_entry_val e.ename)
 
-  let clear_entry estate e =
-    modify_entry estate e (fun data -> {
-          estart = (fun _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-          econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-          edesc = match data.edesc with
-            | Dlevels _ -> Dlevels []
-            | Dparser _ -> data.edesc;
-        })
+  let existing_of_parser estate e p =
+    add_entry e.etag estate e (Entry.of_parser_val p)
 
+  let remove_entry estate e =
+    EState.remove (DMap.tag_of_onetag e.etag) estate
 end
 
 let safe_extend = extend_entry

@@ -158,7 +158,9 @@ module type ExtS = sig
   val safe_delete_rule : EState.t -> 'a Entry.t -> 'a Production.t -> EState.t
 
   module Unsafe : sig
-    val clear_entry : EState.t -> 'a Entry.t -> EState.t
+    val existing_entry : EState.t -> 'a Entry.t -> EState.t
+    val existing_of_parser : EState.t -> 'a Entry.t -> 'a Entry.parser_fun -> EState.t
+    val remove_entry : EState.t -> 'a Entry.t -> EState.t
   end
 
 end

@@ -82,9 +82,7 @@ The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
 Entry custom:expr is
 [ "201" RIGHTA
-  [ "{"; term LEVEL "200"; "}" ]
-| "1" RIGHTA
-  [  ] ]
+  [ "{"; term LEVEL "200"; "}" ] ]
 
 fun x : nat => [ x ]
      : nat -> nat

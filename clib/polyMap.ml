@@ -53,6 +53,8 @@ module Make (Tag:Tag) = struct
 
     val modify : 'a tag -> ('a value -> 'a value) -> t -> t
 
+    val remove : 'a tag -> t -> t
+
   end
 
   module Map (V:ValueS) = struct
@@ -84,6 +86,8 @@ module Make (Tag:Tag) = struct
           match tag with
           | T.T -> V (tag', f v)
           | _ -> assert false) m
+
+    let remove tag m = M.remove (key tag) m
 
   end
 end

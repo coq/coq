@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
 open Util
 open Genarg
 open Gramlib
@@ -16,35 +15,187 @@ open Gramlib
 (** The parser of Rocq *)
 include Grammar.GMake(CLexer.Lexer)
 
-let keyword_state = ref CLexer.empty_keyword_state
-let get_keyword_state () = !keyword_state
-let set_keyword_state s = keyword_state := s
+(** Marshallable representation of grammar extensions *)
+
+module EntryCommand = Dyn.Make ()
+module GrammarCommand = Dyn.Make ()
+module GramState = Store.Make ()
+
+type grammar_entry =
+| GramExt of GrammarCommand.t
+| EntryExt : 'a EntryCommand.tag * string -> grammar_entry
+
+(** State handling (non marshallable!) *)
+
+module EntryData = struct type _ t = Ex : 'a Entry.t String.Map.t -> 'a t end
+module EntryDataMap = EntryCommand.Map(EntryData)
+
+type full_state = {
+  (* the state used for parsing *)
+  current_state : GState.t;
+  (* grammar state containing only non-marshallable extensions
+     (NB: this includes entries from Entry.make) *)
+  base_state : GState.t;
+  (* current_state = List.fold_right add_entry current_sync_extensions base_state
+     this means the list is in reverse order of addition *)
+  current_sync_extensions : grammar_entry list;
+  (* some user data tied to the grammar state, typically contains info on declared levels *)
+  user_state : GramState.t;
+  (* map to find custom entries *)
+  custom_entries : EntryDataMap.t;
+}
+
+let empty_full_state =
+  let empty_gstate = { GState.estate = EState.empty; kwstate = CLexer.empty_keyword_state } in
+  {
+    current_state = empty_gstate;
+    base_state = empty_gstate;
+    current_sync_extensions = [];
+    user_state = GramState.empty;
+    custom_entries = EntryDataMap.empty;
+  }
 
 (** Not marshallable! *)
-let estate = ref EState.empty
+let state = ref empty_full_state
 
-let gstate () = { GState.estate = !estate; kwstate = !keyword_state; }
+let gstate () = (!state).current_state
+
+let get_keyword_state () = (gstate()).kwstate
+
+let terminal s = CLexer.terminal (get_keyword_state()) s
+
+let reset_to_base state = {
+  base_state = state.base_state;
+  current_state = state.base_state;
+  current_sync_extensions = [];
+  user_state = GramState.empty;
+  custom_entries = EntryDataMap.empty;
+}
+
+let modify_state_unsync f state =
+  let is_base = state.base_state == state.current_state in
+  let base_state = f state.base_state in
+  let current_state = if is_base then base_state else f state.current_state in
+  { state with base_state; current_state }
+
+let modify_state_unsync f () = state := modify_state_unsync f !state
+
+let add_keyword_tok tok =
+  modify_state_unsync (fun {estate;kwstate} ->
+      let kwstate = CLexer.add_keyword_tok kwstate tok in
+      {estate; kwstate})
+    ()
+
+let make_entry_unsync make remake state =
+  let is_base = state.base_state == state.current_state in
+  let base_estate, e = make state.base_state.estate in
+  let base_state = { state.base_state with estate = base_estate } in
+  let current_state = if is_base then base_state else
+      let current_estate = remake state.current_state.estate e in
+      { state.current_state with estate = current_estate }
+  in
+  { state with base_state; current_state }, e
+
+let make_entry_unsync make remake () =
+  let statev, e = make_entry_unsync make remake !state in
+  state := statev;
+  e
+
+let add_kw = { add_kw = CLexer.add_keyword_tok }
+
+let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
+  let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
+  let { GState.estate; kwstate } = gstate() in
+  let estate, entry = Entry.make "epsilon" estate in
+  let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
+  let estate, kwstate = safe_extend add_kw estate kwstate entry ext in
+  let strm = Stream.empty () in
+  let strm = Parsable.make strm in
+  try Some (Entry.parse entry strm {estate;kwstate}) with e when CErrors.noncritical e -> None
+
+let extend_gstate {GState.kwstate; estate} e ext =
+  let estate, kwstate = safe_extend add_kw estate kwstate e ext in
+  {GState.kwstate; estate}
+
+(* XXX rename to grammar_extend_unsync? *)
+let grammar_extend e ext =
+  let extend_one g = extend_gstate g e ext in
+  modify_state_unsync extend_one ()
+
+(** NB: [extend_statement =
+         gram_position option * single_extend_statement list]
+    and [single_extend_statement =
+         string option * gram_assoc option * production_rule list]
+    and [production_rule = symbol list * action]
+
+    In [single_extend_statement], first two parameters are name and
+    assoc iff a level is created *)
+
+(** Type of reinitialization data *)
+type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
+
+type extend_rule =
+| ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
+| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
+
+let grammar_extend_sync user_state entry rules state =
+  let extend_one_sync state = function
+    (* NB: ocaml 4.14 is not smart enough to factorize these 2 GADT match cases *)
+    | ExtendRule (e, ext) -> extend_gstate state e ext
+    | ExtendRuleReinit (e, _, ext) -> extend_gstate state e ext
+  in
+  let current_state = List.fold_left extend_one_sync state.current_state rules in
+  { state with
+    current_state;
+    user_state;
+    current_sync_extensions = GramExt entry :: state.current_sync_extensions;
+  }
+
+let grammar_extend_sync st e r () = state := grammar_extend_sync st e r !state
+
+let extend_entry_sync (type a) (tag : a EntryCommand.tag) (name : string) state : _ * a Entry.t =
+  let current_estate, e = Entry.make name state.current_state.estate in
+  let current_state = { state.current_state with estate = current_estate } in
+  let custom_entries =
+    let EntryData.Ex old =
+      try EntryDataMap.find tag state.custom_entries
+      with Not_found -> EntryData.Ex String.Map.empty
+    in
+    let () = assert (not @@ String.Map.mem name old) in
+    let entries = String.Map.add name e old in
+    EntryDataMap.add tag (EntryData.Ex entries) state.custom_entries
+  in
+  let state = {
+    state with
+    current_state;
+    current_sync_extensions = EntryExt (tag,name) :: state.current_sync_extensions;
+    custom_entries;
+  }
+  in
+  state, e
+
+let extend_entry_command tag name =
+  let statev, e = extend_entry_sync tag name !state in
+  state := statev;
+  e
 
 module Parsable = struct
   include Parsable
-  let consume x len = consume x len !keyword_state
+  let consume x len = consume x len (get_keyword_state())
 end
 
 module Entry = struct
   include Entry
-  let make na =
-    let estate', e = make na !estate in
-    estate := estate';
-    e
+  let make name = make_entry_unsync (fun estate -> Entry.make name estate) Unsafe.existing_entry ()
   let parse e p = parse e p (gstate())
-  let of_parser na p =
-    let estate', e = of_parser na p !estate in
-    estate := estate';
-    e
+  let of_parser na p = make_entry_unsync
+      (fun estate -> of_parser na p estate)
+      (fun estate e -> Unsafe.existing_of_parser estate e p)
+      ()
   let parse_token_stream e strm = parse_token_stream e strm (gstate())
-  let print fmt e = print fmt e !estate
-  let is_empty e = is_empty e !estate
-  let accumulate_in e = accumulate_in e !estate
+  let print fmt e = print fmt e (gstate()).estate
+  let is_empty e = is_empty e (gstate()).estate
+  let accumulate_in e = accumulate_in e (gstate()).estate
 end
 
 module Lookahead =
@@ -113,141 +264,14 @@ struct
 
 end
 
-(** Grammar extensions *)
-
-(** NB: [extend_statement =
-         gram_position option * single_extend_statement list]
-    and [single_extend_statement =
-         string option * gram_assoc option * production_rule list]
-    and [production_rule = symbol list * action]
-
-    In [single_extend_statement], first two parameters are name and
-    assoc iff a level is created *)
-
-(** Type of reinitialization data *)
-type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
-
-type extend_rule =
-| ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
-| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
-
-module EntryCommand = Dyn.Make ()
-module EntryData = struct type _ t = Ex : 'b Entry.t String.Map.t -> ('a * 'b) t end
-module EntryDataMap = EntryCommand.Map(EntryData)
-
-type ext_kind =
-  | ByGrammar of extend_rule
-  | ByEXTEND of string * (unit -> unit) * (unit -> unit)
-  | ByEntry : ('a * 'b) EntryCommand.tag * string * 'b Entry.t -> ext_kind
-
-(** The list of extensions *)
-
-let terminal s = CLexer.terminal !keyword_state s
-
-let camlp5_state = ref []
-
-let camlp5_entries = ref EntryDataMap.empty
-
-(** Deletion *)
-
-let grammar_delete e r =
-  let data = match r with
-  | Fresh (_, r) -> List.map (fun (_, _, r) -> r) r
-  | Reuse (_, r) -> [r]
-  in
-  List.iter
-    (fun lev ->
-      List.iter (fun pil -> estate := safe_delete_rule !estate e pil) (List.rev lev))
-    (List.rev data)
-
-let no_add_kw = { add_kw = fun () _ -> () }
-
-(* TODO use this for ssr instead of messing with set_keyword_state
-   (needs some API design) *)
-let _safe_extend_no_kw e ext =
-  let estate', () = safe_extend no_add_kw !estate () e ext in
-  estate := estate'
-
-let add_kw = { add_kw = CLexer.add_keyword_tok }
-
-let safe_extend e ext =
-  let estate', kwstate' = safe_extend add_kw !estate !keyword_state e ext in
-  estate := estate';
-  keyword_state := kwstate'
-
-let grammar_delete_reinit e reinit d =
-  grammar_delete e d;
-  let a, ext = reinit in
-  let lev = match d with
-  | Reuse (Some n, _) -> n
-  | _ -> assert false
-  in
-  let ext = Fresh (ext, [Some lev,Some a,[]]) in
-  safe_extend e ext
-
-(** Extension *)
-
-let grammar_extend e ext =
-  let undo () = grammar_delete e ext in
-  let redo () = safe_extend e ext in
-  camlp5_state := ByEXTEND (Entry.name e, undo, redo) :: !camlp5_state;
-  redo ()
-
-let grammar_extend_sync e ext =
-  camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
-  safe_extend e ext
-
-let grammar_extend_sync_reinit e reinit ext =
-  camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
-  safe_extend e ext
-
-(** Remove extensions
-
-   [n] is the number of extended entries (not the number of Grammar commands!)
-   to remove. *)
-
-let rec remove_grammars n =
-  if n>0 then
-    match !camlp5_state with
-       | [] -> anomaly ~label:"Procq.remove_grammars" (Pp.str "too many rules to remove.")
-       | ByGrammar (ExtendRuleReinit (g, reinit, ext)) :: t ->
-           grammar_delete_reinit g reinit ext;
-           camlp5_state := t;
-           remove_grammars (n-1)
-       | ByGrammar (ExtendRule (g, ext)) :: t ->
-         (try grammar_delete g ext
-          with Not_found -> Feedback.msg_info Pp.(str "failed on " ++ str (Entry.name g));
-            raise Not_found);
-         camlp5_state := t;
-         remove_grammars (n-1)
-       | ByEXTEND (name, undo,redo)::t ->
-           undo();
-           camlp5_state := t;
-           remove_grammars n;
-           redo();
-           camlp5_state := ByEXTEND (name, undo,redo) :: !camlp5_state
-       | ByEntry (tag, name, e) :: t ->
-           estate := Unsafe.clear_entry !estate e;
-           camlp5_state := t;
-           let EntryData.Ex entries =
-             try EntryDataMap.find tag !camlp5_entries
-             with Not_found -> EntryData.Ex String.Map.empty
-           in
-           let entries = String.Map.remove name entries in
-           camlp5_entries := EntryDataMap.add tag (EntryData.Ex entries) !camlp5_entries;
-           remove_grammars (n - 1)
-
-let make_rule r = [None, None, r]
-
 (** An entry that checks we reached the end of the input. *)
-
 (* used by the Tactician plugin *)
 let eoi_entry en =
   let e = Entry.make ((Entry.name en) ^ "_eoi") in
   let symbs = Rule.next (Rule.next Rule.stop (Symbol.nterm en)) (Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
-  let ext = Fresh (Gramlib.Gramext.First, make_rule [Production.make symbs act]) in
-  safe_extend e ext;
+  let ext = Fresh (Gramlib.Gramext.First, [None, None, [Production.make symbs act]]) in
+  grammar_extend e ext;
   e
 
 (* Parse a string, does NOT check if the entire string was read
@@ -367,104 +391,38 @@ module Module =
     let module_type = Entry.make "module_type"
   end
 
-let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
-  let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
-  let entry = Entry.make "epsilon" in
-  let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
-  safe_extend entry ext;
-  try Some (parse_string entry "") with e when CErrors.noncritical e -> None
-
 (** Synchronized grammar extensions *)
-
-module GramState = Store.Make ()
 
 type 'a grammar_extension = {
   gext_fun : 'a -> GramState.t -> extend_rule list * GramState.t;
   gext_eq : 'a -> 'a -> bool;
 }
 
-module GrammarCommand = Dyn.Make ()
 module GrammarInterp = struct type 'a t = 'a grammar_extension end
 module GrammarInterpMap = GrammarCommand.Map(GrammarInterp)
 
 let grammar_interp = ref GrammarInterpMap.empty
 
-type ('a, 'b) entry_extension = {
-  eext_fun : 'a -> GramState.t -> string list * GramState.t;
-  eext_eq : 'a -> 'a -> bool;
-}
-
-module EntryInterp = struct type _ t = Ex : ('a, 'b) entry_extension -> ('a * 'b) t end
-module EntryInterpMap = EntryCommand.Map(EntryInterp)
-
-let entry_interp = ref EntryInterpMap.empty
-
-type grammar_entry =
-| GramExt of int * GrammarCommand.t
-| EntryExt : int * ('a * 'b) EntryCommand.tag * 'a -> grammar_entry
-
-let (grammar_stack : (grammar_entry * GramState.t) list ref) = ref []
-
 type 'a grammar_command = 'a GrammarCommand.tag
-type ('a, 'b) entry_command = ('a * 'b) EntryCommand.tag
+type 'a entry_command = 'a EntryCommand.tag
 
 let create_grammar_command name interp : _ grammar_command =
   let obj = GrammarCommand.create name in
   let () = grammar_interp := GrammarInterpMap.add obj interp !grammar_interp in
   obj
 
-let create_entry_command name (interp : ('a, 'b) entry_extension) : ('a, 'b) entry_command =
-  let obj = EntryCommand.create name in
-  let () = entry_interp := EntryInterpMap.add obj (EntryInterp.Ex interp) !entry_interp in
-  obj
-
-let iter_extend_sync = function
-  | ExtendRule (e, ext) ->
-    grammar_extend_sync e ext
-  | ExtendRuleReinit (e, reinit, ext) ->
-    grammar_extend_sync_reinit e reinit ext
+let create_entry_command name : 'a entry_command =
+  EntryCommand.create name
 
 let extend_grammar_command tag g =
   let modify = GrammarInterpMap.find tag !grammar_interp in
-  let grammar_state = match !grammar_stack with
-  | [] -> GramState.empty
-  | (_, st) :: _ -> st
-  in
+  let grammar_state = (!state).user_state in
   let (rules, st) = modify.gext_fun g grammar_state in
-  let () = List.iter iter_extend_sync rules in
-  let nb = List.length rules in
-  grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
-
-let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b Entry.t list =
-  let EntryInterp.Ex modify = EntryInterpMap.find tag !entry_interp in
-  let grammar_state = match !grammar_stack with
-  | [] -> GramState.empty
-  | (_, st) :: _ -> st
-  in
-  let (names, st) = modify.eext_fun g grammar_state in
-  let entries = List.map (fun name -> Entry.make name) names in
-  let iter name e =
-    camlp5_state := ByEntry (tag, name, e) :: !camlp5_state;
-    let EntryData.Ex old =
-      try EntryDataMap.find tag !camlp5_entries
-      with Not_found -> EntryData.Ex String.Map.empty
-    in
-    let () = assert (not @@ String.Map.mem name old) in
-    let entries = String.Map.add name e old in
-    camlp5_entries := EntryDataMap.add tag (EntryData.Ex entries) !camlp5_entries
-  in
-  let () = List.iter2 iter names entries in
-  let nb = List.length entries in
-  let () = grammar_stack := (EntryExt (nb, tag, g), st) :: !grammar_stack in
-  entries
+  grammar_extend_sync st (Dyn (tag,g)) rules ()
 
 let find_custom_entry tag name =
-  let EntryData.Ex map = EntryDataMap.find tag !camlp5_entries in
+  let EntryData.Ex map = EntryDataMap.find tag (!state).custom_entries in
   String.Map.find name map
-
-let extend_dyn_grammar (e, _) = match e with
-| GramExt (_, (GrammarCommand.Dyn (tag, g))) -> extend_grammar_command tag g
-| EntryExt (_, tag, g) -> ignore (extend_entry_command tag g)
 
 (** Registering extra grammar *)
 
@@ -480,60 +438,82 @@ let find_grammars_by_name name =
       try Entry.Any (String.Map.find name map) :: accu
       with Not_found -> accu
     in
-    EntryDataMap.fold fold !camlp5_entries []
+    EntryDataMap.fold fold (!state).custom_entries []
 
 (** Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
 type frozen_t =
-  (grammar_entry * GramState.t) list *
-  CLexer.keyword_state
+  | FreezeFull of full_state
+  | FreezeMarshallable of grammar_entry list * CLexer.keyword_state * CLexer.keyword_state
 
-let freeze () : frozen_t =
-  (!grammar_stack, !keyword_state)
+let freeze () : frozen_t = FreezeFull !state
 
-let eq_grams (g1, _) (g2, _) = match g1, g2 with
-| GramExt (_, GrammarCommand.Dyn (t1, v1)), GramExt (_, GrammarCommand.Dyn (t2, v2)) ->
-  begin match GrammarCommand.eq t1 t2 with
-  | None -> false
-  | Some Refl ->
-    let data = GrammarInterpMap.find t1 !grammar_interp in
-    data.gext_eq v1 v2
-  end
-| EntryExt (_, t1, v1), EntryExt (_, t2, v2) ->
-  begin match EntryCommand.eq t1 t2 with
-  | None -> false
-  | Some Refl ->
-    let EntryInterp.Ex data = EntryInterpMap.find t1 !entry_interp in
-    data.eext_eq v1 v2
-  end
-| (GramExt _, EntryExt _) | (EntryExt _, GramExt _) -> false
+let replay_sync_extension = function
+  | GramExt (Dyn (tag,g)) -> extend_grammar_command tag g
+  | EntryExt (tag,name) -> ignore (extend_entry_command tag name : _ Entry.t)
 
-(* We compare the current state of the grammar and the state to unfreeze,
-   by computing the longest common suffixes *)
-let factorize_grams l1 l2 =
-  if l1 == l2 then ([], [], l1) else List.share_tails eq_grams l1 l2
+let unfreeze_only_keywords = function
+  | FreezeFull v ->
+    let is_base =
+      !(state).base_state == (!state).current_state
+      && v.base_state.kwstate == v.current_state.kwstate
+    in
+    let base_state = { (!state).base_state with kwstate = v.base_state.kwstate } in
+    let current_state = if is_base then base_state else
+        { (!state).current_state with kwstate = v.current_state.kwstate }
+    in
+    state := {
+      !state with
+      base_state;
+      current_state;
+    }
+  | FreezeMarshallable (_,base_kw,current_kw) ->
+    let is_base = !(state).base_state == (!state).current_state && base_kw == current_kw in
+    let base_state = { (!state).base_state with kwstate = base_kw } in
+    let current_state = if is_base then base_state else
+        { (!state).current_state with kwstate = current_kw }
+    in
+    state := {
+      !state with
+      base_state;
+      current_state;
+    }
 
-let rec number_of_entries accu = function
-| [] -> accu
-| ((GramExt (p, _) | EntryExt (p, _, _)), _) :: rem ->
-  number_of_entries (p + accu) rem
+let unfreeze = function
+  | FreezeFull v as frozen ->
+    if (!state).base_state.estate == v.base_state.estate then state := v
+    else begin
+      (* there are new non backtrackable extensions in (!state).base_state
+         compared to v.base_state (can't be the other way as we never remove them from !state) *)
+      state := reset_to_base !state;
+      List.iter replay_sync_extension (List.rev v.current_sync_extensions);
+      unfreeze_only_keywords frozen
+    end
+  | FreezeMarshallable (sync,base_kw,current_kw) as frozen ->
+    state := reset_to_base !state;
+    List.iter replay_sync_extension (List.rev sync);
+    (* put back the keyword state, needed to support ssr hacks *)
+    unfreeze_only_keywords frozen
 
-let unfreeze (grams, lex) =
-  let (undo, redo, common) = factorize_grams !grammar_stack grams in
-  let n = number_of_entries 0 undo in
-  remove_grammars n;
-  grammar_stack := common;
-  keyword_state := lex;
-  List.iter extend_dyn_grammar (List.rev redo)
+let make_marshallable = function
+  | FreezeFull state ->
+    FreezeMarshallable
+      (state.current_sync_extensions,
+       state.base_state.kwstate,
+       state.current_state.kwstate)
+  | FreezeMarshallable _ as v -> v
 
 (** No need to provide an init function : the grammar state is
     statically available, and already empty initially, while
     the lexer state should not be reset, since it contains
-    keywords declared in g_*.mlg *)
+    keywords declared in g_*.mlg
+
+    XXX is this still true? if not we can do (fun () -> unfreeze (FreezeFull empty_full_state)) *)
 
 let parser_summary_tag =
   Summary.declare_summary_tag "GRAMMAR_LEXER"
+    ~make_marshallable
     { stage = Summary.Stage.Synterp;
       Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
