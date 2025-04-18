@@ -35,7 +35,7 @@ Undo 3.
   Time rewrite_strat (topdown (choice lem2 lem1); topdown (choice lem0 lem3)).
   reflexivity.
 Undo 2.
-  Time rewrite_strat (topdown (choice lem2 (choice lem1 (choice lem0 lem3)))).
+  Time rewrite_strat (topdown (choice (choice lem2 lem1) (choice lem0 lem3))).
   reflexivity.
 Undo 2.
   Time rewrite_strat (topdown (choice lem2 (choice lem1 (choice lem0 lem3)))).
