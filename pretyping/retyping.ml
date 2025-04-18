@@ -412,6 +412,13 @@ let sorts_of_context env evc ctxt =
       (push_rel d env,s::sorts) in
   snd (aux ctxt)
 
+let projection_params env sigma pr c =
+  let ty = get_type_of ~lax:true env sigma c in
+  let _, ind_args =
+    try Inductiveops.find_mrectype_vect env sigma ty
+    with Not_found -> retype_error BadRecursiveType
+  in ind_args
+
 let expand_projection env sigma pr c args =
   let ty = get_type_of ~lax:true env sigma c in
   let (i,u), ind_args =

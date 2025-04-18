@@ -831,8 +831,9 @@ let expand_table_key ~metas ts env sigma args = function
   | VarKey id -> (try named_body id env |> Option.map (fun c -> (EConstr.of_constr c, args)) with Not_found -> None)
   | RelKey _ -> None
 
-let unfold_projection env p r stk =
-  let s = Stack.Proj (p,r) in
+let unfold_projection env sigma p r c stk =
+  let proj = Stack.mk_proj_node env sigma p (Retyping.projection_params env sigma p c) r in
+  let s = Stack.Proj proj in
   s :: stk
 
 let expand_key ~metas ts env sigma args = function
@@ -840,7 +841,7 @@ let expand_key ~metas ts env sigma args = function
   | Some (IsProj (p, r, c)) ->
     let metas = Meta.meta_handler metas in
     let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts ~metas env sigma
-                               (c, unfold_projection env p r []))
+                               (c, unfold_projection env sigma p r c []))
     in if EConstr.eq_constr sigma (EConstr.mkProj (p, r, c)) red then None else Some (red, args)
   | None -> None
 

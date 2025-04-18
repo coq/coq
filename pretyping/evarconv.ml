@@ -197,6 +197,12 @@ type result = Rigid of bool | Normal of bool | Reducible
 
 let rigid_normal_occ = function Rigid b -> b | Normal b -> b | _ -> false
 
+let projection_handler env sigma p c = Retyping.projection_params env sigma p c
+
+let whd_betaiota_deltazeta_for_iota_state ts ?metas =
+  Reductionops.whd_betaiota_deltazeta_for_iota_state ~get_params:projection_handler
+   ts ?metas
+
 let occur_rigidly flags env evd (evk,_) t =
   let rec aux t =
     match EConstr.kind evd t with
@@ -544,9 +550,11 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
         | Success i' -> ise_rev_stack2 true i' q1 q2
         | UnifFailure _ as x -> fail x
       end
-    | Stack.Proj (p1,_)::q1, Stack.Proj (p2,_)::q2 ->
-       if QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
-       then ise_rev_stack2 true i q1 q2
+    | Stack.Proj p1::q1, Stack.Proj p2::q2 ->
+       if QProjection.Repr.equal env (Projection.repr (Stack.projection p1)) (Projection.repr (Stack.projection p2))
+       then match ise_array2 i (fun ii -> f env ii CONV) (Stack.projection_params p1) (Stack.projection_params p2) with
+        | Success i' -> ise_rev_stack2 true i q1 q2
+        | UnifFailure _ as x -> fail x
        else fail (UnifFailure (i, NotSameHead))
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
       Stack.Fix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
@@ -594,9 +602,11 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
           (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
           (fun i -> exact_ise_stack2 env i f a1 a2)]
       else UnifFailure (i,NotSameHead)
-    | Stack.Proj (p1,_)::q1, Stack.Proj (p2,_)::q2 ->
-       if QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2)
-       then ise_rev_stack2 i q1 q2
+    | Stack.Proj p1::q1, Stack.Proj p2::q2 ->
+       if QProjection.Repr.equal env (Projection.repr (Stack.projection p1)) (Projection.repr (Stack.projection p2))
+       then ise_and i [
+        (fun i -> ise_array2 i (fun ii -> f env ii CONV) (Stack.projection_params p1) (Stack.projection_params p2));
+        (fun i -> ise_rev_stack2 i q1 q2) ]
        else (UnifFailure (i, NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
          begin match ise_app_rev_stack2 env f i revsk1 revsk2 with
@@ -1320,10 +1330,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           end
 
         | Proj (p1,_,c1), Proj(p2,_,c2) when QProjection.Repr.equal env (Projection.repr p1) (Projection.repr p2) ->
-          begin match ise_stack2 true env evd (evar_conv_x flags) sk1 sk2 with
-          |_, (UnifFailure _ as x) -> x
-          |None, Success i' -> evar_conv_x flags env i' CONV c1 c2
-          |Some _, Success _ -> UnifFailure (evd,NotSameHead)
+          begin
+            match evar_conv_x flags env evd CONV c1 c2 with
+            | UnifFailure _ as x -> x
+            | Success i' ->
+              begin
+              match ise_stack2 true env i' (evar_conv_x flags) sk1 sk2 with
+              | _, (UnifFailure _ as x) -> x
+              | None, Success i' -> Success i'
+              | Some _, Success i' -> UnifFailure (evd, NotSameHead)
+              end
           end
 
         (* Catch the c.(p) ~= p c' cases *)

@@ -49,6 +49,8 @@ val type_of_global_reference_knowing_parameters : env -> evar_map -> constr ->
 
 val sorts_of_context : env -> evar_map -> rel_context -> ESorts.t list
 
+val projection_params : env -> evar_map -> Names.Projection.t -> constr -> constr array
+
 val expand_projection : env -> evar_map -> Names.Projection.t -> constr -> constr list -> constr
 
 val reinterpret_get_type_of : src:Names.Id.t -> env -> evar_map -> constr -> types
