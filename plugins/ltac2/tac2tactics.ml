@@ -192,6 +192,9 @@ let setoid_rewrite orient c occs id =
   let occs = mk_occurrences occs in
   Rewrite.cl_rewrite_clause (delayed_of_tactic c) orient occs id
 
+let rewrite_strat strat clause =
+  Rewrite.cl_rewrite_clause_strat strat clause
+
 let symmetry cl =
   let cl = mk_clause cl in
   Tactics.intros_symmetry cl

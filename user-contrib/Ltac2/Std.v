@@ -187,6 +187,8 @@ Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> uni
 
 Ltac2 @ external setoid_rewrite : orientation -> (unit -> constr_with_bindings) -> occurrences -> ident option -> unit := "rocq-runtime.plugins.ltac2" "tac_setoid_rewrite".
 
+Ltac2 @ external rewrite_strat : rewstrategy -> ident option -> unit := "rocq-runtime.plugins.ltac2" "tac_rewrite_strat".
+
 Ltac2 @ external reflexivity : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_reflexivity".
 
 Ltac2 @ external assumption : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_assumption".

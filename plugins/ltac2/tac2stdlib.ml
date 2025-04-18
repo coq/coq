@@ -422,6 +422,8 @@ let () =
     (option pattern_with_occs @-> constr @-> tac constr)
     Tac2tactics.eval_native
 
+(** Rewritings *)
+
 let () =
   define "tac_change"
     (option pattern @-> fun1 (array constr) constr @-> clause @-> tac unit)
@@ -436,6 +438,12 @@ let () =
   define "tac_setoid_rewrite"
     (bool @-> uthaw constr_with_bindings @--> occurrences @-> option ident @-> tac unit)
     Tac2tactics.setoid_rewrite
+
+let () =
+  define "tac_rewrite_strat"
+    (rewstrategy @-> option ident @-> tac unit)
+    Tac2tactics.rewrite_strat
+
 
 let () =
   define "tac_inversion"
