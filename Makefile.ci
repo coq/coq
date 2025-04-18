@@ -110,17 +110,22 @@ CI_TARGETS= \
     ci-vst \
     ci-waterproof
 
+# Targets that should not be run with ci-all, e.g., because they interfere with the install location of Coq
+CI_EXTRA_TARGETS= \
+    ci-test_relocatable
+
 CI_VIRTUAL_TARGETS= \
     ci-elpi_hb \
     ci-platform_full
 
-.PHONY: ci-all $(CI_TARGETS) $(CI_VIRTUAL_TARGETS)
+.PHONY: ci-all ci-extra $(CI_TARGETS) $(CI_VIRTUAL_TARGETS) $(CI_EXTRA_TARGETS)
 
 ci-help:
 	echo '*** Coq CI system, please specify a target to build.'
 	false
 
 ci-all: $(CI_TARGETS)
+ci-extra: $(CI_EXTRA_TARGETS)
 
 ci-argosy: ci-stdlib
 
@@ -263,7 +268,7 @@ ci-elpi_hb: ci-elpi ci-hb
 ci-platform_full: $(CI_PLATFORM_FULL)
 
 # Generic rule, we use make to ease CI integration
-$(CI_TARGETS): ci-%:
+$(CI_TARGETS) $(CI_EXTRA_TARGETS): ci-%:
 	+./dev/ci/ci-wrapper.sh $*
 
 # if we do eg "make states ci-foo", ci-foo will wait for states
