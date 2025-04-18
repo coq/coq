@@ -714,7 +714,13 @@ Displaying information about notations
 
 .. cmd:: Print Grammar {* @ident }
 
-   When no :token:`ident` is provided, shows the whole grammar.
+   When no :token:`ident` is provided, shows the whole grammar
+   (to be specific, the grammar reachable from :term:`sentence` parsing
+   and every declared :opt:`proof mode <Default Proof Mode>`).
+
+   `Print Grammar Full` shows the whole grammar known to the parsing
+   engine including unreachable nonterminals.
+
    Otherwise shows the grammar for the nonterminal :token:`ident`\s, except for
    the following, which will include some related nonterminals:
 

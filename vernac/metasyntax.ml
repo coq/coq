@@ -103,6 +103,9 @@ let pr_grammar = function
   | [] ->
     let grammar = full_grammar () in
     pr_grammar_subset grammar
+  | ["Full"] ->
+    let grammar = Procq.Entry.all_in () in
+    pr_grammar_subset grammar
   | names ->
     let known, other = List.fold_left (fun (known,other) name ->
         match is_known name with

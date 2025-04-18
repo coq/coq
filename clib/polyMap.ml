@@ -53,6 +53,10 @@ module Make (Tag:Tag) = struct
 
     val modify : 'a tag -> ('a value -> 'a value) -> t -> t
 
+    type 'acc fold = { fold : 'a. 'a onetag -> 'a value -> 'acc -> 'acc }
+
+    val fold : 'acc fold -> t -> 'acc -> 'acc
+
   end
 
   module Map (V:ValueS) = struct
@@ -84,6 +88,10 @@ module Make (Tag:Tag) = struct
           match tag with
           | T.T -> V (tag', f v)
           | _ -> assert false) m
+
+    type 'acc fold = { fold : 'a. 'a onetag -> 'a V.t -> 'acc -> 'acc }
+
+    let fold f m acc = M.fold (fun _ (V (tag,v)) acc -> f.fold tag v acc) m acc
 
   end
 end

@@ -67,6 +67,7 @@ module type S = sig
 
     type any_t = Any : 'a t -> any_t
     val accumulate_in : any_t list -> any_t list CString.Map.t with_estate
+    val all_in : unit -> any_t list CString.Map.t with_estate
   end
 
   module rec Symbol : sig
