@@ -227,3 +227,11 @@ val valexpr : valexpr repr
 
 exception LtacError of KerName.t * valexpr array
 (** Ltac2-defined exceptions seen from OCaml side *)
+
+(** Standard exceptions *)
+
+val err_notfocussed : exn
+val err_outofbounds : exn
+val err_notfound : exn
+val err_matchfailure : exn
+val err_division_by_zero : exn

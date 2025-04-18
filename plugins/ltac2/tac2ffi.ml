@@ -203,12 +203,24 @@ let of_sort ev = of_ext val_sort ev
 let to_sort ev = to_ext val_sort ev
 let sort = repr_ext val_sort
 
-let internal_err =
-  let open Names in
-  let rocq_prefix =
-    MPfile (DirPath.make (List.map Id.of_string ["Init"; "Ltac2"]))
-  in
-  KerName.make rocq_prefix (Label.of_id (Id.of_string "Internal"))
+let rocq_core n = Names.(KerName.make Tac2env.rocq_prefix (Label.of_id @@ Id.of_string_soft n))
+
+let internal_err = rocq_core "Internal"
+
+let err_notfocussed =
+  LtacError (rocq_core "Not_focussed", [||])
+
+let err_outofbounds =
+  LtacError (rocq_core "Out_of_bounds", [||])
+
+let err_notfound =
+  LtacError (rocq_core "Not_found", [||])
+
+let err_matchfailure =
+  LtacError (rocq_core "Match_failure", [||])
+
+let err_division_by_zero =
+  LtacError (rocq_core "Division_by_zero", [||])
 
 let of_exninfo = of_ext val_exninfo
 let to_exninfo = to_ext val_exninfo

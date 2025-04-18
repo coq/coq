@@ -9,33 +9,14 @@
 (************************************************************************)
 
 open Names
-open Tac2expr
-
-(** {5 Hardwired data} *)
-
-module Core :
-sig
-
-val t_unit : type_constant
-val v_unit : Tac2val.valexpr
-
-val t_list : type_constant
-val c_nil : ltac_constructor
-val c_cons : ltac_constructor
-
-val t_int : type_constant
-val t_option : type_constant
-val t_string : type_constant
-val t_array : type_constant
-
-val c_true : ltac_constructor
-val c_false : ltac_constructor
-
-end
 
 val throw : ?info:Exninfo.info -> exn -> 'a Proofview.tactic
 
 val pf_apply : ?catch_exceptions:bool -> (Environ.env -> Evd.evar_map -> 'a Proofview.tactic) -> 'a Proofview.tactic
+
+val constr_flags : Pretyping.inference_flags
+val open_constr_no_classes_flags : Pretyping.inference_flags
+val preterm_flags : Pretyping.inference_flags
 
 module type MapType = sig
   (** to have less boilerplate we use S.elt rather than declaring a toplevel type t *)
