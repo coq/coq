@@ -381,6 +381,11 @@ let () =
     (red_context @-> clause @-> tac unit)
     Tac2tactics.native
 
+let () =
+  define "eval_reduction_in"
+    (reduction @-> clause @-> tac unit)
+    Tac2tactics.reduce
+
 (** Reduction functions *)
 
 let () = define "eval_red" (constr @-> tac constr) Tac2tactics.eval_red
@@ -426,6 +431,10 @@ let () =
     (red_context @-> constr @-> tac constr)
     Tac2tactics.eval_native
 
+let () =
+  define "eval_reduction"
+    (reduction @-> constr @-> tac constr)
+    Tac2tactics.eval_fun
 
 (** Reduction constructors *)
 

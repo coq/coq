@@ -93,6 +93,7 @@ val pattern : (constr * occurrences) list -> clause -> unit tactic
 val vm : (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
 
 val native : (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
+val eval_fun : Redexpr.red_expr -> constr -> constr tactic
 
 val eval_red : constr -> constr tactic
 

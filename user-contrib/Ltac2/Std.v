@@ -181,6 +181,9 @@ Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr 
 Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_vm".
 Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_native".
 
+Ltac2 @ external eval_reduction : reduction -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_reduction".
+Ltac2 @ external eval_reduction_in : reduction -> clause -> unit := "rocq-runtime.plugins.ltac2" "eval_reduction_in".
+
 Module Red.
   Ltac2 Type t := reduction.
 
