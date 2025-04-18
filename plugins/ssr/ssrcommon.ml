@@ -767,8 +767,35 @@ let pf_interp_ty ?(resolve_typeclasses=false) env sigma0 ist ty =
 
 (* TASSI: given (c : ty), generates (c ??? : ty[???/...]) with m evars *)
 exception NotEnoughProducts
-let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_of env sigma c) m
-=
+let saturate ?(beta=false) ?(bi_types=false) env sigma c ?ty m =
+  let sigma, ty = match ty with
+    | Some ty -> sigma, ty
+    | None ->
+      if Termops.is_template_polymorphic_ref env sigma c then
+        begin match EConstr.kind sigma c with
+        | Ind (ind,_) ->
+          let sigma, univs = Typing.get_template_parameters env sigma ind ~refresh_all:true [||] in
+          let specif = Inductive.lookup_mind_specif env ind in
+          let typ, csts = Inductive.type_of_inductive_knowing_parameters
+              (specif,UVars.Instance.empty)
+              univs
+          in
+          let sigma = Evd.add_constraints sigma csts in
+          sigma, EConstr.of_constr typ
+        | Construct ((ind,_ as ctor),_) ->
+          let sigma, univs = Typing.get_template_parameters env sigma ind ~refresh_all:true [||] in
+          let specif = Inductive.lookup_mind_specif env ind in
+          let typ, csts = Inductive.type_of_constructor_knowing_parameters
+              (ctor,UVars.Instance.empty)
+              specif
+              univs
+          in
+          let sigma = Evd.add_constraints sigma csts in
+          sigma, EConstr.of_constr typ
+        | _ -> assert false
+        end
+      else sigma, Retyping.get_type_of env sigma c
+  in
   let rec loop ty args sigma n =
   let open EConstr in
   if n = 0 then

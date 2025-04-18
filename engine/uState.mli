@@ -293,3 +293,5 @@ val reboot : Environ.env -> t -> t
     DO NOT USE OUTSIDE OF DEDICATED AREA. *)
 
 end
+
+val add_template_default_univs : MutInd.t -> unit
