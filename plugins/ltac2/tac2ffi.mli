@@ -130,6 +130,10 @@ val of_sort : ESorts.t -> valexpr
 val to_sort : valexpr -> ESorts.t
 val sort : ESorts.t repr
 
+val of_reduction : Redexpr.red_expr -> valexpr
+val to_reduction : valexpr -> Redexpr.red_expr
+val reduction : Redexpr.red_expr repr
+
 val of_pp : Pp.t -> valexpr
 val to_pp : valexpr -> Pp.t
 val pp : Pp.t repr

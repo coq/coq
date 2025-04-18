@@ -3,7 +3,8 @@ Error: Anomaly "Uncaught exception Not_found."
 Please report at http://rocq-prover.org/bugs/.
 Backtrace:
 Call foo
-Prim <rocq-runtime.plugins.ltac2:eval_hnf>
+Call Std.eval_hnf
+Prim <rocq-runtime.plugins.ltac2:reduce_constr>
 
 
 

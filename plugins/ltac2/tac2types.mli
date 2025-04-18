@@ -94,3 +94,7 @@ type rewriting =
 type assertion =
 | AssertType of intro_pattern option * constr * unit thunk option
 | AssertValue of Id.t * constr
+
+type red_flag = Names.GlobRef.t Genredexpr.glob_red_flag
+
+type red_context = (Pattern.constr_pattern * occurrences) option

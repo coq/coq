@@ -66,7 +66,7 @@ let to_red_strength = function
   | ValInt 1 -> Head
   | _ -> assert false
 
-let to_red_flag v = match Value.to_tuple v with
+let to_red_flag v : Tac2types.red_flag = match Value.to_tuple v with
 | [| strength; beta; iota; fix; cofix; zeta; delta; const |] ->
   {
     rStrength = to_red_strength strength;
@@ -82,11 +82,13 @@ let to_red_flag v = match Value.to_tuple v with
 
 let red_flags = make_to_repr to_red_flag
 
-let pattern_with_occs = pair pattern occurrences
-
 let constr_with_occs = pair constr occurrences
 
 let reference_with_occs = pair reference occurrences
+
+let to_red_context = to_option (to_pair to_pattern to_occurrences)
+
+let red_context = make_to_repr to_red_context
 
 let rec to_intro_pattern v = match Value.to_block v with
 | (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
@@ -332,95 +334,71 @@ let () =
 let () = define "tac_exfalso" (unit @-> tac unit) @@ fun () ->
   Tactics.exfalso
 
-let () =
-  define "tac_red" (clause @-> tac unit) (Tac2tactics.reduce Red)
+(** Reductions *)
 
 let () =
-  define "tac_hnf" (clause @-> tac unit) (Tac2tactics.reduce Hnf)
+  define "reduce_in"
+    (reduction @-> clause @-> tac unit)
+    Tac2tactics.reduce_in
 
 let () =
-  define "tac_simpl"
-    (red_flags @-> option pattern_with_occs @-> clause @-> tac unit)
+  define "reduce_constr"
+    (reduction @-> constr @-> tac constr)
+    Tac2tactics.reduce_constr
+
+let () = define "red"
+    (unit @-> tac reduction)
+    (fun _ -> return Red)
+
+let () = define "hnf"
+    (unit @-> tac reduction)
+    (fun _ -> return Hnf)
+
+let () =
+  define "simpl"
+    (red_flags @-> red_context @-> tac reduction)
     Tac2tactics.simpl
 
 let () =
-  define "tac_cbv" (red_flags @-> clause @-> tac unit) Tac2tactics.cbv
+  define "cbv"
+    (red_flags @-> tac reduction)
+    Tac2tactics.cbv
 
 let () =
-  define "tac_cbn" (red_flags @-> clause @-> tac unit) Tac2tactics.cbn
+  define "cbn"
+    (red_flags @-> tac reduction)
+    Tac2tactics.cbn
 
 let () =
-  define "tac_lazy" (red_flags @-> clause @-> tac unit) Tac2tactics.lazy_
+  define "lazy"
+    (red_flags @-> tac reduction)
+    Tac2tactics.lazy_
 
 let () =
-  define "tac_unfold"
-    (list reference_with_occs @-> clause @-> tac unit)
+  define "unfold"
+    (list reference_with_occs @-> tac reduction)
     Tac2tactics.unfold
 
 let () =
-  define "tac_fold"
-    (list constr @-> clause @-> tac unit)
-    (fun args cl -> Tac2tactics.reduce (Fold args) cl)
+  define "fold"
+    (list constr @-> tac reduction)
+    (fun cs -> return (Fold cs))
 
 let () =
-  define "tac_pattern"
-    (list constr_with_occs @-> clause @-> tac unit)
+  define "pattern"
+    (list constr_with_occs @-> tac reduction)
     Tac2tactics.pattern
 
 let () =
-  define "tac_vm"
-    (option pattern_with_occs @-> clause @-> tac unit)
+  define "vm"
+    (red_context @-> tac reduction)
     Tac2tactics.vm
 
 let () =
-  define "tac_native"
-    (option pattern_with_occs @-> clause @-> tac unit)
+  define "native"
+    (red_context @-> tac reduction)
     Tac2tactics.native
 
-(** Reduction functions *)
-
-let () = define "eval_red" (constr @-> tac constr) Tac2tactics.eval_red
-
-let () = define "eval_hnf" (constr @-> tac constr) Tac2tactics.eval_hnf
-
-let () =
-  define "eval_simpl"
-    (red_flags @-> option pattern_with_occs @-> constr @-> tac constr)
-    Tac2tactics.eval_simpl
-
-let () =
-  define "eval_cbv" (red_flags @-> constr @-> tac constr) Tac2tactics.eval_cbv
-
-let () =
-  define "eval_cbn" (red_flags @-> constr @-> tac constr) Tac2tactics.eval_cbn
-
-let () =
-  define "eval_lazy" (red_flags @-> constr @-> tac constr) Tac2tactics.eval_lazy
-
-let () =
-  define "eval_unfold"
-    (list reference_with_occs @-> constr @-> tac constr)
-    Tac2tactics.eval_unfold
-
-let () =
-  define "eval_fold"
-    (list constr @-> constr @-> tac constr)
-    Tac2tactics.eval_fold
-
-let () =
-  define "eval_pattern"
-    (list constr_with_occs @-> constr @-> tac constr)
-    Tac2tactics.eval_pattern
-
-let () =
-  define "eval_vm"
-    (option pattern_with_occs @-> constr @-> tac constr)
-    Tac2tactics.eval_vm
-
-let () =
-  define "eval_native"
-    (option pattern_with_occs @-> constr @-> tac constr)
-    Tac2tactics.eval_native
 
 let () =
   define "tac_change"
