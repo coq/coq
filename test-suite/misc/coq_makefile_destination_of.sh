@@ -8,9 +8,9 @@ cd $TMP
 
 function assert_eq() {
   if [ "$1" != "$2" ]; then
-    echo "rocq makefile generates destination" $1 "!=" $2
+    echo "rocq makefile generates destination $1 != $2"
     cd /
-    rm -rf $TMP
+    rm -rf "$TMP"
     exit 1
   fi
 }
@@ -22,5 +22,5 @@ mkdir -p src/Y/Z
 touch src/Y/Z/Test.v
 assert_eq `rocq makefile -destination-of src/Y/Z/Test.v -Q src X` "X//Y/Z"
 cd /
-rm -rf $TMP
+rm -rf "$TMP"
 exit 0

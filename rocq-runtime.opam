@@ -26,20 +26,20 @@ license: "LGPL-2.1-only"
 homepage: "https://rocq-prover.org/"
 doc: "https://rocq-prover.org/docs/"
 bug-reports: "https://github.com/rocq-prover/rocq/issues"
-depends: [
-  "dune" {>= "3.8"}
-  "ocaml" {>= "4.09.0"}
-  "ocamlfind" {>= "1.8.1"}
-  "zarith" {>= "1.11"}
-  "conf-linux-libc-dev" {os = "linux"}
-  "odoc" {with-doc}
-]
 depopts: ["rocq-native" "memprof-limits" "memtrace"]
 conflicts: [
   "coq" {< "8.17"}
   "coq-core" {< "8.21"}
 ]
 dev-repo: "git+https://github.com/rocq-prover/rocq.git"
+depends: [
+  "dune" {>= "3.8"}
+  "ocaml" {>= "4.09.0"}
+  "ocamlfind" {>= "1.8.1" & (>= "1.9.8" | os != "windows") }
+  "zarith" {>= "1.11"}
+  "conf-linux-libc-dev" {os = "linux"}
+  "odoc" {with-doc}
+]
 build: [
   ["dune" "subst"] {dev}
   [ "./configure"

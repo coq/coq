@@ -57,8 +57,16 @@ BIN:=$(COQPREFIX)/bin/
 # An alternative is ifeq ($(OS),Windows_NT) using make's own variable.
 ifeq ($(ARCH),win32)
   export FINDLIB_SEP=;
+
+  # in output tests we call "rocq c output/foo.v"
+  # this gets turned into (Filename.concat current_dir_name "output/foo.v")
+  # (Coqcargs.add_compile)
+  # for test stability across platforms we turn the \ from Filename.concat into a /
+  CLEANUP_WINPATH=| sed 's:.\\$(<):./$(<):'
 else
   export FINDLIB_SEP=:
+
+  CLEANUP_WINPATH=
 endif
 
 # The $(shell echo) trick is necessary due to configure quoting
@@ -424,6 +432,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	    | grep -a -v "\[Loading ML file" \
 	    | grep -a -v "Skipping rcfile loading" \
 	    | grep -a -v "^<W>" \
+	    $(CLEANUP_WINPATH) \
 	    > $$output; \
 	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \

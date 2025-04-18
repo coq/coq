@@ -15,14 +15,16 @@ let write_makefile coqprefix coqlibinstall best_compiler ocamlfind caml_flags co
   pr "##################################################################\n\n";
 
   pr "# Paths where Coq is installed\n";
-  pr "COQPREFIX=%s\n" coqprefix;
-  pr "COQLIBINSTALL=%s\n\n" coqlibinstall;
+  pr "COQPREFIX='%s'\n" coqprefix;
+  pr "COQLIBINSTALL='%s'\n\n" coqlibinstall;
   pr "# The best compiler: native (=opt) or bytecode (=byte)\n";
   pr "BEST=%s\n\n" best_compiler;
   pr "# Findlib command\n";
   pr "OCAMLFIND=%S\n" ocamlfind;
   pr "# Caml flags\n";
   pr "CAMLFLAGS=%s %s\n" caml_flags coq_caml_flags;
+  pr "# coqc was said to be '%s'\n" Sys.argv.(1);
+  pr "ARCH=%s\n" Coq_config.arch;
   ()
 
 let coq_warn_error (prefs : Prefs.t) =
@@ -49,6 +51,7 @@ let main () =
 
   let relocate = function
     | Coq_config.NotRelocatable p -> p
+    | Coq_config.Relocatable "" -> coqroot
     | Coq_config.Relocatable p -> Filename.concat coqroot p
   in
 
