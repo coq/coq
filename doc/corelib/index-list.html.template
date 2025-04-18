@@ -152,6 +152,7 @@ through the <tt>Require Import</tt> command.</p>
     user-contrib/Ltac2/Pstring.v
     user-contrib/Ltac2/RedFlags.v
     user-contrib/Ltac2/Ref.v
+    user-contrib/Ltac2/Rewrite.v
     user-contrib/Ltac2/Std.v
     user-contrib/Ltac2/String.v
     user-contrib/Ltac2/TransparentState.v
