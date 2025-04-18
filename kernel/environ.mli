@@ -68,13 +68,15 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
-val qualities     : env -> Sorts.QVar.Set.t
+val qualities     : env -> QGraph.t
+val qvars         : env -> Sorts.QVar.Set.t
 val rel_context   : env -> Constr.rel_context
 val rel_context_val : env -> rel_context_val
 val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
 
 val set_universes : UGraph.t -> env -> env
+val set_qualities : QGraph.t -> env -> env
 
 val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
@@ -439,7 +441,7 @@ module Internal : sig
       Do not use outside kernel inductive typechecking. *)
   val push_template_context : UContext.t -> env -> env
 
-  val is_above_prop : env -> Sorts.QVar.t -> bool
+  val eliminates_to_prop : env -> Sorts.QVar.t -> bool
 
   module View :
   sig

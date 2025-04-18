@@ -16,7 +16,7 @@ open Evd
 (** Errors related to recursors building *)
 
 type recursion_scheme_error =
-  | NotAllowedCaseAnalysis of (*isrec:*) bool * Sorts.t * Constr.pinductive
+  | NotAllowedCaseAnalysis of evar_map * (*isrec:*) bool * Sorts.t * Constr.pinductive
   | NotMutualInScheme of inductive * inductive
   | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 

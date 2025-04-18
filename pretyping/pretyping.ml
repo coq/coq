@@ -1017,7 +1017,7 @@ struct
         | None -> sigma, q
         | Some _ ->
           let sigma, q = Evd.new_quality_variable sigma in
-          let sigma = Evd.set_above_prop sigma (QVar q) in
+          let sigma = Evd.set_elim_to_prop sigma (QVar q) in
           sigma, q
       in
       let sigma, u = match Option.bind (Univ.Universe.level u) Univ.Level.var_index with
@@ -1375,7 +1375,7 @@ struct
     let vars = VarSet.variables (Global.env ()) in
     let hypnaming = if flags.program_mode then ProgramNaming vars else RenameExistingBut vars in
     let fsign,env_f = push_rel_context ~hypnaming sigma fsign env in
-    let obj indt rci p v f =
+    let obj sigma indt rci p v f =
       if not record then
         let f = it_mkLambda_or_LetIn f fsign in
         let ci = make_case_info !!env (ind_of_ind_type indt) LetStyle in
@@ -1406,7 +1406,7 @@ struct
             let sigma, v =
               let ind,_ = dest_ind_family indf in
                 let sigma, rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
-                sigma, obj indty rci p cj.uj_val fj.uj_val
+                sigma, obj sigma indty rci p cj.uj_val fj.uj_val
             in
             sigma, { uj_val = v; uj_type = (substl (realargs@[cj.uj_val]) ccl) }
 
@@ -1425,7 +1425,7 @@ struct
             let sigma, v =
               let ind,_ = dest_ind_family indf in
                 let sigma, rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
-                sigma, obj indty rci p cj.uj_val fj.uj_val
+                sigma, obj sigma indty rci p cj.uj_val fj.uj_val
             in sigma, { uj_val = v; uj_type = ccl })
 
   let pretype_cases self (sty, po, tml, eqns)  =

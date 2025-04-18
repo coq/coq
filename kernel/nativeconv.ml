@@ -200,9 +200,10 @@ let native_conv_gen pb sigma env univs t1 t2 =
 (* Wrapper for [native_conv] above *)
 let native_conv cv_pb sigma env t1 t2 =
   let univs = Environ.universes env in
+  let quals = Environ.qualities env in
   let b =
-    if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
-    else Constr.eq_constr_univs univs t1 t2
+    if cv_pb = CUMUL then Constr.leq_constr_univs quals univs t1 t2
+    else Constr.eq_constr_univs quals univs t1 t2
   in
   if b then Result.Ok ()
   else

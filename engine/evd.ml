@@ -854,7 +854,8 @@ let evar_handler sigma =
   | exception Not_found -> false (* Should be an anomaly *)
   in
   let evar_repack ev = mkLEvar sigma ev in
-  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant }
+  let elim_to = Inductive.eliminates_to (UState.elim_graph sigma.universes) in
+  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant; elim_to }
 
 let existential_type_opt d (n, args) =
   match find_undefined d n with
@@ -1031,6 +1032,7 @@ let univ_flexible = UnivFlexible false
 let univ_flexible_alg = UnivFlexible true
 
 let ustate d = d.universes
+let elim_graph d = UState.elim_graph d.universes
 
 let evar_universe_context d = ustate d
 
@@ -1177,32 +1179,38 @@ let set_leq_sort evd s1 s2 =
   match is_eq_sort s1 s2 with
   | None -> evd
   | Some (u1, u2) ->
-    if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
-       add_universe_constraints evd (UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)))
+     if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
+       add_universe_constraints evd @@
+         UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2))
      else evd
 
 let set_eq_qualities evd q1 q2 =
-  add_universe_constraints evd (UnivProblem.Set.singleton (QEq (q1, q2)))
+  add_universe_constraints evd @@ UnivProblem.Set.singleton (QEq (q1, q2))
 
-let set_above_prop evd q =
-  add_universe_constraints evd (UnivProblem.Set.singleton (QLeq (Sorts.Quality.qprop, q)))
+let set_elim_to_prop evd q =
+  add_universe_constraints evd @@
+    UnivProblem.Set.singleton (QElimTo (q, Sorts.Quality.qprop))
 
 let check_eq evd s s' =
+  let quals = elim_graph evd in
   let ustate = evd.universes in
-  UGraph.check_eq_sort (UState.ugraph ustate) (UState.nf_sort ustate s) (UState.nf_sort ustate s')
+  let univs = UState.ugraph ustate in
+  UGraph.check_eq_sort quals univs (UState.nf_sort ustate s) (UState.nf_sort ustate s')
 
 let check_leq evd s s' =
+  let quals = elim_graph evd in
   let ustate = evd.universes in
-  UGraph.check_leq_sort (UState.ugraph ustate) (UState.nf_sort ustate s) (UState.nf_sort ustate s')
+  let univs = UState.ugraph ustate in
+  UGraph.check_leq_sort quals univs (UState.nf_sort ustate s) (UState.nf_sort ustate s')
 
 let check_constraints evd csts =
   UGraph.check_constraints csts (UState.ugraph evd.universes)
 
-let check_qconstraints evd csts =
-  UState.check_qconstraints evd.universes csts
+let check_elim_constraints evd csts =
+  UState.check_elim_constraints evd.universes csts
 
 let check_quconstraints evd (qcsts,ucsts) =
-  check_qconstraints evd qcsts && check_constraints evd ucsts
+  check_elim_constraints evd qcsts && check_constraints evd ucsts
 
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }

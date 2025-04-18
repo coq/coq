@@ -78,9 +78,16 @@ val type_of_inductive_knowing_parameters :
 
 (** Elimination operations.
     These functions handle the internals of elimination.
-    Call them instead of the lower-level ones like Sorts.eliminates_to. *)
+    Call them instead of the lower-level ones like [QGraph.eliminates_to]. *)
 
-val eliminates_to : Sorts.Quality.t -> Sorts.Quality.t -> bool
+val raw_eliminates_to : Sorts.Quality.t -> Sorts.Quality.t -> bool
+(* Warning: this function does not handle [QVar]s properly: it only allows
+   elimination on the same [QVar]. Use [eliminates_to] for a proper handling of
+   variables. *)
+
+val eliminates_to : QGraph.t -> Sorts.Quality.t -> Sorts.Quality.t -> bool
+
+val sort_eliminates_to : QGraph.t -> Sorts.t -> Sorts.t -> bool
 
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
@@ -90,20 +97,21 @@ type 'a allow_elimination_actions =
   ; squashed_to_set_above : 'a
   ; squashed_to_quality : Sorts.Quality.t -> 'a }
 
-val is_squashed_gen : ('a -> Sorts.t -> Sorts.Quality.t)
+val is_squashed_gen : QGraph.t -> ('a -> Sorts.t -> Sorts.Quality.t)
   -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t) -> (mind_specif * 'a)
   -> squash option
 
-val allowed_elimination_gen : ('a -> Sorts.t -> Sorts.Quality.t)
+val allowed_elimination_gen : QGraph.t -> ('a -> Sorts.t -> Sorts.Quality.t)
   -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
   -> 'b allow_elimination_actions -> (mind_specif * 'a) -> Sorts.t -> 'b
 
-val is_squashed : mind_specif puniverses -> squash option
+val is_squashed : env -> mind_specif puniverses -> squash option
 
-val is_allowed_elimination_actions : Sorts.t -> bool allow_elimination_actions
+val is_allowed_elimination_actions : QGraph.t -> Sorts.t -> bool allow_elimination_actions
 
-val is_allowed_elimination : mind_specif puniverses -> Sorts.t -> bool
-val is_allowed_fixpoint : Sorts.t -> Sorts.t -> bool
+val is_allowed_elimination : env -> mind_specif puniverses -> Sorts.t -> bool
+val is_allowed_fixpoint : (Sorts.Quality.t -> Sorts.Quality.t -> bool)
+  -> Sorts.t -> Sorts.t -> bool
 
 (** End of elimination functions *)
 

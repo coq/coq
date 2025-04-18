@@ -241,7 +241,8 @@ let explain_elim_arity env sigma ind c okinds =
         if ppunivs then Flags.with_option Constrextern.print_universes pp ()
         else pp ()
       in
-      let squash = Option.get (Inductive.is_squashed (specif, snd ind)) in
+      let env = Environ.set_qualities (Evd.elim_graph sigma) env in
+      let squash = Option.get (Inductive.is_squashed env (specif, snd ind)) in
       match squash with
       | SquashToSet ->
         let ppt = ppt () in
@@ -860,9 +861,9 @@ let explain_unsatisfied_constraints env sigma cst =
     Univ.Constraints.pr (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
 
-let explain_unsatisfied_qconstraints env sigma cst =
-  strbrk "Unsatisfied quality constraints: " ++
-  Sorts.QConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
+let explain_unsatisfied_elim_constraints env sigma cst =
+  strbrk "Unsatisfied elimination constraints: " ++
+  Sorts.ElimConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
   spc() ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_universes env sigma l =
@@ -982,8 +983,8 @@ let explain_type_error env sigma err =
       explain_wrong_case_info env ind ci
   | UnsatisfiedConstraints cst ->
     explain_unsatisfied_constraints env sigma cst
-  | UnsatisfiedQConstraints cst ->
-    explain_unsatisfied_qconstraints env sigma cst
+  | UnsatisfiedElimConstraints cst ->
+    explain_unsatisfied_elim_constraints env sigma cst
   | UndeclaredUniverses l ->
     explain_undeclared_universes env sigma l
   | UndeclaredQualities l ->
@@ -1518,8 +1519,8 @@ let explain_incompatible_prim_declarations (type a) (act:a Primred.action_kind) 
 (* Recursion schemes errors *)
 
 let explain_recursion_scheme_error env = function
-  | NotAllowedCaseAnalysis (isrec,k,i) ->
-    explain_elim_arity env (Evd.from_env env) i None (Some k)
+  | NotAllowedCaseAnalysis (sigma,isrec,k,i) ->
+    explain_elim_arity env sigma i None (Some k)
       (* error_not_allowed_case_analysis env isrec k i *)
   | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme env ind ind'
   | NotAllowedDependentAnalysis (isrec, i) ->

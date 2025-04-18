@@ -391,7 +391,7 @@ let non_template_levels sigma ~params ~arity ~constructors =
   (* locally making the conclusion qvar above_prop means its
      appearances in relevance marks aren't counted *)
   let sigma = match ESorts.kind sigma u with
-    | QSort (q, _) -> Evd.set_above_prop sigma (QVar q)
+    | QSort (q, _) -> Evd.set_elim_to_prop sigma (QVar q)
     | _ -> sigma
   in
   let add_levels c levels = EConstr.universes_of_constr sigma ~init:levels c in
@@ -528,7 +528,7 @@ let template_univ_entry sigma udecl ~template_univs pseudo_sort_poly =
     | None -> QVar.Set.empty
   in
   let sigma = Evd.collapse_sort_variables ~except:template_qvars sigma in
-  let sigma = QVar.Set.fold (fun q sigma -> Evd.set_above_prop sigma (QVar q))
+  let sigma = QVar.Set.fold (fun q sigma -> Evd.set_elim_to_prop sigma (QVar q))
       template_qvars sigma
   in
   let uctx =

@@ -32,7 +32,7 @@ module QualityOrSet = struct
     let to_qual = function
       | Set -> Quality.qtype
       | Qual q -> q
-    in Quality.eliminates_to (to_qual a) (to_qual b)
+    in Inductive.raw_eliminates_to (to_qual a) (to_qual b)
 
   let of_quality q = Qual q
   let of_sort s = match s with
