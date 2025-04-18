@@ -59,6 +59,9 @@ type unify_flags = {
   with_cs : bool
 }
 
+let allow_all_but_rrpat_evars evd =
+  AllowedEvars.except (Evd.get_rewrite_rule_evars evd)
+
 let is_evar_allowed flags evk =
   AllowedEvars.mem flags.allowed_evars evk
 
@@ -111,7 +114,7 @@ let get_polymorphic_positions env sigma f =
       | Some templ -> templ.template_param_arguments)
   | _ -> assert false
 
-let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
+let refresh_universes ?(allowed_evars=AllowedEvars.all) ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
                       pbty env evd t =
   let evdref = ref evd in
   (* direction: true for fresh universes lower than the existing ones *)
@@ -168,7 +171,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
        let args' = Array.map (refresh_term_evars ~onevars ~top:false) args in
        if f' == f && args' == args then t
        else mkApp (f', args')
-    | Evar (ev, a) when onevars ->
+    | Evar (ev, a) when onevars && AllowedEvars.mem allowed_evars ev ->
       let evi = Evd.find_undefined !evdref ev in
       let ty = Evd.evar_concl evi in
       let ty' = refresh ~onlyalg univ_flexible ~direction:true ty in

@@ -293,45 +293,45 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 
 (** {6 Rewrite rules } *)
 
-type quality_pattern = Sorts.Quality.pattern =
-  | PQVar of int option | PQConstant of Sorts.Quality.constant
+type 'q quality_pattern = 'q Sorts.Quality.pattern =
+  | PQVar of 'q | PQConstant of Sorts.Quality.constant
 
-type instance_mask = UVars.Instance.mask
+type ('q, 'u) instance_mask = ('q, 'u) UVars.Instance.mask
 
-type sort_pattern = Sorts.pattern =
-  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+type ('q, 'u) sort_pattern = ('q, 'u) Sorts.pattern =
+  | PSProp | PSSProp | PSSet | PSType of 'u | PSQSort of 'q * 'u
 
 (** Patterns are internally represented as pairs of a head-pattern and a list of eliminations
     Eliminations correspond to elements of the stack in a reduction machine,
     they represent a pattern with a hole, to be filled with the head-pattern
 *)
-type 'arg head_pattern =
+type head_pattern =
   | PHRel     of int
-  | PHSort    of sort_pattern
-  | PHSymbol  of Constant.t * instance_mask
-  | PHInd     of inductive * instance_mask
-  | PHConstr  of constructor * instance_mask
+  | PHSort    of (int option, int option) sort_pattern
+  | PHSymbol  of Constant.t * (int option, int option) instance_mask
+  | PHInd     of inductive * (int option, int option) instance_mask
+  | PHConstr  of constructor * (int option, int option) instance_mask
   | PHInt     of Uint63.t
   | PHFloat   of Float64.t
   | PHString  of Pstring.t
-  | PHLambda  of 'arg array * 'arg
-  | PHProd    of 'arg array * 'arg
+  | PHLambda  of pattern_argument array * head_elimination
+  | PHProd    of pattern_argument array * pattern_argument
 
-type pattern_elimination =
+and pattern_elimination =
   | PEApp     of pattern_argument array
-  | PECase    of inductive * instance_mask * pattern_argument * pattern_argument array
+  | PECase    of inductive * pattern_argument * pattern_argument array
   | PEProj    of Projection.Repr.t
 
-and head_elimination = pattern_argument head_pattern * pattern_elimination list
+and head_elimination = head_pattern * pattern_elimination list
 
 and pattern_argument =
   | EHole of int
   | EHoleIgnored
   | ERigid of head_elimination
 
-type rewrite_rule = {
+type machine_rewrite_rule = {
   nvars : int * int * int;
-  lhs_pat : instance_mask * pattern_elimination list;
+  lhs_pat : (int option, int option) instance_mask * pattern_elimination list;
   rhs : constr;
 }
 
@@ -339,7 +339,7 @@ type rewrite_rule = {
 
 (** [(c, { lhs_pat = (u, elims); rhs })] in this list stands for [(PHSymbol (c,u), elims) ==> rhs] *)
 type rewrite_rules_body = {
-  rewrules_rules : (Constant.t * rewrite_rule) list;
+  rewrules_rules : (Constant.t * machine_rewrite_rule) list;
 }
 
 (** {6 Module declarations } *)

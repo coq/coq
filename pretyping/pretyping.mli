@@ -81,8 +81,7 @@ type inference_flags = {
   expand_evars : bool;
   program_mode : bool;
   polymorphic : bool;
-  undeclared_evars_patvars : bool;
-  patvars_abstract : bool;
+  undeclared_evars_rr : bool;
   unconstrained_sorts : bool;
 }
 
@@ -180,8 +179,7 @@ type pretype_flags = {
   resolve_tc : bool;
   program_mode : bool;
   use_coercions : bool;
-  undeclared_evars_patvars : bool;
-  patvars_abstract : bool;
+  undeclared_evars_rr : bool;
   unconstrained_sorts : bool;
 }
 

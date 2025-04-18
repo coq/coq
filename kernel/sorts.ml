@@ -201,8 +201,8 @@ module Quality = struct
   module Set = CSet.Make(Self)
   module Map = CMap.Make(Self)
 
-  type pattern =
-    | PQVar of int option | PQConstant of constant
+  type 'q pattern =
+    | PQVar of 'q | PQConstant of constant
 
   let pattern_match ps s qusubst =
     match ps, s with
@@ -464,8 +464,8 @@ let pr prv pru = function
 
 let raw_pr = pr QVar.raw_pr Univ.Universe.raw_pr
 
-type pattern =
-  | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+type ('q, 'u) pattern =
+  | PSProp | PSSProp | PSSet | PSType of 'u | PSQSort of 'q * 'u
 
 let extract_level u =
   match Universe.level u with

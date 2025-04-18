@@ -201,7 +201,6 @@ let rec safe_pattern_of_constr_aux ~loc env evd usubst depth state t = Constr.ki
   | Case (ci, u, params, (ret, _), _, c, brs) ->
       let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
 
-      let state, mask = update_invtblu ~loc evd usubst state u in
       let state, (head, elims) = safe_pattern_of_constr_aux ~loc env evd usubst depth state c in
 
       let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
@@ -231,7 +230,7 @@ let rec safe_pattern_of_constr_aux ~loc env evd usubst depth state t = Constr.ki
         safe_arg_pattern_of_constr ~loc br_env evd usubst (depth + Array.length nas) state br
       in
       let state, pbrs = Array.fold_left_map_i do_one_branch state brs in
-      state, (head, elims @ [PECase (ci.ci_ind, mask, pret, pbrs)])
+      state, (head, elims @ [PECase (ci.ci_ind, pret, pbrs)])
   | Proj (p, _, c) ->
       let state, (head, elims) = safe_pattern_of_constr_aux ~loc env evd usubst depth state c in
       state, (head, elims @ [PEProj (Projection.repr p)])
@@ -275,7 +274,7 @@ and safe_head_pattern_of_constr ~loc env evd usubst depth state t = Constr.kind 
           (state, Environ.push_rel (LocalAssum (na, ty)) env), p)
         (state, env) tys
     in
-    let state, pbod = safe_arg_pattern_of_constr ~loc env evd usubst (depth + Array.length tys) state b in
+    let state, pbod = safe_pattern_of_constr ~loc env evd usubst (depth + Array.length tys) state b in
     state, PHLambda (ptys, pbod)
   | Prod _ ->
     let (ntys, b) = Term.decompose_prod t in
@@ -294,8 +293,7 @@ and safe_head_pattern_of_constr ~loc env evd usubst depth state t = Constr.kind 
 and safe_arg_pattern_of_constr ~loc env evd usubst depth (st, stateq, stateu as state) t = Constr.kind t |> function
   | Evar (evk, inst) ->
     let EvarInfo evi = Evd.find evd evk in
-    (match snd (Evd.evar_source evi) with
-    | Evar_kinds.MatchingVar (Evar_kinds.FirstOrderPatVar id) ->
+    if Evd.is_rewrite_rule_evar evd evk then
       let holei, st = update_invtbl ~loc env evd evk st in
       if not @@ is_rel_inst 1 inst then
         CErrors.user_err ?loc
@@ -306,6 +304,9 @@ and safe_arg_pattern_of_constr ~loc env evd usubst depth (st, stateq, stateu as 
       if Evd.evar_hyps evi |> Environ.named_context_of_val |> Context.Named.length <> SList.length inst then
         CErrors.user_err ?loc Pp.(str "Pattern variable cannot access the whole context: " ++ Printer.safe_pr_lconstr_env env evd t);
       (st, stateq, stateu), EHole holei
+    else
+    (match snd (Evd.evar_source evi) with
+    | Evar_kinds.RewriteRulePattern _ -> assert false (* Dealt with just above *)
     | Evar_kinds.NamedHole _ -> CErrors.user_err ?loc Pp.(str "Named holes are not supported, you must use regular evars: " ++ Printer.safe_pr_lconstr_env env evd t)
     | _ ->
       if Option.is_empty @@ Evd.evar_ident evk evd then state, EHoleIgnored else
@@ -353,7 +354,7 @@ let rec test_pattern_redex env evd ~loc = function
   | PHLambda _, _ -> warn_redex_in_rewrite_rules ?loc (Pp.str " lambda pattern")
   | PHConstr (c, _) as head, PEApp args :: elims -> test_projection_apps env evd ~loc (fst c) args; Array.iter (test_pattern_redex_aux env evd ~loc) args; test_pattern_redex env evd ~loc (head, elims)
   | head, PEApp args :: elims -> Array.iter (test_pattern_redex_aux env evd ~loc) args; test_pattern_redex env evd ~loc (head, elims)
-  | head, PECase (_, _, ret, brs) :: elims -> test_pattern_redex_aux env evd ~loc ret; Array.iter (test_pattern_redex_aux env evd ~loc) brs; test_pattern_redex env evd ~loc (head, elims)
+  | head, PECase (_, ret, brs) :: elims -> test_pattern_redex_aux env evd ~loc ret; Array.iter (test_pattern_redex_aux env evd ~loc) brs; test_pattern_redex env evd ~loc (head, elims)
   | head, PEProj _ :: elims -> test_pattern_redex env evd ~loc (head, elims)
   | PHProd (tys, bod), [] -> Array.iter (test_pattern_redex_aux env evd ~loc) tys; test_pattern_redex_aux env evd ~loc bod
   | (PHRel _ | PHInt _ | PHFloat _ | PHString _ | PHSort _ | PHInd _ | PHConstr _ | PHSymbol _), [] -> ()
@@ -365,8 +366,7 @@ and test_pattern_redex_aux env evd ~loc = function
 let warn_rewrite_rules_break_SR =
   CWarnings.create ~name:"rewrite-rules-break-SR" ~category:CWarnings.CoreCategories.rewrite_rules
     Pp.(fun reason ->
-        str "This rewrite rule breaks subject reduction" ++ spc() ++
-        surround reason ++ str ".")
+        str "This rewrite rule breaks subject reduction" ++ spc() ++ reason)
 
 let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) =
   let env = Global.env () in
@@ -415,7 +415,7 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   let rhs_loc = rhs.CAst.loc in
 
   let lhs = Constrintern.(intern_gen WithoutTypeConstraint env evd lhs) in
-  let flags = { Pretyping.no_classes_no_fail_inference_flags with undeclared_evars_patvars = true; patvars_abstract = true; expand_evars = false; solve_unification_constraints = false } in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with undeclared_evars_rr = true; expand_evars = false; solve_unification_constraints = false } in
   let evd, lhs, typ = Pretyping.understand_tcc_ty ~flags env evd lhs in
 
   let evd = Evd.minimize_universes evd in
@@ -460,18 +460,19 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
   (* The udecl constraints (or, if none, the lhs constraints) must imply those of the rhs *)
   let evd = Evd.set_universe_context evd uctx in
   let rhs = Constrintern.(intern_gen WithoutTypeConstraint env evd rhs) in
-  let flags = { Pretyping.no_classes_no_fail_inference_flags with patvars_abstract = true } in
+  let flags = Pretyping.no_classes_no_fail_inference_flags in
   let evd', rhs =
     try Pretyping.understand_tcc ~flags env evd ~expected_type:(OfType typ) rhs
-    with Type_errors.TypeError _ | Pretype_errors.PretypeError _ ->
-      warn_rewrite_rules_break_SR ?loc:rhs_loc (Pp.str "the replacement term doesn't have the type of the pattern");
+    with Pretype_errors.PretypeError (env', evd', e) ->
+      warn_rewrite_rules_break_SR ?loc:rhs_loc
+        Pp.(surround (str "the replacement term doesn't have the type of the pattern") ++ str "." ++ fnl () ++ Himsg.explain_pretype_error env' evd' e);
       Pretyping.understand_tcc ~flags env evd rhs
   in
 
   let evd' = Evd.minimize_universes evd' in
   let _qvars', uvars' = EConstr.universes_of_constr evd' rhs in
   let evd' = Evd.restrict_universe_context evd' (Univ.Level.Set.union uvars uvars') in
-  let fail pp = warn_rewrite_rules_break_SR ?loc:rhs_loc Pp.(str "universe inconsistency, missing constraints: " ++ pp) in
+  let fail pp = warn_rewrite_rules_break_SR ?loc:rhs_loc Pp.(surround (str "universe inconsistency") ++ str"." ++ spc() ++ str "Missing constraints: " ++ pp) in
   let () = UState.check_uctx_impl ~fail (Evd.ustate evd) (Evd.ustate evd') in
   let evd = evd' in
 
