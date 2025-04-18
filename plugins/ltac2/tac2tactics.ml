@@ -233,29 +233,41 @@ let mk_flags flags =
     (fun rConst -> { flags with rConst })
     (Proofview.Monad.List.map get_evaluable_reference flags.rConst)
 
-let mk_simpl flags where =
+let reduce_in red cl =
+  let cl = mk_clause cl in
+  Tactics.reduce red cl
+
+let reduce_constr red c =
+  Tac2core.pf_apply begin fun env sigma ->
+    let (redfun, _) = Redexpr.reduction_of_red_expr env red in
+    let (sigma, ans) = redfun env sigma c in
+    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+    Proofview.tclUNIT ans
+  end
+
+let simpl flags where =
   Proofview.tclFMAP
     (fun flags ->
        let where = Option.map map_pattern_with_occs where in
        (Simpl (flags, where)))
     (mk_flags flags)
 
-let mk_cbv flags =
+let cbv flags =
   Proofview.tclFMAP
     (fun flags -> Cbv flags)
     (mk_flags flags)
 
-let mk_cbn flags  =
+let cbn flags  =
   Proofview.tclFMAP
     (fun flags -> Cbn flags)
     (mk_flags flags)
 
-let mk_lazy flags =
+let lazy_ flags =
   Proofview.tclFMAP
     (fun flags -> Lazy flags)
     (mk_flags flags)
 
-let mk_unfold occs =
+let unfold occs =
   let map (gr, occ) =
     let occ = mk_occurrences occ in
     get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
@@ -264,102 +276,17 @@ let mk_unfold occs =
     (fun occs -> Unfold occs)
     (Proofview.Monad.List.map map occs)
 
-let mk_pattern where =
+let pattern where =
   let where = List.map (fun (c, occ) -> (mk_occurrences occ, c)) where in
   Proofview.tclUNIT (Pattern where)
 
-let mk_vm where =
+let vm where =
   let where = Option.map map_pattern_with_occs where in
   Proofview.tclUNIT (CbvVm where)
 
-let mk_native where =
+let native where =
   let where = Option.map map_pattern_with_occs where in
   Proofview.tclUNIT (CbvNative where)
-
-let reduce r cl =
-  let cl = mk_clause cl in
-  Tactics.reduce r cl
-
-let simpl flags where cl =
-  mk_simpl flags where >>= fun r ->
-  reduce r cl
-
-let cbv flags cl =
-  mk_cbv flags >>= fun r ->
-  reduce r cl
-
-let cbn flags cl =
-  mk_cbn flags >>= fun r ->
-  reduce r cl
-
-let lazy_ flags cl =
-  mk_lazy flags >>= fun r ->
-  reduce r cl
-
-let unfold occs cl =
-  mk_unfold occs >>= fun r ->
-  reduce r cl
-
-let pattern where cl =
-  mk_pattern where >>= fun r ->
-  reduce r cl
-
-let vm where cl =
-  mk_vm where >>= fun r ->
-  reduce r cl
-
-let native where cl =
-  mk_native where >>= fun r ->
-  reduce r cl
-
-let eval_reduction red c =
-  Tac2core.pf_apply begin fun env sigma ->
-  let (redfun, _) = Redexpr.reduction_of_red_expr env red in
-  let (sigma, ans) = redfun env sigma c in
-  Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-  Proofview.tclUNIT ans
-  end
-
-let eval_red c =
-  eval_reduction Red c
-
-let eval_hnf c =
-  eval_reduction Hnf c
-
-let eval_simpl flags where c =
-  mk_simpl flags where >>= fun r ->
-  eval_reduction r c
-
-let eval_cbv flags c =
-  mk_cbv flags >>= fun r ->
-  eval_reduction r c
-
-let eval_cbn flags c =
-  mk_cbn flags >>= fun r ->
-  eval_reduction r c
-
-let eval_lazy flags c =
-  mk_lazy flags >>= fun r ->
-  eval_reduction r c
-
-let eval_unfold occs c =
-  mk_unfold occs >>= fun r ->
-  eval_reduction r c
-
-let eval_fold cl c =
-  eval_reduction (Fold cl) c
-
-let eval_pattern where c =
-  mk_pattern where >>= fun r ->
-  eval_reduction r c
-
-let eval_vm where c =
-  mk_vm where >>= fun r ->
-  eval_reduction r c
-
-let eval_native where c =
-  mk_native where >>= fun r ->
-  eval_reduction r c
 
 let on_destruction_arg tac ev arg =
   Proofview.Goal.enter begin fun gl ->
