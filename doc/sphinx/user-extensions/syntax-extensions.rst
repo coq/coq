@@ -2032,34 +2032,28 @@ Number notations
          parsing and printing functions, respectively.  The parsing function
          :n:`@qualid__parse` should have one of the following types:
 
-            * :n:`Number.int -> @qualid__type`
-            * :n:`Number.int -> option @qualid__type`
-            * :n:`Number.uint -> @qualid__type`
-            * :n:`Number.uint -> option @qualid__type`
-            * :n:`Z -> @qualid__type`
-            * :n:`Z -> option @qualid__type`
-            * :n:`PrimInt63.pos_neg_int63 -> @qualid__type`
-            * :n:`PrimInt63.pos_neg_int63 -> option @qualid__type`
-            * :n:`PrimFloat.float -> @qualid__type`
-            * :n:`PrimFloat.float -> option @qualid__type`
-            * :n:`Number.number -> @qualid__type`
-            * :n:`Number.number -> option @qualid__type`
+            * :n:`Number.int -> @qualid__type'`
+            * :n:`Number.uint -> @qualid__type'`
+            * :n:`Z -> @qualid__type'`
+            * :n:`PrimInt63.pos_neg_int63 -> @qualid__type'`
+            * :n:`PrimFloat.float -> @qualid__type'`
+            * :n:`Number.number -> @qualid__type'`
+
+         where :n:`@qualid__type'` is one of
+
+            * :n:`@qualid__type`
+            * :n:`option @qualid__type`
+            * :n:`result @qualid__type _`
 
          And the printing function :n:`@qualid__print` should have one of the
          following types:
 
-            * :n:`@qualid__type -> Number.int`
-            * :n:`@qualid__type -> option Number.int`
-            * :n:`@qualid__type -> Number.uint`
-            * :n:`@qualid__type -> option Number.uint`
-            * :n:`@qualid__type -> Z`
-            * :n:`@qualid__type -> option Z`
-            * :n:`@qualid__type -> PrimInt63.pos_neg_int63`
-            * :n:`@qualid__type -> option PrimInt63.pos_neg_int63`
-            * :n:`@qualid__type -> PrimFloat.float`
-            * :n:`@qualid__type -> option PrimFloat.float`
-            * :n:`@qualid__type -> Number.number`
-            * :n:`@qualid__type -> option Number.number`
+            * :n:`@qualid__type' -> Number.int`
+            * :n:`@qualid__type' -> Number.uint`
+            * :n:`@qualid__type' -> Z`
+            * :n:`@qualid__type' -> PrimInt63.pos_neg_int63`
+            * :n:`@qualid__type' -> PrimFloat.float`
+            * :n:`@qualid__type' -> Number.number`
 
          When parsing, the application of the parsing function
          :n:`@qualid__parse` to the number will be fully reduced, and universes
@@ -2168,10 +2162,13 @@ Number notations
    .. exn:: Cannot interpret this number as a value of type @type
 
      The number notation registered for :token:`type` does not support
-     the given number.  This error is given when the interpretation
-     function returns :g:`None`, or if the interpretation is registered
-     only for integers or non-negative integers, and the given number
-     has a fractional or exponent part or is negative.
+     the given number. This error is given when the interpretation
+     function returns :g:`None` (when :n:`@qualid__type'` is :n:`option
+     @qualid__type`) or :g:`Error e` (when :n:`@qualid__type'` is
+     :n:`result @qualid__type _`, in which case `e` will be printed and
+     appended to the error message), or if the interpretation is
+     registered only for integers or non-negative integers, and the
+     given number has a fractional or exponent part or is negative.
 
    .. exn:: overflow in int63 literal @bigint
 
@@ -2225,22 +2222,22 @@ String notations
          parsing and printing functions, respectively.  The parsing function
          :n:`@qualid__parse` should have one of the following types:
 
-            * :n:`Byte.byte -> @qualid__type`
-            * :n:`Byte.byte -> option @qualid__type`
+            * :n:`Byte.byte -> @qualid__type'`
             * :n:`list Byte.byte -> @qualid__type`
-            * :n:`list Byte.byte -> option @qualid__type`
             * :n:`PrimString.string -> @qualid__type`
-            * :n:`PrimString.string -> option @qualid__type`
+
+         where :n:`@qualid__type'` is one of
+
+            * :n:`@qualid__type`
+            * :n:`option @qualid__type`
+            * :n:`result @qualid__type _`
 
          The printing function :n:`@qualid__print` should have one of the
          following types:
 
-            * :n:`@qualid__type -> Byte.byte`
-            * :n:`@qualid__type -> option Byte.byte`
+            * :n:`@qualid__type' -> Byte.byte`
             * :n:`@qualid__type -> list Byte.byte`
-            * :n:`@qualid__type -> option (list Byte.byte)`
             * :n:`@qualid__type -> PrimString.string`
-            * :n:`@qualid__type -> option PrimString.string`
 
          When parsing, the application of the parsing function
          :n:`@qualid__parse` to the string will be fully reduced, and universes
@@ -2258,7 +2255,7 @@ String notations
 
      The string notation registered for :token:`type` does not support
      the given string.  This error is given when the interpretation
-     function returns :g:`None`.
+     function returns :g:`None` or :g:`Error e`.
 
    .. exn:: @qualid__parse should go from Byte.byte, (list Byte.byte), or PrimString.string to @type or (option @type).
 

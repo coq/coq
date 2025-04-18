@@ -232,6 +232,15 @@ Register sum as core.sum.type.
 Register inl as core.sum.inl.
 Register inr as core.sum.inr.
 
+Inductive result (A E : Type) :=
+| Ok (_:A)
+| Error (_:E).
+
+Arguments Ok {_ _} _, [_] _ _.
+Arguments Error {_ _} _, _ [_] _.
+
+Register result as core.result.type.
+
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 

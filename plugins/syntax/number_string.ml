@@ -45,23 +45,24 @@ let get_constructors ind =
   Array.to_list
     (Array.mapi (fun j c -> GlobRef.ConstructRef (ind, j + 1)) mc)
 
-let q_option () = Rocqlib.lib_ref "core.option.type"
-
 let unsafe_ref_ind q =
   match q with
   | GlobRef.IndRef i -> i
   | _ -> raise Not_found
 
+type 'kind target = {
+  kind : 'kind;
+  typ : glob_constr;
+}
+
 let locate_z () =
   let zn = "num.Z.type" in
   let pn = "num.pos.type" in
   match Rocqlib.lib_ref zn, Rocqlib.lib_ref pn with
-  | exception Rocqlib.NotFoundRef _ -> None
+  | exception Rocqlib.NotFoundRef _ -> []
   | q_z, q_pos ->
-    Some ({
-        z_ty = unsafe_ref_ind q_z;
-        pos_ty = unsafe_ref_ind q_pos;
-      }, gref q_z)
+    let z_ty = { z_ty = unsafe_ref_ind q_z; pos_ty = unsafe_ref_ind q_pos; } in
+    [ { kind = Z z_ty; typ = gref q_z }; ]
 
 let locate_number () =
   let dint = "num.int.type" in
@@ -77,7 +78,7 @@ let locate_number () =
         , Rocqlib.lib_ref hint, Rocqlib.lib_ref huint, Rocqlib.lib_ref hex
         , Rocqlib.lib_ref int, Rocqlib.lib_ref uint, Rocqlib.lib_ref num
   with
-  | exception Rocqlib.NotFoundRef _ -> None
+  | exception Rocqlib.NotFoundRef _ -> []
   | q_dint, q_duint, q_dec, q_hint, q_huint, q_hex, q_int, q_uint, q_num ->
     let int_ty = {
       dec_int = unsafe_ref_ind q_dint;
@@ -93,23 +94,25 @@ let locate_number () =
       hexadecimal = unsafe_ref_ind q_hex;
       number = unsafe_ref_ind q_num;
     } in
-    Some (int_ty, gref q_int, gref q_uint, gref q_dint, gref q_duint,
-          num_ty, gref q_num, gref q_dec)
+    [ { kind = Int int_ty; typ = gref q_int };
+      { kind = UInt int_ty; typ = gref q_uint };
+      { kind = Number num_ty; typ = gref q_num };
+    ]
 
 let locate_int63 () =
   let pos_neg_int63n = "num.int63.pos_neg_int63" in
   match Rocqlib.lib_ref pos_neg_int63n with
-  | exception Rocqlib.NotFoundRef _ -> None
+  | exception Rocqlib.NotFoundRef _ -> []
   | pos_neg_int63 ->
-    Some ({pos_neg_int63_ty = unsafe_ref_ind pos_neg_int63},
-          gref pos_neg_int63)
+    [ { kind = Int63 {pos_neg_int63_ty = unsafe_ref_ind pos_neg_int63}; typ = gref pos_neg_int63 }; ]
 
 
 let locate_float () =
   let floatn = "num.float.type" in
   match Rocqlib.lib_ref floatn with
-  | exception Rocqlib.NotFoundRef _ -> None
-  | q_float -> Some (gref q_float)
+  | exception Rocqlib.NotFoundRef _ -> []
+  | q_float ->
+    [ { kind = Float64; typ = gref q_float }; ]
 
 let has_type env sigma f ty =
   let c = DAst.make @@ GCast (f, Some Constr.DEFAULTcast, ty) in
@@ -117,17 +120,60 @@ let has_type env sigma f ty =
   try let _ = Pretyping.understand ~flags env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 
+let q_option () = Rocqlib.lib_ref_opt "core.option.type"
+
+let q_result () = Rocqlib.lib_ref_opt "core.result.type"
+
+let is_to_target env sigma f cty {kind; typ} =
+  let (>>?) opt f = match opt with
+    | None -> false
+    | Some x -> f x
+  in
+  let arrow x y =
+    DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
+  in
+  let app x y = DAst.make @@ GApp (gref x,[y]) in
+  let app2 x y z = DAst.make @@ GApp (gref x,[y;z]) in
+  let ghole = DAst.make @@ GHole GInternalHole in
+  if has_type env sigma f (arrow typ cty) then
+    Some (kind, Direct)
+  else if q_option() >>? fun q_opt -> has_type env sigma f (arrow typ (app q_opt cty)) then
+    Some (kind, Option)
+  else if q_result() >>? fun q_result -> has_type env sigma f (arrow typ (app2 q_result cty ghole)) then
+    Some (kind, Error)
+  else None
+
+let is_from_target env sigma g cty {kind; typ} =
+  let (>>?) opt f = match opt with
+    | None -> false
+    | Some x -> f x
+  in
+  let arrow x y =
+    DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
+  in
+  let app x y = DAst.make @@ GApp (gref x,[y]) in
+  let app2 x y z = DAst.make @@ GApp (gref x,[y;z]) in
+  let ghole = DAst.make @@ GHole GInternalHole in
+  if has_type env sigma g (arrow cty typ) then
+    Some (kind, Direct)
+  else if q_option() >>? fun q_opt -> has_type env sigma g (arrow cty (app q_opt typ)) then
+    Some (kind, Option)
+  else if q_result() >>? fun q_result -> has_type env sigma g (arrow cty (app2 q_result typ ghole)) then
+    Some (kind, Error)
+  else None
+
 let type_error_to f ty =
+  let ppty = pr_qualid ty in
   CErrors.user_err
     (pr_qualid f ++ str " should go from Number.int to " ++
-     pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ")." ++
-     fnl () ++ str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
+     ppty ++ str " or (option " ++ ppty ++ str "), or (result " ++ ppty ++ str " _)." ++
+     fnl () ++ strbrk "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
 
 let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
-     str " to Number.int or (option Number.int)." ++ fnl () ++
-     str "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
+     str " to Number.int or (option Number.int), or (result Number.int _)." ++ fnl () ++
+     strbrk "Instead of Number.int, the types Number.uint or Z or PrimInt63.pos_neg_int63 or PrimFloat.float or Number.number could be used (you may need to require BinNums or Number or PrimInt63 or PrimFloat first).")
 
 let error_params ind =
   CErrors.user_err
@@ -408,12 +454,10 @@ let locate_global_inductive_or_int63_or_float env allow_params qid =
     let floatn = "num.float.type" in
     let floatc = "num.float.wrap_float" in
     let floatw = "num.float.float_wrapper" in
-    if allow_params && Rocqlib.has_ref int63n
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref int63n)
+    if allow_params && Rocqlib.check_ref int63n (Smartlocate.global_with_alias qid)
     then TargetPrim (Rocqlib.lib_ref int63w, [Rocqlib.lib_ref int63c],
                      (Nametab.path_of_global (Rocqlib.lib_ref int63n), []))
-    else if allow_params && Rocqlib.has_ref floatn
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref floatn)
+    else if allow_params && Rocqlib.check_ref floatn (Smartlocate.global_with_alias qid)
     then TargetPrim (Rocqlib.lib_ref floatw, [Rocqlib.lib_ref floatc],
                      (Nametab.path_of_global (Rocqlib.lib_ref floatn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
@@ -439,10 +483,13 @@ let vernac_number_notation local ty f g opts scope =
   (match via, opts with Some _, Abstract _ -> via_abstract_error () | _ -> ());
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let num_ty = locate_number () in
-  let z_pos_ty = locate_z () in
-  let int63_ty = locate_int63 () in
-  let float_ty = locate_float () in
+  let targets = List.concat [
+      locate_number ();
+      locate_z ();
+      locate_int63 ();
+      locate_float ();
+    ]
+  in
   let ty_name = ty in
   let ty, via =
     match via with None -> ty, via | Some (ty', a) -> ty', Some (ty, a) in
@@ -452,57 +499,18 @@ let vernac_number_notation local ty f g opts scope =
   let cty = intern_cref env sigma ty in
   let f_name, f = f, intern_cref env sigma f in
   let g_name, g = g, intern_cref env sigma g in
-  let app x y = DAst.make @@ GApp (x,[y]) in
-  let arrow x y =
-    DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
-  in
-  let opt r = app (gref (q_option ())) r in
   (* Check the type of f *)
   let to_kind =
-    match num_ty with
-    | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma f (arrow cint cty) -> Int int_ty, Direct
-    | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma f (arrow cint (opt cty)) -> Int int_ty, Option
-    | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma f (arrow cuint cty) -> UInt int_ty, Direct
-    | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma f (arrow cuint (opt cty)) -> UInt int_ty, Option
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum cty) -> Number num_ty, Direct
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma f (arrow cnum (opt cty)) -> Number num_ty, Option
-    | _ ->
-    match z_pos_ty with
-    | Some (z_pos_ty, cZ) when has_type env sigma f (arrow cZ cty) -> Z z_pos_ty, Direct
-    | Some (z_pos_ty, cZ) when has_type env sigma f (arrow cZ (opt cty)) -> Z z_pos_ty, Option
-    | _ ->
-    match int63_ty with
-    | Some (pos_neg_int63_ty, cint63) when has_type env sigma f (arrow cint63 cty) -> Int63 pos_neg_int63_ty, Direct
-    | Some (pos_neg_int63_ty, cint63) when has_type env sigma f (arrow cint63 (opt cty)) -> Int63 pos_neg_int63_ty, Option
-    | _ ->
-    match float_ty with
-    | Some cfloat when has_type env sigma f (arrow cfloat cty) -> Float64, Direct
-    | Some cfloat when has_type env sigma f (arrow cfloat (opt cty)) -> Float64, Option
-    | _ -> type_error_to f_name ty
+    match List.find_map (fun target -> is_to_target env sigma f cty target) targets with
+    | Some v -> v
+    | None -> type_error_to f_name ty
   in
   (* Check the type of g *)
   let cty = match tyc_params with TargetPrim (c, _, _) -> gref c | TargetInd _ -> cty in
   let of_kind =
-    match num_ty with
-    | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma g (arrow cty cint) -> Int int_ty, Direct
-    | Some (int_ty, cint, _, _, _, _, _, _) when has_type env sigma g (arrow cty (opt cint)) -> Int int_ty, Option
-    | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma g (arrow cty cuint) -> UInt int_ty, Direct
-    | Some (int_ty, _, cuint, _, _, _, _, _) when has_type env sigma g (arrow cty (opt cuint)) -> UInt int_ty, Option
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty cnum) -> Number num_ty, Direct
-    | Some (_, _, _, _, _, num_ty, cnum, _) when has_type env sigma g (arrow cty (opt cnum)) -> Number num_ty, Option
-    | _ ->
-    match z_pos_ty with
-    | Some (z_pos_ty, cZ) when has_type env sigma g (arrow cty cZ) -> Z z_pos_ty, Direct
-    | Some (z_pos_ty, cZ) when has_type env sigma g (arrow cty (opt cZ)) -> Z z_pos_ty, Option
-    | _ ->
-    match int63_ty with
-    | Some (pos_neg_int63_ty, cint63) when has_type env sigma g (arrow cty cint63) -> Int63 pos_neg_int63_ty, Direct
-    | Some (pos_neg_int63_ty, cint63) when has_type env sigma g (arrow cty (opt cint63)) -> Int63 pos_neg_int63_ty, Option
-    | _ ->
-    match float_ty with
-    | Some cfloat when has_type env sigma g (arrow cty cfloat) -> Float64, Direct
-    | Some cfloat when has_type env sigma g (arrow cty (opt cfloat)) -> Float64, Option
-    | _ -> type_error_of g_name ty
+    match List.find_map (fun target -> is_from_target env sigma g cty target) targets with
+    | Some v -> v
+    | None -> type_error_of g_name ty
   in
   let to_post, pt_required, pt_refs = match tyc_params with
     | TargetPrim (_, refs, path) -> [||], path, refs
@@ -536,40 +544,49 @@ let locate_global_inductive_or_pstring env allow_params qid =
     let pstringn = "strings.pstring.type" in
     let pstringc = "strings.pstring.wrap_string" in
     let pstringw = "strings.pstring.string_wrapper" in
-    if allow_params && Rocqlib.has_ref pstringn
-       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Rocqlib.lib_ref pstringn)
+    if allow_params && Rocqlib.check_ref pstringn (Smartlocate.global_with_alias qid)
     then TargetPrim (Rocqlib.lib_ref pstringw, [Rocqlib.lib_ref pstringc],
                      (Nametab.path_of_global (Rocqlib.lib_ref pstringn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
 
-let q_list () = Rocqlib.lib_ref "core.list.type"
-let q_byte () = Rocqlib.lib_ref "core.byte.type"
-
 let locate_pstring () =
-  Option.map gref (Rocqlib.lib_ref_opt "strings.pstring.type")
+  match Rocqlib.lib_ref_opt "strings.pstring.type" with
+  | None -> []
+  | Some q_pstring ->
+    [ { kind = PString; typ = gref q_pstring }; ]
+
+let locate_bytestring () =
+  match Rocqlib.lib_ref_opt "core.byte.type" with
+  | None -> []
+  | Some q_byte ->
+    let byte_target = { kind = Byte; typ = gref q_byte } in
+    match Rocqlib.lib_ref_opt "core.list.type" with
+    | None -> [ byte_target ]
+    | Some q_list ->
+      let app x y = DAst.make @@ GApp (x,[y]) in
+      [ { kind = ListByte; typ = app (gref q_list) (gref q_byte) };
+        byte_target;
+      ]
 
 let type_error_to f ty =
+  let ppty = pr_qualid ty in
   CErrors.user_err
     (pr_qualid f ++ str " should go from Byte.byte, (list Byte.byte), or PrimString.string to " ++
-     pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ").")
+     ppty ++ str " or (option " ++ ppty ++ str "), or (result " ++ ppty ++ str " _).")
 
 let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
-     str " to T or (option T), where T is either Byte.byte, (list Byte.byte), or PrimString.string.")
+     strbrk " to T or (option T) or (result T _), where T is either Byte.byte, (list Byte.byte), or PrimString.string.")
 
 let vernac_string_notation local ty f g via scope =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let pstring_ty = locate_pstring () in
-  let app x y = DAst.make @@ GApp (x,[y]) in
-  let arrow x y =
-    DAst.make @@ GProd (Anonymous,None,Glob_term.Explicit, x, y)
+  let targets = List.concat [
+      locate_pstring ();
+      locate_bytestring ();
+    ]
   in
-  let opt r = app (gref (q_option ())) r in
-  let cbyte = gref (q_byte ()) in
-  let clist = gref (q_list ()) in
-  let clist_byte = app clist cbyte in
   let ty_name = ty in
   let ty, via =
     match via with None -> ty, via | Some (ty', a) -> ty', Some (ty, a) in
@@ -581,27 +598,15 @@ let vernac_string_notation local ty f g via scope =
   let cty = intern_cref env sigma ty in
   (* Check the type of f *)
   let to_kind =
-    match pstring_ty with
-    | Some pstring when has_type env sigma f (arrow pstring cty) -> PString, Direct
-    | Some pstring when has_type env sigma f (arrow pstring (opt cty)) -> PString, Option
-    | _ ->
-    if has_type env sigma f (arrow clist_byte cty) then ListByte, Direct
-    else if has_type env sigma f (arrow clist_byte (opt cty)) then ListByte, Option
-    else if has_type env sigma f (arrow cbyte cty) then Byte, Direct
-    else if has_type env sigma f (arrow cbyte (opt cty)) then Byte, Option
-    else type_error_to f_name ty
+    match List.find_map (fun target -> is_to_target env sigma f cty target) targets with
+    | Some v -> v
+    | None -> type_error_to f_name ty
   in
   (* Check the type of g *)
   let of_kind =
-    match pstring_ty with
-    | Some pstring when has_type env sigma g (arrow cty pstring) -> PString, Direct
-    | Some pstring when has_type env sigma g (arrow cty (opt pstring)) -> PString, Option
-    | _ ->
-    if has_type env sigma g (arrow cty clist_byte) then ListByte, Direct
-    else if has_type env sigma g (arrow cty (opt clist_byte)) then ListByte, Option
-    else if has_type env sigma g (arrow cty cbyte) then Byte, Direct
-    else if has_type env sigma g (arrow cty (opt cbyte)) then Byte, Option
-    else type_error_of g_name ty
+    match List.find_map (fun target -> is_from_target env sigma g cty target) targets with
+    | Some v -> v
+    | None -> type_error_of g_name ty
   in
   let to_post, pt_required, pt_refs = match tyc_params with
     | TargetPrim (_, refs, path) -> [||], path, refs
