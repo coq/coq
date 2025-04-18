@@ -434,7 +434,7 @@ let () =
 let () =
   define "eval_reduction"
     (reduction @-> constr @-> tac constr)
-    Tac2tactics.eval_fun
+    Tac2tactics.eval_reduction
 
 (** Reduction constructors *)
 

@@ -78,7 +78,7 @@ val mk_native : Tac2types.red_context -> Redexpr.red_expr tactic
 val reduce : Redexpr.red_expr -> clause -> unit tactic
 
 val simpl : GlobRef.t glob_red_flag ->
-  (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
+  Tac2types.red_context -> clause -> unit tactic
 
 val cbv : GlobRef.t glob_red_flag -> clause -> unit tactic
 
@@ -90,17 +90,18 @@ val unfold : (GlobRef.t * occurrences) list -> clause -> unit tactic
 
 val pattern : (constr * occurrences) list -> clause -> unit tactic
 
-val vm : (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
+val vm : Tac2types.red_context -> clause -> unit tactic
 
-val native : (Pattern.constr_pattern * occurrences) option -> clause -> unit tactic
-val eval_fun : Redexpr.red_expr -> constr -> constr tactic
+val native : Tac2types.red_context -> clause -> unit tactic
+
+val eval_reduction : Redexpr.red_expr -> constr -> constr tactic
 
 val eval_red : constr -> constr tactic
 
 val eval_hnf : constr -> constr tactic
 
 val eval_simpl : GlobRef.t glob_red_flag ->
-  (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
+  Tac2types.red_context -> constr -> constr tactic
 
 val eval_cbv : GlobRef.t glob_red_flag -> constr -> constr tactic
 
@@ -114,9 +115,9 @@ val eval_fold : constr list -> constr -> constr tactic
 
 val eval_pattern : (EConstr.t * occurrences) list -> constr -> constr tactic
 
-val eval_vm : (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
+val eval_vm : Tac2types.red_context -> constr -> constr tactic
 
-val eval_native : (Pattern.constr_pattern * occurrences) option -> constr -> constr tactic
+val eval_native : Tac2types.red_context -> constr -> constr tactic
 
 val discriminate : evars_flag -> destruction_arg option -> unit tactic
 
