@@ -11,17 +11,14 @@
 (* If [restore] is false, whenever [f] modifies the ref, we will
    preserve the modification. *)
 let with_modified_ref ?(restore=true) r nf f x =
-  let old_ref = !r in r := nf !r;
-  try
-    let pre = !r in
-    let res = f x in
+  let acquire x = let old_ref = !r in r := nf !r; (old_ref, !r, x) in
+  let release (old_ref, pre, _) =
     (* If r was modified don't restore its old value *)
     if restore || pre == !r then r := old_ref;
-    res
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    r := old_ref;
-    Exninfo.iraise reraise
+    r := old_ref
+  in
+  let scope (old_ref, pre, x) = f x in
+  Memprof_coq.Masking.with_resource ~acquire x ~scope ~release
 
 let with_option o f x = with_modified_ref ~restore:false o (fun _ -> true) f x
 let without_option o f x = with_modified_ref ~restore:false o (fun _ -> false) f x

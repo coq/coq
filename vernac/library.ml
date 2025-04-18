@@ -484,20 +484,20 @@ type 'doc todo_proofs =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
+(* EJGA: would be nice maybe to have a version that performs extra
+   cleanup in the case the computation raises? *)
 let save_library_base f sum lib proofs vmlib =
-  let ch = raw_extern_library f in
+  let open Memprof_coq.Resource_bind in
+  let& ch = Memprof_coq.Masking.with_resource ~acquire:raw_extern_library ~release:ObjFile.close_out f in
   try
     ObjFile.marshal_out_segment ch ~segment:summary_seg sum;
     ObjFile.marshal_out_segment ch ~segment:library_seg lib;
     ObjFile.marshal_out_segment ch ~segment:opaques_seg proofs;
-    ObjFile.marshal_out_segment ch ~segment:vm_seg vmlib;
-    ObjFile.close_out ch
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    ObjFile.close_out ch;
-    Feedback.msg_warning (str "Removed file " ++ str f);
+    ObjFile.marshal_out_segment ch ~segment:vm_seg vmlib
+  with exn ->
+    let iexn = Exninfo.capture exn in
     Sys.remove f;
-    Exninfo.iraise reraise
+    Exninfo.iraise iexn
 
 (* This is the basic vo save structure *)
 let save_library_struct ~output_native_objects dir =

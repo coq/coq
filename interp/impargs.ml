@@ -82,18 +82,11 @@ let is_contextual_implicit_args () = !implicit_args.contextual
 let is_maximal_implicit_args () = !implicit_args.maximal
 
 let with_implicit_protection f x =
-  let oflags = !implicit_args in
-  try
-    let rslt = f x in
-    implicit_args := oflags;
-    rslt
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    let () = implicit_args := oflags in
-    Exninfo.iraise reraise
+  let open Memprof_coq.Resource_bind in
+  let& () = Util.protect_ref implicit_args in
+  f x
 
 type on_trailing_implicit = Error | Info | Silent
-
 
 let msg_trailing_implicit (fail : on_trailing_implicit) na i =
   let pos = match na with
