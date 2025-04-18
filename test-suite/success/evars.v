@@ -433,3 +433,11 @@ Fail Type let x := _ in
        let t := type of x in
        unify x (abs t);
      exact 0).
+
+(* Check that evars are instantiated with least unfolded terms *)
+Module TestFold.
+Structure S := {T : Type}.
+Definition nat' : Type := nat.
+Canonical nat'_S := {| T := nat' |}.
+Check (eq_refl : (fun x => (id x, x)) _ = (nat', T _)).
+End TestFold.
