@@ -385,24 +385,31 @@ object(self)
     let x, y = script#window_to_buffer_coords ~tag:`WIDGET ~x ~y in
     let iter = script#get_iter_at_location ~x ~y in
     if iter#has_tag Tags.Script.tooltip then begin
-      let s : SentenceId.sentence =
-        let rec aux iter =
-          let marks = iter#marks in
-          if marks = [] then aux iter#backward_char
-          else
-            let mem_marks _ _ s =
-              List.exists (fun m ->
-                Gobject.get_oid m =
-                Gobject.get_oid (buffer#get_mark s.start)) marks in
-            try Doc.find document mem_marks
-            with Not_found -> aux iter#backward_char in
-        aux iter in
+      let rec aux iter =
+        let marks = iter#marks in
+        if marks = [] then aux_rec iter#backward_char
+        else
+          let mem_marks _ _ s =
+            List.exists (fun m ->
+              Gobject.get_oid m =
+              Gobject.get_oid (buffer#get_mark s.start)) marks in
+          try Some (Doc.find document mem_marks)
+          with Not_found -> aux_rec iter#backward_char
+      and aux_rec iter =
+        if iter#is_start then None
+        else aux iter
+      in
+      let s : SentenceId.sentence option = aux iter in
+      let ss = match s with
+      | None -> []
+      | Some s ->
       (* The original list of tooltips contains offset that were not
          set up to date if the sentences moved, however the GTK model
          has the up-to-date information in the marks, so we can
          compare and compensate for the shift. *)
-      let offset, _line_shift = offset_compensation script#buffer s in
-      let ss = find_all_tooltips s (iter#offset - offset) in
+        let offset, _line_shift = offset_compensation script#buffer s in
+        find_all_tooltips s (iter#offset - offset)
+      in
       let ss = if ss = [] then Doc.get_errors document else ss in
       let msg = CString.html_escape (String.concat "\n" (CList.uniquize ss)) in
       GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
