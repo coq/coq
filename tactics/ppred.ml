@@ -62,6 +62,8 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern,prvar) keyword = functio
     hov 1 (keyword "lazy" ++ pr_red_flag pr_ref f)
   | Cbn f ->
     hov 1 (keyword "cbn" ++ pr_red_flag pr_ref f)
+  | Kred f ->
+    hov 1 (keyword "kred" ++ pr_red_flag pr_ref f)
   | Unfold l ->
     hov 1 (keyword "unfold" ++ spc() ++
               prlist_with_sep pr_comma (pr_with_occurrences prvar pr_ref keyword) l)

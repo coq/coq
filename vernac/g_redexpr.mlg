@@ -98,6 +98,7 @@ GRAMMAR EXTEND Gram
         d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with ~head:(Option.has_some h) d,po) }
       | IDENT "cbv"; s = strategy_flag -> { Cbv s }
       | IDENT "cbn"; s = strategy_flag -> { Cbn s }
+      | IDENT "kred"; s = strategy_flag -> { Kred s }
       | IDENT "lazy"; s = strategy_flag -> { Lazy s }
       | IDENT "compute"; delta = delta_flag -> { Cbv (all_with ~head:false delta) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }

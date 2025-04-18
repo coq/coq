@@ -10,6 +10,7 @@ Proof.
                    | [ |- forall x : foo, (let (bar) := x in bar) = (let (bar) := x in bar) ] => idtac
                    | [ |- ?G ] => fail 1 G
                    end). (* success *)
+  Unset CbnIsKred.
   repeat cbn; match goal with
                 | [ |- forall x : foo, (let (bar) := x in bar) = (let (bar) := x in bar) ] => idtac
                 | [ |- ?G ] => fail 1 G
