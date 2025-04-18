@@ -33,13 +33,18 @@ let keywords =
 
 let pp_comment s = str "-- " ++ s ++ fnl ()
 let pp_bracket_comment s = str"{- " ++ hov 0 s ++ str" -}"
+let pp_bracket_pragma (Compiler_pragma s) = str"{-# " ++ str s ++ str" #-}"
 
 (* Note: do not shorten [str "foo" ++ fnl ()] into [str "foo\n"],
    the '\n' character interacts badly with the Format boxing mechanism *)
 
-let preamble mod_name comment used_modules usf =
+let preamble mod_name pragmas comment used_modules usf =
   let pp_import mp = str ("import qualified "^ string_of_modfile mp) ++ fnl ()
   in
+  (match pragmas with
+    | None -> mt ()
+    | Some p -> pp_bracket_pragma p ++ fnl2 ())
+  ++
   (if not (usf.magic || usf.tunknown) then mt ()
    else
      str "{-# OPTIONS_GHC -cpp -XMagicHash #-}" ++ fnl () ++

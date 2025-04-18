@@ -77,7 +77,7 @@ let pp_mldummy usf =
     str "let __ = let rec f _ = Obj.repr f in Obj.repr f" ++ fnl ()
   else mt ()
 
-let preamble _ comment used_modules usf =
+let preamble _ _ comment used_modules usf =
   pp_header_comment comment ++
   then_nl (prlist pp_open used_modules) ++
   then_nl (pp_tdummy usf ++ pp_mldummy usf)

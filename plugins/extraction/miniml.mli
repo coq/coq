@@ -199,6 +199,8 @@ type unsafe_needs = {
   magic : bool
 }
 
+type compiler_pragma = Compiler_pragma of string
+
 type language_descr = {
   keywords : Id.Set.t;
 
@@ -207,7 +209,8 @@ type language_descr = {
   file_naming : ModPath.t -> string;
   (* the second argument is a comment to add to the preamble *)
   preamble :
-    Id.t -> Pp.t option -> ModPath.t list -> unsafe_needs ->
+    Id.t -> compiler_pragma option ->
+      Pp.t option -> ModPath.t list -> unsafe_needs ->
     Pp.t;
   pp_struct : ml_structure -> Pp.t;
 
