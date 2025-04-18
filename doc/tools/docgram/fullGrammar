@@ -728,11 +728,6 @@ hint: [
 | "Extern" natural OPT Constr.constr_pattern "=>" generic_tactic
 ]
 
-constr_body: [
-| ":=" lconstr
-| ":" lconstr ":=" lconstr
-]
-
 mode: [
 | LIST1 [ "+" | "!" | "-" ]
 ]

@@ -153,7 +153,6 @@ module Prim :
     val univ_decl : universe_decl_expr Entry.t
     val ident_decl : ident_decl Entry.t
     val pattern_ident : lident Entry.t
-    val base_ident : Id.t Entry.t
     val bignat : string Entry.t
     val natural : int Entry.t
     val bigint : string Entry.t

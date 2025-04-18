@@ -12,11 +12,8 @@ DECLARE GLOBAL PLUGIN
 
 {
 
-open Constrexpr
 open Vernacexpr
 open Hints
-
-module C = Constr
 
 open Procq
 open Procq.Prim
@@ -140,10 +137,6 @@ GRAMMAR EXTEND Gram
         { Vernacexpr.HintsExtern (n,c, tac) }
   ] ]
     ;
-  constr_body:
-    [ [ ":="; c = lconstr -> { c }
-      | ":"; t = lconstr; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,Some C.DEFAULTcast, t) } ] ]
-  ;
   mode:
     [ [ l = LIST1 [ "+" -> { ModeInput }
                   | "!" -> { ModeNoHeadEvar }
