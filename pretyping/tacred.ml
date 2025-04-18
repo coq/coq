@@ -622,10 +622,6 @@ let match_eval_ref_value env sigma constr stack =
       Some (EConstr.of_constr (constant_value_in env (sp, u)))
     else
       None
-  | Proj (p, r, c) when not (Projection.unfolded p) ->
-     if is_evaluable env (EvalProjectionRef (Projection.repr p)) then
-       Some (mkProj (Projection.unfold p, r, c))
-     else None
   | Var id when is_evaluable env (EvalVarRef id) ->
      env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
@@ -846,12 +842,11 @@ and whd_simpl_stack infos env sigma =
         end
       | Proj (p, r, c) ->
         let ans =
-           let unf = Projection.unfolded p in
-           if unf || is_evaluable env (EvalProjectionRef (Projection.repr p)) then
+           if is_evaluable env (EvalProjectionRef (Projection.repr p)) then
              let npars = Projection.npars p in
-             match unf, ReductionBehaviour.get_from_db infos.red_behavior (Projection.constant p) with
-              | false, Some NeverUnfold -> NotReducible
-              | false, Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
+             match ReductionBehaviour.get_from_db infos.red_behavior (Projection.constant p) with
+              | Some NeverUnfold -> NotReducible
+              | Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
                 when not (List.is_empty recargs) ->
                 let l' = List.map_filter (fun i ->
                     let idx = (i - (npars + 1)) in
@@ -1102,6 +1097,11 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
   in app_stack (redrec (c, empty_stack))
 *)
 
+let is_constant_associated_to_projection env sigma constr p =
+  match EConstr.kind sigma constr with
+  | Const (c', _) -> QConstant.equal env (Projection.constant p) c'
+  | _ -> false
+
 (* Same as [whd_simpl] but also reduces constants that do not hide a
    reducible fix, but does this reduction of constants only until it
    immediately hides a non reducible fix or a cofix *)
@@ -1114,10 +1114,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
     | Some c ->
       (match EConstr.kind sigma (snd (decompose_lambda sigma c)) with
       | CoFix _ | Fix _ -> s'
-      | Proj (p,_,t) when
-          (match EConstr.kind sigma constr with
-          | Const (c', _) -> QConstant.equal env (Projection.constant p) c'
-          | _ -> false) ->
+      | Proj (p, _, t) when is_constant_associated_to_projection env sigma constr p ->
         let npars = Projection.npars p in
           if List.length stack <= npars then
             (* Do not show the eta-expanded form *)
