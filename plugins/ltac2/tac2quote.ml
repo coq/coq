@@ -568,25 +568,69 @@ let of_assertion {loc;v=ast} = match ast with
   let c = of_constr c in
   std_constructor ?loc "AssertValue" [id; c]
 
+open Tac2types
+
+exception InvalidFormat
+
+let parse_format (s : string) : format list =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  let rec parse i accu =
+    if len <= i then accu
+    else match s.[i] with
+    | '%' -> parse_argument (i + 1) accu
+    | _ ->
+      let i' = parse_literal i in
+      if Int.equal i i' then parse i' accu
+      else
+        let lit = Buffer.contents buf in
+        let () = Buffer.clear buf in
+        parse i' (FmtLiteral lit :: accu)
+  and parse_literal i =
+    if len <= i then i
+    else match s.[i] with
+    | '%' -> i
+    | c ->
+      let () = Buffer.add_char buf c in
+      parse_literal (i + 1)
+  and parse_argument i accu =
+    if len <= i then raise InvalidFormat
+    else match s.[i] with
+    | '%' -> parse (i + 1) (FmtLiteral "%" :: accu)
+    | 's' -> parse (i + 1) (FmtString :: accu)
+    | 'i' -> parse (i + 1) (FmtInt :: accu)
+    | 'I' -> parse (i + 1) (FmtIdent :: accu)
+    | 'm' -> parse (i + 1) (FmtMessage :: accu)
+    | 't' -> parse (i + 1) (FmtConstr :: accu)
+    | 'a' -> parse (i + 1) (FmtAlpha :: accu)
+    | 'A' -> parse (i + 1) (FmtAlpha0 :: accu)
+    | _ -> raise InvalidFormat
+  in
+  parse 0 []
+
 let of_format accu = function
-| Tac2print.FmtString ->
+| FmtString ->
   CAst.make @@ CTacApp (global_ref (kername format_prefix "string"), [accu])
-| Tac2print.FmtInt ->
+| FmtInt ->
   CAst.make @@ CTacApp (global_ref (kername format_prefix "int"), [accu])
-| Tac2print.FmtConstr ->
+| FmtConstr ->
   CAst.make @@ CTacApp (global_ref (kername format_prefix "constr"), [accu])
-| Tac2print.FmtIdent ->
+| FmtIdent ->
   CAst.make @@ CTacApp (global_ref (kername format_prefix "ident"), [accu])
-| Tac2print.FmtLiteral lit ->
+| FmtLiteral lit ->
   let s = of_string (CAst.make lit) in
   CAst.make @@ CTacApp (global_ref (kername format_prefix "literal"), [s; accu])
-| Tac2print.FmtAlpha ->
+| FmtAlpha ->
   CAst.make @@ CTacApp (global_ref (kername format_prefix "alpha"), [accu])
+| FmtAlpha0 ->
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "alpha0"), [accu])
+| FmtMessage ->
+  CAst.make @@ CTacApp (global_ref (kername format_prefix "message"), [accu])
 
 let of_format { v = fmt; loc } =
   let fmt =
-    try Tac2print.parse_format fmt
-    with Tac2print.InvalidFormat ->
+    try parse_format fmt
+    with InvalidFormat ->
       CErrors.user_err ?loc (str "Invalid format")
   in
   let stop = global_ref (kername format_prefix "stop") in

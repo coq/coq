@@ -94,3 +94,13 @@ type rewriting =
 type assertion =
 | AssertType of intro_pattern option * constr * unit thunk option
 | AssertValue of Id.t * constr
+
+type format =
+| FmtString
+| FmtInt
+| FmtConstr
+| FmtIdent
+| FmtLiteral of string
+| FmtAlpha
+| FmtAlpha0
+| FmtMessage

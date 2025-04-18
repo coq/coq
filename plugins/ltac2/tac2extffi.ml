@@ -41,3 +41,7 @@ let to_constr_with_bindings v = match Value.to_tuple v with
 | _ -> assert false
 
 let constr_with_bindings = make_to_repr to_constr_with_bindings
+
+let val_format = Tac2dyn.Val.create "format"
+
+let format = repr_ext val_format

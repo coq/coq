@@ -60,19 +60,3 @@ val pr_valexpr : Environ.env -> Evd.evar_map -> valexpr -> 'a glb_typexpr -> Pp.
 val int_name : unit -> (int -> string)
 (** Create a function that give names to integers. The names are generated on
     the fly, in the order they are encountered. *)
-
-(** {5 Ltac2 primitives}*)
-
-type format =
-| FmtString
-| FmtInt
-| FmtConstr
-| FmtIdent
-| FmtLiteral of string
-| FmtAlpha
-
-val val_format : format list Tac2dyn.Val.tag
-
-exception InvalidFormat
-
-val parse_format : string -> format list

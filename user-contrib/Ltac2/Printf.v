@@ -30,9 +30,12 @@ Require Import Ltac2.Message.
   - << i >>: takes an argument of type int and behaves as Message.of_int
   - << I >>: takes an argument of type ident and behaves as Message.of_ident
   - << s >>: takes an argument of type string and behaves as Message.of_string
+  - << m >>: takes an argument of type message and prints it unmodified
   - << t >>: takes an argument of type constr and behaves as Message.of_constr
   - << a >>: takes two arguments << f >> of type << (unit -> 'a -> message) >>
              and << x >> of type << 'a >> and behaves as << f () x >>
+  - << A >>: takes two arguments << f >> of type << ('a -> message) >>
+             and << x >> of type << 'a >> and behaves as << f x >>
   - << % >>: outputs << % >> verbatim
 
   TODO: add printing modifiers.

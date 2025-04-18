@@ -908,55 +908,6 @@ let () =
   in
   register_val_printer kn { val_printer }
 
-(** {5 Ltac2 primitive} *)
-
-type format =
-| FmtString
-| FmtInt
-| FmtConstr
-| FmtIdent
-| FmtLiteral of string
-| FmtAlpha
-
-let val_format = Tac2dyn.Val.create "format"
-
-exception InvalidFormat
-
-let parse_format (s : string) : format list =
-  let len = String.length s in
-  let buf = Buffer.create len in
-  let rec parse i accu =
-    if len <= i then accu
-    else match s.[i] with
-    | '%' -> parse_argument (i + 1) accu
-    | _ ->
-      let i' = parse_literal i in
-      if Int.equal i i' then parse i' accu
-      else
-        let lit = Buffer.contents buf in
-        let () = Buffer.clear buf in
-        parse i' (FmtLiteral lit :: accu)
-  and parse_literal i =
-    if len <= i then i
-    else match s.[i] with
-    | '%' -> i
-    | c ->
-      let () = Buffer.add_char buf c in
-      parse_literal (i + 1)
-  and parse_argument i accu =
-    if len <= i then raise InvalidFormat
-    else match s.[i] with
-    | '%' -> parse (i + 1) (FmtLiteral "%" :: accu)
-    | 's' -> parse (i + 1) (FmtString :: accu)
-    | 'i' -> parse (i + 1) (FmtInt :: accu)
-    | 'I' -> parse (i + 1) (FmtIdent :: accu)
-    | 't' -> parse (i + 1) (FmtConstr :: accu)
-    | 'a' -> parse (i + 1) (FmtAlpha :: accu)
-    | _ -> raise InvalidFormat
-  in
-  parse 0 []
-
-
 let pr_profile_frame = let open Pp in function
   | FrAnon e -> str "<fun " ++ pr_glbexpr ~avoid:Id.Set.empty e ++ str ">"
   | FrLtac kn -> pr_tacref Id.Set.empty kn
