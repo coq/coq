@@ -66,7 +66,7 @@ let to_red_strength = function
   | ValInt 1 -> Head
   | _ -> assert false
 
-let to_red_flag v = match Value.to_tuple v with
+let to_red_flag v : Tac2types.red_flag = match Value.to_tuple v with
 | [| strength; beta; iota; fix; cofix; zeta; delta; const |] ->
   {
     rStrength = to_red_strength strength;
@@ -82,11 +82,13 @@ let to_red_flag v = match Value.to_tuple v with
 
 let red_flags = make_to_repr to_red_flag
 
-let pattern_with_occs = pair pattern occurrences
-
 let constr_with_occs = pair constr occurrences
 
 let reference_with_occs = pair reference occurrences
+
+let to_red_context = to_option (to_pair to_pattern to_occurrences)
+
+let red_context = make_to_repr to_red_context
 
 let rec to_intro_pattern v = match Value.to_block v with
 | (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
@@ -340,7 +342,7 @@ let () =
 
 let () =
   define "tac_simpl"
-    (red_flags @-> option pattern_with_occs @-> clause @-> tac unit)
+    (red_flags @-> red_context @-> clause @-> tac unit)
     Tac2tactics.simpl
 
 let () =
@@ -369,12 +371,12 @@ let () =
 
 let () =
   define "tac_vm"
-    (option pattern_with_occs @-> clause @-> tac unit)
+    (red_context @-> clause @-> tac unit)
     Tac2tactics.vm
 
 let () =
   define "tac_native"
-    (option pattern_with_occs @-> clause @-> tac unit)
+    (red_context @-> clause @-> tac unit)
     Tac2tactics.native
 
 (** Reduction functions *)
@@ -385,7 +387,7 @@ let () = define "eval_hnf" (constr @-> tac constr) Tac2tactics.eval_hnf
 
 let () =
   define "eval_simpl"
-    (red_flags @-> option pattern_with_occs @-> constr @-> tac constr)
+    (red_flags @-> red_context @-> constr @-> tac constr)
     Tac2tactics.eval_simpl
 
 let () =
@@ -414,12 +416,12 @@ let () =
 
 let () =
   define "eval_vm"
-    (option pattern_with_occs @-> constr @-> tac constr)
+    (red_context @-> constr @-> tac constr)
     Tac2tactics.eval_vm
 
 let () =
   define "eval_native"
-    (option pattern_with_occs @-> constr @-> tac constr)
+    (red_context @-> constr @-> tac constr)
     Tac2tactics.eval_native
 
 let () =
