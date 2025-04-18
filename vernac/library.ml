@@ -26,55 +26,6 @@ let raw_intern_library ?loc f =
    (fun file -> ObjFile.open_in ~file) f
 
 (************************************************************************)
-(** Serialized objects loaded on-the-fly *)
-
-exception Faulty of string
-
-module Delayed :
-sig
-
-type 'a delayed
-val in_delayed : string -> ObjFile.in_handle -> segment:'a ObjFile.id -> 'a delayed * Digest.t
-val fetch_delayed : 'a delayed -> 'a
-
-end =
-struct
-
-type 'a delayed = {
-  del_file : string;
-  del_off : int64;
-  del_digest : Digest.t;
-}
-
-let in_delayed f ch ~segment =
-  let seg = ObjFile.get_segment ch ~segment in
-  let digest = seg.ObjFile.hash in
-  { del_file = f; del_digest = digest; del_off = seg.ObjFile.pos; }, digest
-
-(** Fetching a table of opaque terms at position [pos] in file [f],
-    expecting to find first a copy of [digest]. *)
-
-let fetch_delayed del =
-  let { del_digest = digest; del_file = f; del_off = pos; } = del in
-  let ch = open_in_bin f in
-  let obj, digest' =
-    try
-      let () = LargeFile.seek_in ch pos in
-      let obj = System.marshal_in f ch in
-      let digest' = Digest.input ch in
-      obj, digest'
-    with e -> close_in ch; raise e
-  in
-  close_in ch;
-  if not (String.equal digest digest') then raise (Faulty f);
-  obj
-
-end
-
-open Delayed
-
-
-(************************************************************************)
 (*s Modules on disk contain the following informations (after the magic
     number, and before the digest). *)
 
@@ -174,33 +125,14 @@ let loaded_libraries () = List.map snd !libraries_loaded_list
 
 (** Delayed / available tables of opaque terms *)
 
-type table_status =
-  | ToFetch of Opaques.opaque_disk delayed
-  | Fetched of Opaques.opaque_disk
-
 let opaque_tables =
-  ref (DPmap.empty : table_status DPmap.t)
+  ref (DPmap.empty : Opaques.opaque_disk ObjFile.Delayed.t DPmap.t)
 
 let add_opaque_table dp st =
   opaque_tables := DPmap.add dp st !opaque_tables
 
-let access_table what tables dp i =
-  let t = match DPmap.find dp !tables with
-    | Fetched t -> t
-    | ToFetch f ->
-      let dir_path = Names.DirPath.to_string dp in
-      Flags.if_verbose Feedback.msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
-      let t =
-        try fetch_delayed f
-        with Faulty f ->
-          user_err
-            (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
-             str ") is corrupted,\ncannot load some " ++
-             str what ++ str " in it.\n")
-      in
-      tables := DPmap.add dp (Fetched t) !tables;
-      t
-  in
+let access_table tables dp i =
+  let t = ObjFile.Delayed.eval ~verbose:(not !Flags.quiet) (DPmap.get dp !tables) in
   Opaques.get_opaque_disk i t
 
 let access_opaque_table o =
@@ -208,9 +140,7 @@ let access_opaque_table o =
   let ans =
     if DirPath.equal dp (Global.current_dirpath ()) then
       Opaques.get_current_opaque i
-    else
-      let what = "opaque proofs" in
-      access_table what opaque_tables dp i
+    else access_table opaque_tables dp i
   in
   match ans with
   | None -> None
@@ -242,7 +172,7 @@ let mk_library sd md digests vm =
   }
 
 let mk_intern_library sum lib digest_lib proofs vm =
-  add_opaque_table sum.md_name (ToFetch proofs);
+  add_opaque_table sum.md_name proofs;
   let open Safe_typing in
   mk_library sum lib (Dvo_or_vi digest_lib) vm
 
@@ -265,7 +195,7 @@ let intern_from_file file =
   let ch = raw_intern_library file in
   let lsd, digest_lsd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
   let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:library_seg in
-  let del_opaque, _ = in_delayed file ch ~segment:opaques_seg in
+  let del_opaque = ObjFile.Delayed.make ~file ~what:(Some "opaque proofs") ~whatfor:(DirPath.to_string lsd.md_name) ch ~segment:opaques_seg in
   let vmlib = Vmlibrary.load lsd.md_name ~file ch in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:lsd.md_ocaml ~file;
