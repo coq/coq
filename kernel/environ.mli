@@ -128,7 +128,7 @@ val push_named_context : Constr.named_context -> env -> env
 val push_named_context_val  :
     Constr.named_declaration -> named_context_val -> named_context_val
 
-
+val mem_named_context_val : Id.t -> named_context_val -> bool
 
 (** Looks up in the context of local vars referred by names ([named_context])
    raises [Not_found] if the Id.t is not found *)

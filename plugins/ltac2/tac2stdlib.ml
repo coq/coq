@@ -379,47 +379,47 @@ let () =
 
 (** Reduction functions *)
 
-let () = define "eval_red" (constr @-> tac constr) Tac2tactics.eval_red
+let () = define "eval_red_in" (local_env @-> constr @-> tac constr) Tac2tactics.eval_red
 
-let () = define "eval_hnf" (constr @-> tac constr) Tac2tactics.eval_hnf
+let () = define "eval_hnf_in" (local_env @-> constr @-> tac constr) Tac2tactics.eval_hnf
 
 let () =
-  define "eval_simpl"
-    (red_flags @-> option pattern_with_occs @-> constr @-> tac constr)
+  define "eval_simpl_in"
+    (local_env @-> red_flags @-> option pattern_with_occs @-> constr @-> tac constr)
     Tac2tactics.eval_simpl
 
 let () =
-  define "eval_cbv" (red_flags @-> constr @-> tac constr) Tac2tactics.eval_cbv
+  define "eval_cbv_in" (local_env @-> red_flags @-> constr @-> tac constr) Tac2tactics.eval_cbv
 
 let () =
-  define "eval_cbn" (red_flags @-> constr @-> tac constr) Tac2tactics.eval_cbn
+  define "eval_cbn_in" (local_env @-> red_flags @-> constr @-> tac constr) Tac2tactics.eval_cbn
 
 let () =
-  define "eval_lazy" (red_flags @-> constr @-> tac constr) Tac2tactics.eval_lazy
+  define "eval_lazy_in" (local_env @-> red_flags @-> constr @-> tac constr) Tac2tactics.eval_lazy
 
 let () =
-  define "eval_unfold"
-    (list reference_with_occs @-> constr @-> tac constr)
+  define "eval_unfold_in"
+    (local_env @-> list reference_with_occs @-> constr @-> tac constr)
     Tac2tactics.eval_unfold
 
 let () =
-  define "eval_fold"
-    (list constr @-> constr @-> tac constr)
+  define "eval_fold_in"
+    (local_env @-> list constr @-> constr @-> tac constr)
     Tac2tactics.eval_fold
 
 let () =
-  define "eval_pattern"
-    (list constr_with_occs @-> constr @-> tac constr)
+  define "eval_pattern_in"
+    (local_env @-> list constr_with_occs @-> constr @-> tac constr)
     Tac2tactics.eval_pattern
 
 let () =
-  define "eval_vm"
-    (option pattern_with_occs @-> constr @-> tac constr)
+  define "eval_vm_in"
+    (local_env @-> option pattern_with_occs @-> constr @-> tac constr)
     Tac2tactics.eval_vm
 
 let () =
-  define "eval_native"
-    (option pattern_with_occs @-> constr @-> tac constr)
+  define "eval_native_in"
+    (local_env @-> option pattern_with_occs @-> constr @-> tac constr)
     Tac2tactics.eval_native
 
 let () =

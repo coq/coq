@@ -169,17 +169,45 @@ Ltac2 @ external pattern : (constr * occurrences) list -> clause -> unit := "roc
 Ltac2 @ external vm : (pattern * occurrences) option -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_vm".
 Ltac2 @ external native : (pattern * occurrences) option -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_native".
 
-Ltac2 @ external eval_red : constr -> constr := "rocq-runtime.plugins.ltac2" "eval_red".
-Ltac2 @ external eval_hnf : constr -> constr := "rocq-runtime.plugins.ltac2" "eval_hnf".
-Ltac2 @ external eval_simpl : red_flags -> (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_simpl".
-Ltac2 @ external eval_cbv : red_flags -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_cbv".
-Ltac2 @ external eval_cbn : red_flags -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_cbn".
-Ltac2 @ external eval_lazy : red_flags -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_lazy".
-Ltac2 @ external eval_unfold : (reference * occurrences) list -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_unfold".
-Ltac2 @ external eval_fold : constr list -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_fold".
-Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_pattern".
-Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_vm".
-Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_native".
+Local Ltac2 @external current_env : unit -> env := "rocq-runtime.plugins.ltac2" "current_env".
+(** Get around dependency cycle with Env. *)
+
+Ltac2 @external eval_red_in : env -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_red_in".
+Ltac2 eval_red (c : constr) : constr := eval_red_in (current_env()) c.
+Ltac2 @external eval_hnf_in : env -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_hnf_in".
+Ltac2 eval_hnf (c : constr) : constr := eval_hnf_in (current_env()) c.
+Ltac2 @external eval_simpl_in : env -> red_flags -> (pattern * occurrences) option -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_simpl_in".
+Ltac2 eval_simpl (flags : red_flags) (where_ : (pattern * occurrences) option) (c : constr) : constr
+  := eval_simpl_in (current_env()) flags where_ c.
+Ltac2 @external eval_cbv_in : env -> red_flags -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_cbv_in".
+Ltac2 eval_cbv (flags : red_flags) (c : constr) : constr := eval_cbv_in (current_env()) flags c.
+Ltac2 @external eval_cbn_in : env -> red_flags -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_cbn_in".
+Ltac2 eval_cbn (flags : red_flags) (c : constr) : constr := eval_cbn_in (current_env()) flags c.
+Ltac2 @external eval_lazy_in : env -> red_flags -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_lazy_in".
+Ltac2 eval_lazy (flags : red_flags) (c : constr) : constr := eval_lazy_in (current_env()) flags c.
+Ltac2 @external eval_unfold_in : env -> (reference * occurrences) list -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_unfold_in".
+Ltac2 eval_unfold (occs : (reference * occurrences) list) (c : constr) : constr
+  := eval_unfold_in (current_env()) occs c.
+Ltac2 @external eval_fold_in : env -> constr list -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_fold_in".
+Ltac2 eval_fold (cl : constr list) (c : constr) : constr := eval_fold_in (current_env()) cl c.
+Ltac2 @external eval_pattern_in : env -> (constr * occurrences) list -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_pattern_in".
+Ltac2 eval_pattern (where_ : (constr * occurrences) list) (c : constr) : constr
+  := eval_pattern_in (current_env()) where_ c.
+Ltac2 @external eval_vm_in : env -> (pattern * occurrences) option -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_vm_in".
+Ltac2 eval_vm (where_ : (pattern * occurrences) option) (c : constr) : constr
+  := eval_vm_in (current_env()) where_ c.
+Ltac2 @external eval_native_in : env -> (pattern * occurrences) option -> constr -> constr
+  := "rocq-runtime.plugins.ltac2" "eval_native_in".
+Ltac2 eval_native (where_ : (pattern * occurrences) option) (c : constr) : constr
+  := eval_native_in (current_env()) where_ c.
 
 Ltac2 @ external change : pattern option -> (constr array -> constr) -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_change".
 

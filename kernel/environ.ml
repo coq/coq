@@ -160,8 +160,11 @@ let set_rel_context_val v env =
 
 (* Named context *)
 
+let mem_named_context_val id ctxt =
+  Id.Map.mem id ctxt.env_named_map
+
 let push_named_context_val d ctxt =
-(*   assert (not (Id.Map.mem (NamedDecl.get_id d) ctxt.env_named_map)); *)
+(*   assert (not (mem_named_context_val (NamedDecl.get_id d) ctxt)); *)
   {
     env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
     env_named_map = Id.Map.add (NamedDecl.get_id d) d ctxt.env_named_map;

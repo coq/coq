@@ -896,6 +896,12 @@ let () = register_init "err" begin fun _ _ e ->
   hov 2 (str "err:(" ++ CErrors.iprint_no_report e ++ str ")")
 end
 
+let () = register_init "env" begin fun env sigma v ->
+  let v = to_local_env v in
+  let env = Environ.reset_with_named_context v env in
+  hov 2 (str "[" ++ Printer.pr_named_context_of env sigma ++ str "]")
+end
+
 let () =
   let kn = KerName.make Tac2env.rocq_prefix (Label.make "array") in
   let val_printer env sigma v arg = match arg with

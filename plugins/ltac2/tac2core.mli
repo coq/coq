@@ -35,7 +35,10 @@ end
 
 val throw : ?info:Exninfo.info -> exn -> 'a Proofview.tactic
 
+val pf_apply_in : ?catch_exceptions:bool -> Environ.named_context_val -> (Environ.env -> Evd.evar_map -> 'a Proofview.tactic) -> 'a Proofview.tactic
+
 val pf_apply : ?catch_exceptions:bool -> (Environ.env -> Evd.evar_map -> 'a Proofview.tactic) -> 'a Proofview.tactic
+[@@deprecated "Prefer taking a local_env and using pf_apply_in"]
 
 module type MapType = sig
   (** to have less boilerplate we use S.elt rather than declaring a toplevel type t *)

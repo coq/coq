@@ -214,6 +214,12 @@ val of_pstring : Pstring.t -> valexpr
 val to_pstring : valexpr -> Pstring.t
 val pstring : Pstring.t repr
 
+type local_env = Environ.named_context_val
+
+val of_local_env : local_env -> valexpr
+val to_local_env : valexpr -> local_env
+val local_env : local_env repr
+
 type ('a, 'b) fun1
 
 val app_fun1 : ('a, 'b) fun1 -> 'a repr -> 'b repr -> 'a -> 'b Proofview.tactic

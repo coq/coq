@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
+Require Ltac2.Env.
 
 Ltac2 @ external print : message -> unit := "rocq-runtime.plugins.ltac2" "print".
 
@@ -20,7 +21,9 @@ Ltac2 @ external of_int : int -> message := "rocq-runtime.plugins.ltac2" "messag
 
 Ltac2 @ external of_ident : ident -> message := "rocq-runtime.plugins.ltac2" "message_of_ident".
 
-Ltac2 @ external of_constr : constr -> message := "rocq-runtime.plugins.ltac2" "message_of_constr".
+Ltac2 @external of_constr_in : env -> constr -> message := "rocq-runtime.plugins.ltac2" "message_of_constr_in".
+
+Ltac2 of_constr (c : constr) : message := of_constr_in (Env.current_env()) c.
 (** Panics if there is more than one goal under focus. *)
 
 Ltac2 @ external of_exn : exn -> message := "rocq-runtime.plugins.ltac2" "message_of_exn".
@@ -88,8 +91,12 @@ Ltac2 @ external literal : string -> ('a, 'b, 'c, 'd) format ->
 Ltac2 @ external alpha : ('a, 'b, 'c, 'd) format ->
   (('b -> 'r -> 'c) -> 'r -> 'a, 'b, 'c, 'd) format := "rocq-runtime.plugins.ltac2" "format_alpha".
 
-Ltac2 @ external kfprintf : (message -> 'r) -> ('a, unit, message, 'r) format -> 'a :=
-  "rocq-runtime.plugins.ltac2" "format_kfprintf".
+Ltac2 @external kfprintf_in : (unit -> env) -> (message -> 'r) -> ('a, unit, message, 'r) format -> 'a :=
+  "rocq-runtime.plugins.ltac2" "format_kfprintf_in".
+(** The environment closure is only applied if the format contains "%t" *)
+
+Ltac2 kfprintf (k : (message -> 'r)) (fmt : ('a, unit, message, 'r) format) : 'a :=
+  kfprintf_in Env.current_env k fmt.
 
 Ltac2 @ external ikfprintf : ('v -> 'r) -> 'v -> ('a, unit, 'v, 'r) format -> 'a :=
   "rocq-runtime.plugins.ltac2" "format_ikfprintf".
