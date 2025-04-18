@@ -31,6 +31,8 @@ module type S = sig
   type 'c pattern
   type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
+  type ast
+
   (** Type combinators to factor the module type between explicit
       state passing in Grammar and global state in Procq *)
 

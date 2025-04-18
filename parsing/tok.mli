@@ -48,8 +48,12 @@ val token_text : 'c p -> string
     without delimiters. Eg `{{{ text }}}` -> Some '{', ` text ` *)
 val trim_quotation : string -> char option * string
 
+type ast
+
+val ast_to_string : ast -> string
+
 (** for camlp5,
     eg [GRAMMAR EXTEND ..... [ IDENT "x" -> .... ] END]
     is a pattern (PIDENT (Some "x"))
 *)
-val match_pattern : 'c p -> t -> 'c
+val match_pattern : 'c p -> t -> ast * 'c
