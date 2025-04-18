@@ -318,7 +318,7 @@ following command.
    instances by the variables of the section (and possibly hypotheses
    used in the proofs of instance declarations) but not to export them in
    the rest of the development for proof search. One can use the
-   cmd:`Existing Instance` command to do so outside the section, using the name of the
+   :cmd:`Existing Instance` command to do so outside the section, using the name of the
    declared morphism suffixed by ``_Morphism``, or use the ``Global`` modifier
    for the corresponding class instance declaration
    (see :ref:`First Class Setoids and Morphisms <first-class-setoids-and-morphisms>`) at
@@ -509,15 +509,25 @@ is equivalent to an instance declaration:
 
 The declaration itself amounts to the definition of an object of the record type
 ``Stdlib.Classes.RelationClasses.Equivalence`` and a hint added to the
-of a typeclass named ``Proper``` defined in ``Classes.Morphisms``. See the
-documentation on :ref:`typeclasses` and the theories files in Classes for
-further explanations.
+typeclass instances database. See the documentation on :ref:`typeclasses`
+and the theories files in ``Stdlib.Classes`` for further explanations.
 
 One can inform the rewrite tactic about morphisms and relations just
 by using the typeclass mechanism to declare them using the :cmd:`Instance` and
 :cmd:`Context` commands. Any object of type ``Proper`` (the type of
 morphism declarations) in the local context will also be automatically
 used by the rewriting tactic to solve constraints.
+
+.. example:: Instance declaration for Proper
+
+   The `union` morphism from the example above can also be declared succinctly using:
+
+   .. rocqtop:: in
+
+      Require Import Relation_Definitions RelationClasses Morphisms.
+
+      Instance Proper_union A : Proper (@eq_set A ==> @eq_set A ==> @eq_set A) (@union A).
+      Proof. exact (@union_compat A). Qed.
 
 Other representations of first class setoids and morphisms can also be
 handled by encoding them as records. In the following example, the
@@ -616,6 +626,125 @@ to replace a term in a context because the latter is not a composition
 of morphisms, this command can be useful to understand
 what additional morphisms should be registered.
 
+.. _debugging_resolution_issues:
+
+Understanding and fixing failed resolutions
+-------------------------------------------
+
+.. flag:: Rewrite Output Constraints
+
+   Generalized rewriting relies on proof-search to find the congruence lemmas necessary
+   to prove that a rewriting is valid. Oftentimes, one forgets to add a ``Proper`` declaration
+   and is faced with a whole resolution failure involving many constraints. To help with
+   understanding the failed search, one can use the :flag:`Rewrite Output Constraints` flag.
+   This flag changes the behavior of :tacn:`setoid_rewrite` to produce the set of unsatisfied
+   typeclass constraints when they cannot be resolved automatically, instead of failing with an
+   error.
+
+A typical workflow for fixing a failing resolution will hence go like this:
+
+.. example:: Understanding a resolution failure
+
+   .. rocqtop:: in reset
+
+      Require Import Relation_Definitions RelationClasses Morphisms.
+
+      Parameter A : Type.
+      Fixpoint In (a : A) (s : list A) {struct s} : Prop :=
+        match s with
+        | nil => False
+        | cons b s' => a = b \/ In a s'
+        end.
+
+      Definition same (s t : list A) : Prop := forall a : A, In a s <-> In a t.
+
+      Parameter same_equiv : Equivalence same.
+      #[local] Existing Instance same_equiv.
+
+   We suppose we are in a context with some relations over which we want to perform generalized rewriting,
+   here the notion `same` on lists which we assume is an equivalence. We want to prove a goal involving
+   `In` and `same`:
+
+   .. rocqtop:: all
+
+      Goal forall (x : A) xs xs', same xs xs' -> In x xs -> In x xs'.
+      Proof.
+        intros x xs xs' hin.
+
+   .. rocqtop:: all
+
+        Fail rewrite hin.
+
+   The proof-search involves three instances, to find out which is missing, lets switch to
+   debug mode.
+
+   .. rocqtop:: all
+
+      Set Rewrite Output Constraints.
+      rewrite hin.
+
+   This produces new subgoals corresponding to the constraints to solve. Beware that the exact
+   order of the produced goals is unspecified, so one should not rely on it. There are dependent
+   subgoals `?r` and `?r0` for relations to infer. We can use :tacn:`shelve_unifiable` so
+   that these dependent existential variables for unknown relations are not considered as goals:
+   typeclass resolution should infer them during resolution of the `Proper` constraints instead.
+
+   .. rocqtop:: all
+
+      2-6: shelve_unifiable.
+
+   Note, we could have just `;`-chained the :tacn:`shelve_unifiable` tactic with the `rewrite hin` tactic
+   to obtain the same result.
+
+   We can now debug the proof search. The :tacn:`setoid_rewrite` tactic is internally calling typeclass resolution
+   on all the constraint subgoals together, which fails. :tacn:`typeclasses eauto` is a multigoal tactic, so when
+   launched on all goals it still fails.
+
+   .. rocqtop:: all
+
+      Fail 2-4: typeclasses eauto.
+
+   We can however also try to launch *independent* typeclass resolutions on each constraint to see which
+   constraint has no solution. The :tacn:`try` tactical is focusing on each goal in sequence, hence the
+   :tacn:`typeclasses eauto` calls are now performed more independently on the three goals.
+   The later calls are still affected by instantiations of existential variables by successful
+   resolutions in previous goals.
+
+   .. rocqtop:: all
+
+      2-4:try typeclasses eauto.
+
+   Here it shows that no instance can be found for the `In` constant, but the last two goals have been solved,
+   instantiating all the existential variables. The full search would be solvable if
+   we had an instance for `Proper (same ==> Basics.impl) (In x)`. Adding the required instance indeed results
+   in a successful rewrite. Let's rollback before the `Goal` and declare it:
+
+   .. rocqtop:: none
+
+      Abort.
+
+   .. rocqtop:: in
+
+      Instance Proper_In_same : Proper (eq ==> same ==> Basics.impl) In.
+      Proof.
+         intros x y -> l l' sll' inyl.
+         now apply sll' in inyl.
+      Qed.
+
+      Goal forall (x : A) xs xs', same xs xs' -> In x xs -> In x xs'.
+      Proof.
+        intros x xs xs' hin.
+
+   .. rocqtop:: all
+
+        rewrite hin.
+
+Beware that typeclass resolution is backtracking, so in more complex situations, a more complex
+combination of instance declarations might be necessary to solve the constraints (if they are satisfiable
+at all). The proof-search strategy of first solving each constraint independently to find a failing
+branch is incomplete as the search might need to backtrack on the first constraint's solutions to find
+a successful resolution for subsequent constraints.
+
 .. _deprecated_syntax_for_generalized_rewriting:
 
 Deprecated syntax and backward incompatibilities
@@ -686,7 +815,7 @@ declared as morphisms in the ``Classes.Morphisms_Prop`` module. For
 example, to declare that universal quantification is a morphism for
 logical equivalence:
 
-.. rocqtop:: none
+.. rocqtop:: reset none
 
    Require Import Morphisms.
 
