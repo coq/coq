@@ -392,11 +392,11 @@ let allow_all_but_patvars sigma =
   in
   Evarsolve.AllowedEvars.from_pred p
 
-let apply_heuristics ~patvars_abstract env sigma =
+let apply_heuristics ~patvars_abstract ?(best_effort=false) env sigma =
   (* Resolve eagerly, potentially making wrong choices *)
   let flags = default_flags_of (Conv_oracle.get_transp_state (Environ.oracle env)) in
   let flags = if patvars_abstract then { flags with allowed_evars = allow_all_but_patvars sigma } else flags in
-  try solve_unif_constraints_with_heuristics ~flags env sigma
+  try solve_unif_constraints_with_heuristics ~flags ~best_effort env sigma
   with e when CErrors.noncritical e -> sigma
 
 let check_typeclasses_instances_are_solved ~program_mode env sigma frozen =
@@ -451,6 +451,10 @@ let check_evars_are_solved_from ~program_mode env sigma frozen frozen_for_pb =
 
 let solve_remaining_evars_from ?hook (flags : inference_flags) env ?initial sigma term =
   let program_mode = flags.program_mode in
+  let sigma = if flags.solve_unification_constraints
+    then apply_heuristics ~patvars_abstract:flags.patvars_abstract ~best_effort:true env sigma
+    else sigma
+  in
   let sigma =
     match flags.use_typeclasses with
     | UseTC ->
