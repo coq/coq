@@ -39,6 +39,7 @@ module ReductionBehaviour : sig
     val empty : t
     val print : t -> Constant.t -> Pp.t
     val all_never_unfold : t -> Cpred.t
+    val unset_never : Constant.t -> t -> t
   end
 
   val set : local:bool -> Constant.t -> t option -> unit

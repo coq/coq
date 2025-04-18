@@ -165,6 +165,10 @@ let make_flag env f =
   in
   f.rStrength, red
 
+let constants_of_flag f =
+  let (b, csts) = Cpred.elements (RedFlags.red_transparent f).tr_cst in
+  (b, List.map (fun cst -> Evaluable.EvalConstRef cst) csts)
+
 (* table of custom reductino fonctions, not synchronized,
    filled via ML calls to [declare_reduction] *)
 let reduction_tab = ref String.Map.empty
@@ -225,18 +229,8 @@ let contextualize f = function
       e_red (contextually b (l,c) (fun _ -> f))
   | None -> e_red f
 
-let warn_simpl_unfolding_modifiers =
-  CWarnings.create ~name:"simpl-unfolding-modifiers" ~category:CWarnings.CoreCategories.tactics
-         (fun () ->
-          Pp.strbrk "The legacy simpl ignores constant unfolding modifiers.")
-
 let rec eval_red_expr env = function
-| Simpl (f, o) ->
-  let () =
-    if not (simplIsCbn () || List.is_empty f.rConst) then
-      warn_simpl_unfolding_modifiers () in
-  let f = if simplIsCbn () then make_flag env f else f.rStrength, RedFlags.all (* dummy *) in
-  Simpl (f, o)
+| Simpl (f, o) -> Simpl (make_flag env f, o)
 | Cbv f -> Cbv (make_flag env f)
 | Cbn f -> Cbn (make_flag env f)
 | Lazy f -> Lazy (make_flag env f)
@@ -261,16 +255,16 @@ let reduction_of_red_expr_val = function
   | Simpl ((w,f),o) ->
     let am = match w, simplIsCbn () with
       | Norm, true -> Cbn.norm_cbn f
-      | Norm, false -> simpl
+      | Norm, false -> simpl_with_constants (constants_of_flag f)
       | Head, true -> Cbn.whd_cbn f
-      | Head, false -> whd_simpl
+      | Head, false -> whd_simpl_with_constants (constants_of_flag f)
     in
      (contextualize am o,DEFAULTcast)
   | Cbv (Norm, f) -> (e_red (cbv_norm_flags ~strong:true f),DEFAULTcast)
   | Cbv (Head, f) -> (e_red (cbv_norm_flags ~strong:false f),DEFAULTcast)
   | Cbn (w,f) ->
-    let cbn = match w with Norm -> Cbn.norm_cbn | Head -> Cbn.whd_cbn in
-     (e_red (cbn f), DEFAULTcast)
+    let cbn = match w with Norm -> Cbn.norm_cbn f | Head -> Cbn.whd_cbn f in
+     (e_red cbn, DEFAULTcast)
   | Lazy (w,f) ->
     let redf = match w with Norm -> clos_norm_flags | Head -> clos_whd_flags in
     (e_red (redf f),DEFAULTcast)

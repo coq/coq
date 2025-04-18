@@ -54,6 +54,7 @@ install_printer Top_printers.ppdelta
 install_printer Top_printers.pp_idpred
 install_printer Top_printers.pp_cpred
 install_printer Top_printers.pp_transparent_state
+install_printer Top_printers.pp_redflags
 install_printer Top_printers.pp_estack_t
 install_printer Top_printers.pp_state_t
 install_printer Top_printers.ppmetas

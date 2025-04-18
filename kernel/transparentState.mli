@@ -28,3 +28,7 @@ val is_empty : t -> bool
 val is_transparent_variable : t -> Id.t -> bool
 val is_transparent_constant : t -> Constant.t -> bool
 val is_transparent_projection : t -> Projection.Repr.t -> bool
+
+(** Debugging *)
+
+val debug_pr_transparent_state : t -> Pp.t

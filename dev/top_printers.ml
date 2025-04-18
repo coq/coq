@@ -215,7 +215,8 @@ let ppdelta s = pp (Mod_subst.debug_pr_delta s)
 
 let pp_idpred s = pp (pr_idpred s)
 let pp_cpred s = pp (pr_cpred s)
-let pp_transparent_state s = pp (pr_transparent_state s)
+let pp_transparent_state s = pp (TransparentState.debug_pr_transparent_state s)
+let pp_redflags s = pp (RedFlags.debug_pr s)
 let pp_estack_t n = pp (Reductionops.Stack.pr pr_econstr n)
 let pp_state_t n = pp (Reductionops.pr_state Global.(env()) Evd.empty n)
 

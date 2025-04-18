@@ -83,3 +83,6 @@ end.
 intro.
 Show.
 Abort.
+
+Ltac simpl_head := simpl head.
+Print Ltac simpl_head.

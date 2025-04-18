@@ -181,6 +181,8 @@ module ReductionBehaviour = struct
     let empty = (Cpred.empty, Cmap.empty)
     let print = print_from_db
     let all_never_unfold table = fst table
+    let unset_never r table =
+      (Cpred.remove r (fst table), snd table)
   end
 
   let get r = get_from_db (Db.get ()) r
