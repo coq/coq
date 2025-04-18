@@ -775,14 +775,25 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   let eta_lambda env evd onleft term (term',sk') =
     (* Reduces an equation [env |- <(fun na:c1 => c'1)|empty> = <term'|sk'>] to
        [env, na:c1 |- c'1 = sk'[term'] (with some additional reduction) *)
-    let (na,c1,c'1) = destLambda evd term in
-    let env' = push_rel (RelDecl.LocalAssum (na,c1)) env in
-    let out1 = whd_betaiota_deltazeta_for_iota_state
-      flags.open_ts env' evd (c'1, Stack.empty) in
-    let out2 = whd_nored_state env' evd
-      (lift 1 (Stack.zip evd (term', sk')), Stack.append_app [|EConstr.mkRel 1|] Stack.empty) in
-    if onleft then evar_eqappr_x flags env' evd CONV keys None out1 out2
-    else evar_eqappr_x flags env' evd CONV (Cs_keys_cache.flip keys) None out2 out1
+    match Retyping.get_type_of env evd term with
+    | exception _ -> quick_fail evd
+    | ty1 ->
+    let t2 = Stack.zip evd (term', sk') in
+    match Retyping.get_type_of env evd t2 with
+    | exception _ -> quick_fail evd
+    | ty2 ->
+    ise_and evd [
+      (fun evd -> evar_conv_x flags env evd CONV ty1 ty2);
+      fun evd ->
+        let (na,c1,c'1) = destLambda evd term in
+        let env' = push_rel (RelDecl.LocalAssum (na,c1)) env in
+        let out1 = whd_betaiota_deltazeta_for_iota_state
+          flags.open_ts env' evd (c'1, Stack.empty) in
+        let out2 = whd_nored_state env' evd
+          (lift 1 t2, Stack.append_app [|EConstr.mkRel 1|] Stack.empty) in
+        (* We check that `term' sk'` was indeed a function *)
+        if onleft then evar_eqappr_x flags env' evd CONV keys None out1 out2
+        else evar_eqappr_x flags env' evd CONV (Cs_keys_cache.flip keys) None out2 out1]
   in
   let rigids env evd sk term sk' term' =
     let nargs = Stack.args_size sk in
@@ -1432,16 +1443,26 @@ and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
       | None -> UnifFailure (evd,NotSameHead)
       | Some l1 ->
         (try
-           let l1' = List.skipn pars l1 in
-           let l2' =
-             let term = Stack.zip evd (term2,sk2) in
-             List.map (fun (p,r) ->
-                 let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
-                 EConstr.mkProj (Projection.make p false, r, term))
-               (Array.to_list projs)
-           in
-          let f i t1 t2 = evar_conv_x { flags with with_cs = false } env i CONV t1 t2 in
-          ise_list2 evd f l1' l2'
+          let t1 = Stack.zip evd (EConstr.mkConstructU ((ind, i), u), sk1) in
+          let t2 = Stack.zip evd (term2, sk2) in
+          match Retyping.get_type_of env evd t1 with
+          | exception _ -> UnifFailure (evd,NotSameHead)
+          | ty1 ->
+          match Retyping.get_type_of env evd t2 with
+          | exception _ -> UnifFailure (evd,NotSameHead)
+          | ty2 ->
+          ise_and evd [
+            (fun evd -> evar_conv_x flags env evd CONV ty1 ty2);
+            fun evd ->
+              let l1' = List.skipn pars l1 in
+              let l2' =
+                List.map (fun (p,r) ->
+                    let r = EConstr.Vars.subst_instance_relevance u (ERelevance.make r) in
+                    EConstr.mkProj (Projection.make p false, r, t2))
+                  (Array.to_list projs)
+              in
+              let f i t1 t2 = evar_conv_x { flags with with_cs = false } env i CONV t1 t2 in
+              ise_list2 evd f l1' l2']
          with
          | Failure _ ->
            (* List.skipn: partially applied constructor *)
