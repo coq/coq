@@ -24,6 +24,10 @@ Tactics
    tries to apply one of them.  This process is recursively applied to the
    generated subgoals.
 
+   .. comment "introduces the newly generated hyps as hints": done in
+      Hints.make_local_hint_db, which also adds constructor hints. eauto
+      also calls this, tc eauto uses different code
+
    Within each hintbase, lower cost tactics are tried before higher-cost
    tactics.  When multiple hintbases are specified, all hints in the
    first database are tried before any in the second database (and so forth)
@@ -81,6 +85,48 @@ Tactics
       variant is very useful for getting a better understanding of automation, or
       to know what lemmas/assumptions were used.
 
+.. _info_auto_not_exact:
+
+      The tactics shown in the info or debug output currently don't
+      correspond exactly to the variants that proof search tactics such
+      as :tacn:`auto` use, but they are close.
+
+      Occasionally the tactics shown (after removing tactics that were
+      backtracked) may not always work as a replacement for the proof search
+      tactic.  For example:
+
+      .. example:: `info_auto` output that isn't a valid proof
+
+         The output isn't accepted as a proof because the conversion
+         constraints are solved by default after every statement but
+         are not solved internally by :tacn:`auto` as it searches for
+         a proof.
+
+         .. rocqtop:: in
+
+            Create HintDb db.
+
+            Hint Resolve conj : db.
+            Hint Resolve eq_refl : db.
+
+            Goal forall n, n=1 -> exists x y : nat, x = y /\ x = 0.
+            intros.
+            do 2 eexists; subst.      (* Fix 2: replace with "eexists; subst." twice *)
+
+         .. rocqtop:: all
+
+            Succeed info_auto with nocore db.
+            simple apply conj.           (* from info_auto output *)
+              Fail simple apply @eq_refl.  (* Fix 1: change to "2: simple apply @eq_refl" *)
+              (* simple apply @eq_refl. *)
+
+         .. rocqtop:: none abort
+
+         One fix is to apply the tactics to the goals in a non-default
+         order.  Another would be to avoid using `do 2` by repeating the commands
+         that follow it, which gives a different result.  The fixes are shown inline
+         in the example.
+
    .. tacn:: debug auto {? @nat_or_var } {? @auto_using } {? @hintbases }
 
       Behaves like :tacn:`auto` but shows the tactics it tries to solve the goal,
@@ -107,7 +153,7 @@ Tactics
    Generalizes :tacn:`auto`. While :tacn:`auto` does not try
    resolution hints which would leave existential variables in the goal,
    :tacn:`eauto` will try them.  Also, :tacn:`eauto` internally uses :tacn:`eassumption`
-   instead of :tacn:`assumption` and a tactic similar to :tacn:`simple eapply`
+   instead of :tacn:`assumption` and, when needed, a tactic similar to :tacn:`simple eapply`
    instead of a tactic similar to :tacn:`simple apply`.
    As a consequence, :tacn:`eauto` can solve goals such as:
 
@@ -126,6 +172,9 @@ Tactics
    .. tacn:: info_eauto {? @nat_or_var } {? @auto_using } {? @hintbases }
 
       The various options for :tacn:`info_eauto` are the same as for :tacn:`info_auto`.
+      Note that the tactics shown (after removing tactics that were
+      backtracked) may not always work as a replacement for the proof search
+      tactic.  See :ref:`here <info_auto_not_exact>`.
 
    :tacn:`eauto` uses the following flags:
 
@@ -309,28 +358,71 @@ Creating hint databases
 ```````````````````````
 
 Hint databases can be created with the :cmd:`Create HintDb` command or implicitly
-by adding a hint to an unknown database.  We recommend you always use :cmd:`Create HintDb`
-and then imediately use :cmd:`Hint Constants` and :cmd:`Hint Variables` to make
-those settings explicit.
+by adding a hint to an unknown database.  Databases created with
+:cmd:`Create HintDb` have the default setting `Transparent`
+for `Constants`, `Projections` and `Variables`, while implicitly created databases
+have the `Opaque` setting.  We recommend using :cmd:`Hint Constants`,
+:cmd:`Hint Projections` and :cmd:`Hint Variables` immediately after :cmd:`Create HintDb`
+to make these settings explicit.
 
-Note that the default transparency
-settings differ between these two methods of creation.  Databases created with
-:cmd:`Create HintDb` have the default setting `Transparent` for both `Variables`
-and `Constants`, while implicitly created databases have the `Opaque` setting.
+Use :cmd:`Hint Opaque` and :cmd:`Hint Transparent` to control the opacity of
+individual items.  Hint opacity settings influence which hints the search tactics
+try, but they may or may not affect how the selected tactic is executed.
+(Usually not, except for :tacn:`typeclasses eauto`, which uses the equivalent of
+:tacn:`autoapply`, which explicitly uses the hint opacity settings when
+applying a :cmd:`Hint Resolve` hint.)
+The proof search tactics use unification to choose which tactics to try, for example
+whether the goal unifies with a theorem given by :cmd:`Hint Resolve`.
+These settings are distinct from the non-hint :cmd:`Opaque` and :cmd:`Transparent`
+settings.
 
 .. cmd:: Create HintDb @ident {? discriminated }
 
-   If there is no hint database named :n:`@name`, creates a new hint database
-   with that name.  Otherwise, does nothing.  The database is
-   implemented by a Discrimination Tree (DT) that serves as a filter to select
-   the lemmas that will be applied. When discriminated, the DT uses
-   transparency information to decide if a constant should considered rigid for
-   filtering, making the retrieval more efficient. By contrast, undiscriminated
-   databases treat all constants as transparent, resulting in a larger
-   number of selected lemmas to be applied, and thus putting more pressure on
-   unification.
+   If there is no hint database named :n:`@ident`, creates a new hint database
+   with that name.  Otherwise, does nothing.
 
-   By default, hint databases are undiscriminated.
+   All constants, variables and projections are set to default to unfoldable (use
+   :cmd:`Hint Constants`, :cmd:`Hint Projections` and :cmd:`Hint Variables`
+   to change this).
+
+   By default, hint databases are undiscriminated.  We recommend using `discriminated`
+   because it generally performs better.
+
+.. _hint_performance_considerations:
+
+Performance considerations
+``````````````````````````
+
+The proof search tactics decide which hints to try by first selecting hints
+whose pattern has the same :term:`head constant` as the goal.  Then the selected
+hints are tried as follows:
+
+- For hints other than :cmd:`Hint Extern`: If the database is discriminated, only
+  matching hints are tried.  Hints match if all compared items that are opaque in
+  both the goal and the pattern are identical.  In this case you can reduce the
+  number of matches by marking definitions as hint opaque through trial and error
+  (if the proof search fails after making something opaque, then it's incorrect).
+
+  Otherwise (if not discriminated), all hints will be tried.  (Therefore, use
+  `discriminated` databases whenever possible.)
+- For `Extern` hints: If the hint has a pattern, hints matching the goal will be tried.
+  In this case, matching uses `syntactic unification
+  <https://en.wikipedia.org/wiki/Unification_(computer_science)#Examples_of_syntactic_unification_of_first-order_terms>`_),
+  treating everything as hint opaque.
+
+  Otherwise (if there is no pattern), all hints will be tried. (Therefore, provide a
+  pattern in `Extern` hints whenever possible.)
+
+.. todo Mention that apply will use conversion (after bug is fixed)
+
+  .. comment:
+     discriminated matches patterns: see test-suite/output/disc_uses_patterns.v
+     discriminated with transparent: see test-suite/output/disc_with_transparent.v
+     non-discriminated ignores patterns: see test-suite/output/nondisc_ignores_pattern.v
+     Extern uses syntactic unification: see test-suite/success/hint_extern_syntactic_unify.v
+     Extern with no pattern:  see test-suite/output/extern_no_pattern.v
+
+.. comment not sure: Note: currently, proof search tactics won't unfold the head constant even if it is transparent.
 
    .. warn:: @ident already exists and is {? not } discriminated
       :name: mismatched-hint-db
@@ -343,9 +435,8 @@ Hint databases defined in the Rocq standard library
 ```````````````````````````````````````````````````
 
 Several hint databases are defined in the Rocq standard library. The
-database contains all hints declared
-to belong to it in the currently loaded modules.
-In particular, requiring new modules may extend the database.
+database contains all hints declared for it in the currently loaded modules.
+Requiring additional modules (:cmd:`Require`) may add more hints.
 At Rocq startup, only the core database is nonempty and ready to be used immediately.
 
 :core: This special database is automatically used by ``auto``, except when
@@ -379,7 +470,7 @@ At Rocq startup, only the core database is nonempty and ready to be used immedia
                mainly used in the ``FSets`` and ``FMaps`` libraries.
 
 You are advised not to put your own hints in the core database, but
-use one or more databases specific to your development.
+instead to use one or more databases specific to your development.
 
 .. _creating_hints:
 
@@ -396,6 +487,10 @@ Creating Hints
    tried, as shown by the :cmd:`Print HintDb` command.
    Hints with lower costs are tried first.  Hints with the same cost are tried
    in reverse of their order of definition, i.e., last to first.
+
+   Theorems such as :n:`n+m=m+n` or :n:`(n+m)+p=n+(m+p)` should be used only in
+   :cmd:`Hint Immediate` to prevent them from being applied repeatedly without
+   limit.
 
    Outside of sections, these commands support the :attr:`local`, :attr:`export`
    and :attr:`global` attributes. :attr:`export` is the default.
@@ -431,16 +526,21 @@ Creating Hints
          hint_info ::= %| {? @natural } {? @one_pattern }
          one_pattern ::= @one_term
 
-      The first form adds each :n:`@qualid` as a hint with the head symbol of the type of
-      :n:`@qualid` to the specified hint databases (:n:`@ident`\s). The cost of the hint is the number of
-      subgoals generated by :tacn:`simple apply` :n:`@qualid` or, if specified, :n:`@natural`. The
+      The first form adds each :n:`@qualid` as a hint with the head symbol of the
+      type of :n:`@qualid` to the specified hint databases (:n:`@ident`\s). The
+      cost of the hint is :n:`@natural` (which can be inside :n:`@hint_info`). The
       associated pattern is inferred from the conclusion of the type of
       :n:`@qualid` or, if specified, the given :n:`@one_pattern`.
 
       If the inferred type
-      of :n:`@qualid` does not start with a product, :tacn:`exact` :n:`@qualid` is added
-      to the hint list.  If the type can be reduced to a type starting with a product,
-      :tacn:`simple apply` :n:`@qualid` is also added to the hints list.
+      of :n:`@qualid` does not start with a product, the command adds :tacn:`exact`
+      :n:`@qualid` to the hint list.  If the inferred type starts with a product,
+      the command adds :tacn:`simple apply` :n:`@qualid` to the hints list.  Note that
+      unlike :tacn:`auto` and :tacn:`eauto`,
+      :tacn:`typeclasses eauto` uses a tactic equivalent to :tacn:`autoapply`,
+      which behaves somewhat differently from :tacn:`simple apply`.
+      Nonetheless, that tactic's debug output and the hint database misleadingly show
+      :tacn:`simple apply`.
 
       If the inferred type of :n:`@qualid` contains a dependent
       quantification on a variable which occurs only in the premises of the type
@@ -452,11 +552,10 @@ Creating Hints
 
       :n:`{| -> | <- }`
         The second form adds the left-to-right (`->`) or right-ot-left implication (`<-`)
-        of an equivalence as a hint (informally
-        the hint will be used as, respectively, :tacn:`apply` :n:`-> @qualid` or
-        :tacn:`apply` :n:`<- @qualid`,
-        although as mentioned before, the tactic actually used is a restricted version of
-        :tacn:`apply`).
+        of a logical equivalence (`<->`) as a hint.  If needed, it defines a projection
+        for the specified direction, which the hint applies with a restricted version of
+        :tacn:`apply`.
+        (For example, `Hint resolve -> and_comm` defines `and_comm_proj_l2r`.)
 
       :n:`@one_term`
         Permits declaring a hint without declaring a new
@@ -464,6 +563,12 @@ Creating Hints
 
          .. warn:: Declaring arbitrary terms as hints is fragile and deprecated; it is recommended to declare a toplevel constant instead
             :undocumented:
+
+      :n:`@one_pattern`
+        Overrides the default pattern, which may occasionally be useful.  For
+        example, if a hint has the default pattern `_ = _`, you could limit
+        the hint being tried only for `bool`\s with the pattern
+        `(@eq bool _ _)`.
 
       .. exn:: @qualid cannot be used as a hint
 
@@ -474,20 +579,23 @@ Creating Hints
 
       For each specified :n:`@qualid`, adds the tactic :tacn:`simple apply` :n:`@qualid;`
       :tacn:`solve` :n:`[` :tacn:`trivial` :n:`]` to the hint list
-      associated with the head symbol of the type of :n:`@qualid`. This
-      tactic will fail if all the subgoals generated by :tacn:`simple apply` :n:`@qualid` are
-      not solved immediately by the :tacn:`trivial` tactic (which only tries tactics
-      with cost 0). This command is useful for theorems such as the symmetry of
-      equality or :g:`n+1=m+1 -> n=m` that we may want to introduce with limited
-      use in order to avoid useless proof search. The cost of this tactic (which
-      never generates subgoals) is always 1, so that it is not used by :tacn:`trivial`
-      itself.
+      associated with the head symbol of the type of :n:`@qualid`. The
+      tactic fails if any of the subgoals generated by :tacn:`simple apply` :n:`@qualid` are
+      not solved immediately by :tacn:`trivial` (which only tries tactics
+      with cost 0).  This hint is useful to allow controlled use of theorems such as
+      :n:`n+m=m+n` or :n:`(n+m)+p=n+(m+p)` that otherwise could be applied repeatedly
+      without limit.
+      The cost of this hint (which never generates subgoals) is always 1, so it won't be used
+      by :tacn:`trivial` itself.
+
+   .. comment I don't see why :n:`n+1=m+1 -> n=m` would be problematic
 
    .. cmd:: Hint Constructors {+ @qualid } {? : {+ @ident } }
 
       For each :n:`@qualid` that is an inductive type, adds all its constructors as
       hints of type ``Resolve``. Then, when the conclusion of current goal has the form
-      :n:`(@qualid ...)`, :tacn:`auto` will try to apply each constructor.
+      :n:`(@qualid ...)`, :tacn:`auto` will try to apply each constructor using
+      :tacn:`exact`.
 
       .. exn:: @qualid is not an inductive type
          :undocumented:
@@ -502,10 +610,68 @@ Creating Hints
       :name: Hint Transparent; Hint Opaque
 
       Adds transparency hints to the database, making each :n:`@qualid`
-      a transparent or opaque constant during resolution. This information is used
-      during unification of the goal with any lemma in the database and inside the
-      discrimination network to relax or constrain it in the case of discriminated
-      databases.
+      transparent or opaque during resolution.  The proof search tactics use
+      unification to determine whether to try most hints, for example checking if
+      the goal unifies with the theorem used in a :cmd:`Hint Resolve` hint.  See
+      :ref:`here <hint_performance_considerations>` for a description of how
+      opaque and transparent affect which hints are tried.
+      Note that transparency hints are independent of the non-hint :cmd:`Opaque`
+      and :n:`Transparent` settings.
+
+      .. example:: Transparency with Multiple Hint Databases
+
+         To use different transparency settings for particular hints, put them
+         in separate hint databases with distinct transparency settings and use
+         :tacn:`typeclasses eauto`.  (This doesn't work for :tacn:`auto` or :tacn:`eauto`.):
+
+         .. rocqtop:: in reset
+
+            Definition one := 1.
+            Theorem thm : one = 1. reflexivity. Qed.
+
+            Create HintDb db1.
+            Hint Opaque one : db1.
+            Hint Resolve thm | 1 : db1.
+            Create HintDb db2.
+
+            Goal 1 = 1.
+            (* "one" is not unfolded because it's opaque in db1, where bar is *)
+            Fail typeclasses eauto with db1 db2 nocore.  (* fails with tc eauto *)
+            Succeed eauto with db1 db2 nocore.           (* ignores the distinction *)
+            Succeed auto with db1 db2 nocore.            (* ignores the distinction *)
+
+            Hint Resolve thm | 2 : db2.
+            (* "one" is unfolded because it's transparent (by default) in db2 *)
+            Succeed typeclasses eauto with db1 db2 nocore.
+
+         .. rocqtop:: none
+
+            Abort.
+
+      .. example:: Independence of Hint Opaque and Opaque
+
+         .. rocqtop:: reset in
+
+            Definition one := 1.
+            Opaque one.  (* not relevant to hint selection *)
+
+            Theorem bar: 1=1.  reflexivity.  Qed.
+
+            Create HintDb db.       (* constants, etc. transparent by default *)
+            Hint Opaque one : db.   (* except for "one" *)
+            Hint Resolve bar : db.  (* hint is not tried if one is Hint Opaque *)
+            Set Typeclasses Debug Verbosity 1.
+
+            Goal one = 1.
+            Fail typeclasses eauto with db nocore.  (* fail: no match for (one = 1) *)
+
+            Hint Transparent one : db.
+            Succeed typeclasses eauto with db nocore.  (* success: now bar is tried *)
+            Fail unfold one.                           (* fail: one is still Opaque *)
+
+         .. rocqtop:: none
+
+            Abort.
 
       .. exn:: Cannot coerce @qualid to an evaluable reference.
          :undocumented:
@@ -513,16 +679,20 @@ Creating Hints
    .. cmd:: Hint {| Constants | Projections | Variables } {| Transparent | Opaque } {? : {+ @ident } }
       :name: Hint Constants; Hint Projections; Hint Variables
 
-      Sets the transparency flag for constants, projections or variables for the specified hint
-      databases.
-      These flags affect the unification of hints in the database.
-      We advise using this just after a :cmd:`Create HintDb` command.
+      Sets the default transparency for constants, projections or variables for
+      the specified hint databases.  Existing transparency settings for individual
+      items (e.g., set with :cmd:`Hint Opaque`) are dropped.
+      We advise using this command just after a :cmd:`Create HintDb` command.
 
    .. cmd:: Hint Extern @natural {? @one_pattern } => @generic_tactic {? : {+ @ident } }
 
       Extends :tacn:`auto` with tactics other than :tacn:`apply` and
       :tacn:`unfold`. :n:`@natural` is the cost, :n:`@one_pattern` is the pattern
       to match and :n:`@ltac_expr` is the action to apply.
+
+      We recommend providing a pattern whenever possible.  Hints with patterns
+      are tried only if the pattern matches without unfolding transparent constants
+      (i.e., a syntactic match).  Hints without patterns are always tried.
 
       **Usage tip**: tactics that can succeed even if they don't change the context,
       such as most of the :ref:`conversion tactics <applyingconversionrules>`, should
@@ -538,8 +708,8 @@ Creating Hints
 
             Hint Extern 4 (~(_ = _)) => discriminate : core.
 
-         Now, when the head of the goal is a disequality, ``auto`` will try
-         discriminate if it does not manage to solve the goal with hints with a
+         Now, when the head of the goal is an inequality, ``auto`` will try
+         `discriminate` if it does not manage to solve the goal with hints with a
          cost less than 4.
 
       One can even use some sub-patterns of the pattern in
@@ -570,21 +740,30 @@ Creating Hints
          | eps   (epsilon)
          | ( @hints_regexp )
 
-      Used to cut the proof search tree according to a regular
-      expression that matches the paths to be cut.
-
-
-      During proof search, the path of
-      successive successful hints on a search branch is recorded as a
-      list of identifiers for the hints (note that :cmd:`Hint Extern`\s do not have
-      an associated identifier).
-      For each hint :n:`@qualid` in the hint database, the current path `p`
-      extended with :n:`@qualid`
-      is matched against the current cut expression `c` associated with the
-      hint database.  If the match succeeds the hint is *not* applied.
-
+      Adds another clause to the cut regular expression in the specfied hint
+      databases.
       :n:`Hint Cut @hints_regexp` sets the cut expression
       to :n:`c | @hints_regexp`.  The initial cut expression is `emp`.
+
+      Typeclass proof search and the :tacn:`typeclasses eauto` tactic
+      (but not :tacn:`auto` or :tacn:`eauto`) use the cut expression to
+      conditionally prevent using some hints based on the path of hints that
+      have been successfully applied.
+      The path is an ordered list of hint identifiers.  When the path plus
+      the identifier of a candidate hint matches the cut expression, the hint
+      is *not* applied.  (It is nothing like a cut in Prolog.)
+
+      The hint identifier is the :n:`@qualid` that appears in the various
+      `Hint` commands (e.g. as in :cmd:`Hint Resolve` `plus_O_n.`), with
+      the following exceptions:
+
+      - :cmd:`Hint Extern`\s do not have associated identifiers
+
+      - For :cmd:`Hint Constructors`, which creates multiple hints, the identifiers
+        are the names of the constructors.
+
+      - For :cmd:`Hint Resolve` :n:`{| -> | <- } theorem`, the name is `theorem_proj_l2r`
+        or `theorem_proj_r2l` depending on the direction of the arrow.
 
       The output of :cmd:`Print HintDb` shows the cut expression.
 
@@ -598,11 +777,6 @@ Creating Hints
 
          There is no operator precedence during parsing, one can
          check with :cmd:`Print HintDb` to verify the current cut expression.
-
-      .. warning::
-
-         These hints currently only apply to typeclass proof search and the
-         :tacn:`typeclasses eauto` tactic.
 
    .. cmd:: Hint Mode @qualid {+ {| + | ! | - } } {? : {+ @ident } }
 
@@ -620,6 +794,7 @@ Creating Hints
       ignoring casts. For a mode declaration to match a list of arguments, each argument should
       match its corresponding mode.
 
+      Only :tacn:`typeclasses eauto` uses these hints.
       :cmd:`Hint Mode` is especially useful for typeclasses, when one does not want
       to support default instances and wants to avoid ambiguity in general. Setting a parameter
       of a class as an input forces proof search to be driven by that index of the class,
@@ -701,8 +876,10 @@ Creating Hints
 .. cmd:: Remove Hints {+ @qualid } {? : {+ @ident } }
 
    Removes the hints associated with the :n:`{+ @qualid }` in databases
-   :n:`{+ @ident}`.  Note: hints created with :cmd:`Hint Extern` currently
-   can't be removed.  The best workaround for this is to make the hints
+   :n:`{+ @ident}`.  Hints removals within sections are local to the section.
+   Note: hints created with :cmd:`Hint Extern` currently
+   can't be removed because they aren't associated with names.  The best
+   workaround for this is to make the hints
    non-global and carefully select which modules you import.
 
 .. cmd:: Print Hint {? {| * | @reference } }
@@ -722,11 +899,14 @@ Creating Hints
 
 .. cmd:: Print HintDb @ident
 
-   This command displays all hints from database :n:`@ident`.  Hints
-   in each group ("For ... ->") are shown in the order in which they will be tried
-   (first to last).  The groups are shown ordered alphabetically on the last component of
-   the symbol name.  Note that hints with the same cost are tried in
-   reverse of the order they're defined in, i.e., last to first.
+   This command displays all hints from database :n:`@ident`.  Hints are grouped by
+   the :term:`head constants <head constant>` of their patterns ("For ... ->").
+   The groups are shown ordered alphabetically on the last component of the head
+   constant name.   Within each group, hints are shown in the order in which they
+   will be tried (first to last).  Note that hints with the same cost are tried in
+   reverse of the order they're defined in, i.e., last defined is used first.
+   Mode of resolution symbols, :n:`{+ {| + | ! | - } }`, when defined with
+   :cmd:`Hint Mode`, appear after the head constant.
 
 Hint locality
 `````````````
