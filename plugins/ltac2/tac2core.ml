@@ -740,6 +740,10 @@ let () =
   with e when CErrors.noncritical e ->
     throw err_notfound
 
+let () =
+  define "case_to_inductive" (case @-> ret inductive) @@ fun case ->
+  case.ci_ind
+
 let () = define "constr_cast_default" (ret valexpr) (of_cast DEFAULTcast)
 let () = define "constr_cast_vm" (ret valexpr) (of_cast VMcast)
 let () = define "constr_cast_native" (ret valexpr) (of_cast NATIVEcast)
@@ -1299,6 +1303,16 @@ let () =
   else throw err_notfound
 
 let () =
+  define "ind_get_nparams"
+    (ind_data @-> ret int) @@ fun (_, mib) ->
+  mib.Declarations.mind_nparams
+
+let () =
+  define "ind_get_nparams_rec"
+    (ind_data @-> ret int) @@ fun (_, mib) ->
+  mib.Declarations.mind_nparams_rec
+
+let () =
   define "constructor_inductive"
     (constructor @-> ret inductive)
   @@ fun (ind, _) -> ind
@@ -1309,6 +1323,18 @@ let () =
   @@ fun (_, i) ->
   (* WARNING: ML constructors are 1-indexed but Ltac2 constructors are 0-indexed *)
   i-1
+
+let () =
+  define "constructor_nargs"
+    (ind_data @-> ret (array int)) @@ fun ((_,i),mib) ->
+  let open Declarations in
+  mib.mind_packets.(i).mind_consnrealargs
+
+let () =
+  define "constructor_ndecls"
+    (ind_data @-> ret (array int)) @@ fun ((_,i),mib) ->
+  let open Declarations in
+  mib.mind_packets.(i).mind_consnrealdecls
 
 let () =
   define "ind_get_projections" (ind_data @-> ret (option (array projection)))

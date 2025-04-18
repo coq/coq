@@ -45,7 +45,12 @@ Module Unsafe.
 (** Low-level access to kernel terms. Use with care! *)
 
 Ltac2 Type case.
-(** A value of [case] is data carried by a pattern match expression that contains a reference to the inductive type being matched on. Given an inductive type, one can use the [case] function below to construct pattern match expressions on that type. *)
+(** A value of [case] is data carried by a pattern match expression that
+    contains a reference to the inductive type being matched on. Given an
+    inductive type, one can use the [case] function below to construct pattern
+    match expressions on that type, or given a pattern match expression one can
+    use the [Case.inductive] function to get the inductive type associated to
+    the pattern match. *)
 
 Ltac2 Type case_invert
 (** A piece of metadata attached to a pattern match expression which
@@ -205,6 +210,8 @@ Module Case.
       module aliases or Include are not considered equal by this
       function. *)
 
+  Ltac2 @ external inductive : case -> inductive := "rocq-runtime.plugins.ltac2" "case_to_inductive".
+  (** Get the inductive type being matched on in a pattern match expression. *)
 End Case.
 
 (** Open recursion combinators *)

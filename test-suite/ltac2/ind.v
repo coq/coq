@@ -18,8 +18,57 @@ Ltac2 Eval
   (* Check the number of constructors *)
   let nconstr := Ind.nconstructors data in
   let () := if Int.equal nconstr 2 then () else Control.throw Not_found in
+  (* Check that we can get the inductive type from a pattern match expression *)
+  let tm := '(match 0 with 0 => 0 | S n => n end) in
+  let ind := match Constr.Unsafe.kind tm with
+   | Constr.Unsafe.Case case _ _ _ _ => Constr.Unsafe.Case.inductive case
+   | _ => Control.throw Not_found end in
+  (if Ind.equal ind nat then () else Control.throw Not_found);
   (* Create a fresh instance *)
   let s := Ind.get_constructor data 1 in
   let s := Env.instantiate (Std.ConstructRef s) in
-  constr:($s 0)
+  constr:($s 0).
+  
+
+Ltac2 Eval
+  let acc := Option.get (Env.get [@Corelib; @Init; @Wf; @Acc]) in
+  let acc := match acc with
+  | Std.IndRef acc => acc
+  | _ => Control.throw Not_found
+  end in
+  let data := Ind.data acc in
+  let () :=
+    if Int.equal (Ind.nparams data) 3 (* A, R, x are parameters. *)
+    then () else Control.throw Not_found in
+  let () :=
+    if Int.equal (Ind.nparams_uniform data) 2 (* A, R are recursively uniform parameters. *)
+    then () else Control.throw Not_found in
+  let () :=
+    if Int.equal (Array.get (Ind.constructor_nargs data) 0) 1
+    then () else Control.throw Not_found in
+  ()
+.
+
+Inductive ltac2_ind_test (A B: Type) (f : A -> B) (a : A) (b:= f a) : A -> B -> Type
+  := c0 (a0 : A) (b0 := f a0) : ltac2_ind_test A B f a a0 b0.
+
+Ltac2 Eval
+  let acc := Option.get (Env.get [@ind; @ltac2_ind_test]) in
+  let acc := match acc with
+  | Std.IndRef acc => acc
+  | _ => Control.throw Not_found
+  end in
+  let data := Ind.data acc in
+  let () :=
+    if Int.equal (Ind.nparams data) 4 (* A, B, f, a are parameters. *)
+    then () else Control.throw Not_found in
+  let () :=
+    if Int.equal (Array.get (Ind.constructor_nargs data) 0) 1
+                 (* a0 is the only argument of c0. *)
+    then () else Control.throw Not_found in
+  let () :=
+    if Int.equal (Array.get (Ind.constructor_ndecls data) 0) 2
+                 (* a0 and b0 can both be bound when pattern matching. *)
+    then () else Control.throw Not_found in
+  ()
 .
