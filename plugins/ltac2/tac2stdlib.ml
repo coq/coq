@@ -334,6 +334,8 @@ let () =
 let () = define "tac_exfalso" (unit @-> tac unit) @@ fun () ->
   Tactics.exfalso
 
+(** Reduction tactics *)
+
 let () =
   define "tac_red" (clause @-> tac unit) (Tac2tactics.reduce Red)
 
@@ -423,6 +425,63 @@ let () =
   define "eval_native"
     (red_context @-> constr @-> tac constr)
     Tac2tactics.eval_native
+
+
+(** Reduction constructors *)
+
+let () = define "reduction_red"
+    (unit @-> tac reduction)
+    (fun _ -> return Red)
+
+let () = define "reduction_hnf"
+    (unit @-> tac reduction)
+    (fun _ -> return Hnf)
+
+let () =
+  define "reduction_simpl"
+    (red_flags @-> red_context @-> tac reduction)
+    Tac2tactics.mk_simpl
+
+let () =
+  define "reduction_cbv"
+    (red_flags @-> tac reduction)
+    Tac2tactics.mk_cbv
+
+let () =
+  define "reduction_cbn"
+    (red_flags @-> tac reduction)
+    Tac2tactics.mk_cbn
+
+let () =
+  define "reduction_lazy"
+    (red_flags @-> tac reduction)
+    Tac2tactics.mk_lazy
+
+let () =
+  define "reduction_unfold"
+    (list reference_with_occs @-> tac reduction)
+    Tac2tactics.mk_unfold
+
+let () =
+  define "reduction_fold"
+    (list constr @-> tac reduction)
+    (fun cs -> return (Fold cs))
+
+let () =
+  define "reduction_pattern"
+    (list constr_with_occs @-> tac reduction)
+    Tac2tactics.mk_pattern
+
+let () =
+  define "reduction_vm"
+    (red_context @-> tac reduction)
+    Tac2tactics.mk_vm
+
+let () =
+  define "reduction_native"
+    (red_context @-> tac reduction)
+    Tac2tactics.mk_native
+
 
 let () =
   define "tac_change"

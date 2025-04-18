@@ -228,6 +228,54 @@ let get_evaluable_reference = function
 | GlobRef.ConstRef cst -> Proofview.tclUNIT (Evaluable.EvalConstRef cst)
 | r -> Proofview.tclZERO (Tacred.NotEvaluableRef r)
 
+let mk_flags flags =
+  Proofview.tclFMAP
+    (fun rConst -> { flags with rConst })
+    (Proofview.Monad.List.map get_evaluable_reference flags.rConst)
+
+let mk_simpl flags where =
+  Proofview.tclFMAP
+    (fun flags ->
+       let where = Option.map map_pattern_with_occs where in
+       (Simpl (flags, where)))
+    (mk_flags flags)
+
+let mk_cbv flags =
+  Proofview.tclFMAP
+    (fun flags -> Cbv flags)
+    (mk_flags flags)
+
+let mk_cbn flags  =
+  Proofview.tclFMAP
+    (fun flags -> Cbn flags)
+    (mk_flags flags)
+
+let mk_lazy flags =
+  Proofview.tclFMAP
+    (fun flags -> Lazy flags)
+    (mk_flags flags)
+
+let mk_unfold occs =
+  let map (gr, occ) =
+    let occ = mk_occurrences occ in
+    get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
+  in
+  Proofview.tclFMAP
+    (fun occs -> Unfold occs)
+    (Proofview.Monad.List.map map occs)
+
+let mk_pattern where =
+  let where = List.map (fun (c, occ) -> (mk_occurrences occ, c)) where in
+  Proofview.tclUNIT (Pattern where)
+
+let mk_vm where =
+  let where = Option.map map_pattern_with_occs where in
+  Proofview.tclUNIT (CbvVm where)
+
+let mk_native where =
+  let where = Option.map map_pattern_with_occs where in
+  Proofview.tclUNIT (CbvNative where)
+
 let reduce r cl =
   let cl = mk_clause cl in
   Tactics.reduce r cl

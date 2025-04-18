@@ -59,6 +59,22 @@ val assert_ : assertion -> unit tactic
 val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
   Name.t -> (Evd.evar_map option * constr) -> clause -> unit tactic
 
+val mk_simpl : Tac2types.red_flag -> Tac2types.red_context -> Redexpr.red_expr tactic
+
+val mk_cbv : Tac2types.red_flag -> Redexpr.red_expr tactic
+
+val mk_cbn : GlobRef.t glob_red_flag -> Redexpr.red_expr tactic
+
+val mk_lazy : GlobRef.t glob_red_flag -> Redexpr.red_expr tactic
+
+val mk_unfold : (GlobRef.t * occurrences) list -> Redexpr.red_expr tactic
+
+val mk_pattern : (constr * occurrences) list -> Redexpr.red_expr tactic
+
+val mk_vm : Tac2types.red_context -> Redexpr.red_expr tactic
+
+val mk_native : Tac2types.red_context -> Redexpr.red_expr tactic
+
 val reduce : Redexpr.red_expr -> clause -> unit tactic
 
 val simpl : GlobRef.t glob_red_flag ->

@@ -181,6 +181,22 @@ Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr 
 Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_vm".
 Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "rocq-runtime.plugins.ltac2" "eval_native".
 
+Module Red.
+  Ltac2 Type t := reduction.
+
+  Ltac2 @external red : unit -> t := "rocq-runtime.plugins.ltac2" "reduction_red".
+  Ltac2 @external hnf : unit -> t := "rocq-runtime.plugins.ltac2" "reduction_hnf".
+  Ltac2 @external simpl : red_flags -> (pattern * occurrences) -> t := "rocq-runtime.plugins.ltac2" "reduction_simpl".
+  Ltac2 @external cbv : red_flags -> t := "rocq-runtime.plugins.ltac2" "reduction_cbv".
+  Ltac2 @external cbn : red_flags -> t := "rocq-runtime.plugins.ltac2" "reduction_cbn".
+  Ltac2 @external lazy : red_flags -> t := "rocq-runtime.plugins.ltac2" "reduction_lazy".
+  Ltac2 @external unfold : (reference * occurrences) list -> t := "rocq-runtime.plugins.ltac2" "reduction_unfold".
+  Ltac2 @external fold : constr list -> t := "rocq-runtime.plugins.ltac2" "reduction_fold".
+  Ltac2 @external pattern : (constr * occurrences) list -> t := "rocq-runtime.plugins.ltac2" "reduction_pattern".
+  Ltac2 @external vm : (pattern * occurrences) option -> t := "rocq-runtime.plugins.ltac2" "reduction_vm".
+  Ltac2 @external native : (pattern * occurrences) option -> t := "rocq-runtime.plugins.ltac2" "reduction_native".
+End Red.
+
 Ltac2 @ external change : pattern option -> (constr array -> constr) -> clause -> unit := "rocq-runtime.plugins.ltac2" "tac_change".
 
 Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "rocq-runtime.plugins.ltac2" "tac_rewrite".
