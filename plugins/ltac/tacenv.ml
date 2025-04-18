@@ -15,27 +15,26 @@ open Tacexpr
 
 (** Nametab for tactics *)
 
-module KnTab = Nametab.Make(KerName)
+module TacticV = struct
+  include KerName
+  let is_var _ = None
+  module Map = KNmap
+  let stage = Summary.Stage.Interp
+  let summary_name = "ltac1tab"
+end
+module TacticTab = Nametab.EasyNoWarn(TacticV)()
 
-let tactic_tab = Summary.ref ~name:"LTAC-NAMETAB" (KnTab.empty, KNmap.empty)
+let push_tactic vis sp kn = TacticTab.push vis sp kn
 
-let push_tactic vis sp kn =
-  let (tab, revtab) = !tactic_tab in
-  let tab = KnTab.push vis sp kn tab in
-  let revtab = KNmap.add kn sp revtab in
-  tactic_tab := (tab, revtab)
+let locate_tactic qid = TacticTab.locate qid
 
-let locate_tactic qid = KnTab.locate qid (fst !tactic_tab)
+let locate_extended_all_tactic qid = TacticTab.locate_all qid
 
-let locate_extended_all_tactic qid = KnTab.find_prefixes qid (fst !tactic_tab)
+let exists_tactic kn = TacticTab.exists kn
 
-let exists_tactic kn = KnTab.exists kn (fst !tactic_tab)
+let path_of_tactic kn = TacticTab.to_path kn
 
-let path_of_tactic kn = KNmap.find kn (snd !tactic_tab)
-
-let shortest_qualid_of_tactic kn =
-  let sp = KNmap.find kn (snd !tactic_tab) in
-  KnTab.shortest_qualid Id.Set.empty sp (fst !tactic_tab)
+let shortest_qualid_of_tactic kn = TacticTab.shortest_qualid Id.Set.empty kn
 
 (** Tactic notations (TacAlias) *)
 

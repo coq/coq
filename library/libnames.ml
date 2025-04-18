@@ -125,7 +125,7 @@ let string_of_path sp =
   | [] -> Id.to_string id
   | _ -> (DirPath.to_string sl) ^ "." ^ (Id.to_string id)
 
-let sp_ord sp1 sp2 =
+let compare_full_path sp1 sp2 =
   let (p1,id1) = repr_path sp1
   and (p2,id2) = repr_path sp2 in
   let p_bit = DirPath.compare p1 p2 in
@@ -134,7 +134,7 @@ let sp_ord sp1 sp2 =
 module SpOrdered =
   struct
     type t = full_path
-    let compare = sp_ord
+    let compare = compare_full_path
   end
 
 module Spmap = Map.Make(SpOrdered)
