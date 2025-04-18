@@ -576,7 +576,7 @@ let rec is_valid (s : Pp.t) = match Pp.repr s with
   | Pp.Ppcmd_print_break _
   | Pp.Ppcmd_force_newline  -> true
   | Pp.Ppcmd_glue l    -> List.for_all is_valid l
-  | Pp.Ppcmd_string s  -> Glib.Utf8.validate s
+  | Pp.Ppcmd_string s | Ppcmd_sized_string (_,s) -> Glib.Utf8.validate s
   | Pp.Ppcmd_box (_,s)
   | Pp.Ppcmd_tag (_,s) -> is_valid s
   | Pp.Ppcmd_comment s -> List.for_all Glib.Utf8.validate s
