@@ -13,6 +13,8 @@ open Constr
 open Names
 open Pattern
 
+let debug = CDebug.create ~name:"dnet-decomp" ()
+
 (* Discrimination nets with bounded depth.
    See the module dn.ml for further explanations.
    Eduardo (5/8/97). *)
@@ -29,6 +31,7 @@ type term_label =
 | ProdLabel
 | SortLabel
 | CaseLabel
+| LamLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
 | GRLabel gr1, GRLabel gr2 -> GlobRef.UserOrd.compare gr1 gr2
@@ -38,32 +41,30 @@ let compare_term_label t1 t2 = match t1, t2 with
     (Projection.Repr.UserOrd.compare p1 p2)
 | _ -> Stdlib.compare t1 t2 (** OK *)
 
+let pr_term_label (l : term_label) =
+  let open Pp in
+  match l with
+  | GRLabel gr ->
+    str "GRLabel(" ++ GlobRef.print gr ++ str ")"
+  | ProjLabel (proj, i) ->
+    str "ProjLabel(" ++ Projection.Repr.print proj ++ str ", " ++ int i ++ str ")"
+  | ProdLabel -> str "ProdLabel"
+  | SortLabel -> str "SortLabel"
+  | CaseLabel -> str "CaseLabel"
+  | LamLabel -> str "LamLabel"
+
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
 
-let eta_reduce = Reductionops.shrink_eta
+let pr_lookup_res pr_res r =
+  let open Pp in
+  match r with
+  | Label lbl ->
+    str "Label(" ++ hv 2 (pr_res lbl) ++ str ")"
+  | Nothing -> str "Nothing"
+  | Everything -> str "Everything"
 
-(* TODO: instead of doing that on patterns we should try to perform it on terms
-   before translating them into patterns in Hints. *)
-let rec eta_reduce_pat (p:constr_pattern) = match p with
-| PLambda (_, _, q) ->
-  let f, cl = match eta_reduce_pat q with
-  | PApp (f, cl) -> f, cl
-  | q -> q, [||]
-  in
-  let napp = Array.length cl in
-  if napp > 0 then
-    let r = eta_reduce_pat (Array.last cl) in
-    match r with
-    | PRel 1 ->
-      let lc = Array.sub cl 0 (napp - 1) in
-      let u = if Array.is_empty lc then f else PApp (f, lc) in
-      if Patternops.noccurn_pattern 1 u then Patternops.lift_pattern (-1) u else p
-    | _ -> p
-  else p
-| PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _ | PProj _ | PProd _
-| PLetIn _ | PSort _ | PMeta _ | PIf _ | PCase _ | PFix _ | PCoFix _ | PInt _
-| PFloat _ | PString _ | PArray _ -> p
-| PUninstantiated _ -> .
+
+(* let eta_reduce = Reductionops.shrink_eta *)
 
 let evaluable_constant c env ts =
   (* This is a hack to work around a broken Print Module implementation, see
@@ -76,32 +77,132 @@ let evaluable_named id env ts =
   (match ts with None -> true | Some ts -> TransparentState.is_transparent_variable ts id)
 
 let evaluable_projection p _env ts =
-  (match ts with None -> true | Some ts -> TransparentState.is_transparent_projection ts (Projection.repr p))
+  (match ts with None -> true | Some ts -> TransparentState.is_transparent_projection ts p)
 
-let label_of_opaque_constant c stack =
+let decomp_constant (c : Names.Constant.t) (args : 'a list) :
+  (Names.Projection.Repr.t * int) option * 'a list =
   match Structures.PrimitiveProjections.find_opt c with
-  | None -> (GRLabel (ConstRef c), stack)
+  | None -> (None, args)
   | Some p ->
-    let n_args_needed = Structures.Structure.projection_nparams c + 1 in (* +1 for the record value itself *)
-    let n_args_given = List.length stack in
+    let n_args_needed = Names.Projection.Repr.npars p + 1 in (* +1 for the record value itself *)
+    let n_args_given = List.length args in
     let n_args_missing = max (n_args_needed - n_args_given) 0 in
     let n_args_drop = min (n_args_needed - 1) n_args_given in (* we do not drop the record value from the stack *)
-    (ProjLabel (p, n_args_missing), List.skipn n_args_drop stack)
+    (Some (p, n_args_missing), List.skipn n_args_drop args)
+
+let label_of_opaque_constant c stack =
+  match decomp_constant c stack with
+  | (None, stack) -> (GRLabel (ConstRef c), stack)
+  | (Some (p, i), stack) -> (ProjLabel (p,i), stack)
+
+type constr_res = (term_label * partial_constr list) lookup_res
+and partial_constr =
+  | Constr of EConstr.t
+  | PartialConstr of constr_res
+
+let rec pr_constr_res pr_constr (cr : constr_res) =
+  let open Pp in
+  let pr_partial_constr (pc : partial_constr) =
+    match pc with
+    | Constr c ->
+      str "Constr(" ++ hv 2 (pr_constr c) ++ str ")"
+    | PartialConstr pc ->
+      str "PartialConstr([" ++ hv 2 (pr_constr_res pr_constr pc) ++ str "])"
+  in
+  let aux (lbl, pcs) =
+    pr_term_label lbl ++
+    str "," ++
+    prlist_with_sep
+      (fun () -> str ",")
+      pr_partial_constr
+      pcs
+  in
+  pr_lookup_res aux cr
+
+let decomp_lambda_constr env sigma ts decomp : EConstr.t -> EConstr.t -> constr_res =
+  let res ds p =
+    match ds with
+    | [] -> assert false
+    | ty :: ds ->
+      let acc = Label (LamLabel, [Constr ty; p]) in
+      let fn acc ty = (Label (LamLabel, [Constr ty; PartialConstr acc])) in
+      let res = List.fold_left fn acc ds in
+      res
+  in
+  let rec decomp_app c stack =
+    let k = EConstr.kind sigma c in
+    match k with
+    | App (f, args) -> decomp_app f (Array.to_list args @ stack)
+    | Const (c, _) -> (k, decomp_constant c stack)
+    | Proj (p, b, c) -> (k, (Some (Projection.repr p, 0), c :: stack))
+    | _ -> (k, (None, stack))
+  in
+  let rec go numds ds p  : constr_res =
+    match decomp_app p [] with
+    | (Lambda (_, ty, c), (None, [])) ->
+      let ds = ty :: ds in
+      go (numds + 1) ds c
+    | (_, (None, [])) ->        (* this is neither a lambda nor an application *)
+      begin
+        match decomp [] p with
+        | _ when ds = [] -> assert false
+        | Label _ ->
+          (* there are left-over lambdas and the body is discriminating *)
+          res ds (Constr p)
+        | Nothing | Everything -> Everything
+      end
+    | (_ as f, (None, args)) -> (* this is an application whose head [f] is not a projection *)
+      debug Pp.(fun () -> str "decomp_lambda_constr: not a projection");
+      let nargs = List.length args in
+      let n = min numds nargs in
+      let ds = List.skipn n ds in
+      let args = List.firstn (nargs - n) args in
+      let p = EConstr.mkApp (EConstr.of_kind f, Array.of_list args) in
+      let p = EConstr.Vars.lift (-n) p in
+      begin
+        match decomp [] p with
+        | _ as c when ds = [] ->
+          c (* no more remaining lambdas  *)
+        | Label _ -> res ds (Constr p)
+        | Nothing | Everything -> Everything
+      end
+    | (_, (Some (p, _), _)) when evaluable_projection p env ts ->
+      debug Pp.(fun () -> str "decomp_lambda_constr: transparent proj");
+      Everything
+    | (_, (Some (p, args_missing), args)) ->
+      debug Pp.(fun () -> str "decomp_lambda_constr: opaque proj");
+      (* We have [num_params + |args| - args_missing] virtual arguments left. *)
+      let params = Projection.Repr.npars p in
+      let nargs = List.length args in
+      let total_nargs = params + nargs - args_missing in
+      let n = min numds total_nargs in
+      let ds = List.skipn n ds in
+      let args = List.firstn (max 0 (nargs - n)) args in
+      let args = List.map (fun c -> Constr c) args in
+      let args_missing = args_missing + (max 0 (n - nargs)) in
+      let p = Label (ProjLabel (p, args_missing), args) in
+      begin
+        match ds with
+        | [] -> p
+        | _ -> res ds (PartialConstr p)
+      end
+  in
+  fun ty -> go 1 [ty]
 
 (* The pattern view functions below try to overapproximate βι-neutral terms up
    to η-conversion. Some historical design choices are still incorrect w.r.t. to
    this specification. TODO: try to make them follow the spec. *)
-
-let constr_val_discr env sigma ts t =
+let constr_val_discr env sigma ts t : constr_res =
   (* Should we perform weak βι here? *)
   let open GlobRef in
-  let rec decomp stack t =
-    match EConstr.kind sigma t with
-    | App (f,l) -> decomp (Array.fold_right (fun a l -> a::l) l stack) f
-    | Proj (p,_,c) when evaluable_projection p env ts -> Everything
+  let rec decomp (stack : partial_constr list) (t : EConstr.t) : constr_res =
+    debug Pp.(fun () -> str "constr_val_discr.decomp input: " ++ Printer.pr_leconstr_env env Evd.empty t);
+    let out = match EConstr.kind sigma t with
+    | App (f,l) -> decomp (Array.fold_right (fun a l -> Constr a :: l) l stack) f
+    | Proj (p,_,c) when evaluable_projection (Projection.repr p) env ts -> Everything
     | Proj (p,_,c) ->
       let p = Environ.QProjection.canonize env p in
-      Label(ProjLabel (Projection.repr p, 0), c :: stack)
+      Label(ProjLabel (Projection.repr p, 0), Constr c :: stack)
     | Cast (c,_,_) -> decomp stack c
     | Const (c,_) when evaluable_constant c env ts -> Everything
     | Const (c,_) ->
@@ -115,8 +216,9 @@ let constr_val_discr env sigma ts t =
       Label(GRLabel (ConstructRef cstr_sp), stack)
     | Var id when evaluable_named id env ts -> Everything
     | Var id -> Label(GRLabel (VarRef id), stack)
-    | Prod (n,d,c) -> Label(ProdLabel, [d; c])
-    | Lambda _ when Option.is_empty ts && List.is_empty stack -> Nothing
+    | Prod (n,d,c) -> Label(ProdLabel, [Constr d; Constr c])
+    | Lambda (_,d,c) when List.is_empty stack ->
+      decomp_lambda_constr env sigma ts decomp d c
     | Lambda _ -> Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
@@ -124,23 +226,129 @@ let constr_val_discr env sigma ts t =
       begin
         match decomp stack c with
         | Label (GRLabel (ConstructRef _), _) -> Everything (* over-approximating w.r.t. [fMATCH] *)
-        | Label _  | Nothing -> Label(CaseLabel, c :: stack)
+        | (Label _ | Nothing) as res -> Label(CaseLabel, PartialConstr res :: stack)
         | Everything -> Everything
       end
     | Rel _ | Meta _ | LetIn _ | Fix _ | CoFix _
     | Int _ | Float _ | String _ | Array _ -> Nothing
+    in
+    debug Pp.(fun () -> str "constr_val_discr.decomp output: " ++ pr_constr_res (Printer.pr_leconstr_env env Evd.empty) out);
+    out
+  and decomp_partial (stack : partial_constr list) (t : partial_constr) : constr_res =
+    match t with
+    | Constr t -> decomp stack t
+    | PartialConstr res -> res
   in
-  decomp [] (eta_reduce sigma t)
+  decomp_partial [] t
 
-let constr_pat_discr env ts p =
-  let open GlobRef in
-  let rec decomp stack p =
+type pat_res = (term_label * partial_pat list) option
+and partial_pat =
+  | Pattern of constr_pattern
+  | PartialPat of pat_res
+
+let rec pr_pat_res pr_pat (cr : pat_res) =
+  let open Pp in
+  let pr_partial_pat (pc : partial_pat) =
+    match pc with
+    | Pattern c ->
+      str "Pattern(" ++ hv 2 (pr_pat c) ++ str ")"
+    | PartialPat pc ->
+      str "PartialPat([" ++ hv 2 (pr_pat_res pr_pat pc) ++ str "])"
+  in
+  let aux (lbl, pcs) =
+    pr_term_label lbl ++
+    str "," ++
+    prlist_with_sep
+      (fun () -> str ",")
+      pr_partial_pat
+      pcs
+  in
+  match cr with
+  | Some x -> str "Some(" ++ hv 2 (aux x) ++ str ")"
+  | None -> str "None"
+
+let decomp_lambda_pat env ts decomp : constr_pattern -> constr_pattern -> pat_res =
+  let res ds p =
+    match ds with
+    | [] -> assert false
+    | ty :: ds ->
+      let acc = Some (LamLabel, [Pattern ty; p]) in
+      let fn acc ty = Some (LamLabel, [Pattern ty; PartialPat acc]) in
+      let res = List.fold_left fn acc ds in
+      res
+  in
+  let rec decomp_app p stack =
     match p with
-    | PApp (f,args) -> decomp (Array.to_list args @ stack) f
-    | PProj (p,c) when evaluable_projection p env ts -> None
+    | PApp (f, args) -> decomp_app f (Array.to_list args @ stack)
+    | PRef (ConstRef c) -> (p, decomp_constant c stack)
+    | PProj (pr, c) -> (p, (Some (Projection.repr pr, 0), c :: stack))
+    | _ -> (p, (None, stack))
+  in
+  let rec go numds ds p  : pat_res =
+    match decomp_app p [] with
+    | (PLambda (_, ty, c), (None, [])) ->
+      let ds = ty :: ds in
+      go (numds + 1) ds c
+    | (_, (None, [])) ->        (* this is neither a lambda nor an application *)
+      begin
+        match decomp [] p with
+        | _ when ds = [] -> assert false
+        | Some _ ->
+          (* there are left-over lambdas and the body is discriminating *)
+          res ds (Pattern p)
+        | None -> None
+      end
+    | (_ as f, (None, args)) -> (* this is an application whose head [f] is not a projection *)
+      debug Pp.(fun () -> str "decomp_lambda_pat: not a projection");
+      let nargs = List.length args in
+      let n = min numds nargs in
+      let ds = List.skipn n ds in
+      let args = List.firstn (nargs - n) args in
+      let p = PApp (f, Array.of_list args) in
+      let p = Patternops.lift_pattern (-n) p in
+      begin
+        match decomp [] p with
+        | _ as c when ds = [] ->
+          c (* no more remaining lambdas  *)
+        | Some _ ->
+          (* there are left-over lambdas and the body is discriminating *)
+          res ds (Pattern p)
+        | None -> None
+      end
+    | (_, (Some (p, _), _)) when evaluable_projection p env ts ->
+      debug Pp.(fun () -> str "decomp_lambda_pat: transparent proj");
+      None
+    | (_, (Some (p, args_missing), args)) ->
+      debug Pp.(fun () -> str "decomp_lambda_pat: opaque proj");
+      (* We have [num_params + |args| - args_missing] virtual arguments left. *)
+      let params = Projection.Repr.npars p in
+      let nargs = List.length args in
+      let total_nargs = params + nargs - args_missing in
+      let n = min numds total_nargs in
+      let ds = List.skipn n ds in
+      let args = List.firstn (max 0 (nargs - n)) args in
+      let args = List.map (fun c -> Pattern c) args in
+      let args_missing = args_missing + (max 0 (n - nargs)) in
+      let p = (Some (ProjLabel (p, args_missing), args)) in
+      begin
+        match ds with
+        | [] -> p
+        | _ -> res ds (PartialPat p)
+      end
+  in
+  fun ty -> go 1 [ty]
+
+
+let constr_pat_discr env ts p : pat_res =
+  let open GlobRef in
+  let rec decomp (stack : partial_pat list) (p : constr_pattern) : pat_res =
+    debug Pp.(fun () -> str "constr_pat_discr.decomp input: " ++ Printer.pr_lconstr_pattern_env env Evd.empty p);
+    let out = match p with
+    | PApp (f,args) -> decomp ((Array.map_to_list (fun p -> Pattern p) args) @ stack) f
+    | PProj (p,c) when evaluable_projection (Projection.repr p) env ts -> None
     | PProj (p,c) ->
       let p = Environ.QProjection.canonize env p in
-      Some (ProjLabel (Projection.repr p, 0), c :: stack)
+      Some (ProjLabel (Projection.repr p, 0), Pattern c :: stack)
     | PRef ((IndRef _) as ref)
     | PRef ((ConstructRef _ ) as ref) ->
       let ref = Environ.QGlobRef.canonize env ref in
@@ -153,27 +361,38 @@ let constr_pat_discr env ts p =
       Some (label_of_opaque_constant c stack)
     | PVar v when evaluable_named v env ts -> None
     | PVar v -> Some (GRLabel (VarRef v), stack)
-    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [Pattern d ; Pattern c])
+    | PLambda (_,d,c) when List.is_empty stack ->
+      decomp_lambda_pat env ts decomp d c
     | PSort s when stack = [] -> Some (SortLabel, [])
     | PCase(_,_,p,_) | PIf(p,_,_) ->
       begin
         match decomp stack p with
         | Some (GRLabel (ConstructRef _), _) -> None (* over-approximating w.r.t. [fMATCH] *)
-        | Some _ -> Some (CaseLabel, p :: stack)
+        | Some _ as res -> Some (CaseLabel, PartialPat res :: stack)
         | None -> None
       end
     | _ -> None
+    in
+    debug Pp.(fun () -> str "constr_pat_discr.decomp output: " ++ pr_pat_res (Printer.pr_lconstr_pattern_env env Evd.empty) out);
+    out
+  and decomp_partial (stack : partial_pat list) (t : partial_pat) : pat_res =
+    match t with
+    | Pattern p ->
+      decomp stack p
+    | PartialPat res -> res
   in
-  decomp [] (eta_reduce_pat p)
+  decomp_partial [] p
 
 let constr_pat_discr_syntactic env p =
   let open GlobRef in
-  let rec decomp stack p =
-    match eta_reduce_pat p with
-    | PApp (f,args) -> decomp (Array.to_list args @ stack) f
+  let rec decomp (stack : partial_pat list) (p : constr_pattern) : pat_res =
+    debug Pp.(fun () -> str "constr_pat_discr_syntactic.decomp input: " ++ Printer.pr_lconstr_pattern_env env Evd.empty p);
+    let out = match p with
+    | PApp (f,args) -> decomp ((Array.map_to_list (fun p -> Pattern p) args) @ stack) f
     | PProj (p,c) ->
       let p = Environ.QProjection.canonize env p in
-      Some (ProjLabel (Names.Projection.repr p, 0), c :: stack)
+      Some (ProjLabel (Names.Projection.repr p, 0), Pattern c :: stack)
     | PRef ((IndRef _) as ref)
     | PRef ((ConstructRef _ ) as ref) ->
       let ref = Environ.QGlobRef.canonize env ref in
@@ -183,11 +402,21 @@ let constr_pat_discr_syntactic env p =
       let c = Environ.QConstant.canonize env c in
       Some (label_of_opaque_constant c stack)
     | PVar v -> Some (GRLabel (VarRef v), stack)
-    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [d ; c])
+    | PProd (_,d,c) when stack = [] -> Some (ProdLabel, [Pattern d ; Pattern c])
+    | PLambda (_,d,c) when List.is_empty stack ->
+      decomp_lambda_pat env (Some TransparentState.full) decomp d c
     | PSort s when stack = [] -> Some (SortLabel, [])
+    | PCase(_,_,p,_) | PIf(p,_,_) -> Some (CaseLabel, Pattern p :: stack)
     | _ -> None
+    in
+    debug Pp.(fun () -> str "constr_pat_discr_syntactic.decomp output: " ++ pr_pat_res (Printer.pr_lconstr_pattern_env env Evd.empty) out);
+    out
+  and decomp_partial (stack : partial_pat list) (t : partial_pat) : pat_res =
+    match t with
+    | Pattern p -> decomp stack p
+    | PartialPat res -> res
   in
-  decomp [] p
+  decomp_partial [] p
 
 let bounded_constr_pat_discr env st (t,depth) =
   if Int.equal depth 0 then None
@@ -225,23 +454,23 @@ struct
   type pattern = Dn.pattern
 
   let pattern env st pat =
-    Dn.pattern (bounded_constr_pat_discr env st) (pat, !dnet_depth)
+    Dn.pattern (bounded_constr_pat_discr env st) (Pattern pat, !dnet_depth)
 
   let pattern_syntactic env pat =
-    Dn.pattern (bounded_constr_pat_discr_syntactic env) (pat, !dnet_depth)
+    Dn.pattern (bounded_constr_pat_discr_syntactic env) (Pattern pat, !dnet_depth)
 
   let constr_pattern env sigma st pat =
     let mk p = match bounded_constr_val_discr env st sigma p with
     | Label l -> Some l
     | Everything | Nothing -> None
     in
-    Dn.pattern mk (pat, !dnet_depth)
+    Dn.pattern mk (Constr pat, !dnet_depth)
 
   let empty = Dn.empty
   let add = Dn.add
   let rmv = Dn.rmv
 
   let lookup env sigma st dn t =
-    Dn.lookup dn (bounded_constr_val_discr env st sigma) (t,!dnet_depth)
+    Dn.lookup dn (bounded_constr_val_discr env st sigma) (Constr t,!dnet_depth)
 
 end
