@@ -267,10 +267,10 @@ type (_, _) entry =
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
-let constr_custom_entry : (string, Constrexpr.constr_expr) entry_command =
-  create_entry_command "constr" { eext_fun = (fun s st -> [s], st); eext_eq = (==) (* FIXME *) }
-let pattern_custom_entry : (string, Constrexpr.cases_pattern_expr) entry_command =
-  create_entry_command "pattern" { eext_fun = (fun s st -> [s], st); eext_eq = (==) (* FIXME *) }
+let constr_custom_entry : Constrexpr.constr_expr entry_command =
+  create_entry_command "constr"
+let pattern_custom_entry : Constrexpr.cases_pattern_expr entry_command =
+  create_entry_command "pattern"
 
 let custom_entry_locality = Summary.ref ~name:"LOCAL-CUSTOM-ENTRY" String.Set.empty
 (** If the entry is present then local *)
