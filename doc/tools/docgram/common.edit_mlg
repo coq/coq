@@ -1622,12 +1622,6 @@ record_declaration: [
 
 fields_def: [ | DELETENT ]
 
-constr_body: [
-| DELETE ":=" lconstr
-| REPLACE ":" lconstr ":=" lconstr
-| WITH OPT ( ":" type ) ":=" lconstr
-]
-
 scheme: [
 | DELETE scheme_kind
 | REPLACE identref ":=" scheme_kind
@@ -2368,7 +2362,6 @@ SPLICE: [
 | withtac
 | debug
 | eauto_search_strategy
-| constr_body
 | reference_or_constr
 | opt_hintbases
 | opthints

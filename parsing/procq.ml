@@ -317,9 +317,6 @@ module Prim =
     let ident_decl = Entry.make "ident_decl"
     let pattern_ident = Entry.make "pattern_ident"
 
-    (* A synonym of ident - maybe ident will be located one day *)
-    let base_ident = Entry.make "base_ident"
-
     let qualid = Entry.make "qualid"
     let fullyqualid = Entry.make "fullyqualid"
     let dirpath = Entry.make "dirpath"
