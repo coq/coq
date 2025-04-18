@@ -4,7 +4,7 @@
 Language extensions
 ===================
 
-Elaboration extends the language accepted by the Rocq kernel to make it
+Syntax extensions and :term:`pretyping` extend the language accepted by the Rocq kernel to make it
 easier to use.  For example, this lets the user omit most type
 annotations because they can be inferred, call functions with implicit
 arguments which will be inferred as well, extend the syntax with
@@ -16,6 +16,7 @@ language presented in the :ref:`previous chapter <core-language>`.
 .. toctree::
    :maxdepth: 1
 
+   compil-steps
    evars
    implicit-arguments
    match
