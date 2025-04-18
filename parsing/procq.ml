@@ -255,7 +255,7 @@ let eoi_entry en =
   let symbs = Rule.next (Rule.next Rule.stop (Symbol.nterm en)) (Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
   let ext = Fresh (Gramlib.Gramext.First, make_rule [Production.make symbs act]) in
-  safe_extend e ext;
+  grammar_extend e ext;
   e
 
 (* Parse a string, does NOT check if the entire string was read
