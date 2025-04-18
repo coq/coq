@@ -444,6 +444,134 @@ let () =
     (rewstrategy @-> option ident @-> tac unit)
     Tac2tactics.rewrite_strat
 
+let () =
+  define "rewstrat_id"
+    (unit @-> tac rewstrategy)
+    (fun _ -> return Rewrite.Strategies.id)
+
+let () =
+  define "rewstrat_fail"
+    (unit @-> tac rewstrategy)
+    (fun _ -> return Rewrite.Strategies.fail)
+
+let () =
+  define "rewstrat_refl"
+    (unit @-> tac rewstrategy)
+    (fun _ -> return Rewrite.Strategies.refl)
+
+let () =
+  define "rewstrat_progress"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.progress s))
+
+let () =
+  define "rewstrat_seq"
+    (rewstrategy @-> rewstrategy @-> tac rewstrategy)
+    (fun s0 s1 -> return (Rewrite.Strategies.seq s0 s1))
+
+let () =
+  define "rewstrat_seqs"
+    (list rewstrategy @-> tac rewstrategy)
+    (fun ss -> return (List.fold_left Rewrite.Strategies.seq Rewrite.Strategies.id ss))
+
+let () =
+  define "rewstrat_choice"
+    (rewstrategy @-> rewstrategy @-> tac rewstrategy)
+    (fun s0 s1 -> return (Rewrite.Strategies.choice s0 s1))
+
+let () =
+  define "rewstrat_choices"
+    (list rewstrategy @-> tac rewstrategy)
+    (fun ss -> return (List.fold_left Rewrite.Strategies.choice Rewrite.Strategies.fail ss))
+
+let () =
+  define "rewstrat_try"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.try_ s))
+
+(* (rewstrategy -> rewstrategy) -> rewstrategy *)
+let () =
+  define "rewstrat_fix"
+    (closure @-> tac rewstrategy)
+    (fun f ->
+       let f s = Proofview.tclFMAP to_rewstrategy (Tac2val.apply f [of_rewstrategy s]) in
+       Rewrite.Strategies.fix_tac f
+    )
+
+let () =
+  define "rewstrat_any"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.any s))
+
+let () =
+  define "rewstrat_repeat"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.repeat s))
+
+let () =
+  define "rewstrat_one_subterm"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.one_subterm s))
+
+let () =
+  define "rewstrat_all_subterms"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.all_subterms s))
+
+let () =
+  define "rewstrat_bottomup"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.bottomup s))
+
+let () =
+  define "rewstrat_topdown"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.topdown s))
+
+let () =
+  define "rewstrat_innermost"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.innermost s))
+
+let () =
+  define "rewstrat_outermost"
+    (rewstrategy @-> tac rewstrategy)
+    (fun s -> return (Rewrite.Strategies.outermost s))
+
+let () =
+  define "rewstrat_hints"
+    (ident @-> tac rewstrategy)
+    (fun i -> return (Rewrite.Strategies.hints (Id.to_string i)))
+
+let () =
+  define "rewstrat_old_hints"
+    (ident @-> tac rewstrategy)
+    (fun i -> return (Rewrite.Strategies.old_hints (Id.to_string i)))
+
+let () =
+  define "rewstrat_one_lemma"
+    (preterm @-> bool @-> tac rewstrategy)
+    (fun c l2r ->
+       let c env sigma = Pretyping.understand_uconstr env sigma c in
+       return (Rewrite.Strategies.one_lemma c l2r None AllOccurrences)
+    )
+
+let () =
+  define "rewstrat_lemmas"
+    (list preterm @-> tac rewstrategy)
+    (fun cs ->
+       let mk_c c = (); fun env sigma -> Pretyping.understand_uconstr env sigma c in
+       let cs = List.map (fun c -> (mk_c c, true, None)) cs in
+       return (Rewrite.Strategies.lemmas cs)
+    )
+
+let () =
+  define "rewstrat_fold"
+    (preterm @-> tac rewstrategy)
+    (fun c ->
+       return (Rewrite.Strategies.fold_glob c.term)
+    )
+
 
 let () =
   define "tac_inversion"
