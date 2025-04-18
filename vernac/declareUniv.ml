@@ -156,7 +156,7 @@ let do_universe ~poly l =
     let names = CArray.map_of_list (fun (na,_) -> Name na) l in
     let us = CArray.map_of_list (fun (_,l) -> Level.make l) l in
     let ctx =
-      UVars.UContext.make ([||],names) (UVars.Instance.of_array ([||],us), Constraints.empty)
+      UVars.UContext.make {quals = [||]; univs = names} (UVars.Instance.of_array ([||],us), Constraints.empty)
     in
     Global.push_section_context ctx
 
@@ -174,7 +174,7 @@ let do_constraint ~poly l =
     Global.push_context_set uctx
   | true ->
     let uctx = UVars.UContext.make
-        ([||],[||])
+        UVars.empty_bound_names
         (UVars.Instance.empty,constraints)
     in
     Global.push_section_context uctx

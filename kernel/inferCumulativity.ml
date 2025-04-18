@@ -59,7 +59,7 @@ end = struct
 
   let to_variance_opt o = Option.cata to_variance Invariant o
 
-  let infer_level_eq u variances =
+  let infer_level_eq u (variances : variances) =
     match Level.Map.find_opt u variances.univs with
     | None -> variances
     | Some (Check, expected) ->
@@ -98,7 +98,7 @@ end = struct
     if Level.Map.is_empty univs then raise TrivialVariance;
     {univs; orig_array=us; infer_mode=true}
 
-  let finish variances =
+  let finish (variances : variances) =
     Array.map
       (fun (u,_check) -> to_variance_opt (Option.map snd (Level.Map.find_opt u variances.univs)))
       variances.orig_array
