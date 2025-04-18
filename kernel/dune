@@ -40,7 +40,3 @@
 ; warnings.
 (env
  (dev (flags :standard -w @a-4-40-44-50)))
-
-(deprecated_library_name
- (old_public_name coq.kernel)
- (new_public_name rocq-runtime.kernel))

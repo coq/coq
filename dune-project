@@ -161,15 +161,14 @@ semi-interactive development of machine-checked proofs.
 This package provides the Rocq Reference Manual."))
 
 (package
- (name rocq-prover)
- (allow_empty)
+ (name rocq-test-suite)
  (depends
   (rocq-core (= :version))
-  rocq-stdlib
-  (ounit2 :with-test)
-  (conf-python-3 :with-test)
-  (conf-time :with-test))
- (synopsis "The Rocq Prover with Stdlib")
+  coqide-server
+  ounit2
+  conf-python-3
+  conf-time)
+ (synopsis "The Rocq Prover test suite")
  (description "The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
 a formal language to write mathematical definitions, executable
 algorithms and theorems together with an environment for
@@ -181,14 +180,4 @@ project, or the Bedrock verified low-level programming library), the
 formalization of mathematics (e.g. the full formalization of the
 Feit-Thompson theorem or homotopy type theory) and teaching.
 
-This package is a virtual package gathering the rocq-core and rocq-stdlib packages."))
-
-(package
- (name coq)
- (allow_empty)
- (depends
-  (rocq-prover (= :version))
-  (coq-core (= :version))
-  coq-stdlib
-  (coqide-server (= :version)))
- (synopsis "Compatibility metapackage for Coq after the Rocq renaming"))
+This package runs the test suite."))

@@ -27,13 +27,13 @@ unset ROCQLIB
 N=`./rocq c -config | grep COQLIB | grep /overridden | wc -l`
 if [ $N -ne 1 ]; then
   echo ROCQLIB not overridden by coq_environment
-  coqc -config
+  rocq -config
   exit 1
 fi
 N=`./rocq c -config | grep OCAMLFIND | grep /overridden | wc -l`
 if [ $N -ne 1 ]; then
   echo OCAMLFIND not overridden by coq_environment
-  coqc -config
+  rocq -config
   exit 1
 fi
 ./rocq makefile -o CoqMakefile -R . foo > /dev/null
@@ -53,7 +53,7 @@ export ROCQLIB="$PWD/overridden2"
 N=`./rocq c -config | grep COQLIB | grep overridden2 | wc -l`
 if [ $N -ne 1 ]; then
   echo ROCQLIB not overridden by ROCQLIB when coq_environment present
-  coqc -config
+  rocq -config
   exit 1
 fi
 

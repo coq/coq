@@ -7,7 +7,7 @@ mkdir _test
 find . -maxdepth 1 -not -name . -not -name _test -exec cp -r '{}' -t _test ';'
 cd _test
 
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 
 make b.vo
 

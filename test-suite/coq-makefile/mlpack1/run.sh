@@ -20,7 +20,7 @@ sort > desired <<EOT
 ./test/test.v
 ./test/test.vo
 EOT
-(coqc -config | grep -q "NATIVE_COMPILER_DEFAULT=yes") || sed -i.bak '/\.coq-native/d' desired
+(rocq -config | grep -q "NATIVE_COMPILER_DEFAULT=yes") || sed -i.bak '/\.coq-native/d' desired
 diff -u desired actual
 
 (cd "$(find tmp -name coq-test-suite)" && find .) | sort > actual
