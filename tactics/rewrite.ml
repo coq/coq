@@ -875,6 +875,11 @@ let apply_rule unify : occurrences_count pure_strategy =
               (occs, res)
     }
 
+let with_no_bindings (c : delayed_open_constr) : delayed_open_constr_with_bindings =
+  (); fun env sigma ->
+    let (sigma, c) = c env sigma in
+    (sigma, (c, NoBindings))
+
 let apply_lemma l2r flags oc by loccs : strategy = { strategy =
   fun ({ state = () ; env ; term1 = t ; evars = (sigma, cstrs) } as input) ->
     let sigma, c = oc sigma in
@@ -1252,9 +1257,6 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       | _ -> state, Fail
   in { strategy = aux }
 
-let all_subterms = subterm true default_flags
-let one_subterm = subterm false default_flags
-
 (** Requires transitivity of the rewrite step, if not a reduction.
     Not tail-recursive. *)
 
@@ -1371,16 +1373,26 @@ module Strategies =
       let rec aux input = (f { strategy = fun input -> check_interrupt aux input }).strategy input in
       { strategy = aux }
 
+    let fix_tac (f : 'a pure_strategy -> 'a pure_strategy Proofview.tactic) : 'a pure_strategy Proofview.tactic =
+      let forward_def = ref (fun _ -> assert false) in
+      f {strategy = fun input -> check_interrupt !forward_def input} >>= fun f ->
+      forward_def := f.strategy;
+      Proofview.tclUNIT f
+
+    let all_subterms (s : 'a pure_strategy) : 'a pure_strategy = subterm true default_flags s
+
+    let one_subterm (s : 'a pure_strategy) : 'a pure_strategy = subterm false default_flags s
+
     let any (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun any -> try_ (seq s any))
 
     let repeat (s : 'a pure_strategy) : 'a pure_strategy =
       seq s (any s)
 
-    let bu (s : 'a pure_strategy) : 'a pure_strategy =
+    let bottomup (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun s' -> seq (choice (progress (all_subterms s')) s) (try_ s'))
 
-    let td (s : 'a pure_strategy) : 'a pure_strategy =
+    let topdown (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun s' -> seq (choice s (progress (all_subterms s'))) (try_ s'))
 
     let innermost (s : 'a pure_strategy) : 'a pure_strategy =
@@ -1389,31 +1401,42 @@ module Strategies =
     let outermost (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun out -> choice s (one_subterm out))
 
-    let lemmas cs : 'a pure_strategy =
-      List.fold_left (fun tac (l,l2r,by) ->
-        choice tac (apply_lemma l2r rewrite_unif_flags l by AllOccurrences))
+    let one_lemma c l2r by occs : strategy =
+      let strategy ({env} as input) =
+        let c sigma = with_no_bindings c env sigma in
+        let flags = general_rewrite_unif_flags () in
+        (apply_lemma l2r flags c by occs).strategy input
+      in {strategy}
+
+    let lemmas cs : strategy =
+      List.fold_left (fun tac (l,l2r,by) -> choice tac (one_lemma l l2r by AllOccurrences))
         fail cs
 
-    let inj_open hint = (); fun sigma ->
+    let inj_open hint = (); fun _env sigma ->
       let (ctx, lemma) = Autorewrite.RewRule.rew_lemma hint in
       let subst, ctx = UnivGen.fresh_universe_context_set_instance ctx in
       let subst = Sorts.QVar.Map.empty, subst in
       let lemma = Vars.subst_univs_level_constr subst (EConstr.of_constr lemma) in
       let sigma = Evd.merge_context_set UnivRigid sigma ctx in
-      (sigma, (lemma, NoBindings))
+      (sigma, lemma)
 
-    let old_hints (db : string) : 'a pure_strategy =
+    let old_hints (db : string) : strategy =
       let rules = Autorewrite.find_rewrites db in
         lemmas
-          (List.map (fun hint -> (inj_open hint, Autorewrite.RewRule.rew_l2r hint,
-                                  Autorewrite.RewRule.rew_tac hint)) rules)
+          (List.map (fun hint -> (inj_open hint,
+                                  Autorewrite.RewRule.rew_l2r hint,
+                                  Autorewrite.RewRule.rew_tac hint
+                                 )
+                    ) rules)
 
-    let hints (db : string) : 'a pure_strategy = { strategy =
+    let hints (db : string) : strategy = { strategy =
       fun ({ term1 = t; env } as input) ->
       let t = EConstr.Unsafe.to_constr t in
       let rules = Autorewrite.find_matches env db t in
-      let lemma hint = (inj_open hint, Autorewrite.RewRule.rew_l2r hint,
-                        Autorewrite.RewRule.rew_tac hint) in
+      let lemma hint = (inj_open hint,
+                        Autorewrite.RewRule.rew_l2r hint,
+                        Autorewrite.RewRule.rew_tac hint
+                       ) in
       let lems = List.map lemma rules in
       (lemmas lems).strategy input
                                                  }
@@ -1431,24 +1454,28 @@ module Strategies =
                                rew_evars = sigma, cstrevars evars }
                                                            }
 
-    let fold_glob c : 'a pure_strategy = { strategy =
-      fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
-(*         let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
-        let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
-        let unfolded = match Tacred.red_product env sigma c with
+    let run_fold_in env evars c term typ : rewrite_result =
+      let c = match Tacred.red_product env (goalevars evars) c with
         | None -> user_err Pp.(str "fold: the term is not unfoldable!")
         | Some c -> c
-        in
-          try
-            let _, sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
-            let c' = Reductionops.nf_evar sigma c in
-              state, Success { rew_car = ty; rew_from = t; rew_to = c';
-                                  rew_prf = RewCast DEFAULTcast;
-                                  rew_evars = (sigma, snd evars) }
-          with e when CErrors.noncritical e -> state, Fail
-                                         }
+      in try
+        let _, sigma = Unification.w_unify env (goalevars evars) CONV ~flags:(Unification.elim_flags ()) c term in
+        let c' = Reductionops.nf_evar sigma c in
+        Success { rew_car = typ; rew_from = term; rew_to = c';
+                         rew_prf = RewCast DEFAULTcast;
+                         rew_evars = (sigma, cstrevars evars) }
+      with e when CErrors.noncritical e -> Fail
 
+    let fold c : 'a pure_strategy =
+      { strategy = fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
+            state, run_fold_in env evars c t ty
+      }
 
+    let fold_glob c : 'a pure_strategy =
+      { strategy = fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
+            let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
+            state, run_fold_in env (sigma, cstrevars evars) c t ty
+      }
 end
 
 (** The strategy for a single rewrite, dealing with occurrences. *)
@@ -1656,21 +1683,6 @@ let cl_rewrite_clause l left2right occs clause =
 let cl_rewrite_clause_strat strat clause =
   cl_rewrite_clause_strat false strat clause
 
-let apply_glob_constr ((_, c) : _ * EConstr.t delayed_open) l2r occs = (); fun ({ state = () ; env = env } as input) ->
-  let c sigma =
-    let (sigma, c) = c env sigma in
-    (sigma, (c, NoBindings))
-  in
-  let flags = general_rewrite_unif_flags () in
-  (apply_lemma l2r flags c None occs).strategy input
-
-let interp_glob_constr_list env =
-  let make c = (); fun sigma ->
-    let sigma, c = Pretyping.understand_tcc env sigma c in
-    (sigma, (c, NoBindings))
-  in
-  List.map (fun c -> make c, true, None)
-
 (* Syntax for rewriting with strategies *)
 
 type unary_strategy =
@@ -1761,12 +1773,12 @@ let rec strategy_of_ast bindings = function
   | StratUnary (f, s) ->
     let s' = strategy_of_ast bindings s in
     let f' = match f with
-      | Subterms -> all_subterms
-      | Subterm -> one_subterm
+      | Subterms -> Strategies.all_subterms
+      | Subterm -> Strategies.one_subterm
       | Innermost -> Strategies.innermost
       | Outermost -> Strategies.outermost
-      | Bottomup -> Strategies.bu
-      | Topdown -> Strategies.td
+      | Bottomup -> Strategies.bottomup
+      | Topdown -> Strategies.topdown
       | Progress -> Strategies.progress
       | Try -> Strategies.try_
       | Any -> Strategies.any
@@ -1784,13 +1796,9 @@ let rec strategy_of_ast bindings = function
       | [] -> assert false
       | s::strs -> List.fold_left Strategies.choice s strs
     end
-  | StratConstr (c, b) -> { strategy = apply_glob_constr c b AllOccurrences }
+  | StratConstr ((_, c), b) -> Strategies.one_lemma c b None AllOccurrences
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
-  | StratTerms l -> { strategy =
-    (fun ({ state = () ; env } as input) ->
-     let l' = interp_glob_constr_list env (List.map fst l) in
-     (Strategies.lemmas l').strategy input)
-                    }
+  | StratTerms l -> Strategies.lemmas (List.map (fun (_, c) -> (c, true, None)) l)
   | StratEval r -> { strategy =
     (fun ({ state = () ; env ; evars } as input) ->
      let (sigma, r_interp) = r env (goalevars evars) in

@@ -59,6 +59,7 @@ let val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag = 
 let val_transparent_state : TransparentState.t Val.tag = Val.create "transparent_state"
 let val_pretype_flags = Val.create "pretype_flags"
 let val_expected_type = Val.create "expected_type"
+let val_rewstrategy = Val.create "rewstrategy"
 
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
 match Val.eq tag tag' with
@@ -202,6 +203,10 @@ let evar = repr_ext val_evar
 let of_sort ev = of_ext val_sort ev
 let to_sort ev = to_ext val_sort ev
 let sort = repr_ext val_sort
+
+let of_rewstrategy ev = of_ext val_rewstrategy ev
+let to_rewstrategy ev = to_ext val_rewstrategy ev
+let rewstrategy = repr_ext val_rewstrategy
 
 let internal_err =
   let open Names in
