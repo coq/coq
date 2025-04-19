@@ -60,7 +60,8 @@ type rewrite_result =
 | Identity
 | Success of rewrite_result_info
 
-type strategy
+type 'a pure_strategy
+type strategy = unit pure_strategy
 
 val strategy_of_ast : (Glob_term.glob_constr * constr delayed_open, Redexpr.red_expr delayed_open, Id.t) strategy_ast -> strategy
 
@@ -106,35 +107,35 @@ val apply_strategy :
 
 module Strategies :
 sig
-  val fail : strategy
-  val id : strategy
-  val refl : strategy
-  val progress : strategy -> strategy
-  val seq : strategy -> strategy -> strategy
-  val choice : strategy -> strategy -> strategy
-  val try_ : strategy -> strategy
+  val fail : 'a pure_strategy
+  val id : 'a pure_strategy
+  val refl : 'a pure_strategy
+  val progress : 'a pure_strategy -> 'a pure_strategy
+  val seq : 'a pure_strategy -> 'a pure_strategy -> 'a pure_strategy
+  val choice : 'a pure_strategy -> 'a pure_strategy -> 'a pure_strategy
+  val try_ : 'a pure_strategy -> 'a pure_strategy
 
-  val fix_tac : (strategy -> strategy Proofview.tactic) -> strategy Proofview.tactic
-  val fix : (strategy -> strategy) -> strategy
+  val fix_tac : ('a pure_strategy -> 'a pure_strategy Proofview.tactic) -> 'a pure_strategy Proofview.tactic
+  val fix : ('a pure_strategy -> 'a pure_strategy) -> 'a pure_strategy
 
-  val any : strategy -> strategy
-  val repeat : strategy -> strategy
-  val all_subterms : strategy -> strategy
-  val one_subterm : strategy -> strategy
-  val bottomup : strategy -> strategy
-  val topdown : strategy -> strategy
-  val innermost : strategy -> strategy
-  val outermost : strategy -> strategy
+  val any : 'a pure_strategy -> 'a pure_strategy
+  val repeat : 'a pure_strategy -> 'a pure_strategy
+  val all_subterms : 'a pure_strategy -> 'a pure_strategy
+  val one_subterm : 'a pure_strategy -> 'a pure_strategy
+  val bottomup : 'a pure_strategy -> 'a pure_strategy
+  val topdown : 'a pure_strategy -> 'a pure_strategy
+  val innermost : 'a pure_strategy -> 'a pure_strategy
+  val outermost : 'a pure_strategy -> 'a pure_strategy
 
   val one_lemma : delayed_open_constr -> bool -> Gentactic.glob_generic_tactic option -> Locus.occurrences -> strategy
   val lemmas : (delayed_open_constr * bool * Gentactic.glob_generic_tactic option) list -> strategy
 
   val old_hints : string -> strategy
   val hints : string -> strategy
-  val reduce : Redexpr.red_expr -> strategy
+  val reduce : Redexpr.red_expr -> 'a pure_strategy
 
-  val fold : constr -> strategy
-  val fold_glob : Glob_term.glob_constr -> strategy
+  val fold : constr -> 'a pure_strategy
+  val fold_glob : Glob_term.glob_constr -> 'a pure_strategy
 end
 
 module Internal :

@@ -1346,9 +1346,9 @@ module Strategies =
       forward_def := f.strategy;
       Proofview.tclUNIT f
 
-    let all_subterms (s : strategy) : strategy = subterm true default_flags s
+    let all_subterms (s : 'a pure_strategy) : 'a pure_strategy = subterm true default_flags s
 
-    let one_subterm (s : strategy) : strategy = subterm false default_flags s
+    let one_subterm (s : 'a pure_strategy) : 'a pure_strategy = subterm false default_flags s
 
     let any (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun any -> try_ (seq s any))
@@ -1356,16 +1356,16 @@ module Strategies =
     let repeat (s : 'a pure_strategy) : 'a pure_strategy =
       seq s (any s)
 
-    let bottomup (s : strategy) : strategy =
+    let bottomup (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun s' -> seq (choice (progress (all_subterms s')) s) (try_ s'))
 
-    let topdown (s : strategy) : strategy =
+    let topdown (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun s' -> seq (choice s (progress (all_subterms s'))) (try_ s'))
 
-    let innermost (s : strategy) : strategy =
+    let innermost (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun ins -> choice (one_subterm ins) s)
 
-    let outermost (s : 'a pure_strategy) : strategy =
+    let outermost (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun out -> choice s (one_subterm out))
 
     let one_lemma c l2r by occs : strategy =
