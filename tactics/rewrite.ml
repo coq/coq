@@ -605,12 +605,6 @@ let general_rewrite_unif_flags () =
     Unification.resolve_evars = true
   }
 
-let refresh_hypinfo env sigma (cb : EConstr.t with_bindings delayed_open) =
-  let sigma, cbl = cb env sigma in
-  let sigma, hypinfo = decompose_applied_relation env sigma cbl in
-  let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
-  sigma, (car, rel, prf, c1, c2, holes, sort)
-
 (** FIXME: write this in the new monad interface *)
 let solve_remaining_by env sigma holes by =
   match by with
@@ -703,7 +697,7 @@ let symmetry env sort rew =
   { rew with rew_from = rew.rew_to; rew_to = rew.rew_from; rew_prf; rew_evars; }
 
 (* Matching/unifying the rewriting rule against [t] *)
-let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) by t =
+let unify_eqn { car; rel; prf; c1; c2; holes; sort } l2r flags env (sigma, cstrs) by t =
   try
     let left = if l2r then c1 else c2 in
     let _, sigma = Unification.w_unify ~flags env sigma CONV left t in
@@ -878,9 +872,7 @@ let apply_rule unify : occurrences_count pure_strategy =
 let apply_lemma l2r flags oc by loccs : strategy = { strategy =
   fun ({ state = () ; env ; term1 = t ; evars = (sigma, cstrs) } as input) ->
     let sigma, c = oc sigma in
-    let sigma, hypinfo = decompose_applied_relation env sigma c in
-    let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
-    let rew = (car, rel, prf, c1, c2, holes, sort) in
+    let sigma, rew = decompose_applied_relation env sigma c in
     let evars = (sigma, cstrs) in
     let unify env evars t =
       let rew = unify_eqn rew l2r flags env evars by t in
@@ -1461,7 +1453,8 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
   fun ({ state = () } as input) ->
     let unify env evars t =
       let (sigma, cstrs) = evars in
-      let (sigma, rew) = refresh_hypinfo env sigma c in
+      let sigma, cbl = c env sigma in
+      let sigma, rew = decompose_applied_relation env sigma cbl in
       unify_eqn rew l2r flags env (sigma, cstrs) None t
     in
     let app = apply_rule unify in
