@@ -9,9 +9,9 @@
 (************************************************************************)
 
 From Ltac2 Require Import Init.
-From Ltac2 Require Import Std.
 
-Ltac2 Type t := rewstrategy.
+Ltac2 Type t.
+
 
 (** Failure. *)
 Ltac2 @external fail : unit -> t :=
@@ -116,5 +116,6 @@ Ltac2 @external fix_ : (t -> t) -> t :=
 
 (* Tactics *)
 
-Ltac2 rewrite_db (hintdb : ident) (i : ident option) : unit :=
-  Std.rewrite_strat (topdown (hints hintdb)) i.
+Ltac2 @external rewrite_strat : t -> ident option -> unit := "rocq-runtime.plugins.ltac2" "tac_rewrite_strat".
+
+Ltac2 rewrite_db (hintdb : ident) (i : ident option) : unit := rewrite_strat (topdown (hints hintdb)) i.
