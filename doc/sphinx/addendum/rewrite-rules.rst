@@ -141,9 +141,49 @@ so all inferred constraints from the left-hand side are used for the replacement
 
    .. rocqtop:: reset all warn
 
-      #[universes(polymorphic)] Symbol raise@{q;u} : forall (A : Type@{q;u}), A.
+      #[universes(polymorphic)] Symbol raise@{q;u} : forall (A : Univ@{q;u}), A.
       Rewrite Rule raise_nat :=
         @{q;u+|+} |- raise@{q;u} (forall (x : ?A), ?P) => fun (x : ?A) => raise@{q;u} ?P.
+
+Local rules
+-----------
+
+Rewrite rules can be used as part of an interface (module type),
+so that a piece of code which depends on them can be properly contained (as for functors)
+or to expose a custom interface for a possibly messy or unsafe implementation (as for sealed modules).
+
+This behaviour is made possible using the same abstraction than modules provide,
+where an interface of symbols and rewrite rules can be implemented with
+definitions to these symbols which definitionally satisfy the rewrite rules,
+i.e. the patterns and replacements are found to be convertible.
+
+   .. rocqtop:: reset in warn
+
+      Module Type QuotientInput.
+         Parameter A : Type.
+         Parameter eq : A -> A -> Prop.
+      End QuotientInput.
+
+      Module Type Quotient (Import QI : QuotientInput).
+         Parameter T : Type.
+         Symbol mk : A -> T.
+         Symbol lift : forall {B : Type} (f : A -> B) (p : forall a b, eq a b -> f a = f b), T -> B.
+
+         Rewrite Rule lift_mk :=
+         | lift ?f _ (mk ?x) => ?f ?x.
+
+         Parameter rec : forall {B : T -> SProp} (f : forall (a : A), B (mk a)) (t : T), B t.
+         Parameter sound : forall a b, eq a b -> mk a = mk b.
+      End Quotient.
+
+      Module QuotientImpl (Import QI : QuotientInput) : Quotient QI.
+         Definition T := A.
+         Definition mk (x : A) := x.
+         Definition lift {B} (f : A -> B) (p : forall a b, eq a b -> f a = f b) x := f x.
+         Definition rec {B : T -> SProp} (f : forall (a : A), B a) t := f t.
+         Axiom sound : forall a b, eq a b -> mk a = mk b.
+      End QuotientImpl.
+
 
 Rewrite rules, type preservation, confluence and termination
 ------------------------------------------------------------
