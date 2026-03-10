@@ -216,6 +216,7 @@ exception IllTypedInstance of env * evar_map * EConstr.types option * EConstr.ty
 exception IllTypedInstanceFun of env * evar_map * EConstr.constr * EConstr.types
 
 let checked_appvect, checked_appvect_hook = Hook.make ()
+let checked_cast, checked_cast_hook = Hook.make ()
 
 let recheck_applications unify flags env evdref t =
   let rec aux env t =
@@ -224,6 +225,9 @@ let recheck_applications unify flags env evdref t =
     match EConstr.kind !evdref t with
     | App (f, args) ->
       let evd, _ = Hook.get checked_appvect env !evdref f args in
+      evdref := evd
+    | Cast (c, _, t) ->
+      let evd = Hook.get checked_cast env !evdref c t in
       evdref := evd
     | _ -> ()
   in

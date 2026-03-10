@@ -671,6 +671,8 @@ let check env sigma c t =
   let sigma, j = execute env sigma c in
   check_actual_type env sigma j t
 
+let () = Hook.set Evarsolve.checked_cast_hook check
+
 (* Sort of a type *)
 
 let sort_of env sigma c =
