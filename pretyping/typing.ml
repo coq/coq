@@ -671,7 +671,14 @@ let check env sigma c t =
   let sigma, j = execute env sigma c in
   check_actual_type env sigma j t
 
-let () = Hook.set Evarsolve.checked_cast_hook check
+let check_cast env sigma c k t =
+  let sigma, cj = execute env sigma c in
+  let sigma, tj = execute env sigma t in
+  let sigma, tj = type_judgment env sigma tj in
+  let sigma, _ = judge_of_cast env sigma cj k tj in
+  sigma
+
+let () = Hook.set Evarsolve.checked_cast_hook check_cast
 
 (* Sort of a type *)
 

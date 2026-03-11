@@ -226,8 +226,8 @@ let recheck_applications unify flags env evdref t =
     | App (f, args) ->
       let evd, _ = Hook.get checked_appvect env !evdref f args in
       evdref := evd
-    | Cast (c, _, t) ->
-      let evd = Hook.get checked_cast env !evdref c t in
+    | Cast (c, k, t) ->
+      let evd = Hook.get checked_cast env !evdref c k t in
       evdref := evd
     | _ -> ()
   in
