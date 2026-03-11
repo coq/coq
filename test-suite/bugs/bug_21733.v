@@ -39,11 +39,47 @@ Ltac2 go gc := let (_,l) := Constr.decompose_app_list
       match! goal with | [ h : Iso _ _ |- _ ] => let v := Control.hyp h in exact $v end)
     $d ltac2:(intros; cbv beta) ltac2:(intros; cbv beta;
       match! goal with | [ h : rel _ _ _ |- _ ] => let v := Control.hyp h in exact $v end)).
-Definition bug : { f : forall (A : Type) (G : Type -> Type), W G -> G A -> Type &
+(* Default: both flags off, bug reproduces *)
+Unset Unification Recheck Casts.
+Unset Unification Full Retyping.
+Definition bug_default : { f : forall (A : Type) (G : Type -> Type), W G -> G A -> Type &
+  forall (a b : Type) (h : Iso a b) (F G : Type -> Type) (hF : forall x y : Type,
+  Iso x y -> Iso (F x) (G y)) (w1 : W F) (w2 : W G) (_ : rel (P_iso F G) w1 w2)
+  (v1 : F a) (v2 : G b) (_ : rel (hF a b h) v1 v2), Iso (@p _ w1 a v1) (f b G w2 v2) }.
+Proof. eexists; intros. ltac2:(go Ltac2.Init.true). Fail Qed. Abort.
+
+(* Recheck Casts alone fixes it *)
+Set Unification Recheck Casts.
+Unset Unification Full Retyping.
+Definition bug_recheck : { f : forall (A : Type) (G : Type -> Type), W G -> G A -> Type &
   forall (a b : Type) (h : Iso a b) (F G : Type -> Type) (hF : forall x y : Type,
   Iso x y -> Iso (F x) (G y)) (w1 : W F) (w2 : W G) (_ : rel (P_iso F G) w1 w2)
   (v1 : F a) (v2 : G b) (_ : rel (hF a b h) v1 v2), Iso (@p _ w1 a v1) (f b G w2 v2) }.
 Proof. eexists; intros. ltac2:(go Ltac2.Init.true). Qed.
+Unset Unification Recheck Casts.
+
+(* Full Retyping alone fixes it *)
+Unset Unification Recheck Casts.
+Set Unification Full Retyping.
+Definition bug_full_retype : { f : forall (A : Type) (G : Type -> Type), W G -> G A -> Type &
+  forall (a b : Type) (h : Iso a b) (F G : Type -> Type) (hF : forall x y : Type,
+  Iso x y -> Iso (F x) (G y)) (w1 : W F) (w2 : W G) (_ : rel (P_iso F G) w1 w2)
+  (v1 : F a) (v2 : G b) (_ : rel (hF a b h) v1 v2), Iso (@p _ w1 a v1) (f b G w2 v2) }.
+Proof. eexists; intros. ltac2:(go Ltac2.Init.true). Qed.
+Unset Unification Full Retyping.
+
+(* Both flags on fixes it *)
+Set Unification Recheck Casts.
+Set Unification Full Retyping.
+Definition bug_both : { f : forall (A : Type) (G : Type -> Type), W G -> G A -> Type &
+  forall (a b : Type) (h : Iso a b) (F G : Type -> Type) (hF : forall x y : Type,
+  Iso x y -> Iso (F x) (G y)) (w1 : W F) (w2 : W G) (_ : rel (P_iso F G) w1 w2)
+  (v1 : F a) (v2 : G b) (_ : rel (hF a b h) v1 v2), Iso (@p _ w1 a v1) (f b G w2 v2) }.
+Proof. eexists; intros. ltac2:(go Ltac2.Init.true). Qed.
+Unset Unification Recheck Casts.
+Unset Unification Full Retyping.
+
+(* CONV path always works regardless of flags *)
 Definition ok : { f : forall (A : Type) (G : Type -> Type), W G -> G A -> Type &
   forall (a b : Type) (h : Iso a b) (F G : Type -> Type) (hF : forall x y : Type,
   Iso x y -> Iso (F x) (G y)) (w1 : W F) (w2 : W G) (_ : rel (P_iso F G) w1 w2)
@@ -51,6 +87,7 @@ Definition ok : { f : forall (A : Type) (G : Type -> Type), W G -> G A -> Type &
 Proof. eexists; intros. ltac2:(go Ltac2.Init.false). Qed.
 End Minimal.
 Module BugFromIssue.
+Set Unification Recheck Casts.
 #[export]
 Set Universe Polymorphism.
 Inductive eq@{s;u|} {α:Univ@{s;u}} (a:α) : α -> SProp
