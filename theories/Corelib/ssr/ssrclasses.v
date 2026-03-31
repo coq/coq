@@ -19,8 +19,6 @@
  [Require Import ssreflect] does not [Require Import RelationClasses],
  and conversely. **)
 
-Set Universe Polymorphism.
-
 Section Defs.
   Context {A : Type}.
   Class Reflexive (R : A -> A -> Prop) :=

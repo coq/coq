@@ -11,7 +11,9 @@
 Require Export ssreflect_rw.
 Declare ML Module "rocq-runtime.plugins.ssreflect_rewrite".
 
-Set Universe Polymorphism.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
 
 Module SsrIsSyntax.
 

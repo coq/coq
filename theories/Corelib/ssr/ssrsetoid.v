@@ -28,8 +28,6 @@ Require Import ssrunder.
 Require Import RelationClasses.
 Require Import Relation_Definitions.
 
-Set Universe Polymorphism.
-
 (** Reconcile [Corelib.Classes.RelationClasses.Reflexive] with
     [Corelib.ssr.ssrclasses.Reflexive] *)
 
