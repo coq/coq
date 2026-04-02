@@ -1947,8 +1947,10 @@ let normalize_quality_variables uctx =
 let normalize_variables uctx =
   normalize_quality_variables uctx
 
-let fix_undefined_variables uctx =
-  { uctx with flexible_variables = Level.Set.empty }
+let fix_undefined_variables ?vars uctx =
+  match vars with
+  | None -> { uctx with flexible_variables = Level.Set.empty }
+  | Some vars -> { uctx with flexible_variables = Level.Set.diff uctx.flexible_variables vars }
 
 let disable_universe_extension uctx ~with_cstrs =
   { uctx with fixed_rigid_universes = true; fixed_rigid_constraints = with_cstrs }

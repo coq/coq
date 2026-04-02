@@ -232,9 +232,10 @@ val add_forgotten_univ : t -> Univ.Level.t -> t
 val normalize_variables : t -> t
 
 val constrain_variables : Univ.Level.Set.t -> t -> t
+(** Internal for deffered universes, do not use *)
 
-val fix_undefined_variables : t -> t
-(** All remaining variables are rigid after this *)
+val fix_undefined_variables : ?vars:Univ.Level.Set.t -> t -> t
+(** All remaining variables are rigid after this, or only those in vars *)
 
 (** Variances *)
 

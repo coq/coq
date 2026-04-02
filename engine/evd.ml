@@ -1224,8 +1224,8 @@ let check_quality_constraints evd qcst =
   let qcst = UVars.QPairSet.fold fold qcst UnivProblem.Set.empty in
   UState.check_constraints evd.universes qcst
 
-let fix_undefined_variables evd =
-  { evd with universes = UState.fix_undefined_variables evd.universes }
+let fix_undefined_variables ?vars evd =
+  { evd with universes = UState.fix_undefined_variables ?vars evd.universes }
 
 let disable_universe_extension evd ~with_cstrs =
   { evd with universes = UState.disable_universe_extension evd.universes ~with_cstrs }
