@@ -937,6 +937,7 @@ let process_proof ~info:Info.({ udecl; poly }) ?(is_telescope=false) = function
     let exported_effects = if List.exists not opaques then eff else SideEff.empty in
     exported_effects,
     snd (List.fold_left2_map (fun used_univs (body, typ) opaque ->
+        (* FIXME variances already computed in declare_definition for example *)
         let sigma = UnivVariances.register_universe_variances_of_constr (Global.env ()) (Evd.from_ustate uctx) ?typ body in
         let uctx, univs, used_univs, body =
           make_univs_immediate poly ?keep_body_ucst_separate ~opaque ~uctx:(Evd.ustate sigma) ~udecl ~eff ~used_univs body typ in
@@ -1052,7 +1053,7 @@ let declare_possibly_mutual_definitions ~info ~cinfo ~obls ?(is_telescope=false)
       let gref = declare_entry ~loc ~name ~scope ~clearbody ~kind ?hook ~impargs ~typing_flags ~user_warns ~obls ~uctx entry in
       let inst = instance_of_univs entry.proof_entry_universes in
       let const = Constr.mkRef (gref, inst) in
-      ((name, const) :: subst, gref)) [] cinfo entries in
+      ((name, const) :: subst, (gref, inst))) [] cinfo entries in
   let () =
     (* For the recursive case, we override the temporary notations used while proving, now using the global names *)
     let local = info.scope=Locality.Discharge in
@@ -1128,7 +1129,7 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~eff ~uctx ~bodies ~possible
   let refs = declare_possibly_mutual_definitions ~info ~cinfo ~obls:[] obj in
   let fixnames = List.map (fun { CInfo.name } -> name) cinfo in
   recursive_message indexes fixnames;
-  refs
+  List.map fst refs
 
 (* Preparing proof entries *)
 let error_unresolved_evars env sigma t evars =
@@ -1148,7 +1149,7 @@ let check_evars_are_solved env sigma t =
   let evars = Evarutil.undefined_evars_of_term sigma t in
   if not (Evar.Set.is_empty evars) then error_unresolved_evars env sigma t evars
 
-let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
+let declare_definition_uinst ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let { CInfo.name; typ; _ } = cinfo in
   let env = Global.env () in
   Option.iter (check_evars_are_solved env sigma) typ;
@@ -1164,6 +1165,10 @@ let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let proof = { output_entries = [(body, typ)]; output_ustate = uctx; output_sideff = eff } in
   let obj = DefaultProof { proof; opaque; using; keep_body_ucst_separate = None } in
   let gref = List.hd (declare_possibly_mutual_definitions ~info ~cinfo:[cinfo] ~obls obj) in
+  gref, uctx
+
+let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
+  let (gref, _inst), uctx = declare_definition_uinst ~info ~cinfo ~opaque ~obls ~body ?using sigma in
   gref, uctx
 
 let prepare_obligations ~name poly ?types ~body env sigma =
@@ -2401,7 +2406,8 @@ let finish_proof ~pm proof_obj proof_info =
     (* Unless this is a block of mutual fixpoint, we assume the
        statements, if more than one, to form a telescope, as in Derive *)
     let is_telescope = Option.is_empty proof_info.possible_guard in
-    pm, declare_possibly_mutual_definitions ~info ~cinfo ~obls:[] ~is_telescope proof_obj
+    let grefs = declare_possibly_mutual_definitions ~info ~cinfo ~obls:[] ~is_telescope proof_obj in
+    pm, List.map fst grefs
   | End_obligation oinfo ->
     let eff, entries = process_proof ~info proof_obj in
     let entry, uctx = check_single_entry entries "Obligation.save" in
@@ -2929,7 +2935,7 @@ let declare_entry ?loc ~name ?scope ~kind ?user_warns ?hook ~impargs ~uctx entry
   declare_entry ~loc ~name ?scope ~kind ~typing_flags:None ?clearbody:None ~user_warns ?hook ~impargs ~uctx entry
 
 let declare_definition_full ~info ~cinfo ~opaque ~body ?using sigma =
-  let c, uctx = declare_definition ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma in
+  let c, uctx = declare_definition_uinst ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma in
   c, if PolyFlags.univ_poly info.poly then Univ.ContextSet.empty else UState.universe_context_set uctx
 
 let declare_definition ~info ~cinfo ~opaque ~body ?using sigma =

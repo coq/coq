@@ -465,8 +465,8 @@ val declare_constant
   -> constant_entry
   -> Constant.t
 
-(** Like [declare_definition] but also returns the universes and universe constraints added to the
-    global environment *)
+(** Like [declare_definition] but also returns an instance valid in the evar_map for polymorphic definitions,
+    or the universes and universe constraints added to the global environment for a monomophic one *)
 val declare_definition_full
   :  info:Info.t
   -> cinfo:EConstr.t option CInfo.t
@@ -474,7 +474,7 @@ val declare_definition_full
   -> body:EConstr.t
   -> ?using:Vernacexpr.section_subset_expr
   -> Evd.evar_map
-  -> GlobRef.t * Univ.ContextSet.t
+  -> (GlobRef.t * UVars.Instance.t) * Univ.ContextSet.t
 
 (** Declaration messages, for internal use *)
 
