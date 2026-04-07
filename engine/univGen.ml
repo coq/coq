@@ -201,8 +201,8 @@ let fresh_global_instance ?loc ?names env gr =
   mkRef (gr, u), ctx
 
 let constr_of_monomorphic_global env gr =
-  if not (Environ.is_polymorphic env gr) then
-    fst (fresh_global_instance env gr)
+  let gru, ctx = fresh_global_instance env gr in
+  if is_empty_sort_context ctx then gru
   else CErrors.user_err
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
