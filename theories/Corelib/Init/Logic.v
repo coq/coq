@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+#[global] Set Universe Polymorphism.
 Set Implicit Arguments.
 
 Require Export Notations.
@@ -376,6 +377,7 @@ End universal_quantification.
     as it expresses that [x] and [y] are equal iff every property on
     [A] which is true of [x] is also true of [y] *)
 
+#[universes(template)]
 Inductive eq (A:Type) (x:A) : A -> Prop :=
     eq_refl : x = x :>A
 
