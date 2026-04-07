@@ -8,5 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+#[universes(polymorphic=no)]
 Variant float_class : Set :=
   | PNormal | NNormal | PSubn | NSubn | PZero | NZero | PInf | NInf | NaN.
