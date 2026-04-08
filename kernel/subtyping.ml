@@ -145,6 +145,8 @@ let check_universes error env ~term_variances u1 u2 =
       let env = check_variance error env ~term_variances variances1 variances2 in
       let env = Environ.push_context ~strict:false (UVars.AbstractContext.repr auctx2) env in
       env
+  | Monomorphic, Polymorphic (auctx, _) when UVars.AbstractContext.is_empty auctx -> env
+  | Polymorphic (auctx, _), Monomorphic when UVars.AbstractContext.is_empty auctx -> env
   | Monomorphic, Polymorphic _ -> error (PolymorphicStatusExpected true)
   | Polymorphic _, Monomorphic -> error (PolymorphicStatusExpected false)
 
