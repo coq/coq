@@ -14,7 +14,7 @@ else
   exit 1
 fi
 
-
+echo "Root is" $root
 # We can remove setting ROCQLIB and ROCQRUNTIMELIB from here, but better to
 # wait until we have merged the coq.boot patch so we can do this in a
 # more controlled way.
