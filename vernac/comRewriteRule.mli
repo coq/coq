@@ -3,7 +3,6 @@ val do_symbols : poly:PolyFlags.t -> unfold_fix:bool ->
   -> unit
 
 val do_rules :
-  ?collapse_sort_variables:bool ->
   Names.Id.t ->
   (Constrexpr.universe_decl_expr option * Constrexpr.constr_expr * Constrexpr.constr_expr) list ->
   unit

@@ -345,11 +345,136 @@ let hcons_mind mib =
     mind_template = Option.Smart.map hcons_template_universe mib.mind_template;
     mind_universes = hcons_universes mib.mind_universes }
 
-let subst_rewrite_rules subst ({ rewrules_rules } as rules) =
-  let body' = List.Smart.map (fun (name, ({ rhs; _ } as rule) as orig) ->
-      let rhs' = subst_mps subst rhs in
-      if rhs == rhs' then orig else name, { rule with rhs = rhs' })
+
+let smart_on_snd f (a, b as p) =
+  let b' = f b in
+  if b == b' then p else (a, b')
+
+let subst_pattern subst p =
+  let open Declarations in
+  let rec on_pat p = match p with
+    | PSymbol (cst, mask) ->
+      let cst' = subst_constant subst cst in
+      if cst' == cst then p else
+        PSymbol (cst', mask)
+    | PInd (ind, mask) ->
+        let ind' = subst_ind subst ind in
+        if ind'==ind then p else PInd (ind', mask)
+    | PConstr (cstr, mask) ->
+        let cstr' = subst_constructor subst cstr in
+        if cstr'==cstr then p else PConstr (cstr', mask)
+    | PCase (c, ind, r, brs) ->
+      let ind' = subst_ind subst ind in
+      let c' = on_pat c in
+      let r' = smart_on_snd on_arg_pat r in
+      let brs' = Array.Smart.map (smart_on_snd on_arg_pat) brs in
+      if ind' == ind && c' == c && r' == r && brs' == brs then p else
+        PCase (c', ind', r', brs')
+    | PProj (c, pr) ->
+        let pr' = subst_proj_repr subst pr in
+        let c' = on_pat c in
+        if pr' == pr && c' == c then p else
+          PProj (c', pr')
+    | PLambda (na, ty, bod) ->
+        let ty' = on_arg_pat ty in
+        let bod' = on_pat bod in
+        if ty' == ty && bod' == bod then p else
+          PLambda (na, ty', bod')
+    | PProd (na, dom, codom) ->
+        let dom' = on_arg_pat dom in
+        let codom' = on_arg_pat codom in
+        if dom' == dom && codom' == codom then p else
+          PProd (na, dom', codom')
+    | PApp (f, arg) ->
+      let f' = on_pat f in
+      let arg' = on_arg_pat arg in
+      if f' == f && arg' == arg then p else
+        PApp (f', arg')
+    | PRel _ | PSort _ | PInt _ | PFloat _ | PString _ as p -> p
+  and on_arg_pat = function
+    | Pat pat as argpat ->
+        let pat' = on_pat pat in
+        if pat == pat' then argpat else Pat pat'
+    | PVar _ as argpat -> argpat
+  in
+  on_pat p
+
+
+let subst_machine_pattern subst p =
+  let open Declarations in
+  let rec on_head p = match p with
+  | PHSymbol (cst, mask) ->
+    let cst' = subst_constant subst cst in
+    if cst' == cst then p else PHSymbol (cst', mask)
+  | PHInd (ind, mask) ->
+    let ind' = subst_ind subst ind in
+    if ind'==ind then p else PHInd (ind', mask)
+  | PHConstr (cstr, mask) ->
+    let cstr' = subst_constructor subst cstr in
+    if cstr'==cstr then p else PHConstr (cstr', mask)
+  | PHLambda (tys, bod) ->
+    let tys' = Array.Smart.map on_arg_pat tys in
+    let bod' = on_pat bod in
+    if tys' == tys && bod' == bod then p else
+      PHLambda (tys', bod')
+  | PHProd (doms, codom) ->
+    let doms' = Array.Smart.map on_arg_pat doms in
+    let codom' = on_arg_pat codom in
+    if doms' == doms && codom' == codom then p else
+      PHProd (doms', codom')
+  | PHRel _ | PHSort _ | PHInt _ | PHFloat _ | PHString _ as p -> p
+  and on_elim e = match e with
+  | PEApp args ->
+    let args' = Array.Smart.map on_arg_pat args in
+    if args' == args then e else
+      PEApp args'
+  | PECase (ind, r, brs) ->
+    let ind' = subst_ind subst ind in
+    let r' = on_arg_pat r in
+    let brs' = Array.Smart.map on_arg_pat brs in
+    if ind' == ind && r' == r && brs' == brs then e else
+      PECase (ind', r', brs')
+  | PEProj pr ->
+    let pr' = subst_proj_repr subst pr in
+    if pr' == pr then e else PEProj pr'
+  and on_pat (h, e as p) =
+    let h' = on_head h in
+    let e' = List.Smart.map on_elim e in
+    if h == h' && e == e' then p else (h', e')
+  and on_arg_pat ap = match ap with
+  | ERigid p ->
+    let p' = on_pat p in
+    if p == p' then ap else ERigid p'
+  | EHole _ | EHoleIgnored -> ap
+  in
+  on_pat p
+
+let subst_rewrite_rules subst ({ rewrules_rules; rewrules_machine } as rules) =
+  let body' = List.Smart.map (fun rule ->
+      let pattern' = subst_pattern subst rule.pattern in
+      let replacement' = subst_mps subst rule.replacement in
+      if
+        pattern' == rule.pattern &&
+        replacement' == rule.replacement
+      then
+        rule
+      else
+        { rr_uctx = rule.rr_uctx; rr_evars = rule.rr_evars; esubst = rule.esubst;
+          pattern=pattern'; replacement=replacement'
+        })
       rewrules_rules
   in
-  if rewrules_rules == body' then rules else
-    { rewrules_rules = body' }
+  let machine' = List.Smart.map (fun (cst, { nvars; lhs_pat = (u, e); rhs } as rule) ->
+    let lhs_pat' = subst_machine_pattern subst (PHSymbol (cst, u), e) in
+    let cst', u', e' = match lhs_pat' with
+    | PHSymbol (cst', u'), e' -> cst', u', e'
+    | _ -> assert false
+    in
+    let rhs' = subst_mps subst rhs in
+    if cst == cst' && u == u' && e == e' && rhs == rhs' then
+      rule
+    else (cst', { nvars; lhs_pat = (u', e'); rhs = rhs' })
+    ) rewrules_machine
+  in
+  if rewrules_rules == body' && rewrules_machine == machine' then rules else
+    { rewrules_rules = body'; rewrules_machine = machine' }

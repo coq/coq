@@ -74,12 +74,12 @@ Universe idu.
 #[unfold_fix, universes(polymorphic)] Symbol id@{q; } : forall A : Univ@{q;idu}, A -> A.
 
 Rewrite Rules id_rew :=
-| @{q;u+|+} |- id _ Univ@{q;u} => Univ@{q;u}
+| id _ Univ@{q;u} => Univ@{q;u}
 
-| @{q;u+|+} |- id Univ@{q;u} (forall (x : ?A), ?P) => forall x, id Univ@{q;u} ?P
+| id Univ@{q;u} (forall (x : ?A), ?P) => forall x, id Univ@{q;u} ?P
 | id (forall (x : ?A), ?P) ?f => fun (x : ?A) => id ?P (?f x)
 
-| @{u+} |- id Type@{u} (?A * ?B)%type => (id Type@{u} ?A * id Type@{u} ?B)%type
+| id Type@{u} (?A * ?B)%type => (id Type@{u} ?A * id Type@{u} ?B)%type
 | id (?A * ?B) (?a, ?b) => (id _ ?a, id _ ?b)
 
 | id _ unit => unit
@@ -95,11 +95,10 @@ Fail Rewrite Rule id_rew_fail := Datatypes.id _ ?x => ?x. (* Subterm not recogni
 Fail Rewrite Rule id_rew_fail := 0 => 0. (* Head head-pattern is not a symbol. *)
 Fail Rewrite Rule id_rew_fail := id _ (?x ?y) => ?x ?y. (* Subterm not recognised as pattern: ?x *)
 Fail Rewrite Rule id_rew_fail := id _ _ => ?x. (* Unknown existential variable. *)
-Fail Rewrite Rule id_rew_fail := @{u} |- id _ ?x => ?x. (* Not all universe level variables appear in the pattern. *)
 Fail Rewrite Rule id_rew_fail := id _ (?x, ?x) => ?x. (* Variable ?x is bound multiple times in the pattern (holes number 1 and 2). *)
-Fail Rewrite Rule id_rew_fail := @{u+} |- id _ (Type@{u}, Type@{u}) => ?x. (* Universe variable u is bound multiple times in the pattern (holes number 0 and 1). *)
-Fail Rewrite Rule id_rew_fail := id _ (?x, ?y) => (?x, ?y). (* The replacement term contains unresolved implicit arguments: (?x, ?y) *)
-Fail Rewrite Rule id_rew_fail := id _ Type => Type. (* Universe rewrule.xxx is unbound. *)
+Fail Rewrite Rule id_rew_fail := id _ (Type@{u}, Type@{u}) => ?x. (* Universe variable u is bound multiple times in the pattern (holes number 0 and 1). *)
+Rewrite Rule id_rew_notfail := id _ (?x, ?y) => (?x, ?y). (* The replacement term contains unresolved implicit arguments: (?x, ?y) *)
+Rewrite Rule id_rew_notfail2 := id _ Type => Type. (* Universe rewrule.xxx is unbound. *)
 Fail Rewrite Rule id_rew_fail := id _ (forall x, ?P) => ?P. (* Cannot interpret ?P in current context: no binding for x. *)
 
 

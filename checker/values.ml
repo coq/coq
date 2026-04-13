@@ -217,7 +217,8 @@ let v_cstrs =
 let v_variance = v_enum "variance" 3
 
 let v_instance = v_annot_c ("instance", v_pair (v_array v_quality) (v_array v_level))
-let v_abs_context = v_tuple "abstract_universe_context" [|v_pair (v_array v_name) (v_array v_name); v_cstrs|]
+let v_bound_names = v_pair (v_array v_name) (v_array v_name)
+let v_abs_context = v_tuple "abstract_universe_context" [|v_bound_names; v_cstrs|]
 let v_univ_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_univ_cstrs|]
 
 (** kernel/term *)
@@ -245,6 +246,15 @@ let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]
 let v_uint63 =
   if Sys.word_size == 64 then v_int else v_int64
 
+let v_evar = v_int
+
+let v_slist v_arg = fix (fun v_slist ->
+  v_sum "slist" 1
+    [|[|v_arg; v_slist|];
+      [|v_int; v_slist|]|])
+
+let v_evar_existential v_constr = v_pair v_evar (v_slist v_constr)
+
 let v_constr =
   fix (fun v_constr ->
 let v_prec =
@@ -260,7 +270,7 @@ let v_case_return = v_tuple_c ("case_return", [|v_tuple_c ("case_return'", [|v_a
     [|v_int|]; (* Rel *)
     [|v_id|]; (* Var *)
     [|v_fail "Meta"|]; (* Meta *)
-    [|v_fail "Evar"|]; (* Evar *)
+    [|v_evar_existential v_constr|]; (* Evar *)
     [|v_sort|]; (* Sort *)
     [|v_constr;v_cast;v_constr|]; (* Cast *)
     [|v_binder_annot v_name;v_constr;v_constr|]; (* Prod *)
@@ -515,37 +525,71 @@ let v_retro_action =
 let v_retroknowledge =
   v_list v_retro_action
 
-let v_puniv = v_opt v_int
-
-let v_pqvar = v_opt v_int
-let v_quality_pattern = v_sum "quality_pattern" 0 [|
+let v_quality_pattern v_pqvar = v_sum "quality_pattern" 0 [|
   [|v_pqvar|];
   [|v_constant_quality|];
   [|v_qglobal|];
 |]
 
-let v_instance_mask = v_pair (v_array v_quality_pattern) (v_array v_puniv)
+let v_instance_mask v_pqvar v_puniv = v_pair (v_array (v_quality_pattern v_pqvar)) (v_array v_puniv)
 
-let v_sort_pattern = v_sum_c ("sort_pattern", 3,
+let v_sort_pattern v_pqvar v_puniv = v_sum_c ("sort_pattern", 3,
   [|[|v_puniv|];             (* PSType *)
     [|v_qglobal; v_puniv|];  (* PSGlobal *)
     [|v_pqvar; v_puniv|];    (* PSQSort *)
   |])
 
+let v_pattern =
+  fix (fun v_pattern ->
+
+let v_argpat = v_sum_c ("arg_pattern", 0,
+  [|[|v_int|];     (* PVar *)
+    [|v_pattern|];  (* Pat *)
+  |])
+in
+let v_annotated_argpat = v_tuple_c ("*", [|v_array v_name; v_argpat|]) in
+
+v_sum_c ("pattern", 0,
+  [|[|v_int|];                                  (* PRel *)
+    [|v_sort_pattern v_int v_int|];             (* PSort *)
+    [|v_cst; v_instance_mask v_int v_int|];     (* PSymbol *)
+    [|v_ind; v_instance_mask v_int v_int|];     (* PInd *)
+    [|v_cons; v_instance_mask v_int v_int|];    (* PConstr *)
+    [|v_uint63|];                               (* PInt *)
+    [|v_float64|];                              (* PFloat *)
+    [|v_string|];                               (* PString *)
+    [|v_name; v_argpat; v_pattern|];            (* PLambda *)
+    [|v_name; v_argpat; v_argpat|];             (* PProd *)
+    [|v_pattern; v_argpat |];                   (* PApp *)
+    [|v_pattern; v_ind; v_annotated_argpat; v_array v_annotated_argpat |]; (* PCase *)
+    [|v_pattern; v_proj|]; (* PProj *)
+  |]))
+
+let v_rewrule = v_tuple "rewrite_rule"
+  [|v_bound_names;(* rr_uctx *)
+    v_array v_name; (* rr_evars *)
+    v_map v_evar v_int; (* esubst *)
+    v_pattern;    (* pattern *)
+    v_constr|]    (* replacement *)
+
+let v_puniv = v_opt v_int
+
+let v_pqvar = v_opt v_int
+
 let [_v_hpattern;v_elimination;_v_head_elim;_v_patarg] : _ Vector.t =
   mfix [();();();()] (fun [v_hpattern;v_elimination;v_head_elim;v_patarg] ->
   let v_hpattern =
     v_sum_c ("head_pattern", 0,
-         [|[|v_int|];                         (* PHRel *)
-           [|v_sort_pattern|];                (* PHSort *)
-           [|v_cst; v_instance_mask|];        (* PHSymbol *)
-           [|v_ind; v_instance_mask|];        (* PHInd *)
-           [|v_cons; v_instance_mask|];       (* PHConstr *)
-           [|v_uint63|];                      (* PHInt *)
-           [|v_float64|];                     (* PHFloat *)
-           [|v_string|];                      (* PHString *)
-           [|v_array v_patarg; v_head_elim|]; (* PHLambda *)
-           [|v_array v_patarg; v_patarg|];    (* PHProd *)
+         [|[|v_int|];                                    (* PHRel *)
+           [|v_sort_pattern v_pqvar v_puniv|];           (* PHSort *)
+           [|v_cst; v_instance_mask v_pqvar v_puniv|];   (* PHSymbol *)
+           [|v_ind; v_instance_mask v_pqvar v_puniv|];   (* PHInd *)
+           [|v_cons; v_instance_mask v_pqvar v_puniv|];  (* PHConstr *)
+           [|v_uint63|];                                 (* PHInt *)
+           [|v_float64|];                                (* PHFloat *)
+           [|v_string|];                                 (* PHString *)
+           [|v_array v_patarg; v_head_elim|];            (* PHLambda *)
+           [|v_array v_patarg; v_patarg|];               (* PHProd *)
          |])
 
   and v_elimination =
@@ -565,10 +609,14 @@ let [_v_hpattern;v_elimination;_v_head_elim;_v_patarg] : _ Vector.t =
   in
   [v_hpattern;v_elimination;v_head_elim;v_patarg])
 
-let v_rewrule = v_tuple "rewrite_rule"
-  [| v_tuple "nvars" [| v_int; v_int; v_int |]; v_pair v_instance_mask (v_list v_elimination); v_constr |]
+let v_machine_rewrule = v_tuple "rewrite_rule"
+  [|v_tuple "nvars" [| v_int; v_int; v_int |];
+    v_pair (v_instance_mask v_pqvar v_puniv) (v_list v_elimination);
+    v_constr |]
+
 let v_rrb = v_tuple "rewrite_rules_body"
-  [| v_list (v_pair v_cst v_rewrule) |]
+  [|v_list v_rewrule;
+    v_list (v_pair v_cst v_machine_rewrule) |]
 
 let v_module_with_decl = v_sum "with_declaration" 0 [|
     [|v_list v_id; v_mp|];
