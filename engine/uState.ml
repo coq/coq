@@ -1678,6 +1678,11 @@ let check_uctx_impl ~fail uctx uctx' =
   in
   ()
 
+let disable_checks ustate =
+  let ug = UGraph.set_type_in_type true ustate.universes in
+  let qstate = ustate.sort_variables in
+  let qg = QGraph.set_ignore_constraints true (QState.elims qstate) in
+  { ustate with universes = ug; sort_variables = QState.set_elims qg qstate }
 
 (* XXX print above_prop too *)
 let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak; above_prop}} =

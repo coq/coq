@@ -419,6 +419,11 @@ let fold_left2_map_i f e v1 v2 =
   let v' = map2_i (fun idx x1 x2 -> let (e,y) = f idx !e' x1 x2 in e' := e; y) v1 v2 in
   (!e',v')
 
+let init_fold n f e =
+  let e' = ref e in
+  let v' = init n (fun idx -> let (e, v) = f idx !e' in e' := e; v) in
+  !e', v'
+
 let distinct v =
   let visited = Hashtbl.create 23 in
   try

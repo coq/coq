@@ -371,6 +371,9 @@ val is_obligation_evar : evar_map -> Evar.t -> bool
 val get_impossible_case_evars : evar_map -> Evar.Set.t
 (** Set of undefined evars with ImpossibleCase evar source. *)
 
+val set_rewrite_rule_evar : evar_map -> Evar.t -> evar_map
+(** Declare an evar as an ununifiable rewrite rule evar *)
+
 val is_rewrite_rule_evar : evar_map -> Evar.t -> bool
 (** Is the evar declared as an ununifiable rewrite rule evar *)
 
@@ -578,9 +581,9 @@ val is_relevance_irrelevant : evar_map -> erelevance -> bool
 val universe_binders : evar_map -> UnivNames.universe_binders
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
-val new_quality_variable : ?loc:Loc.t -> ?name:Id.t -> evar_map -> evar_map * Sorts.QVar.t
-val new_sort_info : ?loc:Loc.t -> ?sort_rigid:bool -> ?name:Names.Id.t -> rigid -> evar_map -> evar_map * Sorts.QVar.t * Univ.Universe.t
-val new_sort_variable : ?loc:Loc.t -> ?sort_rigid:bool -> ?name:Names.Id.t -> rigid -> evar_map -> evar_map * esorts
+val new_quality_variable : ?loc:Loc.t -> ?sort_rigid:bool -> ?name:Id.t -> evar_map -> evar_map * Sorts.QVar.t
+val new_sort_info : ?loc:Loc.t -> ?sort_rigid:bool -> ?name:Id.t -> rigid -> evar_map -> evar_map * Sorts.QVar.t * Univ.Universe.t
+val new_sort_variable : ?loc:Loc.t -> ?sort_rigid:bool -> ?name:Id.t -> rigid -> evar_map -> evar_map * esorts
 
 val add_forgotten_univ : evar_map -> Univ.Level.t -> evar_map
 

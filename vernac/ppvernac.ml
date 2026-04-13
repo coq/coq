@@ -561,12 +561,8 @@ let pr_statement head (idpl,(bl,c)) =
      (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
      str":" ++ pr_spc_lconstr c)
 
-let pr_rew_rule (ubinders, lhs, rhs) =
-  let binders = match ubinders with None -> mt()
-  | _ ->
-    pr_universe_decl ubinders ++ spc() ++ str"|-"
-  in
-  binders ++ pr_lconstr lhs ++ str"==>" ++ pr_lconstr rhs
+let pr_rew_rule (lhs, rhs) =
+  pr_lconstr lhs ++ str"=>" ++ pr_lconstr rhs
 
 (**************************************)
 (* Pretty printer for vernac commands *)

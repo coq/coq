@@ -604,6 +604,15 @@ let raw_pr = pr raw_printer
 type ('q, 'u) pattern =
   | PSProp | PSSProp | PSSet | PSType of 'u | PSGlobal of QGlobal.t * 'u | PSQSort of 'q * 'u
 
+let make_pattern q u =
+  let open Quality in
+  match q with
+  | PQConstant QSProp -> PSSProp
+  | PQConstant QProp -> PSProp
+  | PQConstant QType -> PSType u
+  | PQGlobal g -> PSGlobal (g, u)
+  | PQVar q -> PSQSort (q, u)
+
 let extract_level u =
   match Universe.level u with
   | Some l -> l

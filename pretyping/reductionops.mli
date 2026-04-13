@@ -294,6 +294,8 @@ val pr_state : env -> evar_map -> state -> Pp.t
 
 val whd_nored_state : ?metas:meta_handler -> state_reduction_function
 
+val whd_all_state : ?metas:meta_handler -> state_reduction_function
+
 val whd_betaiota_deltazeta_for_iota_state :
   TransparentState.t -> ?metas:meta_handler -> state_reduction_function
 

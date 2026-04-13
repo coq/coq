@@ -654,6 +654,11 @@ let is_obligation_evar evd evk =
 
 let get_impossible_case_evars evd = evd.evar_flags.impossible_case_evars
 
+let set_rewrite_rule_evar evd evk =
+  let flags = evd.evar_flags in
+  let evar_flags = { flags with rewrite_rule_evars = Evar.Set.add evk flags.rewrite_rule_evars } in
+  { evd with evar_flags }
+
 let is_rewrite_rule_evar evd evk =
   let flags = evd.evar_flags in
   Evar.Set.mem evk flags.rewrite_rule_evars
@@ -1073,8 +1078,8 @@ let new_univ_variable ?loc ?name rigid evd =
   let evd, u = new_univ_level_variable ?loc ?name rigid evd in
   evd, Univ.Universe.make u
 
-let new_quality_variable ?loc ?name evd =
-  let uctx, q = UState.new_quality_variable ?loc ?name evd.universes in
+let new_quality_variable ?loc ?sort_rigid ?name evd =
+  let uctx, q = UState.new_quality_variable ?loc ?sort_rigid ?name evd.universes in
   {evd with universes = uctx}, q
 
 let new_sort_info ?loc ?sort_rigid ?name rigid sigma =
