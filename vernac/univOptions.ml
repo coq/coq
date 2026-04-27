@@ -11,7 +11,7 @@
 let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]
 
 let { Goptions.get = is_universe_polymorphism } =
-  Goptions.declare_bool_option_and_ref ~key:universe_polymorphism_option_name ~value:false ()
+  Goptions.declare_bool_option_and_ref ~stage:Synterp ~key:universe_polymorphism_option_name ~value:false ()
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
   Goptions.declare_bool_option_and_ref ~key:["Polymorphic"; "Inductive"; "Cumulativity"] ~value:true ()
