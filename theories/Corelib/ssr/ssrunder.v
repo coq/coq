@@ -20,6 +20,7 @@
 *)
 
 Require Import ssrclasses.
+Set Universe Polymorphism.
 
 Module Type UNDER_REL.
 Parameter Under_rel :

@@ -11,6 +11,8 @@
 Require Export ssreflect_rw.
 Declare ML Module "rocq-runtime.plugins.ssreflect_rewrite".
 
+Set Universe Polymorphism.
+
 Module SsrIsSyntax.
 
 (** Declare Ssr keywords: "is" "isn't". **)
