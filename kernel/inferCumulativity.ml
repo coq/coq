@@ -926,7 +926,6 @@ let pop_section_universes variances sec_univs shift =
     (* no variance for qualities *)
     let _nsecq, nsecu = UVars.LevelInstance.length sec_univs in
     let arr', arr = UVars.Variances.split nsecu variances in
-    Feedback.msg_debug Pp.(str"pop section variances" ++ UVars.Variances.pr arr');
     UVars.Variances.lift (-shift) arr, Some arr'
 
 let infer_definition env ?(evars = CClosure.default_evar_handler env) ?(infer_in_type=false) ~in_ctx ~sec_univs ~typ ?body variances =

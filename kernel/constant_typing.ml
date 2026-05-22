@@ -160,9 +160,9 @@ let restrict_secunivs sec_univs used =
     sec_univs
   in sec_univs
 
-let pr_secunivs l =
+(* let pr_secunivs l =
   let open Pp in
-  prlist_with_sep fnl (fun x -> str"[" ++ UContext.pr Sorts.raw_printer x ++ str "]") l
+  prlist_with_sep fnl (fun x -> str"[" ++ UContext.pr Sorts.raw_printer x ++ str "]") l *)
 
 let _used_section_universes sec_univs univs ctx body typ =
   match sec_univs with
@@ -175,9 +175,9 @@ let _used_section_universes sec_univs univs ctx body typ =
       let _qcstrs, ucstrs = UContext.constraints uctx in
       let used = levels_of_constraints ~init:used ucstrs in
       let res = restrict_secunivs sec_univs used in
-      Feedback.msg_debug Pp.(str"used section universes" ++ Univ.Level.Set.pr Univ.Level.raw_pr used ++
+      (* Feedback.msg_debug Pp.(str"used section universes" ++ Univ.Level.Set.pr Univ.Level.raw_pr used ++
         str" section ctx: " ++ pr_secunivs sec_univs ++
-        str"restricted: " ++ pr_secunivs res);
+        str"restricted: " ++ pr_secunivs res); *)
       res
 
 let process_universes env ?sec_univs = function

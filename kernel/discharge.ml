@@ -74,9 +74,6 @@ let cook_opaque_proofterm info c =
 let cook_constant env info cb =
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
   let info, univ_hyps, univs, sec_variance = lift_univs info cb.const_univ_hyps cb.const_universes cb.const_sec_variance in
-  Feedback.msg_debug Pp.(str"cook constant: univ_hyps = " ++
-   UVars.LevelInstance.pr Sorts.raw_printer univ_hyps ++
-   str" old = " ++ UVars.LevelInstance.pr Sorts.raw_printer cb.const_univ_hyps);
   let cache = create_cache info in
   let map c = abstract_as_body cache c in
   let body = match cb.const_body with
