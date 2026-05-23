@@ -1216,12 +1216,19 @@ let restrict_uctx uctx used cstrs =
   let us = Array.of_list us in
   UContext.make names (LevelInstance.of_array (qs, us), (UContext.elim_constraints uctx, cstrs))
 
-let restrict_contexts ctxs used =
+let debug = CDebug.create ~name:"restrict_contexts" ()
+let pr_secunivs l =
+  let open Pp in
+  prlist_with_sep fnl (fun x -> str"[" ++ UContext.pr Sorts.raw_printer x ++ str "]") l
+
+let restrict_contexts ctxs init =
   let build_cstr i cl = (i, (Univ.UnivConstraint.levels cl, cl)) in
   let cstrs =
     List.fold_left_i (fun i cstrs uctx -> cstrs @ (List.map (build_cstr i) (Univ.UnivConstraints.elements (UContext.univ_constraints uctx))))
       0 [] ctxs in
-  let used, cstrs = dependencies used cstrs in
+  let used, cstrs = dependencies init cstrs in
+  debug Pp.(fun () -> str"Restricting sections contexts " ++ pr_secunivs ctxs ++ str" with used univs: " ++ Level.Set.pr Level.raw_pr init ++ str" = "
+    ++ Level.Set.pr Level.raw_pr used);
   let cstrs = List.factorize_left Int.equal cstrs in
   let cstrs = List.sort (fun (i, _) (j, _) -> Int.compare i j) cstrs in
   let ctxs = List.mapi (fun i uctx ->
