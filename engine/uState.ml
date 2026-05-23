@@ -593,7 +593,7 @@ let univ_context_set uctx : Univ.ContextSet.t =
   let levels = Level.Set.union uctx.local_variables levels in
   let dlevels, dcstrs = uctx.demoted_local_context in
   let lvls, univ_cstrs = rigid_levels_constraints_of_substitution uctx.local_variables dlevels eqs
-    (Level.Set.diff levels dlevels, UnivConstraints.union dcstrs cstrs)
+    (Level.Set.diff levels dlevels, UnivConstraints.diff cstrs dcstrs)
   in
   lvls, univ_cstrs
 
@@ -691,7 +691,7 @@ let union uctx uctx' =
       Level.Set.fold (fun u g ->
         if UGraph.is_declared g u then g
         else UGraph.add_universe u ~strict:false
-        ~rigid:(Level.Set.mem u uctx'.local_variables) g) levels g
+        ~rigid:(not (Level.Set.mem u uctx'.flexible_variables)) g) levels g
     in
     let local_variables = Level.Set.union uctx.local_variables uctx'.local_variables in
     let flexible_variables = Level.Set.union uctx.flexible_variables uctx'.flexible_variables in
