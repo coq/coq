@@ -806,9 +806,7 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
   in
   let eq_sorts s1 s2 =
     if Sorts.equal s1 s2 then true
-    else
-      try sigma := add_constraints !sigma UnivProblem.(Set.singleton (UEq (s1, s2))); true
-      with UGraph.UniverseInconsistency _ | UniversesDiffer -> false
+    else Sorts.equal (EConstr.ESorts.(kind !sigma (make s1))) (EConstr.ESorts.(kind !sigma (make s2)))
   in
   let eq_existential eq e1 e2 =
     let eq c1 c2 = eq 0 (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
