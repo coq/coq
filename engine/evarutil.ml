@@ -797,16 +797,16 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
   let open Evd in
   let t = EConstr.Unsafe.to_constr t
   and u = EConstr.Unsafe.to_constr u in
-  let sigma = ref extended_evd in
+  let sigma = extended_evd in
   let eq_universes _ u1 u2 =
-    let u1 = EConstr.EInstance.(kind !sigma (make u1)) in
-    let u2 = EConstr.EInstance.(kind !sigma (make u2)) in
-    let check_qeq q1 q2 = UState.check_eq_quality (Evd.ustate !sigma) q1 q2 in
-    UGraph.check_eq_instances check_qeq (universes !sigma) u1 u2
+    let u1 = EConstr.EInstance.(kind sigma (make u1)) in
+    let u2 = EConstr.EInstance.(kind sigma (make u2)) in
+    let check_qeq q1 q2 = UState.check_eq_quality (Evd.ustate sigma) q1 q2 in
+    UGraph.check_eq_instances check_qeq (universes sigma) u1 u2
   in
   let eq_sorts s1 s2 =
     if Sorts.equal s1 s2 then true
-    else Sorts.equal (EConstr.ESorts.(kind !sigma (make s1))) (EConstr.ESorts.(kind !sigma (make s2)))
+    else Sorts.equal (EConstr.ESorts.(kind sigma (make s1))) (EConstr.ESorts.(kind sigma (make s2)))
   in
   let eq_existential eq e1 e2 =
     let eq c1 c2 = eq 0 (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
