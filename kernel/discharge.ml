@@ -89,7 +89,7 @@ let cook_constant env info cb =
   let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) names)) cb.const_hyps in
   {
     const_hyps = hyps;
-    const_univ_ctx = List.tl cb.const_univ_ctx;
+    const_univ_ctx = (match cb.const_univ_ctx with [] -> [] | _ :: univs -> univs);
     const_univ_hyps = univ_hyps;
     const_body = body;
     const_type = typ;
@@ -200,7 +200,7 @@ let cook_inductive info mib =
     mind_packets;
     mind_finite = mib.mind_finite;
     mind_hyps;
-    mind_univ_ctx = List.tl mib.mind_univ_ctx;
+    mind_univ_ctx = (match mib.mind_univ_ctx with [] -> [] | _ :: univs -> univs);
     mind_univ_hyps = univ_hyps;
     mind_nparams = mib.mind_nparams + nnewparams;
     mind_nparams_rec = mib.mind_nparams_rec + nnewparams;

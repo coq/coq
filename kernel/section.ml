@@ -149,7 +149,7 @@ let segment_of_entry env e sec =
   (* [sec.context] are the named hypotheses, [hyps] the subset that is
      declared by the global *)
   let ctx = extract_hyps sec.context hyps in
-  let uctx = List.hd univ_hyps in
+  let uctx = match univ_hyps with hd :: _ -> hd | [] -> UContext.empty in
   (* Add recursive calls: projections are recursively referring to the
      mind they belong to *)
   let recursive = match e with
