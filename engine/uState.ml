@@ -559,15 +559,25 @@ let pr ?(local=false) ctx =
   let prl = pr_uctx_level ctx in
   if is_empty ctx then mt ()
   else
+    let levelsr, cstrs, eqs = UGraph.constraints_of_universes ~only_local:local ctx.universes in
+    let preq (localeq, univ) =
+      str " = " ++ Univ.Universe.pr prl univ ++
+      (match localeq with Loop_checking.Local -> str "(local)" | _ -> str "(global)") ++ spc ()
+    in
+    let levelsr = Level.Set.diff levelsr ctx.local_variables in
     v 0
       (str"UNIVERSE VARIABLES:" ++ brk(0,1) ++
        h (Level.Set.pr prl ctx.local_variables) ++ fnl () ++
+       str"RIGID UNIVERSE VARIABLES:" ++ brk(0,1) ++
+       h (Level.Set.pr prl levelsr) ++ fnl () ++
        str"DEMOTED (GLOBAL) UNIVERSE VARIABLES:" ++ brk(0,1) ++
        h (Univ.ContextSet.pr prl ctx.demoted_local_context) ++ fnl () ++
        str"FLEXIBLE UNIVERSE VARIABLES:" ++ brk(0,1) ++
        h (Level.Set.pr prl ctx.flexible_variables) ++ fnl () ++
+       str"DEFINED LOCAL VARIABLES:" ++ brk(0,1) ++
+       h (Level.Map.pr prl preq eqs) ++ fnl () ++
        str"UNIVERSES:"++brk(0,1)++
-       h (UGraph.pr ~local:true prl ctx.universes) ++ fnl() ++
+       h (Univ.UnivConstraints.pr prl cstrs) ++ fnl() ++
        str"SORTS:"++brk(0,1)++
        h (pr_sort_opt_subst ctx) ++ fnl() ++
        (pr_opt (fun variances -> str"VARIANCES:"++brk(0,1)++
@@ -659,13 +669,13 @@ let update_univ_expr_subst = update_univ_subst_gen Universe.of_expr
 
 let push_subst eqs graph =
   let fold l (local, u) (graph, equivs) =
-    let graph, equivs' =
-      try UGraph.set l u graph
-      with Loop_checking.NotCanonical
-         | Loop_checking.OccurCheck
-         | Loop_checking.InconsistentEquality -> UGraph.enforce_constraint (Universe.make l, Eq, u) graph
-    in
-    graph, (l, u) :: List.map (fun (l, u) -> l, Universe.of_expr u) equivs' @ equivs
+    try let graph, equivs' = UGraph.set l u graph in
+      graph, (l, u) :: List.map (fun (l, u) -> l, Universe.of_expr u) equivs' @ equivs
+    with Loop_checking.NotCanonical
+       | Loop_checking.OccurCheck
+       | Loop_checking.InconsistentEquality ->
+        let graph, equivs' = UGraph.enforce_constraint (Universe.make l, Eq, u) graph in
+        graph, List.map (fun (l, u) -> l, Universe.of_expr u) equivs' @ equivs
   in
   Level.Map.fold fold eqs (graph, [])
 
