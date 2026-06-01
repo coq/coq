@@ -297,14 +297,14 @@ let unfoldintac occ rdx t (kt,_) =
       if const then
         let rec aux c =
           match EConstr.kind sigma0 c with
-          | Const _ when EConstr.eq_constr_nounivs sigma0 c t -> body env t t
-          | App (f,a) when EConstr.eq_constr_nounivs sigma0 f t -> EConstr.mkApp (body env f f,a)
+          | Const _ when EConstr.eq_constr_nounivs sigma0 c t -> body env c c
+          | App (f,a) when EConstr.eq_constr_nounivs sigma0 f t -> EConstr.mkApp (body env t t,a)
           | Proj _ when same_proj env sigma0 c t -> body env t c
           | _ ->
             let c = Reductionops.whd_betaiotazeta env sigma0 c in
             match EConstr.kind sigma0 c with
-            | Const _ when EConstr.eq_constr_nounivs sigma0 c t -> body env t t
-            | App (f,a) when EConstr.eq_constr_nounivs sigma0 f t -> EConstr.mkApp (body env f f,a)
+            | Const _ when EConstr.eq_constr_nounivs sigma0 c t -> body env c c
+            | App (f,a) when EConstr.eq_constr_nounivs sigma0 f t -> EConstr.mkApp (body env t t,a)
             | Proj _ when same_proj env sigma0 c t -> body env t c
             | Const f -> aux (body env c c)
             | App (f, a) -> aux (EConstr.mkApp (body env f f, a))
