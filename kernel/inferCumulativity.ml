@@ -357,7 +357,14 @@ end = struct
     in
     { variances with univs = Level.Map.update u upd variances.univs }
 
+  let pr_pre_variances =
+    let open Pp in
+    let open Univ in
+    let pr (l, v) = Level.raw_pr l ++ str " : " ++ pr_opt VarianceOccurrence.pr v in
+    prvect_with_sep spc pr
+
   let start ~infer_in_type univs position =
+    debug Pp.(fun () -> str"Starting from variances: " ++ pr_pre_variances univs);
     { univs = of_variance_occurrences ~infer_in_type univs; orig_array = univs; infer_mode = true; position}
 
   let start_variances univs position =
