@@ -358,7 +358,7 @@ let infer_opaque ~sec_univs env entry =
   let hyps = used_section_variables env (Some entry.opaque_entry_secctx) None typ in
   let sec_univs = _used_section_universes sec_univs entry.opaque_entry_universes hyps None typ in
   let sec_univs_instance = sec_univs_instance sec_univs in
-  let univs, sec_variance = on_variances (InferCumulativity.infer_definition env ?evars:None ~infer_in_type:false
+  let univs, sec_variance = on_variances (InferCumulativity.infer_definition env ?evars:None ~infer_in_type:true
      ~in_ctx:(Some hyps) ~sec_univs:(Some sec_univs_instance) ~typ ?body:None) univs in
   let context = TyCtx (env, typj, entry.opaque_entry_secctx, univs) in
   let def = OpaqueDef () in
