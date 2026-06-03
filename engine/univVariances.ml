@@ -161,9 +161,9 @@ let register_universe_variances_of_constr env sigma ?typ body =
   let status = universe_variances_constr env sigma ?typ body in
   Evd.set_variances sigma status
 
-let register_universe_variances_of_type env sigma typ =
+let register_universe_variances_of_type env sigma ?(cumul_pb=Cumul) typ =
   let status = init_status sigma in
-  let status = compute_variances_type env sigma status typ in
+  let status = compute_variances_type env sigma status ~cumul_pb typ in
   debug Pp.(fun () -> Inf.pr (Termops.pr_evd_level sigma) status ++ fnl () ++
     str "Computed from type " ++ Termops.Internal.print_constr_env env sigma typ);
   finalize sigma status
