@@ -113,9 +113,9 @@ end
 
 type 'a constraint_function = 'a -> 'a -> Set.t -> Set.t
 
-let enforce_eq_instances_univs strict x y c =
+let enforce_eq_instances_univs ~weak x y c =
   let mkU u = Sorts.sort_of_univ u in
-  let mk u v = if strict then ULub (Eq, u, v) else UEq (mkU u, mkU v) in
+  let mk u v = if weak then ULub (Eq, u, v) else UEq (mkU u, mkU v) in
   if not (UVars.eq_sizes (UVars.Instance.length x) (UVars.Instance.length y)) then
     CErrors.anomaly Pp.(str "Invalid argument: enforce_eq_instances_univs called with" ++
                         str " instances of different lengths.");

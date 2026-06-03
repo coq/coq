@@ -45,7 +45,7 @@ end
 
 type 'a constraint_function = 'a -> 'a -> Set.t -> Set.t
 
-val enforce_eq_instances_univs : bool -> Instance.t constraint_function
+val enforce_eq_instances_univs : weak:bool -> Instance.t constraint_function
 
 val enforce_eq_qualities : Sorts.Quality.t array constraint_function
 

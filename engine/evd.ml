@@ -1180,7 +1180,7 @@ let set_leq_univ d u1 u2 =
 
 let set_eq_instances ?(flex=false) d u1 u2 =
   add_constraints d
-    (UnivProblem.enforce_eq_instances_univs flex u1 u2 UnivProblem.Set.empty)
+    (UnivProblem.enforce_eq_instances_univs ~weak:flex u1 u2 UnivProblem.Set.empty)
 
 let set_leq_sort evd s1 s2 =
   let s1 = normalize_sort evd s1

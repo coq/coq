@@ -1336,7 +1336,7 @@ let univproblem_compare_sorts _env pb s0 s1 uset =
   | Conversion.CUMUL -> Result.Ok (UnivProblem.Set.add (ULe (s0, s1)) uset)
 
 let univproblem_compare_instances ~flex i0 i1 uset =
-  Result.Ok (UnivProblem.enforce_eq_instances_univs flex i0 i1 uset)
+  Result.Ok (UnivProblem.enforce_eq_instances_univs ~weak:flex i0 i1 uset)
 
 let univproblem_check_cumul_instances ~flex ~nargs cv_pb variance u1 u2 sigma =
   Result.Ok (UnivProblem.compare_cumulative_instances ~flex cv_pb ~nargs variance u1 u2 sigma)
