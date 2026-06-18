@@ -493,6 +493,7 @@ type nonrec synpure_vernac_expr =
   | VernacPrimitive of ident_decl * CPrimitives.op_or_type * constr_expr option
   | VernacComments of comment list
   | VernacAttributes of Attributes.vernac_flags
+  | VernacDropCapturedOutput
 
   (* Proof management *)
   | VernacAbort

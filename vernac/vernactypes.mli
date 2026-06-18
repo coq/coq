@@ -119,3 +119,4 @@ val vtmodifyprogram : (pm:Declare.OblState.t -> Declare.OblState.t) -> typed_ver
 val vtdeclareprogram : (pm:Declare.OblState.t -> Declare.Proof.t) -> typed_vernac
 val vtopenproofprogram : (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t) -> typed_vernac
 val vtopaqueaccess : (opaque_access:Global.indirect_accessor -> unit) -> typed_vernac
+val vtconsumecapturedoutput : (captured:Captured.state -> unit) -> typed_vernac

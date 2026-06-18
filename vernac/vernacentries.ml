@@ -3023,6 +3023,9 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     vtdefault(fun () ->
         vernac_library_attributes atts)
 
+  | VernacDropCapturedOutput ->
+    vtconsumecapturedoutput (fun ~captured -> ())
+
   (* Proof management *)
   | VernacFocus n ->
     vtmodifyproof(unsupported_attributes atts;vernac_focus n)

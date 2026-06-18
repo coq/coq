@@ -266,3 +266,6 @@ let vtopenproofprogram f = typed_vernac { ignore_state with prog = Modify; proof
 
 let vtopaqueaccess f = typed_vernac { ignore_state with opaque_access = Access }
     (fun {opaque_access} -> let () = f ~opaque_access in no_state)
+
+let vtconsumecapturedoutput f = typed_vernac { ignore_state with captured = Consume }
+    (fun {captured} -> let () = f ~captured in no_state)

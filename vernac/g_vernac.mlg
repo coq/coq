@@ -1145,7 +1145,10 @@ GRAMMAR EXTEND Gram
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 table_value
         -> { VernacSynPure (VernacRemoveOption ([table;field], v)) }
       | IDENT "Remove"; table = IDENT; v = LIST1 table_value ->
-          { VernacSynPure (VernacRemoveOption ([table], v)) } ]]
+          { VernacSynPure (VernacRemoveOption ([table], v)) }
+      | IDENT "Drop"; IDENT "Captured"; IDENT "Output" ->
+        { VernacSynPure VernacDropCapturedOutput }
+  ]]
   ;
   query_command:
     [ [ IDENT "Eval"; r = red_expr; "in"; c = lconstr; "." ->
