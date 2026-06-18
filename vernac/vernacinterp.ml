@@ -36,6 +36,7 @@ let interp_control_gen ~loc ~st ~unfreeze_transient control f =
     ~with_local_state:(with_interp_state ~unfreeze_transient st)
     control
     ~noop
+    (* XXX is there a reason we only modify under the controls instead of around them? *)
     (Flags.with_modified_ref Flags.in_synterp_phase (fun _ -> Some false) f)
 
 (* [loc] is the [Loc.t] of the vernacular command being interpreted. *)
