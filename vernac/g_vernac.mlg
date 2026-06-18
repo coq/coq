@@ -104,6 +104,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc (ControlAllocLimit { kilowords = Int64.(mul (of_int n) mult) }) }
       | IDENT "Fail" -> { CAst.make ~loc ControlFail }
       | IDENT "Succeed" -> { CAst.make ~loc ControlSucceed }
+      | IDENT "Capture"; IDENT "Output" -> { CAst.make ~loc ControlCaptureOutput }
     ] ]
   ;
   decorated_vernac:

@@ -13,6 +13,9 @@ type 'state control_entry
 
 type 'state control_entries = 'state control_entry list
 
+(** Captured output *)
+type output = Message of Feedback.level * Loc.t option * Pp.t
+
 (** Translate from syntax and add default timeout. *)
 val from_syntax : Vernacexpr.control_flag list -> unit control_entries
 
@@ -40,9 +43,11 @@ val under_control : loc:Loc.t option ->
 (** Like [under_control], also print any final messages (eg from
     [Time]) and raise final exceptions (eg from [Fail] when the
     command did not fail).
+    [output list] given to [push_captured] is in reverse chronological order.
 *)
 val last_under_control : loc:Loc.t option ->
   with_local_state:('state0,'state) with_local_state ->
+  push_captured:(output list -> 'b -> 'b) ->
   'state0 control_entries ->
   noop:'b ->
   (unit -> 'b) ->

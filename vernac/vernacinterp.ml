@@ -30,10 +30,14 @@ let with_interp_state ~unfreeze_transient st =
   in
   { VernacControl.with_local_state }
 
+(* TODO actually save captured output *)
+let push_captured (_:VernacControl.output list) v = v
+
 let interp_control_gen ~loc ~st ~unfreeze_transient control f =
   let noop = st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program in
   VernacControl.last_under_control ~loc
     ~with_local_state:(with_interp_state ~unfreeze_transient st)
+    ~push_captured
     control
     ~noop
     (* XXX is there a reason we only modify under the controls instead of around them? *)

@@ -1479,6 +1479,7 @@ let pr_control_flag (p : control_flag) =
     | ControlAllocLimit n -> keyword "AllocLimit " ++ int64 Int64.(div n.kilowords 1000L)
     | ControlFail -> keyword "Fail"
     | ControlSucceed -> keyword "Succeed"
+    | ControlCaptureOutput -> keyword "Capture Output"
   in
   w ++ spc ()
 
