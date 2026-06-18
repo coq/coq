@@ -1226,6 +1226,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Strategies" -> { PrintStrategy None }
       | IDENT "Registered" -> { PrintRegistered }
       | IDENT "Registered"; IDENT "Schemes" -> { PrintRegisteredSchemes }
+      | IDENT "Captured"; IDENT "Output" -> { PrintCapturedOutput }
     ] ]
   ;
   debug_univ_name:

@@ -78,6 +78,7 @@ type printable =
   | PrintRegistered
   | PrintRegisteredSchemes
   | PrintNotation of qualid Constrexpr.notation_entry_gen * string
+  | PrintCapturedOutput
 
 type glob_search_where = InHyp | InConcl | Anywhere
 
