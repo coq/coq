@@ -589,6 +589,7 @@ command: [
 | "Debug" "Off"
 | "Declare" "Reduction" IDENT; ":=" red_expr
 | "Declare" "Custom" "Entry" ident
+| "Drop" "Captured" "Output"
 | "Obligation" natural "of" identref withtac
 | "Obligation" natural withtac
 | "Next" "Obligation" "of" identref withtac
@@ -846,6 +847,7 @@ control_flag: [
 | "AllocLimit" natural [ "Mw" | "kw" ]
 | "Fail"
 | "Succeed"
+| "Capture" "Output"
 ]
 
 decorated_vernac: [
@@ -1463,6 +1465,7 @@ printable: [
 | "Strategies"
 | "Registered"
 | "Registered" "Schemes"
+| "Captured" "Output"
 ]
 
 debug_univ_name: [

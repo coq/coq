@@ -1267,6 +1267,22 @@ Controlling Typing Flags
 
 Typing flags may not be changed while inside sections.
 
+Output testing
+--------------
+
+.. cmd:: Capture Output @sentence
+
+   If :n:`@sentence` succeeds, copies the messages it printed to the
+   "captured output" internal state.
+
+.. cmd:: Drop Captured Output
+
+   Deletes the contents of the "captured output" internal state.
+
+.. cmd:: Print Captured Output
+
+   Print the current contents of the "captured output" internal state.
+
 .. _internal-registration-commands:
 
 Internal registration commands
