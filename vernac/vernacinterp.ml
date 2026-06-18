@@ -30,11 +30,13 @@ let with_interp_state ~unfreeze_transient st =
   in
   { VernacControl.with_local_state }
 
-(* TODO actually save captured output *)
-let push_captured (_:VernacControl.output list) v = v
+let push_captured captured (st:Vernacstate.explicit_state) = {
+  st with
+  captured_output = CList.append captured st.captured_output;
+}
 
 let interp_control_gen ~loc ~st ~unfreeze_transient control f =
-  let noop = st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program in
+  let noop = Vernacstate.explicit_from_frozen st.Vernacstate.interp in
   VernacControl.last_under_control ~loc
     ~with_local_state:(with_interp_state ~unfreeze_transient st)
     ~push_captured
@@ -46,14 +48,17 @@ let interp_control_gen ~loc ~st ~unfreeze_transient control f =
 (* [loc] is the [Loc.t] of the vernacular command being interpreted. *)
 let rec interp_expr ?loc ~st cmd =
   let before_univs = Global.universes () in
-  let pstack, pm = with_generic_atts ~check:false cmd.attrs (fun ~atts ->
+  let extra = with_generic_atts ~check:false cmd.attrs (fun ~atts ->
       interp_expr_core ?loc ~atts ~st cmd.expr)
   in
   let after_univs = Global.universes () in
-  if before_univs == after_univs then pstack, pm
-  else
-    let f = Declare.Proof.update_sigma_univs after_univs in
-    Option.map (Vernacstate.LemmaStack.map ~f) pstack, pm
+  let pstack =
+    if before_univs == after_univs then extra.Vernacstate.proof
+    else
+      let f = Declare.Proof.update_sigma_univs after_univs in
+      Option.map (Vernacstate.LemmaStack.map ~f) extra.proof
+  in
+  { extra with proof = pstack }
 
 and interp_expr_core ?loc ~atts ~st c =
   match c with
@@ -75,41 +80,32 @@ and interp_expr_core ?loc ~atts ~st c =
 
   | v ->
     let fv = Vernacentries.translate_vernac ?loc ~atts v in
-    let stack = st.Vernacstate.interp.lemmas in
-    let program = st.Vernacstate.interp.program in
-    let {Vernactypes.prog; proof; opaque_access=(); }, () = Vernactypes.run ?loc fv {
-        prog=program;
-        proof=stack;
-        opaque_access=();
-      }
-    in
-    proof, prog
+    let extra, () = Vernactypes.run ?loc fv (Vernacstate.explicit_from_frozen st.Vernacstate.interp) in
+    extra
 
 and vernac_load ~verbosely ~st entries =
   let v_mod = if verbosely then Flags.verbosely else Flags.silently in
-  let interp_entry (stack, pm) (CAst.{ loc; v = cmd }, synterp_st) =
+  let interp_entry extra_state (CAst.{ loc; v = cmd }, synterp_st) =
     Vernacstate.Synterp.unfreeze synterp_st;
     let st = Vernacstate.{
         synterp = synterp_st;
-        interp = {
-          (Vernacstate.Interp.freeze_interp_state()) with
-          lemmas = stack;
-          program = pm;
-        };
+        interp =
+          Vernacstate.set_explicit_in_frozen
+            (Vernacstate.Interp.freeze_interp_state())
+            extra_state ;
       }
     in
     v_mod (interp_control ~st) (CAst.make ?loc cmd)
   in
-  let pm = st.Vernacstate.interp.program in
-  let stack = st.Vernacstate.interp.lemmas in
-  let stack, pm =
+  let extra = Vernacstate.explicit_from_frozen st.interp in
+  let extra =
     Dumpglob.with_glob_output Dumpglob.NoGlob
-    (fun () -> List.fold_left interp_entry (stack, pm) entries) ()
+    (fun () -> List.fold_left interp_entry extra entries) ()
   in
   (* If Load left a proof open, we fail too. *)
-  if Option.has_some stack then
+  if Option.has_some extra.proof then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
-  stack, pm
+  extra
 
 and interp_control ~st ({ CAst.v = cmd; loc }) =
   Util.try_finally (fun () ->
@@ -141,7 +137,7 @@ let interp_qed_delayed ~proof ~st pe =
         pm)
       pm
   in
-  stack, pm
+  { (Vernacstate.explicit_from_frozen st.interp) with proof = stack; prog = pm; }
 
 let interp_qed_delayed_control ~proof ~st ~control { CAst.loc; v=pe } =
   interp_control_gen ~loc ~st control

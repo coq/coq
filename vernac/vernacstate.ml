@@ -100,6 +100,7 @@ end
 let s_cache = ref None
 let s_lemmas = ref None
 let s_program = ref (NeList.singleton Declare.OblState.empty)
+let s_captured = ref []
 
 module Interp = struct
 
@@ -110,6 +111,7 @@ type t = {
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
   program : Declare.OblState.t NeList.t;    (* obligations table *)
   opaques : Opaques.Summary.t;     (* opaque proof terms *)
+  captured_output : VernacControl.output list; (* output is in reverse chronological order *)
 }
 
 let invalidate_cache () =
@@ -132,15 +134,17 @@ let freeze_interp_state () =
     lemmas = !s_lemmas;
     program = !s_program;
     opaques = Opaques.Summary.freeze ();
+    captured_output = !s_captured;
   }
 
 let make_shallow s =
   { s with system = System.Stm.make_shallow s.system }
 
-let unfreeze_interp_state { system; lemmas; program; opaques } =
+let unfreeze_interp_state { system; lemmas; program; opaques; captured_output } =
   do_if_not_cached s_cache System.unfreeze system;
   s_lemmas := lemmas;
   s_program := program;
+  s_captured := captured_output;
   Opaques.Summary.unfreeze opaques
 
 end
@@ -161,14 +165,34 @@ let unfreeze_full_state st =
       Interp.unfreeze_interp_state st.interp)
     ()
 
+type explicit_state = {
+  proof : LemmaStack.t option;
+  prog : Declare.OblState.t NeList.t;
+  captured_output : VernacControl.output list;
+}
+
+let explicit_from_frozen st = {
+  proof = st.Interp.lemmas;
+  prog = st.program;
+  captured_output = st.captured_output;
+}
+
+let set_explicit_in_frozen st v = {
+  st with
+  Interp.lemmas = v.proof;
+  program = v.prog;
+  captured_output = v.captured_output;
+}
+
 (* Compatibility module *)
 module Declare_ = struct
 
   let get_program () = !s_program
 
-  let set (pstate,pm) =
-    s_lemmas := pstate;
-    s_program := pm
+  let set v =
+    s_lemmas := v.proof;
+    s_program := v.prog;
+    s_captured := v.captured_output
 
   let get_pstate () =
     Option.map (LemmaStack.with_top ~f:(fun x -> x)) !s_lemmas
