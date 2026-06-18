@@ -32,16 +32,11 @@ let with_interp_state ~unfreeze_transient st =
 
 let interp_control_gen ~loc ~st ~unfreeze_transient control f =
   let noop = st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program in
-  let control, res =
-    VernacControl.under_control ~loc
-      ~with_local_state:(with_interp_state ~unfreeze_transient st)
-      control
-      ~noop
-      (Flags.with_modified_ref Flags.in_synterp_phase (fun _ -> Some false) f)
-  in
-  if VernacControl.after_last_phase ~loc control
-  then noop
-  else res
+  VernacControl.last_under_control ~loc
+    ~with_local_state:(with_interp_state ~unfreeze_transient st)
+    control
+    ~noop
+    (Flags.with_modified_ref Flags.in_synterp_phase (fun _ -> Some false) f)
 
 (* [loc] is the [Loc.t] of the vernacular command being interpreted. *)
 let rec interp_expr ?loc ~st cmd =

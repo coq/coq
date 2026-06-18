@@ -37,12 +37,16 @@ val under_control : loc:Loc.t option ->
   (unit -> 'b) ->
   'state control_entries * 'b
 
-(** Print any final messages (eg from [Time]) and raise final
-    exceptions (eg from [Fail] when the command did not fail). The
-    returned boolean tells if we should be noop ([Fail] where the
-    command failed or [Succeed] where it succeeded).
+(** Like [under_control], also print any final messages (eg from
+    [Time]) and raise final exceptions (eg from [Fail] when the
+    command did not fail).
 *)
-val after_last_phase : loc:Loc.t option -> _ control_entries -> bool
+val last_under_control : loc:Loc.t option ->
+  with_local_state:('state0,'state) with_local_state ->
+  'state0 control_entries ->
+  noop:'b ->
+  (unit -> 'b) ->
+  'b
 
 (** Exposed so that waterproof can change the error message. *)
 exception CmdTimeout

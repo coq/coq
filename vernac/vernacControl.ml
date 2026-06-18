@@ -248,33 +248,34 @@ let rec under_control ~loc ~with_local_state controls ~noop f =
     | Some (control, (rest,v)) -> control :: rest, v
     | None -> [], noop
 
-let ignore_state = { with_local_state = fun _ f -> (), f () }
+let finish = function
+  | ControlTime {duration} ->
+    Feedback.msg_notice @@ System.fmt_transaction_result (Ok ((),duration));
+    false
+  | ControlInstructions {instructions} ->
+    Feedback.msg_notice @@ System.fmt_instructions_result (Ok ((),instructions));
+    false
+  | ControlProfile {to_file; profstate} ->
+    Feedback.msg_notice @@ fmt_profile to_file (Ok ((),profstate));
+    false
+  | ControlRedirect _ -> false
+  | ControlTimeout _ -> false
+  | ControlAllocLimit { remaining = _; allocated } ->
+    Feedback.msg_notice @@ fmt_allocated allocated;
+    false
+  | ControlFail _ -> CErrors.user_err Pp.(str "The command has not failed!")
+  | ControlSucceed _ -> true
 
-let rec after_last_phase ~loc = function
-  | [] -> false
+let rec last_under_control ~loc ~with_local_state controls ~noop f =
+  match controls with
+  | [] -> f()
   | control :: rest ->
-    (* don't match on [control] before processing [rest]: correctly handle eg [Fail Fail]. *)
-    let rest () = after_last_phase ~loc rest in
-    match under_one_control ~loc ~with_local_state:ignore_state control rest with
-    | None -> true
-    | Some (control,noop) ->
-      match control with
-      | ControlTime {duration} ->
-        Feedback.msg_notice @@ System.fmt_transaction_result (Ok ((),duration));
-        noop
-      | ControlInstructions {instructions} ->
-        Feedback.msg_notice @@ System.fmt_instructions_result (Ok ((),instructions));
-        noop
-      | ControlProfile {to_file; profstate} ->
-        Feedback.msg_notice @@ fmt_profile to_file (Ok ((),profstate));
-        noop
-      | ControlRedirect _ -> noop
-      | ControlTimeout _ -> noop
-      | ControlAllocLimit { remaining = _; allocated } ->
-        Feedback.msg_notice @@ fmt_allocated allocated;
-        noop
-      | ControlFail _ -> CErrors.user_err Pp.(str "The command has not failed!")
-      | ControlSucceed _ -> true
+    let f () = last_under_control ~loc ~with_local_state rest ~noop f in
+    match under_one_control ~loc ~with_local_state control f with
+    | Some (control, v) ->
+      if finish control then noop
+      else v
+    | None -> noop
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it. *)
