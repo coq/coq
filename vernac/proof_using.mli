@@ -34,3 +34,5 @@ val proof_using_opt_name : string list
 (** For the stm *)
 
 val using_from_string : string -> Vernacexpr.section_subset_expr
+
+val section_subset_expr : Vernacexpr.section_subset_expr Procq.Entry.t
