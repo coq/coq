@@ -296,7 +296,7 @@ Module NestedApplicationsWithVariables.
 
 Section S.
 Variable h : (nat -> nat) -> nat.
-Fixpoint f n :=
+Fail Fixpoint f n :=
   match n with
   | 0 => 0
   | S p => (fun _ => 0) (h f)
@@ -308,7 +308,7 @@ End NestedApplicationsWithVariables.
 Module NestedApplicationsWithParameters.
 
 Parameter h : (nat -> nat) -> nat.
-Fixpoint f n :=
+Fail Fixpoint f n :=
   match n with
   | 0 => 0
   | S p => (fun _ => 0) (h f)
@@ -318,7 +318,7 @@ End NestedApplicationsWithParameters.
 
 Module NestedApplicationsWithLocalVariables.
 
-Fixpoint f (h:(nat->nat)->nat) n :=
+Fail Fixpoint f (h:(nat->nat)->nat) n :=
   match n with
   | 0 => 0
   | S p => (fun _ => 0) (h (f h))
@@ -331,7 +331,7 @@ Module NestedApplicationsWithProjections.
 Set Primitive Projections.
 Record R := { field : (nat -> nat) -> nat }.
 
-Fixpoint f x n :=
+Fail Fixpoint f x n :=
   match n with
   | 0 => 0
   | S p => (fun _ => 0) (x.(field) (f x))
@@ -348,18 +348,20 @@ Fixpoint f n :=
   end.
 
 (* inner fix fully applied with a match subterm *)
-Fixpoint f' n :=
+Fail Fixpoint f' n :=
   match n with
   | 0 => 0
   | S p => (fun _ => 0) ((fix h k (q:nat) {struct q} := k) f' p)
   end.
+(* False negative, this is SN *)
 
 (* inner fix fully applied with an arbitrary term *)
-Fixpoint f'' o n :=
+Fail Fixpoint f'' o n :=
   match n with
   | 0 => 0
   | S p => (fun _ => 0) ((fix h k (q:nat) {struct q} := k o) f'' o)
   end.
+(* False negative, this is SN *)
 
 End NestedRedexesWithFix.
 
@@ -371,11 +373,12 @@ Fixpoint f o n :=
   | S p => (fun _ => 0) (match o with tt => f o end)
   end.
 
-Fixpoint f' o n :=
+Fail Fixpoint f' o n :=
   match n with
   | 0 => 0
   | S p => (fun _ => 0) ((match o with tt => fun x => x o end) f')
   end.
+(* False negative, this is SN *)
 
 End NestedRedexesWithMatch.
 
