@@ -57,7 +57,7 @@ module Interp : sig
     (** program mode table. One per open module/section including the toplevel module. *)
     ; opaques : Opaques.Summary.t
     (** qed-terminated proofs *)
-    ; captured_output : VernacControl.output list
+    ; captured_output : CapturedOutput.output list
     (** output is in reverse chronological order *)
     }
 
@@ -81,7 +81,7 @@ val unfreeze_full_state : t -> unit
 type explicit_state = {
   proof : LemmaStack.t option;
   prog : Declare.OblState.t NeList.t;
-  captured_output : VernacControl.output list;
+  captured_output : CapturedOutput.output list;
 }
 
 val explicit_from_frozen : Interp.t -> explicit_state

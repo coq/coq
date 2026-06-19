@@ -22,9 +22,6 @@ let empty_profstate = {
   counters = NewProfile.Counters.zero;
 }
 
-(* could add phase info, not sure if useful *)
-type output = Message of Feedback.level * Loc.t option * Pp.t
-
 (** Partially interpreted control flags.
 
     [ControlTime {duration}] means "Time" where the
@@ -50,7 +47,7 @@ type 'state control_entry =
   | ControlAllocLimit of { remaining : Control.kilowords; allocated : Control.kilowords }
   | ControlFail of { st : 'state }
   | ControlSucceed of { st : 'state }
-  | ControlCaptureOutput of { captured : output list; }
+  | ControlCaptureOutput of { captured : CapturedOutput.output list; }
   (** [captured] is in reverse chronological order. *)
 
 type 'state control_entries = 'state control_entry list
@@ -224,16 +221,8 @@ let with_succeed ~with_local_state st0 f =
 let with_capture ?loc:default_loc ~captured f =
   let captured = ref captured in
   let feeder (fb:Feedback.feedback) = match fb.contents with
-    | Message (lvl,loc,_qf,msg) ->
-      (* Imitating Coqloop.coqloop_feed we only use the default loc for Warning
-         (not sure why, but I guess it's only used by Warning?)
-         Note that errors are not captured because they are exns not
-         feedbacks at the "vernac" layer. *)
-      let loc = match lvl, loc with
-        | Warning, None -> default_loc
-        | _ -> loc
-      in
-      captured := Message (lvl,loc,msg) :: !captured
+    | Message (lvl,_loc,_qf,msg) ->
+      captured := CapturedOutput.Message (lvl,msg) :: !captured
     | _ -> ()
   in
   let acquire () = Feedback.add_feeder feeder in

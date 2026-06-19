@@ -191,6 +191,7 @@ let classify_vernac e =
     | VernacAddRewRule _
     | VernacDeclareInstance _
     | VernacDropCapturedOutput
+    | VernacAssertCapturedOutput _
       -> VtSideff ([], VtLater)
 
     (* Who knows *)

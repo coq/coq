@@ -2271,7 +2271,7 @@ let vernac_print_debug_delta qid =
   Mod_subst.debug_pr_delta prc delta
 
 let print_captured_output captured =
-  let pr_one (VernacControl.Message (_,_,msg)) = msg in
+  let pr_one (CapturedOutput.Message (_,msg)) = msg in
   str "Captured output:" ++ fnl() ++
   prlist_with_sep fnl pr_one (List.rev captured)
 
@@ -3025,6 +3025,18 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacDropCapturedOutput ->
     vtconsumecapturedoutput (fun ~captured -> ())
+
+  | VernacAssertCapturedOutput (flags, s) ->
+    let f ~captured = CapturedOutput.(vernac_assert (from_rev_list captured) flags s) in
+    let nodrop =
+      List.exists (function
+            {CAst.v=AssertCapturedOutputFlags.NoDrop} -> true
+          | _ -> false)
+        flags
+    in
+    if nodrop then
+      vtreadcapturedoutput f
+    else vtconsumecapturedoutput f
 
   (* Proof management *)
   | VernacFocus n ->

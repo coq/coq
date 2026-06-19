@@ -581,6 +581,8 @@ command: [
 | "Test" setting_name
 | "Remove" IDENT IDENT LIST1 table_value
 | "Remove" IDENT LIST1 table_value
+| "Drop" "Captured" "Output"
+| "Assert" "Captured" "Output" OPT [ "(" LIST0 captured_output_flag SEP "," ")" ] lstring
 | "Reset" "Initial"
 | "Reset" identref
 | "Back"
@@ -589,7 +591,6 @@ command: [
 | "Debug" "Off"
 | "Declare" "Reduction" IDENT; ":=" red_expr
 | "Declare" "Custom" "Entry" ident
-| "Drop" "Captured" "Output"
 | "Obligation" natural "of" identref withtac
 | "Obligation" natural withtac
 | "Next" "Obligation" "of" identref withtac
@@ -1578,6 +1579,11 @@ search_queries: [
 
 univ_name_list: [
 | "@{" LIST0 name OPT [ ";" LIST0 name ] "}"
+]
+
+captured_output_flag: [
+| "no" "drop"
+| "printing" "width" natural
 ]
 
 syntax: [

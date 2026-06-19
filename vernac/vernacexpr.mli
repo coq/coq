@@ -366,6 +366,12 @@ type hints_expr =
   | HintsConstructors of Libnames.qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Gentactic.raw_generic_tactic
 
+module AssertCapturedOutputFlags : sig
+  type t =
+    | NoDrop
+    | PrintingWidth of int
+end
+
 (** [synterp_vernac_expr] describes the AST of commands which have effects on
     parsing or parsing extensions *)
 type synterp_vernac_expr =
@@ -494,6 +500,7 @@ type nonrec synpure_vernac_expr =
   | VernacComments of comment list
   | VernacAttributes of Attributes.vernac_flags
   | VernacDropCapturedOutput
+  | VernacAssertCapturedOutput of AssertCapturedOutputFlags.t CAst.t list * lstring
 
   (* Proof management *)
   | VernacAbort

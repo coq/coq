@@ -111,7 +111,7 @@ type t = {
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
   program : Declare.OblState.t NeList.t;    (* obligations table *)
   opaques : Opaques.Summary.t;     (* opaque proof terms *)
-  captured_output : VernacControl.output list; (* output is in reverse chronological order *)
+  captured_output : CapturedOutput.output list; (* output is in reverse chronological order *)
 }
 
 let invalidate_cache () =
@@ -168,7 +168,7 @@ let unfreeze_full_state st =
 type explicit_state = {
   proof : LemmaStack.t option;
   prog : Declare.OblState.t NeList.t;
-  captured_output : VernacControl.output list;
+  captured_output : CapturedOutput.output list;
 }
 
 let explicit_from_frozen st = {

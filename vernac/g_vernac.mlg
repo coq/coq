@@ -1148,6 +1148,10 @@ GRAMMAR EXTEND Gram
           { VernacSynPure (VernacRemoveOption ([table], v)) }
       | IDENT "Drop"; IDENT "Captured"; IDENT "Output" ->
         { VernacSynPure VernacDropCapturedOutput }
+      | IDENT "Assert"; IDENT "Captured"; IDENT "Output";
+        flags = OPT [ "("; flags = LIST0 captured_output_flag SEP ","; ")" -> { flags } ];
+        s = lstring ->
+        { VernacSynPure (VernacAssertCapturedOutput (Option.default [] flags, s)) }
   ]]
   ;
   query_command:
@@ -1334,6 +1338,13 @@ GRAMMAR EXTEND Gram
   ;
   univ_name_list:
     [ [  "@{" ; l = LIST0 name; l' = OPT [ ";" ; l = LIST0 name -> { l } ] ; "}" -> { match l' with None -> [], l | Some l' -> l, l' } ] ]
+  ;
+  captured_output_flag:
+    [ [ IDENT "no"; IDENT "drop" ->
+        { CAst.make ~loc AssertCapturedOutputFlags.NoDrop }
+      | IDENT "printing"; IDENT "width"; w = natural ->
+        { CAst.make ~loc @@ AssertCapturedOutputFlags.PrintingWidth w }
+    ] ]
   ;
 END
 

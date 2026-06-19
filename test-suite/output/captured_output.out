@@ -56,3 +56,17 @@ terminal symbol) should usually be at level 1 (default).
 Captured output:
 5
      : nat
+File "./output/captured_output.v", line 31, characters 49-58:
+The command has indeed failed with message:
+Not OK: expected
+"5
+     : nat"
+Quickfix:
+Replace File "./output/captured_output.v", line 31, characters 49-58 with "5
+     : nat"
+File "./output/captured_output.v", line 34, characters 0-14:
+Output OK.
+File "./output/captured_output.v", line 38, characters 0-14:
+Output OK.
+File "./output/captured_output.v", line 41, characters 44-46:
+Output OK.

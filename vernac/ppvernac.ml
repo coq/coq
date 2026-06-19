@@ -743,6 +743,10 @@ let pr_printable = function
     keyword "Print Notation" ++ spc() ++ pr_qualid ent ++ str ntn_key
   | PrintCapturedOutput -> keyword "Print Captured Output"
 
+let pr_assert_captured_output_flag = let open AssertCapturedOutputFlags in function
+  | NoDrop -> str "no drop"
+  | PrintingWidth w -> str "printing width " ++ int w
+
 let pr_using e =
   let rec aux = function
     | SsEmpty -> "()"
@@ -1330,6 +1334,13 @@ let pr_synpure_vernac_expr v =
          pr_vernac_attributes attrs)
     )
   | VernacDropCapturedOutput -> return (keyword "Drop Captured Output")
+  | VernacAssertCapturedOutput (flags, {CAst.v=s}) ->
+    return (
+      hov 2
+        (keyword "Assert Captured Output" ++ spc() ++
+         (if List.is_empty flags then mt() else
+            surround (prlist_with_sep spc (fun f -> pr_assert_captured_output_flag f.v) flags) ++ spc()) ++
+         qstring s))
   | VernacProof (None, None) ->
     return (keyword "Proof")
   | VernacProof (None, Some e) ->

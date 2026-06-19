@@ -123,7 +123,7 @@ module Proof = struct
 end
 
 module Captured = struct
-  type state = VernacControl.output list
+  type state = CapturedOutput.output list
 
   type _ t =
     | Ignore : unit t
@@ -266,6 +266,9 @@ let vtopenproofprogram f = typed_vernac { ignore_state with prog = Modify; proof
 
 let vtopaqueaccess f = typed_vernac { ignore_state with opaque_access = Access }
     (fun {opaque_access} -> let () = f ~opaque_access in no_state)
+
+let vtreadcapturedoutput f = typed_vernac { ignore_state with captured = Read }
+    (fun {captured} -> let () = f ~captured in no_state)
 
 let vtconsumecapturedoutput f = typed_vernac { ignore_state with captured = Consume }
     (fun {captured} -> let () = f ~captured in no_state)

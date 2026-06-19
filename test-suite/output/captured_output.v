@@ -27,3 +27,15 @@ Capture Output Check 5.
 Succeed Drop Captured Output.
 
 Print Captured Output.
+
+Fail Assert Captured Output (printing width 102) "5 : nat".
+
+Assert Captured Output (printing width 102, no drop)
+"5
+     : nat".
+
+Assert Captured Output (printing width 102)
+"5
+     : nat".
+
+Assert Captured Output (printing width 102) "".
