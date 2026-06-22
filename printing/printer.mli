@@ -138,7 +138,7 @@ val pr_uninstantiated_constr_pattern_env : ?flags:PrintingFlags.Extern.t ->
 
 val pr_cases_pattern : ?flags:PrintingFlags.Extern.t -> cases_pattern -> Pp.t
 
-val pr_sort : ?universes:bool -> ?qualities:bool -> evar_map -> Sorts.t -> Pp.t
+val pr_sort : ?universes:bool -> ?sorts:bool -> ?qualities:bool -> evar_map -> Sorts.t -> Pp.t
 
 (** Universe constraints *)
 

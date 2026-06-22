@@ -596,6 +596,19 @@ Printing universes
    terms apparently identical but internally different in the Calculus of Inductive
    Constructions.
 
+.. flag:: Printing Sorts
+
+   Turn this :term:`flag` on to display sort variables, in sorts and in
+   universe instances, while still hiding universe levels.  A sort at a
+   sort variable is printed like ``Univ@{s ; _}``, naming the variable
+   even when it is a fresh one that would otherwise print as plain
+   ``Univ`` (unless :flag:`Printing Sort Qualities` is off).  Other sorts
+   print as usual.  Universe instances of polymorphic references are
+   displayed when they contain sort qualities, with ``_`` in place of the
+   universe levels, and stay hidden otherwise.  Compared to
+   :flag:`Printing Universes`, this makes the sort structure visible
+   without exposing universe level names.
+
 .. cmd:: Print {? Sorted } Universes {? Subgraph ( {* @debug_univ_name } ) } {? {| With | Without } Constraint Sources } {? @string }
    :name: Print Universes
 

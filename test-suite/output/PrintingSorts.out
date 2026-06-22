@@ -1,0 +1,89 @@
+S
+     : Univ@{s ; _}
+T
+     : Type
+S
+     : Univ@{s ; _}
+T
+     : Type
+S
+     : Univ@{s ; Set}
+T
+     : Type@{T.u0}
+P
+     : Prop
+Q
+     : Set
+R
+     : SProp
+pid
+     : forall A : Type, A -> A
+plist
+     : Type -> Type
+pid
+     : forall A : Type, A -> A
+pid
+     : forall A : Type, A -> A
+plist
+     : Type -> Type
+pnil
+     : forall A : Type, plist A
+pcons
+     : forall A : Type, A -> plist A -> plist A
+pid@{PrintingSorts.39}
+     : forall A : Type@{PrintingSorts.39}, A -> A
+(* {PrintingSorts.39} | 
+Normalized constraints:
+ {PrintingSorts.39} |  *)
+plist@{PrintingSorts.40}
+     : Type@{PrintingSorts.40} -> Type@{max(Set,PrintingSorts.40)}
+(* {PrintingSorts.40} | 
+Normalized constraints:
+ {PrintingSorts.40} |  *)
+spid
+     : forall A : Univ, A -> A
+sbox
+     : Univ -> Type
+spid@{α14 ; _}
+     : forall A : Univ@{α14 ; _}, A -> A
+spid@{α15 ; _}
+     : forall A : Univ@{α15 ; _}, A -> A
+sbox@{α16 ; _}
+     : Univ@{α16 ; _} -> Type
+spack@{α17 ; _}
+     : forall A : Univ@{α17 ; _}, A -> sbox@{α17 ; _} A
+spid@{α18 ; PrintingSorts.56}
+     : forall A : Univ@{α18 ; PrintingSorts.56}, A -> A
+(* {α18}; {PrintingSorts.56} | 
+Collapsed sorts:
+ α18 := Type
+Normalized constraints:
+ {PrintingSorts.56} |  *)
+spid@{α19 ; PrintingSorts.57}
+     : forall A : Univ@{α19 ; PrintingSorts.57}, A -> A
+(* {α19}; {PrintingSorts.57} | 
+Collapsed sorts:
+ α19 := Type
+Normalized constraints:
+ {PrintingSorts.57} |  *)
+sbox@{α20 ; PrintingSorts.58}
+     : Univ@{α20 ; PrintingSorts.58} -> Type@{PrintingSorts.58}
+(* {α20}; {PrintingSorts.58} | 
+Collapsed sorts:
+ α20 := Type
+Normalized constraints:
+ {PrintingSorts.58} |  *)
+spack@{α21 ; PrintingSorts.59}
+     : forall A : Univ@{α21 ; PrintingSorts.59},
+       A -> sbox@{α21 ; PrintingSorts.59} A
+(* {α21}; {PrintingSorts.59} | 
+Collapsed sorts:
+ α21 := Type
+Normalized constraints:
+ {PrintingSorts.59} |  *)
+spid@{Prop ; _}
+     : forall A : Prop, A -> A
+spid@{Type ; _}
+     : forall A : Set, A -> A
+spid@{α22 ; _}
+     : forall A : Univ, A -> A
