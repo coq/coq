@@ -1346,9 +1346,9 @@ let extern_type ?(goal_concl_style=false) ~(flags:PrintingFlags.t) env sigma ?im
   let r = Detyping.detype Detyping.Later ~isgoal:goal_concl_style ~avoid ~flags:flags.detype env sigma t in
   extern_glob_type ?impargs (extern_env ~flags:flags.extern env sigma) r
 
-let extern_sort ~universes ~qualities sigma s =
+let extern_sort ~universes ~sorts ~qualities sigma s =
   extern_glob_sort (Evd.universe_binders sigma)
-    (detype_sort ~universes ~qualities sigma s)
+    (detype_sort ~universes ~sorts ~qualities sigma s)
 
 let extern_closed_glob ?(goal_concl_style=false) ?(inctx=false) ?scope ~(flags:PrintingFlags.t) env sigma t =
   let avoid = make_avoid goal_concl_style env in

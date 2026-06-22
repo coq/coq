@@ -53,7 +53,7 @@ val extern_reference : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
 val extern_type : ?goal_concl_style:bool ->
   flags:PrintingFlags.t -> env -> Evd.evar_map ->
   ?impargs:Glob_term.binding_kind list -> types -> constr_expr
-val extern_sort : universes:bool -> qualities:bool -> Evd.evar_map -> Sorts.t -> sort_expr
+val extern_sort : universes:bool -> sorts:bool -> qualities:bool -> Evd.evar_map -> Sorts.t -> sort_expr
 val extern_rel_context : flags:PrintingFlags.t -> env -> Evd.evar_map ->
   rel_context -> local_binder_expr list
 
