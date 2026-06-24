@@ -1,0 +1,8 @@
+Axioms:
+sym : nat (a symbol for rewrite rules)
+Theory:
+Rewrite rules are allowed (subject reduction might be broken)
+Axioms:
+sym : nat (a symbol for rewrite rules)
+Theory:
+Rewrite rules are allowed (subject reduction might be broken)

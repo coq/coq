@@ -1,3 +1,5 @@
 Closed under the global context
+Axioms:
+impred_def was typed with Set being impredicative.
 Theory:
 Set is impredicative
