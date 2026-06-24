@@ -478,6 +478,7 @@ let v_one_ind = v_tuple "one_inductive_body"
     v_automaton;
     v_relevance;
     v_bool;
+    v_bool;
     v_int;
     v_int;
     v_vm_reloc_table|]

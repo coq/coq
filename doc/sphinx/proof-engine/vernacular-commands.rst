@@ -473,9 +473,11 @@ Requests to the environment
    disabled universe checking, indices not mattering) according to the
    typing flags each dependency was typechecked with, in addition to
    the settings of the current environment.  For instance, a definition
-   typechecked with ``-impredicative-set`` is reported as assuming the
-   impredicativity of :g:`Set` even when it is imported into a
-   predicative environment, and an inductive type relying on indices
+   or inductive type that relies on the impredicativity of :g:`Set` --
+   to typecheck at all, or for its elimination rules -- is reported as
+   assuming it even when it is imported into a predicative environment
+   (definitions that were merely typechecked with ``-impredicative-set``
+   without relying on it are not reported), and an inductive type relying on indices
    not mattering is reported even when :flag:`Indices Matter` is off in
    the current environment (without this flag, such inductive types are
    reported only when :flag:`Indices Matter` is currently on, since an

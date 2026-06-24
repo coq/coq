@@ -426,7 +426,7 @@ let check_positivity ~chkpos kn names env_ar_par paramsctxt finite inds =
 (* Build the inductive packet *)
 
 let fold_inductive_blocks f acc inds =
-  Array.fold_left (fun acc ((arity,lc),_,_,_) ->
+  Array.fold_left (fun acc ((arity,lc),_,_,_,_) ->
       f (Array.fold_left f acc lc) arity.IndTyping.user_arity)
     acc inds
 
@@ -503,7 +503,7 @@ let build_inductive env ~sec_univs names prv univs template variance
   let u = UVars.make_abstract_instance (universes_context univs) in
   let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
   (* Check one inductive *)
-  let build_one_packet i (id,cnames) ((arity,lc),(indices,splayed_lc),squashed,relies_on_indices_not_mattering) recarg =
+  let build_one_packet i (id,cnames) ((arity,lc),(indices,splayed_lc),squashed,relies_on_indices_not_mattering,uses_impredicative_set) recarg =
     let lc = Array.map (substl subst) lc in
     (* Type of constructors in normal form *)
     let nf_lc =
@@ -575,6 +575,7 @@ let build_inductive env ~sec_univs names prv univs template variance
         mind_automaton = automaton;
         mind_relevance;
         mind_relies_on_indices_not_mattering = relies_on_indices_not_mattering;
+        mind_uses_impredicative_set = uses_impredicative_set;
         mind_nb_constant = !nconst;
         mind_nb_args = !nblock;
         mind_reloc_tbl = rtbl;
@@ -625,7 +626,7 @@ let check_inductive env ~sec_univs kn mie =
   in
   let (nmr,recargs) = check_positivity ~chkpos kn names
       env_ar_par paramsctxt mie.mind_entry_finite
-      (Array.map (fun ((_,lc),(indices,_),_,_) -> Context.Rel.nhyps indices,lc) inds)
+      (Array.map (fun ((_,lc),(indices,_),_,_,_) -> Context.Rel.nhyps indices,lc) inds)
   in
   (* Build the inductive packets *)
   let mib =

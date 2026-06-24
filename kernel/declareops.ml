@@ -239,6 +239,7 @@ let subst_mind_packet subst mbp =
     mind_automaton = subst_automaton subst mbp.mind_automaton;
     mind_relevance = mbp.mind_relevance;
     mind_relies_on_indices_not_mattering = mbp.mind_relies_on_indices_not_mattering;
+    mind_uses_impredicative_set = mbp.mind_uses_impredicative_set;
     mind_nb_constant = mbp.mind_nb_constant;
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }
