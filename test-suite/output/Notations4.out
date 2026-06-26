@@ -153,7 +153,7 @@ V tt
 fun x : nat => V x
      : forall x : nat, nat * (?T -> ?T)
 where
-?T : [x : nat |- Type]
+?T : [x : nat |- Univ]
 File "./output/Notations4.v", line 264, characters 0-30:
 Warning: Notation "_ :=: _" was already used.
 [notation-overridden,parsing,default]

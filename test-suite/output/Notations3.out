@@ -111,7 +111,7 @@ foo5 x nat x
 fun x : ?A => x === x
      : forall x : ?A, x = x
 where
-?A : [x : ?A |- Type] (x cannot be used)
+?A : [x : ?A |- Univ] (x cannot be used)
 {{0, 1}}
      : nat * nat
 {{0, 1, 2}}

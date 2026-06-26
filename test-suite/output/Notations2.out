@@ -25,12 +25,12 @@ let f := 4 in x + y = z + d
      : Prop
 λ n p : nat, n + p = 0
      : nat -> nat -> Prop
-λ (A : Type) (n p : A), n = p
-     : ∀ A : Type, A -> A -> Prop
-λ A : Type, ∃ n p : A, n = p
-     : Type -> Prop
-λ A : Type, ∀ n p : A, n = p
-     : Type -> Prop
+λ (A : Univ) (n p : A), n = p
+     : ∀ A : Univ, A -> A -> Prop
+λ A : Univ, ∃ n p : A, n = p
+     : Univ -> Prop
+λ A : Univ, ∀ n p : A, n = p
+     : Univ -> Prop
 let' f (x y : nat) (a := 0) (z : nat) (_ : bool) := x + y + z + 1 in f 0 1 2
      : bool -> nat
 λ (f : nat -> nat) (x : nat), f(x) + S(x)

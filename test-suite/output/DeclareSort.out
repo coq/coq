@@ -47,9 +47,11 @@ Minimized universes:
  DeclareSort.25 := Set+1
 Normalized constraints:
   *)
-foo@{Type ; } : Univ@{S1 ; Set} -> Set
+foo@{α4 ; } : Univ@{S1 ; Set} -> Set
      : Univ@{S1 ; Set} -> Set
-(* {DeclareSort.26} | Set < DeclareSort.26
+(* {α4}; {DeclareSort.26} | Set < DeclareSort.26
+Collapsed sorts:
+ α4 := Type
 Minimized universes:
  DeclareSort.26 := Set+1
 Normalized constraints:
@@ -64,8 +66,13 @@ The command has indeed failed with message:
 The term "foo@{α8 ; }" has type "Univ@{S1 ; Set} -> Univ@{α8 ; Set}"
 while it is expected to have type "Set -> ?T"
 (universe inconsistency: Cannot enforce Set <= Type@{S1; Set}).
-foo@{Type ; } : Univ@{S1 ; Set} -> Set
+foo@{α9 ; } : Univ@{S1 ; Set} -> Set
      : Univ@{S1 ; Set} -> Set
+(* {α9}; {} | 
+Collapsed sorts:
+ α9 := Type
+Normalized constraints:
+  *)
 File "./output/DeclareSort.v", line 36, characters 4-18:
 The command has indeed failed with message:
 Cannot declare global sort qualities inside module types.
