@@ -1668,6 +1668,25 @@ let restrict_universe_context (univs, univ_csts) keep =
   debug Pp.(fun () -> str"Restricted universe context" ++ Univ.ContextSet.pr Level.raw_pr uctx);
   uctx
 
+let restrict_universe_context_away (univs, univ_csts) removed =
+  debug Pp.(fun () -> str"Restricting universe context set: "  ++ Univ.ContextSet.pr Level.raw_pr (univs, univ_csts) ++
+    str " away from " ++ Level.Set.pr Level.raw_pr removed);
+  if Level.Set.is_empty removed then univs, univ_csts
+  else
+  let allunivs = UnivConstraints.fold (fun (u,_,v) all ->
+    Level.Set.union (Level.Set.union (Universe.levels u) (Universe.levels v)) all) univ_csts univs in
+  let removed = Level.Set.inter allunivs removed in
+  if Level.Set.is_empty removed then univs, univ_csts
+  else
+  let g = UGraph.initial_universes in
+  let g, _equivs = merge_graph_context g (allunivs, univ_csts) in
+  let allkept = Level.Set.union (UGraph.domain UGraph.initial_universes) (Level.Set.diff allunivs removed) in
+  let univ_csts = UGraph.constraints_for ~kept:allkept g in
+  let univ_csts = UnivConstraints.filter (fun (l,d,r) -> not (Universe.is_type0 l && d == Le)) univ_csts in
+  let uctx = (Level.Set.diff univs removed, univ_csts) in
+  debug Pp.(fun () -> str"Restricted universe context" ++ Univ.ContextSet.pr Level.raw_pr uctx);
+  uctx
+
 let restrict_uctx uctx keep =
   debug Pp.(fun () -> str"Restricting universe context: "  ++ pr ~local:true uctx ++
     str " to " ++ Level.Set.pr Level.raw_pr keep);
@@ -1675,7 +1694,9 @@ let restrict_uctx uctx keep =
   if Level.Set.is_empty removed then uctx
   else
     let universes = UGraph.remove removed uctx.universes in
+    let demoted_local_context = restrict_universe_context_away uctx.demoted_local_context removed in
     let uctx' = { uctx with local_variables = Level.Set.diff uctx.local_variables removed;
+      demoted_local_context;
       flexible_variables = Level.Set.diff uctx.flexible_variables removed;
       variances = Option.map (fun v -> Level.Set.fold Level.Map.remove removed v) uctx.variances;
       minim_extra = UnivMinim.remove_from_extra removed uctx.minim_extra;
