@@ -346,7 +346,7 @@ let foldtac occ rdx ft =
          errorstrm Pp.(str "fold pattern " ++ pr_econstr_pat env sigma t ++ spc ()
                        ++ str "does not match redex " ++ pr_econstr_pat env sigma c)),
     ignore in
-  let concl, _us = eval_pattern env0 sigma0 concl0 rdx occ fold in
+  let concl, us = eval_pattern env0 sigma0 concl0 rdx occ fold in
   let () = conclude () in
   convert_concl ~check:true concl
   end
