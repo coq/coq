@@ -1758,7 +1758,8 @@ let merge_universe_context_set ?loc ~sideff rigid uctx uctx' =
       in
       (fst uctx.names, (fst (snd uctx.names), Level.Set.fold fold levels (snd (snd uctx.names))))
     in
-    let initial = declare uctx.initial_universes in
+    let initial_universes = uctx.initial_universes in
+    let initial = declare initial_universes in
     let universes = declare uctx.universes in
     let uctx = { uctx with local_variables = Level.Set.union levels uctx.local_variables } in
     let uctx =
@@ -1781,7 +1782,16 @@ let merge_universe_context_set ?loc ~sideff rigid uctx uctx' =
     let cstrs' = Univ.ContextSet.constraints uctx' in
     let demoted_local_context =
       let dlevels, dcstrs = uctx.demoted_local_context in
-       Level.Set.diff dlevels levels, (if sideff then UnivConstraints.union dcstrs cstrs' else dcstrs)
+      (* With [sideff], only constraints already present in the initial
+         (global) graph can be dropped from the local context.  Constraints
+         introduced by the current proof body must still be recorded on the
+         declaration, even if they came from a side-effect context. *)
+      let demoted_cstrs =
+        if sideff then
+          UnivConstraints.filter (UGraph.check_constraint initial_universes) cstrs'
+        else UnivConstraints.empty
+      in
+      Level.Set.diff dlevels levels, UnivConstraints.union dcstrs demoted_cstrs
     in
     let uctx = { uctx with names; demoted_local_context; universes; variances; initial_universes = initial } in
     let uctx = merge_constraints uctx cstrs'
