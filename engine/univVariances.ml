@@ -224,6 +224,7 @@ let register_universe_variances_of_undefined env sigma =
   let status = Evd.fold_undefined fold sigma status in
   finalize sigma status
 
+(* Precond: arities should be in arity form *)
 let register_universe_variances_of_inductive env sigma ~udecl ~cumulative ~params ~arities ~constructors =
   let status = init_status env ~udecl sigma in
   let params = EConstr.Vars.smash_rel_context params in

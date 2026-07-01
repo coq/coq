@@ -650,9 +650,12 @@ let interp_mutual_inductive_constr ~sigma ~flags ~udecl ~ctx_params ~indnames ~a
 
      We also need to restrict to avoid seeing spurious bounds from below
      (ie v <= template_u with v getting restricted away). *)
+  let nf_arities = List.map (fun ar ->
+    let ctx, s = Reductionops.whd_decompose_prod_decls env_ar_params sigma ar in
+    it_mkProd_or_LetIn s ctx) arities in
   let sigma = UnivVariances.register_universe_variances_of_inductive
                 ~cumulative:(PolyFlags.cumulative poly) env_ar_params sigma ~udecl
-                ~params:ctx_params ~arities ~constructors in
+                ~params:ctx_params ~arities:nf_arities ~constructors in
   let sigma = Evd.minimize_universes_no_collapse ~partial:false sigma in
   let arities = List.map Evarutil.(nf_evar sigma) arities in
   let constructors = List.map (on_snd (List.map (Evarutil.nf_evar sigma))) constructors in
