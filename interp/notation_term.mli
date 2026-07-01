@@ -93,7 +93,9 @@ type notation_binder_source =
   | NtnBinderParsedAsBinder
 
 type notation_var_constr_kind =
-  | NtnAlwaysConstr (* In anticipation of supporting PatCast in pattern *)
+  | NtnAlwaysConstr (* In anticipation of supporting PatCast in
+      pattern, which is a case where a constr in a pattern should be
+      kept as a constr and not interpreted by default as a pattern *)
   | NtnConstrForConstrAndPatternForPattern
 
 (** Type of variables in notation interpretations, remembering how it is parsed;
@@ -136,6 +138,9 @@ type notation_interp_var_types = notation_var_internalization_type Names.Id.Map.
 type 'a notation_raw_type =
   | NtnRawTypeVar of 'a
   | NtnRawTypeVarList of ('a * 'a) notation_raw_type (* A .. A *)
+      (* represented as a pattern pat(x) ... pat(y) in the declaration
+         of the notation and we keep the names of the two ends (note
+         that this may multiply in case of nested recursive patterns) *)
   | NtnRawTypeVarTuple of 'a notation_raw_type list (* A1 * ... * An *)
 
 type notation_interp_env = {

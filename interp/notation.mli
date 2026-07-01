@@ -228,6 +228,16 @@ val symbol_eq : symbol -> symbol -> bool
 val make_notation_key : notation_entry -> symbol list -> notation
 val decompose_notation_key : notation -> notation_entry * symbol list
 
+(** This is the output of decomposing a notation declaration:
+    [mainvars] include all notation variables, keeping only one for
+      each pair (typically the first one) in case of a recursive pattern
+      (e.g. in ``Notation "[ x ; y ; .. ; z ]" := ...'', the mainvars
+      are [x;y]);
+    [maintypes] describes the structure of the pattern, e.g.,
+      for the same notation, it is
+      [[NtnRawTypeVar "x"; NtnRawTypeVarList (NtnRawTypeVar ("y", "z"))]]
+    [symbols] describes the parsing rule, e.g. for the same notation, it is
+      [[Terminal "["; NonTerminal "x"; SProdList ("y",[Terminal ";"]); Terminal "]"]] *)
 type notation_symbols = {
   mainvars : Id.t list; (* names of "toplevel" non-terminals *)
   maintypes : Id.t notation_raw_type list; (* types of "toplevel" non-terminals *)
