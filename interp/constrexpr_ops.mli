@@ -168,3 +168,13 @@ val isCSort : constr_expr -> bool
 
 (** For cases pattern parsing errors *)
 val error_invalid_pattern_notation : ?loc:Loc.t -> unit -> 'a
+
+(** Ad hoc support for curly brackets in notations; avoid as much as possible *)
+
+val contract_curly_brackets : Constrexpr.notation ->
+    (Constrexpr.constr_expr, 'a, 'b) Constrexpr.notation_arg_type list ->
+    Constrexpr.notation * (Constrexpr.constr_expr, 'a, 'b) Constrexpr.notation_arg_type list
+
+val contract_curly_brackets_pat : Constrexpr.notation ->
+    ('a, Constrexpr.kinded_cases_pattern_expr, 'b) Constrexpr.notation_arg_type list ->
+    Constrexpr.notation * ('a, Constrexpr.kinded_cases_pattern_expr, 'b) Constrexpr.notation_arg_type list

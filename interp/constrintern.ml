@@ -194,58 +194,6 @@ let compute_internalization_env env sigma ?(impls=empty_internalization_env) ?fo
 let implicits_of_decl_in_internalization_env id (int_env:internalization_env) =
   let {var_impls=impls} = Id.Map.find id int_env in impls
 
-(**********************************************************************)
-(* Contracting "{ _ }" in notations *)
-
-let rec wildcards ntn n =
-  if Int.equal n (String.length ntn) then []
-  else let l = spaces ntn (n+1) in if ntn.[n] == '_' then n::l else l
-and spaces ntn n =
-  if Int.equal n (String.length ntn) then []
-  else if ntn.[n] == ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
-
-let expand_notation_string ntn n =
-  let pos = List.nth (wildcards ntn 0) n in
-  let hd = if Int.equal pos 0 then "" else String.sub ntn 0 pos in
-  let tl =
-    if Int.equal pos (String.length ntn) then ""
-    else String.sub ntn (pos+1) (String.length ntn - pos -1) in
-  hd ^ "{ _ }" ^ tl
-
-(* This contracts the special case of "{ _ }" for sumbool, sumor notations *)
-(* Remark: expansion of squash at definition is done in metasyntax.ml *)
-let contract_curly_brackets ntn subst =
-  match ntn.ntn_entry with
-  | InCustomEntry _ -> ntn, subst
-  | InConstrEntry ->
-  let ntn' = ref ntn.ntn_key in
-  let rec contract_squash n = function
-    | [] -> []
-    | NtnTypeArg (NtnTypeArgConstr { CAst.v = CNotation (None,{ntn_entry = InConstrEntry; ntn_key = "{ _ }"},[NtnTypeArg (NtnTypeArgConstr a)]) }) :: l ->
-        ntn' := expand_notation_string !ntn' n;
-        contract_squash n (NtnTypeArg (NtnTypeArgConstr a)::l)
-    | a :: l ->
-        a::contract_squash (n+1) l in
-  let subst = contract_squash 0 subst in
-  (* side effect; don't inline *)
-  mk_ntn_in_constr !ntn', subst
-
-let contract_curly_brackets_pat ntn subst =
-  match ntn.ntn_entry with
-  | InCustomEntry _ -> ntn, subst
-  | InConstrEntry ->
-  let ntn' = ref ntn.ntn_key in
-  let rec contract_squash n = function
-    | [] -> []
-    | NtnTypeArg (NtnTypeArgPattern ({ CAst.v = CPatNotation (None,{ntn_entry = InConstrEntry; ntn_key = "{ _ }"},[NtnTypeArg (NtnTypeArgPattern a)],[]) }, Explicit)) :: l ->
-        ntn' := expand_notation_string !ntn' n;
-        contract_squash n (NtnTypeArg (NtnTypeArgPattern a)::l)
-    | a :: l ->
-        a :: contract_squash (n+1) l in
-  let subst = contract_squash 0 subst in
-  (* side effect; don't inline *)
-  mk_ntn_in_constr !ntn', subst
-
 type local_univs = { bound : UnivNames.universe_binders; unb_univs : bool }
 
 let empty_local_univs = { bound = UnivNames.empty_binders; unb_univs = false }
