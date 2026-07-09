@@ -185,7 +185,7 @@ type indirect_accessor = {
 
 let force_proof access o = match access.access_proof o with
 | None -> CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
-| Some (c, u) -> (c, u)
+| Some pt -> pt
 
 let body_of_constant_body access cb =
   let open Declarations in
@@ -199,7 +199,7 @@ let body_of_constant_body access cb =
     in
     Some (c, u, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
-    let c, u = force_proof access o in
+    let c, u, _uses = force_proof access o in
     Some (c, u, Declareops.constant_polymorphic_context cb)
 
 let body_of_constant access cst = body_of_constant_body access (lookup_constant cst)

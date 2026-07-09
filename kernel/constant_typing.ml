@@ -134,7 +134,7 @@ let adjust_primitive_univ_entry p auctx = function
 let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let open CPrimitives in
   let auctx = CPrimitives.op_or_type_univs p in
-  let univs, typ =
+  let univs, typ, uses =
     match utyp with
     | None ->
       let u = UContext.instance (AbstractContext.repr auctx) in
@@ -142,15 +142,16 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
       let univs = if AbstractContext.is_empty auctx then Monomorphic
         else Polymorphic auctx
       in
-      univs, typ
+      univs, typ, false
 
     | Some (typ, univ_entry) ->
       let univ_entry = adjust_primitive_univ_entry p auctx univ_entry in
       let env, usubst, u, univs = process_universes env univ_entry in
       let typ = Vars.subst_univs_level_constr usubst typ in
-      let typ = (Typeops.infer_type env typ).utj_val in
+      let typj, uses = Typeops.infer_type_usage env typ in
+      let typ = typj.utj_val in
       let () = check_primitive_type env p u typ in
-      univs, typ
+      univs, typ, uses
   in
   let body = match p with
     | OT_op op -> Declarations.Primitive op
@@ -169,12 +170,13 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     const_relevance = Sorts.Relevant;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
+    const_uses_impredicative_set = uses;
   }
 
 let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_type } =
   let env, usubst, _, univs = process_universes env symb_entry_universes in
   let symb_entry_type = Vars.subst_univs_level_constr usubst symb_entry_type in
-  let j = Typeops.infer env symb_entry_type in
+  let j, uses = Typeops.infer_usage env symb_entry_type in
   let r = Typeops.assumption_of_judgment env j in
   {
     const_hyps = [];
@@ -186,6 +188,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
     const_relevance = r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
+    const_uses_impredicative_set = uses;
   }
 
 
@@ -196,7 +199,7 @@ let make_univ_hyps = function
 let infer_parameter ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.parameter_entry_universes in
   let typ = Vars.subst_univs_level_constr usubst entry.parameter_entry_type in
-  let j = Typeops.infer env typ in
+  let j, uses = Typeops.infer_usage env typ in
   let r = Typeops.assumption_of_judgment env j in
   let typ = j.uj_val in
   let undef = Undef entry.parameter_entry_inline_code in
@@ -211,22 +214,31 @@ let infer_parameter ~sec_univs env entry =
     const_relevance = r;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
+    const_uses_impredicative_set = uses;
   }
 
 let infer_definition ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.definition_entry_universes in
   let body = Vars.subst_univs_level_constr usubst entry.definition_entry_body in
   let hbody = HConstr.of_constr env body in
-  let j = Typeops.infer_hconstr env hbody in
-  let typ = match entry.definition_entry_type with
+  let j, uses_body = Typeops.infer_hconstr_usage env hbody in
+  let typ, uses_typ = match entry.definition_entry_type with
     | None ->
-      j.uj_type
+      (* [j.uj_type] is assembled from abstractions without going
+         through [sort_of_product], so it must be re-inferred for the
+         usage bit to cover the stored type (cf the checker) *)
+      let uses_typ =
+        Environ.is_impredicative_set env
+        && snd (Typeops.infer_type_usage env j.uj_type)
+      in
+      j.uj_type, uses_typ
     | Some t ->
       let t = Vars.subst_univs_level_constr usubst t in
-      let tj = Typeops.infer_type env t in
+      let tj, uses_typ = Typeops.infer_type_usage env t in
       let () = Typeops.check_cast env j DEFAULTcast tj in
-      tj.utj_val
+      tj.utj_val, uses_typ
   in
+  let uses = uses_body || uses_typ in
   let body = j.uj_val in
   let hbody = Some hbody in
   let def = Def body in
@@ -241,13 +253,14 @@ let infer_definition ~sec_univs env entry =
     const_relevance = Relevanceops.relevance_of_term env body;
     const_inline_code = entry.definition_entry_inline_code;
     const_typing_flags = Environ.typing_flags env;
+    const_uses_impredicative_set = uses;
   }
 
 (** Definition is opaque (Qed), so we delay the typing of its body. *)
 let infer_opaque ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.opaque_entry_universes in
   let typ = Vars.subst_univs_level_constr usubst entry.opaque_entry_type in
-  let typj = Typeops.infer_type env typ in
+  let typj, uses = Typeops.infer_type_usage env typ in
   let context = TyCtx (env, typj, entry.opaque_entry_secctx, usubst, univs) in
   let def = OpaqueDef () in
   let typ = typj.utj_val in
@@ -262,9 +275,10 @@ let infer_opaque ~sec_univs env entry =
     const_relevance = Sorts.relevance_of_sort typj.utj_type;
     const_inline_code = false;
     const_typing_flags = Environ.typing_flags env;
+    const_uses_impredicative_set = uses;
   }, context
 
-let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_output) =
+let check_delayed_usage (type a) (handle : a effect_handler) tyenv (body : a proof_output) =
   let TyCtx (env, tyj, declared, usubst, univs) = tyenv in
   let ((body, uctx), side_eff) = body in
   let (body, uctx', valid_signatures) = handle env body side_eff in
@@ -282,12 +296,15 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let body = Vars.subst_univs_level_constr usubst body in
   let hbody = HConstr.of_constr env body in
   (* Note: non-trivial trusted side-effects only in monomorphic case *)
-  let () =
+  let uses =
     let eff_body, eff_env = skip_trusted_seff valid_signatures hbody env in
-    let j = Typeops.infer_hconstr eff_env eff_body in
+    let j, uses = Typeops.infer_hconstr_usage eff_env eff_body in
     let () = assert (HConstr.self eff_body == j.uj_val) in
     let j = { uj_val = HConstr.self hbody; uj_type = j.uj_type } in
-    Typeops.check_cast eff_env j DEFAULTcast tyj
+    let () = Typeops.check_cast eff_env j DEFAULTcast tyj in
+    (* conservative: the skipped trusted side-effect prefix was not
+       re-inferred here *)
+    uses || (valid_signatures > 0 && Environ.is_impredicative_set env)
   in
   let declared =
     if List.is_empty (named_context env) then declared
@@ -297,6 +314,10 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let () = assert (Id.Set.equal declared declared') in
   let def = HConstr.self hbody in
   let hbody = Some hbody in
+  hbody, def, univs, uses
+
+let check_delayed handle tyenv body =
+  let (hbody, def, univs, _uses) = check_delayed_usage handle tyenv body in
   hbody, def, univs
 
 (*s Global and local constant declaration. *)

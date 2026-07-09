@@ -115,7 +115,8 @@ let subst_const_body subst cb =
         const_universes = cb.const_universes;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
-        const_typing_flags = cb.const_typing_flags }
+        const_typing_flags = cb.const_typing_flags;
+        const_uses_impredicative_set = cb.const_uses_impredicative_set }
 
 (** {7 Hash-consing of constants } *)
 

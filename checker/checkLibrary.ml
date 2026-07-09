@@ -108,9 +108,9 @@ let indirect_accessor o =
   | None ->  CErrors.user_err Pp.(str "Cannot access opaque delayed proof.")
   | Some c -> c
   in
-  let (c, prv) = Discharge.cook_opaque_proofterm ci c in
+  let (c, prv, uses) = Discharge.cook_opaque_proofterm ci c in
   let c = Mod_subst.subst_mps_list sub c in
-  (c, prv)
+  (c, prv, uses)
 
 let () = Mod_checking.set_indirect_accessor indirect_accessor
 

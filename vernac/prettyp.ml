@@ -615,7 +615,7 @@ let print_constant env ~with_values with_implicit cst udecl =
     | OpaqueDef o -> begin match with_values with
         | None -> false, typonly, None
         | Some access ->
-          let c, priv = Global.force_proof access o in
+          let c, priv, _uses = Global.force_proof access o in
           let priv = match priv with
             | PrivateMonomorphic () -> None
             | PrivatePolymorphic priv -> Some priv
@@ -797,7 +797,7 @@ let print_full_pure_atomic access env sigma mp lobj =
           str "Theorem " ++ print_basename con ++ cut () ++
           str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
           str "Proof " ++ pr_lconstr_env env sigma
-            (fst (Global.force_proof access lc))
+            (let (c, _, _) = Global.force_proof access lc in c)
         | Def c ->
           str "Definition " ++ print_basename con ++ cut () ++
           str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++

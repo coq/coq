@@ -216,7 +216,7 @@ let get_constant_body access kn =
   | Def c -> Some c
   | OpaqueDef o ->
     match Global.force_proof access o with
-    | c, _ -> Some c
+    | c, _, _ -> Some c
     | exception e when CErrors.noncritical e -> warn_unreachable_opaque_body kn; None
 
 (* [constant_relies_on_impredicative_set access cb] tells whether a
@@ -225,6 +225,17 @@ let get_constant_body access kn =
    predicative environment. *)
 let constant_relies_on_impredicative_set access cb =
   cb.const_typing_flags.impredicative_set &&
+  (* fast path: the stored bits over-approximate usage, so [false]
+     soundly guarantees that the constant does not rely on
+     [-impredicative-set]; the re-typechecking below weeds out the
+     false alarms (cumulativity may absorb the sort difference) *)
+  (cb.const_uses_impredicative_set ||
+   (match cb.const_body with
+    | OpaqueDef o ->
+      (match Global.force_proof access o with
+       | (_, _, uses) -> uses
+       | exception e when CErrors.noncritical e -> false)
+    | Undef _ | Def _ | Primitive _ | Symbol _ -> false)) &&
   let env = Global.env () in
   let env = Environ.set_typing_flags cb.const_typing_flags env in
   let env = Environ.set_impredicative_set false env in
@@ -238,8 +249,8 @@ let constant_relies_on_impredicative_set access cb =
     | Def c -> Some (c, Univ.ContextSet.empty)
     | OpaqueDef o ->
       match Global.force_proof access o with
-      | c, Opaqueproof.PrivateMonomorphic () -> Some (c, Univ.ContextSet.empty)
-      | c, Opaqueproof.PrivatePolymorphic uctx -> Some (c, uctx)
+      | c, Opaqueproof.PrivateMonomorphic (), _ -> Some (c, Univ.ContextSet.empty)
+      | c, Opaqueproof.PrivatePolymorphic uctx, _ -> Some (c, uctx)
       | exception e when CErrors.noncritical e -> None (* missing delayed body, e.g. in vok mode *)
   in
   match

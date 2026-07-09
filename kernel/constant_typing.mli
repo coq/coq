@@ -47,3 +47,9 @@ val infer_opaque :
 
 val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output ->
   HConstr.t option * Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes
+
+(** Same as {!check_delayed}, also reporting whether the impredicativity
+    of [Set] was used in a load-bearing way when checking the body (see
+    {!Typeops.infer_usage}). *)
+val check_delayed_usage : 'a effect_handler -> typing_context -> 'a proof_output ->
+  HConstr.t option * Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes * bool

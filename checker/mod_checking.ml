@@ -70,26 +70,40 @@ let check_constant_declaration env opac kn cb opacify =
       true, env
   in
   let ty = cb.const_type in
-  let jty = Typeops.infer_type env ty in
+  let jty, ty_uses = Typeops.infer_type_usage env ty in
+  let () =
+    (* The usage bits are only meaningful for constants typechecked with
+       -impredicative-set: the checker applies impredicativity
+       session-wide, so a predicative constant checked in an
+       impredicative session may spuriously fire the rule *)
+    if cb.const_typing_flags.impredicative_set
+       && ty_uses && not cb.const_uses_impredicative_set then
+      raise Pp.(BadConstant (kn, str "incorrect const_uses_impredicative_set"))
+  in
   if not (Sorts.relevance_equal cb.const_relevance (Sorts.relevance_of_sort jty.utj_type))
   then raise Pp.(BadConstant (kn, str "incorrect const_relevance"));
   let body, env = match cb.const_body with
     | Undef _ | Primitive _ | Symbol _ -> None, env
-    | Def c -> Some c, env
+    | Def c -> Some (c, cb.const_uses_impredicative_set), env
     | OpaqueDef o ->
-      let c, u = !indirect_accessor o in
+      let c, u, uses = !indirect_accessor o in
       let env = match u, cb.const_universes with
         | Opaqueproof.PrivateMonomorphic (), Monomorphic -> env
         | Opaqueproof.PrivatePolymorphic local, Polymorphic _ ->
           push_subgraph local env
         | _ -> assert false
       in
-      Some c, env
+      Some (c, uses), env
   in
   let () =
     match body with
-    | Some bd ->
-      let j = Typeops.infer env bd in
+    | Some (bd, stored_uses) ->
+      let j, body_uses = Typeops.infer_usage env bd in
+      let () =
+        if cb.const_typing_flags.impredicative_set
+           && body_uses && not stored_uses then
+          raise Pp.(BadConstant (kn, str "incorrect impredicative Set usage bit"))
+      in
       begin match conv_leq env j.uj_type ty with
       | Result.Ok () -> ()
       | Result.Error () -> Type_errors.error_actual_type env j ty
@@ -104,7 +118,7 @@ let check_constant_declaration env opac kn cb opacify =
     Some retro, opac
   in
   match body with
-  | Some body when opacify -> retro, register_opacified_constant env opac kn body
+  | Some (body, _) when opacify -> retro, register_opacified_constant env opac kn body
   | Some _ | None -> retro, opac
 
 let check_constant_declaration env opac kn cb opacify =
