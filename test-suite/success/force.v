@@ -139,6 +139,7 @@ Axiom and : True -> True -> True.
 Axiom Pr : True -> Prop.
 
 (* [__unblock] is block-local, even when hidden under a lambda. *)
+Check (__block _ (__unblock _ (__block _ (id I = id I)))).
 Fail Check ((fun f => f (__block _ (id I = id I))) (fun x => __unblock _ x)).
 
 (* Non-lexical __run _ _ is just a "projection" *)
@@ -602,9 +603,11 @@ Qed.
 Set Printing Implicit.
 
 Monomorphic Universes u u1.
-(* Unfortunately reduction happens in the type of the binder. *)
-Goal LAZY (TeleS@{u u1} (X:=__block@{Type;u1} Type@{u} (1 + 1 = 2)) (fun x : 1 + 1 = 2 => TeleO@{u u1}))
-         = TeleS@{u u1} (X:=__block@{Type;u1} Type@{u} (    2 = 2)) (fun x :     2 = 2 => TeleO@{u u1}).
+Goal
+  WHNF (__run _ _
+    (__block _ (TeleS@{u u1} (X:=__block@{Type;u1} Type@{u} (1 + 1 = 2)) (fun x : 1 + 1 = 2 => TeleO@{u u1})))
+    (fun x => x))
+  = TeleS@{u u1} (X:=__block@{Type;u1} Type@{u} ( 1 + 1 = 2)) (fun x : 1 + 1 = 2 => TeleO@{u u1}).
 Proof. syn_refl. Qed.
 
 End Telescopes.
