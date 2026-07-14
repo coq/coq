@@ -293,7 +293,7 @@ module VNativeEntries =
       match e with
       | VAL (_, t) ->
         begin match kind t with
-        | PBlock (_, _, t) -> Some (VAL (0, t))
+        | PBlock (_, _, entries, t) -> Some (VAL (0, Term.expand_pblock entries t))
         | _ -> None
         end
       | _ -> None
@@ -615,7 +615,7 @@ let rec norm_head info env t stack =
       (cbv_stack_term info TOP env def) in
     (ARRAY (u,t,ty), stack)
 
-  | PBlock _ | PUnblock _ | PRun _ ->
+  | PBlock _ | PRun _ ->
     (VAL (0, apply_env env t), stack)
 
   (* neutral cases *)

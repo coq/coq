@@ -95,6 +95,40 @@ let to_rec_declaration (nas, cs) =
   Array.map snd nas,
   Tac2ffi.to_array Tac2ffi.to_constr cs)
 
+let of_pblock_decl = function
+  | Context.Rel.Declaration.LocalAssum (annot, ty) ->
+    v_blk 0 [|of_binder (annot, ty)|]
+  | Context.Rel.Declaration.LocalDef (annot, value, ty) ->
+    v_blk 1 [|of_binder (annot, ty); Tac2ffi.of_constr value|]
+
+let to_pblock_decl = function
+  | ValBlk (0, [|binder|]) ->
+    let annot, ty = to_binder binder in
+    Context.Rel.Declaration.LocalAssum (annot, ty)
+  | ValBlk (1, [|binder; value|]) ->
+    let annot, ty = to_binder binder in
+    let value = Tac2ffi.to_constr value in
+    Context.Rel.Declaration.LocalDef (annot, value, ty)
+  | _ -> assert false
+
+let of_pblock_entry sigma (entry : EConstr.pblock_entry) =
+  let context = Array.of_list (List.rev entry.pbe_context) in
+  v_blk 0 [|
+    Tac2ffi.of_array of_pblock_decl context;
+    Tac2ffi.of_constr entry.pbe_type;
+    Tac2ffi.of_constr entry.pbe_value;
+    of_relevance (EConstr.ERelevance.kind sigma entry.pbe_relevance);
+  |]
+
+let to_pblock_entry = function
+  | ValBlk (0, [|context; ty; value; relevance|]) ->
+    let context = Tac2ffi.to_array to_pblock_decl context in
+    { Constr.pbe_context = List.rev (Array.to_list context);
+      pbe_type = Tac2ffi.to_constr ty;
+      pbe_value = Tac2ffi.to_constr value;
+      pbe_relevance = EConstr.ERelevance.make (to_relevance relevance); }
+  | _ -> assert false
+
 let of_case_invert = let open Constr in function
   | NoInvert -> ValInt 0
   | CaseInvert {indices} ->
@@ -586,19 +620,15 @@ let () =
       Tac2ffi.of_constr def;
       Tac2ffi.of_constr ty;
     |]
-  | PBlock (u, ty, t) ->
+  | PBlock (u, ty, entries, t) ->
     v_blk 21 [|
       of_instance u;
       Tac2ffi.of_constr ty;
-      Tac2ffi.of_constr t;
-    |]
-  | PUnblock (ty, t) ->
-    v_blk 22 [|
-      Tac2ffi.of_constr ty;
+      Tac2ffi.of_array (of_pblock_entry sigma) entries;
       Tac2ffi.of_constr t;
     |]
   | PRun (ty, k, b, cont) ->
-    v_blk 23 [|
+    v_blk 22 [|
       Tac2ffi.of_constr ty;
       Tac2ffi.of_constr k;
       Tac2ffi.of_constr b;
@@ -695,16 +725,13 @@ let () =
     let ty = Tac2ffi.to_constr ty in
     let u = to_instance u in
     EConstr.mkArray(u,t,def,ty)
-  | (21, [|u;ty;t|]) ->
+  | (21, [|u;ty;entries;t|]) ->
     let u = to_instance u in
     let ty = Tac2ffi.to_constr ty in
+    let entries = Tac2ffi.to_array to_pblock_entry entries in
     let t = Tac2ffi.to_constr t in
-    EConstr.mkPBlock(u,ty,t)
-  | (22, [|ty;t|]) ->
-    let ty = Tac2ffi.to_constr ty in
-    let t = Tac2ffi.to_constr t in
-    EConstr.mkPUnblock(ty,t)
-  | (23, [|ty;k;b;cont|]) ->
+    EConstr.mkPBlock(u,ty,entries,t)
+  | (22, [|ty;k;b;cont|]) ->
     let ty = Tac2ffi.to_constr ty in
     let k = Tac2ffi.to_constr k in
     let b = Tac2ffi.to_constr b in

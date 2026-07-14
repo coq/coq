@@ -923,14 +923,90 @@ and detype_r d flags avoid env sigma t =
       let ty = detype d flags avoid env sigma ty in
       let u = detype_instance ~flags sigma u in
       GArray(u, t, def, ty)
-    | PBlock (u,ty,t) ->
-      let ty = detype d flags avoid env sigma ty in
-      let t = detype d flags avoid env sigma t in
-      GPBlock (detype_instance ~flags sigma u, ty, t)
-    | PUnblock (ty,t) ->
-      let ty = detype d flags avoid env sigma ty in
-      let t = detype d flags avoid env sigma t in
-      GPUnblock (None, ty, t)
+    | PBlock (u,public_ty,entries,body) ->
+      let public_ty = detype d flags avoid env sigma public_ty in
+      let rec entry_value value =
+        let loc = value.CAst.loc in
+        match DAst.get value with
+        | GLambda (name, relevance, kind, ty, body) ->
+          DAst.make ?loc @@ GLambda (name, relevance, kind, ty, entry_value body)
+        | GLetIn (name, relevance, bound, ty, body) ->
+          DAst.make ?loc @@ GLetIn (name, relevance, bound, ty, entry_value body)
+        | GPRun (instance, ty, _result_ty, blocked, _identity) ->
+          DAst.make ?loc @@ GPUnblock (instance, ty, blocked)
+        | _ -> value
+      in
+      let rec subst_entry id replacement term =
+        let loc = term.CAst.loc in
+        match DAst.get term with
+        | GVar id' when Id.equal id id' -> replacement
+        | GApp (head, args) ->
+          let args = List.map (subst_entry id replacement) args in
+          begin match DAst.get head with
+          | GVar id' when Id.equal id id' -> apply_entry ?loc replacement args
+          | _ ->
+            let head = subst_entry id replacement head in
+            DAst.make ?loc @@ GApp (head, args)
+          end
+        | GEvar (name, args) ->
+          (* [map_glob_constr] deliberately treats explicit evar instances as
+             opaque, but an instance may still mention a hidden entry. *)
+          let args = List.map
+            (fun (name, arg) -> name, subst_entry id replacement arg) args
+          in
+          DAst.make ?loc @@ GEvar (name, args)
+        | _ -> Glob_ops.map_glob_constr (subst_entry id replacement) term
+      and apply_entry ?loc value args =
+        match DAst.get value, args with
+        | GLambda (Name id, _, _, _, body), arg :: args ->
+          apply_entry ?loc (subst_entry id arg body) args
+        | GLambda (Anonymous, _, _, _, body), _ :: args ->
+          apply_entry ?loc body args
+        | GLetIn (Name id, _, bound, _, body), _ ->
+          apply_entry ?loc (subst_entry id bound body) args
+        | GLetIn (Anonymous, _, _, _, body), _ ->
+          apply_entry ?loc body args
+        | _, [] -> value
+        | _ -> Glob_ops.mkGApp ?loc value args
+      in
+      (* Detype entries directly.  Temporary names represent the hidden entry
+         assumptions only while detyping later entries and the body; they are
+         all substituted by block-local [GPUnblock] terms before returning. *)
+      let hidden_env, hidden_avoid, entry_values = Array.fold_left
+        (fun (hidden_env, hidden_avoid, entry_values) entry ->
+          let annot = Context.make_annot Anonymous entry.pbe_relevance in
+          let identity = EConstr.mkLambda (annot, entry.pbe_type, EConstr.mkRel 1) in
+          let forced = EConstr.mkPRun
+            (entry.pbe_type, entry.pbe_type, entry.pbe_value, identity)
+          in
+          let entry_term = EConstr.it_mkLambda_or_LetIn forced entry.pbe_context in
+          let entry_term = detype d flags hidden_avoid hidden_env sigma entry_term in
+          let entry_term = entry_value entry_term in
+          let entry_term = List.fold_left
+            (fun term (id, replacement) -> subst_entry id replacement term)
+            entry_term entry_values
+          in
+          let hidden_type = EConstr.it_mkProd_or_LetIn
+            entry.pbe_type entry.pbe_context
+          in
+          let suggested = Name (Id.of_string "__unblock") in
+          let name, hidden_avoid = compute_name sigma
+            ~let_in:false ~pattern:false flags hidden_avoid hidden_env suggested
+            (EConstr.mkRel 1)
+          in
+          let id = match name with Name id -> id | Anonymous -> assert false in
+          let annot = Context.make_annot name entry.pbe_relevance in
+          let hidden_decl = LocalAssum (annot, hidden_type) in
+          let hidden_env = add_name hidden_decl hidden_env in
+          hidden_env, hidden_avoid, (id, entry_term) :: entry_values)
+        (env, avoid, []) entries
+      in
+      let body = detype d flags hidden_avoid hidden_env sigma body in
+      let body = List.fold_left
+        (fun body (id, replacement) -> subst_entry id replacement body)
+        body entry_values
+      in
+      GPBlock (detype_instance ~flags sigma u, public_ty, body)
     | PRun (ty,k,b,cont) ->
       let ty = detype d flags avoid env sigma ty in
       let k = detype d flags avoid env sigma k in

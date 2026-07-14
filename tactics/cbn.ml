@@ -1301,21 +1301,13 @@ let rec whd_state_gen ?csts flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | subs, PUnblock (_ty, b) ->
-      let b = mk_clos subs b in
-      let ((b', bstack), _) = whrec Cst_stack.empty (b, Stack.empty) in
-      begin match bstack, CbnClos.kind sigma b' with
-      | [], (body_subs, PBlock (_, _, body)) ->
-        whrec cst_l (mk_clos body_subs body, stack)
-      | _ -> fold ()
-      end
-
     | subs, PRun (_ty, _k, b, cont) ->
       let b = mk_clos subs b in
       let cont = mk_clos subs cont in
       let ((b', bstack), _) = whrec Cst_stack.empty (b, Stack.empty) in
       begin match bstack, CbnClos.kind sigma b' with
-      | [], (body_subs, PBlock (_, _, body)) ->
+      | [], (body_subs, PBlock (_, _, entries, body)) ->
+        let body = EConstr.expand_pblock entries body in
         let body = mk_clos body_subs body in
         whrec cst_l (cont, Stack.append_app [|body|] stack)
       | _ -> fold ()

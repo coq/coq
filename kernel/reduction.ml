@@ -28,10 +28,10 @@ let whd_all ?evars env t =
       begin match kind c with
       | Ind _ | Construct _ | Meta _ | Int _ | Float _ | String _ | Array _ | PBlock _ -> t
       | Sort _ | Rel _ | Var _ | Evar _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
-        | Const _ |Case _ | Fix _ | CoFix _ | Proj _ | PUnblock _ | PRun _ ->
+        | Const _ |Case _ | Fix _ | CoFix _ | Proj _ | PRun _ ->
          whd_val (create_clos_infos ?evars RedFlags.all env) (create_tab ()) (inject t)
       end
-    | Rel _ | Evar _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _ | PUnblock _ | PRun _ ->
+    | Rel _ | Evar _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _ | PRun _ ->
         whd_val (create_clos_infos ?evars RedFlags.all env) (create_tab ()) (inject t)
 
 let whd_allnolet ?evars env t =
@@ -42,10 +42,10 @@ let whd_allnolet ?evars env t =
       begin match kind c with
       | Ind _ | Construct _ | Meta _ | LetIn _ | Int _ | Float _ | String _ | Array _ | PBlock _ -> t
       | Sort _ | Rel _ | Var _ | Evar _ | Cast _ | Prod _ | Lambda _ | App _
-        | Const _ | Case _ | Fix _ | CoFix _ | Proj _ | PUnblock _ | PRun _ ->
+        | Const _ | Case _ | Fix _ | CoFix _ | Proj _ | PRun _ ->
          whd_val (create_clos_infos ?evars RedFlags.allnolet env) (create_tab ()) (inject t)
       end
-    | Rel _ | Evar _ | Cast _ | Case _ | Proj _ | Const _ | Var _ | PUnblock _ | PRun _ ->
+    | Rel _ | Evar _ | Cast _ | Case _ | Proj _ | Const _ | Var _ | PRun _ ->
         whd_val (create_clos_infos ?evars RedFlags.allnolet env) (create_tab ()) (inject t)
 
 (* Application with on-the-fly reduction *)

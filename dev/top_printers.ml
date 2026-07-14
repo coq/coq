@@ -417,8 +417,9 @@ let constr_display csr =
   | String s ->
       Printf.sprintf "String(%S)" (Pstring.to_string s)
   | Array (u,t,def,ty) -> "Array("^(array_display t)^","^(term_display def)^","^(term_display ty)^")@{" ^universes_display u^"\n"
-  | PBlock (u,ty,t) -> "__block@{"^universes_display u^"}("^(term_display ty)^","^(term_display t)^")"
-  | PUnblock (ty,t) -> "__unblock("^(term_display ty)^","^(term_display t)^")"
+  | PBlock (u,ty,entries,t) ->
+      let t = Term.expand_pblock entries t in
+      "__block@{"^universes_display u^"}("^(term_display ty)^","^(term_display t)^")"
   | PRun (ty,k,b,cont) -> "__run("^(term_display ty)^","^(term_display k)^","^(term_display b)^","^(term_display cont)^")"
 
   and array_display v =
@@ -591,12 +592,10 @@ let print_pure_constr csr =
       print_string ")@{";
       universes_display u;
       print_string "}"
-  | PBlock (u,ty,t) ->
+  | PBlock (u,ty,entries,t) ->
       print_string "__block@{"; universes_display u; print_string "}(";
-      box_display ty; print_string ","; box_display t; print_string ")"
-  | PUnblock (ty,t) ->
-      print_string "__unblock(";
-      box_display ty; print_string ","; box_display t; print_string ")"
+      box_display ty; print_string ",";
+      box_display (Term.expand_pblock entries t); print_string ")"
   | PRun (ty,k,b,cont) ->
       print_string "__run(";
       box_display ty; print_string ","; box_display k; print_string ",";

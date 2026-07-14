@@ -824,7 +824,7 @@ and execute_aux tbl env cstr =
       in
       mkApp(ta, [|ty|])
 
-    | PBlock (u,ty,t) ->
+    | PBlock (u,ty,entries,t) ->
       let q, ulev = match UVars.Instance.to_array u with
         | [|q|], [|u|] -> q, u
         | _ -> assert false
@@ -832,18 +832,48 @@ and execute_aux tbl env cstr =
       let tyty = execute tbl env ty in
       let ty = self ty in
       check_cast env ty tyty DEFAULTcast (mkSort (Sorts.make q (Universe.make ulev)));
-      let tt = execute tbl env t in
-      check_cast env (self t) tt DEFAULTcast ty;
+      let check_context env context =
+        Context.Rel.fold_outside
+          (fun decl (env, context) ->
+            match decl with
+            | LocalAssum (na, decl_ty) ->
+              let decl_tyty = execute tbl env decl_ty in
+              let decl_ty = self decl_ty in
+              let sort = check_type env decl_ty decl_tyty in
+              check_assum_annot env sort na decl_ty;
+              let decl = LocalAssum (na, decl_ty) in
+              push_rel decl env, decl :: context
+            | LocalDef (na, value, decl_ty) ->
+              let value_ty = execute tbl env value in
+              let decl_tyty = execute tbl env decl_ty in
+              let value = self value in
+              let decl_ty = self decl_ty in
+              check_cast env value value_ty DEFAULTcast decl_ty;
+              let sort = check_type env decl_ty decl_tyty in
+              check_let_annot env sort na value decl_ty;
+              let decl = LocalDef (na, value, decl_ty) in
+              push_rel decl env, decl :: context)
+          context ~init:(env, [])
+      in
+      let body_env = Array.fold_left
+        (fun hidden_env entry ->
+          let entry_env, context = check_context hidden_env entry.pbe_context in
+          ignore (execute_is_type tbl entry_env entry.pbe_type);
+          let entry_type = self entry.pbe_type in
+          let value_type = execute tbl entry_env entry.pbe_value in
+          let blocked_u, _ = dest_type_of_blocked entry_env value_type in
+          check_cast entry_env (self entry.pbe_value) value_type DEFAULTcast
+            (mkApp (type_of_blocked entry_env blocked_u, [|entry_type|]));
+          let hidden_type = it_mkProd_or_LetIn entry_type context in
+          let hidden_sort = execute_is_type tbl hidden_env (HConstr.of_constr hidden_env hidden_type) in
+          let annot = Context.make_annot Anonymous entry.pbe_relevance in
+          check_assum_annot hidden_env hidden_sort annot hidden_type;
+          push_rel (LocalAssum (annot, hidden_type)) hidden_env)
+        env entries
+      in
+      let tt = execute tbl body_env t in
+      check_cast body_env (self t) tt DEFAULTcast (Vars.lift (Array.length entries) ty);
       mkApp (type_of_blocked env u, [|ty|])
-
-    | PUnblock (ty,b) ->
-      let tyty = execute tbl env ty in
-      let ty = self ty in
-      ignore (check_type env ty tyty);
-      let bt = execute tbl env b in
-      let u, _ = dest_type_of_blocked env bt in
-      check_cast env (self b) bt DEFAULTcast (mkApp (type_of_blocked env u, [|ty|]));
-      ty
 
     | PRun (ty,k,b,cont) ->
       let tyty = execute tbl env ty in
@@ -975,7 +1005,7 @@ let type_of_blocked_ind env u =
     let blocked_t t = mkApp (blocked, [|t|]) in
     let p_type = mkProd (Context.anonR, blocked_t (mkRel 1), p_sort) in
     let ih_type =
-      let block_t = mkPBlock (blocked_u, mkRel 3, mkRel 1) in
+      let block_t = mkPBlock (blocked_u, mkRel 3, [||], mkRel 1) in
       mkProd (Context.nameR (Id.of_string "t"), mkRel 2, mkApp (mkRel 2, [|block_t|]))
     in
     let b_type = blocked_t (mkRel 3) in

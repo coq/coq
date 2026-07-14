@@ -92,6 +92,19 @@ struct
   let make c = (empty_handle, c)
   let repr = expand
 
+  let iter_declaration f h = function
+    | Context.Rel.Declaration.LocalAssum (_, ty) -> f h ty
+    | Context.Rel.Declaration.LocalDef (_, value, ty) -> f h value; f h ty
+
+  let iter_entry f h hidden entry =
+    let h = liftn_handle hidden h in
+    let h = Context.Rel.fold_outside
+      (fun decl h -> iter_declaration f h decl; liftn_handle 1 h)
+      entry.pbe_context ~init:h
+    in
+    f h entry.pbe_type;
+    f h entry.pbe_value
+
   let iter sigma f h knd = match knd with
   | Evar (evk, args) ->
     let evi = Evd.find_undefined sigma evk in
@@ -120,8 +133,10 @@ struct
     Array.Fun1.iter f (liftn_handle (Array.length tl) h) bl
   | Array(_u, t, def, ty) ->
     Array.iter (f h) t; f h def; f h ty
-  | PBlock (_u, ty, t) -> f h ty; f h t
-  | PUnblock (ty, t) -> f h ty; f h t
+  | PBlock (_u, ty, entries, t) ->
+    f h ty;
+    Array.iteri (iter_entry f h) entries;
+    f (liftn_handle (Array.length entries) h) t
   | PRun (ty, k, b, cont) -> f h ty; f h k; f h b; f h cont
 
   let iter_with_binders sigma g f l h knd = match knd with
@@ -152,8 +167,23 @@ struct
     Array.iter (f (iterate g (Array.length tl) l) (liftn_handle (Array.length tl) h)) bl
   | Array(_u, t, def, ty) ->
     Array.iter (fun c -> f l h c) t; f l h def; f l h ty
-  | PBlock (_u, ty, t) -> f l h ty; f l h t
-  | PUnblock (ty, t) -> f l h ty; f l h t
+  | PBlock (_u, ty, entries, t) ->
+    f l h ty;
+    Array.iteri
+      (fun hidden entry ->
+        let l = iterate g hidden l in
+        let h = liftn_handle hidden h in
+        let l, h = Context.Rel.fold_outside
+          (fun decl (l, h) ->
+            iter_declaration (f l) h decl;
+            g l, liftn_handle 1 h)
+          entry.pbe_context ~init:(l, h)
+        in
+        f l h entry.pbe_type;
+        f l h entry.pbe_value)
+      entries;
+    f (iterate g (Array.length entries) l)
+      (liftn_handle (Array.length entries) h) t
   | PRun (ty, k, b, cont) -> f l h ty; f l h k; f l h b; f l h cont
 
 end
@@ -179,6 +209,7 @@ type named_declaration = (constr, types, ERelevance.t) Context.Named.Declaration
 type rel_declaration = (constr, types, ERelevance.t) Context.Rel.Declaration.pt
 type named_context = (constr, types, ERelevance.t) Context.Named.pt
 type rel_context = (constr, types, ERelevance.t) Context.Rel.pt
+type pblock_entry = (constr, types, ERelevance.t) Constr.pblock_entry
 type 'a binder_annot = ('a, ERelevance.t) Context.pbinder_annot
 
 let annotR x = Context.make_annot x ERelevance.relevant
@@ -217,9 +248,27 @@ let mkInt i = of_kind (Int i)
 let mkFloat f = of_kind (Float f)
 let mkString s = of_kind (String s)
 let mkArray (u,t,def,ty) = of_kind (Array (u,t,def,ty))
-let mkPBlock (u,ty,t) = of_kind (PBlock (u,ty,t))
-let mkPUnblock (ty,t) = of_kind (PUnblock (ty,t))
+let mkPBlock (u,ty,ctx,t) = of_kind (PBlock (u,ty,ctx,t))
 let mkPRun (ty,k,b,cont) = of_kind (PRun (ty,k,b,cont))
+
+let expand_pblock entries body =
+  Array.fold_right
+    (fun entry body ->
+      let annot = Context.make_annot Anonymous entry.pbe_relevance in
+      let identity = mkLambda (annot, entry.pbe_type, mkRel 1) in
+      let forced = mkPRun (entry.pbe_type, entry.pbe_type, entry.pbe_value, identity) in
+      let value = List.fold_left (fun body -> function
+        | Context.Rel.Declaration.LocalAssum (na, ty) -> mkLambda (na, ty, body)
+        | Context.Rel.Declaration.LocalDef (na, value, ty) -> mkLetIn (na, value, ty, body))
+        forced entry.pbe_context
+      in
+      let typ = List.fold_left (fun body -> function
+        | Context.Rel.Declaration.LocalAssum (na, ty) -> mkProd (na, ty, body)
+        | Context.Rel.Declaration.LocalDef (na, value, ty) -> mkLetIn (na, value, ty, body))
+        entry.pbe_type entry.pbe_context
+      in
+      mkLetIn (annot, value, typ, body))
+    entries body
 
 let mkRef (gr,u) = let open GlobRef in match gr with
   | ConstRef c -> mkConstU (c,u)
@@ -736,8 +785,28 @@ let iter_with_full_binders env sigma g f n c =
     let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na,lift i t)) n) n lna tl in
     Array.iter (f n') bl
   | Array (_u,t,def,ty) -> Array.Fun1.iter f n t; f n def; f n ty
-  | PBlock (_u,ty,t) -> f n ty; f n t
-  | PUnblock (ty,t) -> f n ty; f n t
+  | PBlock (_u,ty,entries,t) ->
+    f n ty;
+    let n = Array.fold_left
+      (fun n entry ->
+        let nctx = Context.Rel.fold_outside
+          (fun decl n ->
+            Context.Rel.Declaration.iter_constr (f n) decl;
+            g decl n)
+          entry.pbe_context ~init:n
+        in
+        f nctx entry.pbe_type;
+        f nctx entry.pbe_value;
+        let hidden_type = List.fold_left
+          (fun body -> function
+            | LocalAssum (na, ty) -> mkProd (na, ty, body)
+            | LocalDef (na, value, ty) -> mkLetIn (na, value, ty, body))
+          entry.pbe_type entry.pbe_context
+        in
+        g (LocalAssum (Context.make_annot Anonymous entry.pbe_relevance, hidden_type)) n)
+      n entries
+    in
+    f n t
   | PRun (ty,k,b,cont) -> f n ty; f n k; f n b; f n cont
 
 let iter_with_binders sigma g f n c =
@@ -1339,7 +1408,7 @@ let kind_of_type sigma t = match kind sigma t with
   | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
   | App (c,l) -> AtomicType (c, l)
   | (Rel _ | Meta _ | Var _ | Evar _ | Const _
-  | Proj _ | Case _ | Fix _ | CoFix _ | Ind _ | PBlock _ | PUnblock _ | PRun _)
+  | Proj _ | Case _ | Fix _ | CoFix _ | Ind _ | PBlock _ | PRun _)
     -> AtomicType (t,[||])
   | (Lambda _ | Construct _ | Int _ | Float _ | String _ | Array _) -> failwith "Not a type"
 

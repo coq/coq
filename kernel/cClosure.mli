@@ -57,10 +57,8 @@ type fterm =
   | FCLOS of constr * usubs
   | FIrrelevant
   | FLOCKED
-  | FBlock of UVars.Instance.t * constr * constr * usubs
+  | FBlock of UVars.Instance.t * constr * Constr.block_entry array * constr * usubs
     (* its universe instance, its type as a constr, the contents of the block *)
-  | FUnblock of constr * fconstr * usubs
-  (* [{term=Funblock(ty, m, e);mode=mode}] is a representation of [Zunblock(ty,e,mode)] zipped with [m] *)
   | FRun of constr * constr * fconstr * constr * usubs
   (* [{term=FRun(ty1, ty2, m, cnt, e);mode=mode}] is a representation of [Zrun(ty1,ty2,cnt,e,mode)] zipped with [m] *)
 
@@ -95,8 +93,6 @@ type stack_member =
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
-  | Zunblock of constr * usubs * mode
-  (* unblock type argument, the substitution for both constrs, saved reduction flags *)
   | Zrun of constr * constr * constr * usubs * mode
   (* run type arguments, its continuation, the substitution for all constrs, saved reduction flags *)
 

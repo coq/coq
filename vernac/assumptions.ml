@@ -197,8 +197,8 @@ let fold_with_full_binders g f n acc c =
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
-  | PBlock (_u,ty,t) -> f n (f n acc ty) t
-  | PUnblock (ty,t) -> f n (f n acc ty) t
+  | PBlock (_u,ty,entries,t) ->
+    f n (f n acc ty) (Term.expand_pblock entries t)
   | PRun (ty,k,b,cont) -> f n (f n (f n (f n acc ty) k) b) cont
 
 let warn_unreachable_opaque_body =

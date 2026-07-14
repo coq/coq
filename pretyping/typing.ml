@@ -676,7 +676,7 @@ let rec execute env sigma cstr =
       let sigma, tj = execute_array env sigma t in
       judge_of_array env sigma (EInstance.kind sigma u) tj defj tyj
 
-    | PBlock (u,ty,t) ->
+    | PBlock (u,ty,entries,t) ->
       let u = EInstance.kind sigma u in
       let q, ulev = match UVars.Instance.to_array u with
         | [|q|], [|u|] -> q, u
@@ -686,19 +686,53 @@ let rec execute env sigma cstr =
       let sigma, tyj = type_judgment env sigma tyj in
       let expected_sort = ESorts.make (Sorts.make q (Univ.Universe.make ulev)) in
       let sigma = check_leq_sort sigma tyj.utj_type expected_sort in
-      let sigma, tj = execute env sigma t in
-      let sigma = check_actual_type env sigma tj ty in
+      let check_context sigma env context =
+        Context.Rel.fold_outside
+          (fun decl (sigma, env, context) ->
+            match decl with
+            | LocalAssum (na, decl_ty) ->
+              let sigma, decl_tyj = execute env sigma decl_ty in
+              let sigma, decl_tyj = type_judgment env sigma decl_tyj in
+              let sigma, decl = check_binder_relevance env sigma decl_tyj.utj_type
+                (LocalAssum (na, decl_tyj.utj_val))
+              in
+              sigma, push_rel decl env, decl :: context
+            | LocalDef (na, value, decl_ty) ->
+              let sigma, valuej = execute env sigma value in
+              let sigma, decl_tyj = execute env sigma decl_ty in
+              let sigma, decl_tyj = type_judgment env sigma decl_tyj in
+              let sigma = check_actual_type env sigma valuej decl_tyj.utj_val in
+              let sigma, decl = check_binder_relevance env sigma decl_tyj.utj_type
+                (LocalDef (na, valuej.uj_val, decl_tyj.utj_val))
+              in
+              sigma, push_rel decl env, decl :: context)
+          context ~init:(sigma, env, [])
+      in
+      let sigma, body_env = Array.fold_left
+        (fun (sigma, hidden_env) entry ->
+          let sigma, entry_env, context = check_context sigma hidden_env entry.pbe_context in
+          let sigma, entry_typej = execute entry_env sigma entry.pbe_type in
+          let sigma, entry_typej = type_judgment entry_env sigma entry_typej in
+          let sigma, valuej = execute entry_env sigma entry.pbe_value in
+          let blocked_u, _ = dest_blocked_type entry_env sigma valuej.uj_type in
+          let blocked = EConstr.of_constr (Typeops.type_of_blocked entry_env blocked_u) in
+          let sigma = check_actual_type entry_env sigma valuej
+            (mkApp (blocked, [|entry_typej.utj_val|]))
+          in
+          let hidden_type = it_mkProd_or_LetIn entry_typej.utj_val context in
+          let sigma, hidden_typej = execute hidden_env sigma hidden_type in
+          let sigma, hidden_typej = type_judgment hidden_env sigma hidden_typej in
+          let annot = Context.make_annot Names.Anonymous entry.pbe_relevance in
+          let sigma, hidden_decl = check_binder_relevance hidden_env sigma hidden_typej.utj_type
+            (LocalAssum (annot, hidden_typej.utj_val))
+          in
+          sigma, push_rel hidden_decl hidden_env)
+        (sigma, env) entries
+      in
+      let sigma, tj = execute body_env sigma t in
+      let sigma = check_actual_type body_env sigma tj (EConstr.Vars.lift (Array.length entries) ty) in
       let blocked = EConstr.of_constr (Typeops.type_of_blocked env u) in
-      sigma, make_judge (mkPBlock (EInstance.make u, ty, t)) (mkApp (blocked, [|ty|]))
-
-    | PUnblock (ty,b) ->
-      let sigma, tyj = execute env sigma ty in
-      let sigma, tyj = type_judgment env sigma tyj in
-      let sigma, bj = execute env sigma b in
-      let u, _ = dest_blocked_type env sigma bj.uj_type in
-      let blocked = EConstr.of_constr (Typeops.type_of_blocked env u) in
-      let sigma = check_actual_type env sigma bj (mkApp (blocked, [|ty|])) in
-      sigma, make_judge (mkPUnblock (ty, b)) ty
+      sigma, make_judge (mkPBlock (EInstance.make u, ty, entries, t)) (mkApp (blocked, [|ty|]))
 
     | PRun (ty,k,b,cont) ->
       let sigma, tyj = execute env sigma ty in
@@ -998,7 +1032,7 @@ let rec recheck_against env sigma good c =
         let sigma, tj = type_judgment env sigma tj in
         maybe_changed (judge_of_cast env sigma cj k tj)
 
-    | _, (Case _ | App _ | Lambda _ | Prod _ | Cast _ | Proj _ | PBlock _ | PUnblock _ | PRun _) -> default ()
+    | _, (Case _ | App _ | Lambda _ | Prod _ | Cast _ | Proj _ | PBlock _ | PRun _) -> default ()
 
 let recheck_against env sigma a b =
   let sigma, _, j = recheck_against env sigma a b in

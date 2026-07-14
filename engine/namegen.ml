@@ -109,7 +109,6 @@ let global_of_constr = let open GlobRef in function
 | Var id -> VarRef id
 | _ -> assert false
 
-
 let lowercase_first_char id = (* First character of a constr *)
   let s = Id.to_string id in
   match Unicode.split_at_first_letter s with
@@ -157,7 +156,6 @@ let hdchar env sigma c =
     | String _ -> "s"
     | Array _ -> "a"
     | PBlock _ -> "b"
-    | PUnblock _ -> "u"
     | PRun _ -> "r"
   in
   hdrec 0 c

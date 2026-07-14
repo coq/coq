@@ -37,11 +37,11 @@ let e_whd_all env sigma t = match EConstr.kind sigma t with
   | Ind _ | Construct _ | Meta _ | Int _ | Float _ | String _ | Array _
   | PBlock _ -> EConstr.of_kind kind
   | Sort _ | Rel _ | Var _ | Evar _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
-  | Const _ | Case _ | Fix _ | CoFix _ | Proj _ | PUnblock _ | PRun _ ->
+  | Const _ | Case _ | Fix _ | CoFix _ | Proj _ | PRun _ ->
     Reductionops.clos_whd_flags RedFlags.all env sigma t
   end
 | Rel _ | Evar _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _
-| PUnblock _ | PRun _ ->
+| PRun _ ->
   Reductionops.clos_whd_flags RedFlags.all env sigma t
 
 let crazy_type =  mkSet

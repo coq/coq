@@ -232,7 +232,7 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
 
 let rec is_rigid_head sigma t = match kind sigma t with
   | Rel _ | Evar _ -> false
-  | Ind _ | Const _ | Var _ | Sort _ | PBlock _ | PUnblock _ | PRun _ -> true
+  | Ind _ | Const _ | Var _ | Sort _ | PBlock _ | PRun _ -> true
   | Case (_,_,_,_,_,f,_) -> is_rigid_head sigma f
   | Proj _ -> true
   | App (f,args) ->

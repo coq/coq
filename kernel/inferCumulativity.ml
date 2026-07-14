@@ -266,13 +266,29 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let variances = Array.fold_right infer br variances in
     infer_stack infos variances stk
 
-  | FBlock (_, ty, t, e) ->
+  | FBlock (_, ty, entries, t, e) ->
     let variances = infer_fterm CONV infos variances (mk_clos e ty) [] in
+    let e, infos, variances = Array.fold_left
+      (fun (e, infos, variances) entry ->
+        let entry_e, entry_infos, variances = Context.Rel.fold_outside
+          (fun decl (entry_e, entry_infos, variances) ->
+            let variances = Context.Rel.Declaration.fold_constr
+              (fun term variances -> infer_fterm CONV entry_infos variances (mk_clos entry_e term) [])
+              decl variances
+            in
+            CClosure.usubs_lift entry_e,
+            push_relevance entry_infos (Context.Rel.Declaration.get_annot decl),
+            variances)
+          entry.pbe_context ~init:(e, infos, variances)
+        in
+        let variances = infer_fterm CONV entry_infos variances (mk_clos entry_e entry.pbe_type) [] in
+        let variances = infer_fterm CONV entry_infos variances (mk_clos entry_e entry.pbe_value) [] in
+        CClosure.usubs_lift e,
+        push_relevance infos (Context.make_annot Names.Anonymous entry.pbe_relevance),
+        variances)
+      (e, infos, variances) entries
+    in
     let variances = infer_fterm CONV infos variances (mk_clos e t) [] in
-    infer_stack infos variances stk
-  | FUnblock (ty, m, e) ->
-    let variances = infer_fterm CONV infos variances (mk_clos e ty) [] in
-    let variances = infer_fterm CONV infos variances m [] in
     infer_stack infos variances stk
   | FRun (ty1, ty2, m, k, e) ->
     let variances = infer_fterm CONV infos variances (mk_clos e ty1) [] in
@@ -318,8 +334,6 @@ and infer_stack infos variances (stk:CClosure.stack) =
         let variances = List.fold_left (fun variances c -> infer_fterm CONV infos variances c []) variances rargs in
         let variances = List.fold_left (fun variances (_,c) -> infer_fterm CONV infos variances c []) variances kargs in
         variances
-      | Zunblock (ty, e, _) ->
-        infer_fterm CONV infos variances (mk_clos e ty) []
       | Zrun (ty1, ty2, k, e, _) ->
         let variances = infer_fterm CONV infos variances (mk_clos e ty1) [] in
         let variances = infer_fterm CONV infos variances (mk_clos e ty2) [] in

@@ -291,6 +291,13 @@ rest of the Rocq Prover manual: :term:`terms <term>` and :term:`types
         | ( @term )
         qualid_annotated ::= @qualid {? @univ_annot }
 
+     The :n:`__unblock` form is block-local elaborator syntax.  It is accepted
+     only within the body (the second term argument) of an enclosing
+     :n:`__block`, including beneath binders and other term constructs in that
+     body.  Each occurrence is captured independently by that block; identical
+     occurrences are not shared or merged.  Outside a block body, use
+     :n:`__run` to eliminate a blocked value.
+
      .. note::
 
         Many :term:`commands <command>` and :term:`tactics <tactic>`

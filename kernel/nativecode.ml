@@ -52,7 +52,7 @@ let rec is_lazy env t =
   | Array (_, t, d, _) -> Array.exists (fun t -> is_lazy env t) t || is_lazy env d
   | Cast (c, _, _) | Prod (_, c, _) -> is_lazy env c
   | Const (c, _) -> get_const_lazy env c
-  | PBlock _ | PUnblock _ | PRun _ -> true
+  | PBlock _ | PRun _ -> true
   | Rel _ | Meta _ | Var _ | Sort _ | Ind _ | Construct _ | Int _
   | Float _ | String _ | Lambda _ | Evar _ | Fix _ | CoFix _ ->
     false

@@ -285,8 +285,20 @@ let hash_kind = let open Hashset.Combine in function
   | Float f -> combinesmall 19 (Float64.hash f)
   | String s -> combinesmall 20 (Pstring.hash s)
   | Array (u,t,def,ty) -> combinesmall 21 (combine4 (UVars.Instance.hash u) (hash_array hash t) def.hash ty.hash)
-  | PBlock (u,ty,t) -> combinesmall 22 (combine3 (UVars.Instance.hash u) ty.hash t.hash)
-  | PUnblock (ty,t) -> combinesmall 23 (combine ty.hash t.hash)
+  | PBlock (u,ty,entries,t) ->
+    let hash_decl = function
+      | RelDecl.LocalAssum (na, ty) -> combine (hash_annot na) ty.hash
+      | RelDecl.LocalDef (na, value, ty) -> combine3 (hash_annot na) value.hash ty.hash
+    in
+    let hash_entry entry =
+      let hctx = List.fold_right (fun decl hash -> combine (hash_decl decl) hash)
+        entry.pbe_context 0
+      in
+      combine4 hctx entry.pbe_type.hash entry.pbe_value.hash
+        (Sorts.relevance_hash entry.pbe_relevance)
+    in
+    let hentries = Array.fold_left (fun hash entry -> combine hash (hash_entry entry)) 0 entries in
+    combinesmall 22 (combine4 (UVars.Instance.hash u) ty.hash hentries t.hash)
   | PRun (ty,k,b,cont) -> combinesmall 24 (combine4 ty.hash k.hash b.hash cont.hash)
 
 let kind_to_constr = function
@@ -318,8 +330,15 @@ let kind_to_constr = function
   | Float f -> mkFloat f
   | String s -> mkString s
   | Array (u,t,def,ty) -> mkArray (u,Array.map self t,def.self,ty.self)
-  | PBlock (u,ty,t) -> mkPBlock (u,ty.self,t.self)
-  | PUnblock (ty,t) -> mkPUnblock (ty.self,t.self)
+  | PBlock (u,ty,entries,t) ->
+    let map_decl = RelDecl.map_constr_het (fun r -> r) self in
+    let map_entry entry = {
+      pbe_context = List.map map_decl entry.pbe_context;
+      pbe_type = entry.pbe_type.self;
+      pbe_value = entry.pbe_value.self;
+      pbe_relevance = entry.pbe_relevance;
+    } in
+    mkPBlock (u,ty.self,Array.map map_entry entries,t.self)
   | PRun (ty,k,b,cont) -> mkPRun (ty.self,k.self,b.self,cont.self)
 
 let of_kind_nohashcons = function
@@ -467,15 +486,38 @@ and of_constr_aux henv c =
     let def = of_constr henv def in
     let ty = of_constr henv ty in
     Array (u,t,def,ty)
-  | PBlock (u,ty,t) ->
+  | PBlock (u,ty,entries,t) ->
+    let outer_env = henv in
+    let ty = of_constr outer_env ty in
+    let of_context henv context =
+      List.fold_right
+        (fun decl (context, henv) ->
+          let decl = RelDecl.map_constr_het (fun r -> r) (of_constr henv) decl in
+          decl :: context, push_decl decl henv)
+        context ([], henv)
+    in
+    let body_env, entries = Array.fold_left_map
+      (fun henv entry ->
+        let context, entry_env = of_context henv entry.pbe_context in
+        let pbe_type = of_constr entry_env entry.pbe_type in
+        let pbe_value = of_constr entry_env entry.pbe_value in
+        let hidden_type =
+          Term.it_mkProd_or_LetIn pbe_type.self
+            (List.map (RelDecl.map_constr_het (fun r -> r) self) context)
+        in
+        let hidden_type = of_constr henv hidden_type in
+        let henv = push_assum hidden_type henv in
+        henv, {
+          pbe_context = context;
+          pbe_type;
+          pbe_value;
+          pbe_relevance = entry.pbe_relevance;
+        })
+      outer_env entries
+    in
     let _, u = UVars.Instance.hcons u in
-    let ty = of_constr henv ty in
-    let t = of_constr henv t in
-    PBlock (u,ty,t)
-  | PUnblock (ty,t) ->
-    let ty = of_constr henv ty in
-    let t = of_constr henv t in
-    PUnblock (ty,t)
+    let t = of_constr body_env t in
+    PBlock (u,ty,entries,t)
   | PRun (ty,k,b,cont) ->
     let ty = of_constr henv ty in
     let k = of_constr henv k in

@@ -933,7 +933,7 @@ let is_rigid_head sigma flags t =
   | Fix _ | CoFix _ -> true
   | Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Cast (_, _, _) | Prod _
     | Lambda _ | LetIn _ | App (_, _) | Case _
-    | Proj _ | PUnblock _ | PRun _ -> false (* Why aren't Prod, Sort rigid heads ? *)
+    | Proj _ | PRun _ -> false (* Why aren't Prod, Sort rigid heads ? *)
 
 let constr_cmp pb env sigma flags ?nargs t u =
   let cstrs =
@@ -1033,7 +1033,7 @@ let rec is_neutral env sigma ts t =
     | Case (_, _, _, _, _, c, _) -> is_neutral env sigma ts c
     | Proj (p, _, c) -> is_neutral env sigma ts c
     | Lambda _ | LetIn _ | Construct _ | CoFix _ | Int _ | Float _ | String _ | Array _
-    | PBlock _ | PUnblock _ | PRun _ -> false
+    | PBlock _ | PRun _ -> false
     | Sort _ | Cast (_, _, _) | Prod (_, _, _) | Ind _ -> false (* Really? *)
     | Fix _ -> false (* This is an approximation *)
     | App _ -> assert false
@@ -2392,13 +2392,9 @@ let rec make0 atyp sigma c0 = match EConstr.kind sigma c0 with
   let ty = make sigma ty in
   let data = max td (max def.data ty.data) in
   { proj = c0; self = AOther (Array.append [|def;ty|] t); data; atyp }
-| PBlock (_u,ty,t) ->
+| PBlock (_u,ty,entries,t) ->
   let ty = make sigma ty in
-  let t = make sigma t in
-  { proj = c0; self = AOther [|ty; t|]; data = max ty.data t.data; atyp }
-| PUnblock (ty,t) ->
-  let ty = make sigma ty in
-  let t = make sigma t in
+  let t = make sigma (EConstr.expand_pblock entries t) in
   { proj = c0; self = AOther [|ty; t|]; data = max ty.data t.data; atyp }
 | PRun (ty,k,b,cont) ->
   let ty = make sigma ty in
@@ -2600,11 +2596,8 @@ let w_unify_to_subterm_all ~metas env evd ?(flags=default_unify_flags ()) (op,cl
             | Array(_u,t,def,ty) ->
               bind (bind (bind_iter matchrec t) (matchrec def)) (matchrec ty)
 
-            | PBlock (_u,ty,t) ->
-              bind (matchrec ty) (matchrec t)
-
-            | PUnblock (ty,t) ->
-              bind (matchrec ty) (matchrec t)
+            | PBlock (_u,ty,entries,t) ->
+              bind (matchrec ty) (matchrec (EConstr.expand_pblock entries t))
 
             | PRun (ty,k,b,cont) ->
               bind (bind (bind (matchrec ty) (matchrec k)) (matchrec b)) (matchrec cont)

@@ -1,5 +1,5 @@
-(* This file showcases the use of the [__run], [__block] and [__unblock] primitives,
-   in the context of proof by reflection.
+(* This file showcases primitive [__run]/[__block] and block-local
+   [__unblock] syntax in the context of proof by reflection.
 
    Proof by reflection is a common, and generally very efficient technique for
    proving that a proposition from some limited domain is equivalent to (or is
@@ -115,18 +115,14 @@ Fixpoint reflect (p : prop) : Blocked Prop :=
      [False], since they have type [Prop], and we expect a [Blocked Prop].
    - In the [inj P] case, [P] is already blocked so we just take it.
    - In the [conj p1 p2] case, we use [__block] around [_ /\ _], but need to use
-     the [__unblock] function to turn the recursive calls into propositions.
+     the block-local [__unblock] syntax to turn the recursive calls into
+     propositions.
 
-   The [__unblock] primitive is basically a destructor for the [Blocked _] type,
-   similarly to how [__block _] can be seen as a constructor.
-
-     __unblock : forall T : Type, Blocked T -> T
-
-   In terms of reduction, the combination of [__block] and [__unblock] is slightly
-   more subtle. In particular, an [__unblock] within a [__block] will trigger the
-   reduction of its argument, even if the whole term is "blocked". This has to
-   do with the fact that the semantics of the new primitives rely on full lazy
-   reduction, not just weak-head normalization.
+   [__unblock] is elaborator syntax, not a standalone destructor: it is accepted
+   only within the body of [__block]. Each occurrence is captured as a hidden
+   entry of that block. During reduction, such an occurrence forces its blocked
+   argument even though the surrounding term remains blocked. Standalone
+   elimination of a blocked value uses [__run] instead.
 
    Let us now turn to the last building block of our example: [simplify]. *)
 
@@ -146,13 +142,16 @@ Fixpoint simplify (p : prop) : prop :=
   | _ => p
   end.
 
-(* The simplification function is usual as it operates on [prop]. However, its
-   correctness lemma involves [__unblock] since the return value of [reflect] is
-   a blocked proposition. Nonetheless, the proof remains fairly usual since we
-   can use [lazy] to evaluate [__unblock T (__block T p)] into [p]. *)
+(* The simplification function is usual as it operates on [prop]. The
+   correctness statement puts its block-local unblocks under a fresh block,
+   then eliminates that block with [__run]. *)
 
 Lemma simplify_ok (p : prop) :
-  __unblock Prop (reflect (simplify p)) <-> __unblock Prop (reflect p).
+  __run Prop Prop
+    (__block Prop
+      (__unblock Prop (reflect (simplify p)) <->
+       __unblock Prop (reflect p)))
+    (fun P => P).
 Proof.
   induction p; lazy -[iff]; fold simplify reflect.
   - rewrite <-IHp1; clear IHp1.
@@ -195,14 +194,14 @@ Qed.
    and it then feeds the result to its second (non-implicit) argument. *)
 
 Lemma simplify_ok_run (p : prop) :
-  __run Prop Prop (__block Prop (__unblock Prop (reflect (simplify p)) -> __unblock Prop (reflect p))) id.
+  __run Prop Prop (__block Prop (__unblock Prop (reflect (simplify p)) -> __unblock Prop (reflect p))) (fun P => P).
 Proof. lazy; fold reflect simplify. apply (proj1 (simplify_ok p)). Qed.
 
 (* The proof of [simplify_ok_run] trivially follows from [simplify_ok].
 
-   Note that we again need a few [__block] and [__unblock] to make the types work.
-   Said otherwise, we need to "protect" [_ -> _] similarly to what we did with
-   [_ /\ _] in [reflect] earlier.
+   Here the remaining [__unblock] occurrences are valid because they are in the
+   body of [__block]. We need to "protect" [_ -> _] similarly to what we did
+   with [_ /\ _] in [reflect] earlier.
 
    Note also that it is essential that the type of [simplify_ok_run] is of the
    form [__run _ _ _ _]. Indeed, we need [__run] to get in the way of the type-checker

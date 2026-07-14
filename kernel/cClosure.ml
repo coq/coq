@@ -79,41 +79,47 @@ module [@ocaml.warning "-32"] RedState = struct
   let cstr = 0b01
   let red =  0b10
 
-  let normal_whnf = 0b0000
-  let normal_full = 0b0100
-  let full        = 0b1000
-  let identity    = 0b1100
+  let normal_whnf = 0b00000
+  let normal_full = 0b00100
+  let full        = 0b01000
+  let identity    = 0b01100
+  (* Reduction mode used only by hidden [PBlock] entry functions. It reduces
+     their lambda/let scaffolding and forces the generated [PRun], while the
+     exposed inner block body resumes in [identity] mode. *)
+  let entry_force = 0b10000
+
+  let mode_mask = 0b11100
 
   let mk (r : red_state) (m : mode) =
     r lor m
 
   let [@ocaml.inline] red_state (i : t) = i land 0b0011
 
-  let [@ocaml.inline] mode (i : t) = i land 0b1100
+  let [@ocaml.inline] mode (i : t) = i land mode_mask
 
   let is_red  (i : t) = i land 0b0011 == red
   let is_cstr (i : t) = i land 0b0011 == cstr
   let is_ntrl (i : t) = i land 0b0011 == ntrl
 
-  let set_red  (i : t) = (i land 0b1100) lor red
-  let set_cstr (i : t) = (i land 0b1100) lor cstr
-  let set_ntrl (i : t) = (i land 0b1100) lor ntrl
+  let set_red  (i : t) = (i land mode_mask) lor red
+  let set_cstr (i : t) = (i land mode_mask) lor cstr
+  let set_ntrl (i : t) = (i land mode_mask) lor ntrl
 
   let neutr (i : t) = if is_ntrl i then i else set_red i
 
-  let is_normal      (i : t) = (i land 0b1000) == 0
-  let is_normal_whnf (i : t) = (i land 0b1100) == normal_whnf
-  let is_normal_full (i : t) = (i land 0b1100) == normal_full
-  let is_full        (i : t) = (i land 0b1100) == full
-  let is_identity    (i : t) = (i land 0b1100) == identity
+  let is_normal      (i : t) = (i land (full lor entry_force)) == 0
+  let is_normal_whnf (i : t) = (i land mode_mask) == normal_whnf
+  let is_normal_full (i : t) = (i land mode_mask) == normal_full
+  let is_full        (i : t) = (i land mode_mask) == full
+  let is_identity    (i : t) = (i land mode_mask) == identity
 
   let set_normal_whnf (i : t) = (i land 0b0011) lor normal_whnf
   let set_normal_full (i : t) = (i land 0b0011) lor normal_full
   let set_full        (i : t) = (i land 0b0011) lor full
   let set_identity    (i : t) = (i land 0b0011) lor identity
 
-  let copy_red  (src : t) (tgt : t) = (tgt land 0b1100) lor (src land 0b0011)
-  let copy_mode (src : t) (tgt : t) = (tgt land 0b0011) lor (src land 0b1100)
+  let copy_red  (src : t) (tgt : t) = (tgt land mode_mask) lor (src land 0b0011)
+  let copy_mode (src : t) (tgt : t) = (tgt land 0b0011) lor (src land mode_mask)
 end
 
 open RedState
@@ -152,10 +158,8 @@ and fterm =
   | FCLOS of constr * usubs
   | FIrrelevant
   | FLOCKED
-  | FBlock of UVars.Instance.t * constr * constr * usubs
-    (* its universe instance, its type as a constr, the contents of the block *)
-  | FUnblock of constr * fconstr * usubs
-  (* [{term=Funblock(ty, m, e);mode=mode}] is a representation of [Zunblock(ty,e,mode)] zipped with [m] *)
+  | FBlock of UVars.Instance.t * constr * Constr.block_entry array * constr * usubs
+    (* its universe instance, its type, hidden entries, the contents of the block, and its substitution *)
   | FRun of constr * constr * fconstr * constr * usubs
   (* [{term=FRun(ty1, ty2, m, cnt, e);mode=mode}] is a representation of [Zrun(ty1,ty2,cnt,e,mode)] zipped with [m] *)
 
@@ -271,8 +275,6 @@ type stack_member =
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
-  | Zunblock of constr * usubs * mode
-  (* unblock type argument, the substitution for both constrs, saved reduction flags *)
   | Zrun of constr * constr * constr * usubs * mode
   (* run type arguments, its continuation, the substitution for all constrs, saved reduction flags *)
 
@@ -284,7 +286,7 @@ let append_stack v s =
   if Int.equal (Array.length v) 0 then s else
   match s with
   | Zapp l :: s -> Zapp (Array.append v l) :: s
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | [] ->
+  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _ | Zrun _) :: _ | [] ->
     Zapp v :: s
 
 (* Collapse the shifts in the stack *)
@@ -292,13 +294,13 @@ let zshift n s =
   match (n,s) with
       (0,_) -> s
     | (_,Zshift(k)::s) -> Zshift(n+k)::s
-    | (_,(ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zupdate _ | Zprimitive _ | Zunblock _ | Zrun _) :: _) | _,[] -> Zshift(n)::s
+    | (_,(ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zupdate _ | Zprimitive _ | Zrun _) :: _) | _,[] -> Zshift(n)::s
 
 let rec stack_args_size = function
   | Zapp v :: s -> Array.length v + stack_args_size s
   | Zshift(_)::s -> stack_args_size s
   | Zupdate(_)::s -> stack_args_size s
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | [] -> 0
+  | (ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zrun _) :: _ | [] -> 0
 
 let usubs_shft (n,(e,u)) = Esubst.subs_shft (n, e), u
 
@@ -319,7 +321,7 @@ let rec lft_fconstr n ft =
     | FLOCKED -> assert false
     | FFlex (RelKey _) | FAtom _ | FApp _ | FProj _ | FCaseT _ | FCaseInvert _ | FProd _
     | FLetIn _ | FEvar _ | FCLOS _ | FArray _ | FBlock _
-    | FUnblock _ | FRun _ -> {ft with term = FLIFT (n, ft)}
+    | FRun _ -> {ft with term = FLIFT (n, ft)}
 let lift_fconstr k f =
   if Int.equal k 0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
@@ -350,14 +352,14 @@ let compact_stack head stk =
         (** The stack contains [Zupdate] marks only if in sharing mode *)
         let () = update m h'.mark h'.term in
         strip_rec depth s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | []) as stk -> zshift depth stk
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zprimitive _ | Zrun _) :: _ | []) as stk -> zshift depth stk
   in
   strip_rec 0 stk
 
 (* Put an update mark in the stack, only if needed *)
 let zupdate info m s =
   let share = info.i_cache.i_share in
-  if share && RedState.is_red m.mark then
+  if share && RedState.is_red m.mark && RedState.mode m.mark != entry_force then
     let s' = compact_stack m s in
     let _ = m.term <- FLOCKED in
     Zupdate(m)::s'
@@ -429,14 +431,31 @@ let mk_clos ~mode (e:usubs) t =
     | Int i -> {mark = RedState.mk cstr mode; term = FInt i}
     | Float f -> {mark = RedState.mk cstr mode; term = FFloat f}
     | String s -> {mark = RedState.mk cstr mode; term = FString s}
-    | PBlock (u,ty,t) ->
-      let mode = if mode == identity then identity else normal_whnf in
-      {mark = RedState.mk cstr mode; term = FBlock(u,ty,t,e)}
+    | PBlock (u,ty,entries,t) ->
+      let mode =
+        if mode == identity then identity
+        else if mode == full || mode == normal_full then normal_full
+        else normal_whnf
+      in
+      {mark = RedState.mk cstr mode; term = FBlock(u,ty,entries,t,e)}
     | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _
-      |PUnblock _|PRun _) ->
+      | PRun _) ->
       (* Invariant: pattern variables under apps are deferred to [knht] by
          being wrapped in [FCLOS]. *)
       {mark = RedState.mk red mode; term = FCLOS(t,e)}
+
+let pblock_entry_value entry =
+  let annot = Context.make_annot Anonymous entry.pbe_relevance in
+  let identity = mkLambda (annot, entry.pbe_type, mkRel 1) in
+  let forced = mkPRun (entry.pbe_type, entry.pbe_type, entry.pbe_value, identity) in
+  Term.it_mkLambda_or_LetIn forced entry.pbe_context
+
+let pblock_env env entries =
+  Array.fold_left
+    (fun ((subs, univs) as env) entry ->
+      let value = mk_clos ~mode:entry_force env (pblock_entry_value entry) in
+      Esubst.subs_cons (Regular value) subs, univs)
+    env entries
 
 let injectu ~mode c u =
   mk_clos ~mode (Esubst.subs_id 0, u) c
@@ -474,22 +493,25 @@ end = struct
     entry_normal : table_val option;
     entry_identity : table_val option;
     entry_full : table_val option;
+    entry_force : table_val option;
   }
 
   let entry_empty : entry =
-    { entry_normal = None; entry_identity = None; entry_full = None }
+    { entry_normal = None; entry_identity = None; entry_full = None; entry_force = None }
 
-  let entry_of mode {entry_normal; entry_identity; entry_full} : table_val option =
+  let entry_of mode {entry_normal; entry_identity; entry_full; entry_force} : table_val option =
     match mode with
     | _ when is_normal mode -> entry_normal
     | _ when mode == identity -> entry_identity
-    | _ -> assert (mode == full); entry_full
+    | _ when mode == full -> entry_full
+    | _ -> assert (mode == RedState.entry_force); entry_force
 
   let entry_with mode (e : entry) (v : table_val) : entry =
     match mode with
     | _ when is_normal mode -> {e with entry_normal = Some v}
     | _ when mode == identity -> {e with entry_identity = Some v}
-    | _ -> assert (mode == full); { e with entry_full = Some v}
+    | _ when mode == full -> {e with entry_full = Some v}
+    | _ -> assert (mode == RedState.entry_force); {e with entry_force = Some v}
 
 
   type tab = entry Table.t
@@ -746,18 +768,15 @@ let rec to_constr ~(info:clos_infos) ~(tab:clos_tab) lfts v =
         let subs = comp_subs lfts env in
         subst_constr subs t
 
-    | FBlock (u,ty,t,e) ->
+    | FBlock (u,ty,entries,t,e) ->
         let subs = comp_subs lfts e in
-        let ty = subst_constr subs ty in
-        let t = !klt_ref ~mode:identity info tab e t in
         let u = usubst_instance subs u in
-        Constr.mkPBlock (u, ty, t)
-
-    | FUnblock (ty, m, e) ->
-      let m = to_constr lfts m in
-      let subs = comp_subs lfts e in
-      let ty = subst_constr subs ty in
-      Constr.mkPUnblock (ty, m)
+        let ty = subst_constr subs ty in
+        let body_mode =
+          if RedState.is_normal_full v.mark then normal_full else identity
+        in
+        let t = !klt_ref ~mode:body_mode info tab (pblock_env e entries) t in
+        Constr.mkPBlock (u, ty, [||], t)
 
     | FRun (ty1, ty2, m, k, e) ->
       let m = to_constr lfts m in
@@ -873,11 +892,8 @@ let rec resubst subs v =
         FArray (u, Parray.map (resubst subs) t, resubst subs ty) }
   | FCLOS (t,env) ->
     { v with term = FCLOS (t, comp_subs subs env) }
-  | FBlock (u, ty, body, env) ->
-    { v with term = FBlock (u, ty, body, comp_subs subs env) }
-  | FUnblock (ty, blocked, env) ->
-    { v with term =
-        FUnblock (ty, resubst subs blocked, comp_subs subs env) }
+  | FBlock (u, ty, entries, body, env) ->
+    { v with term = FBlock (u, ty, entries, body, comp_subs subs env) }
   | FRun (ty, kty, blocked, cont, env) ->
     { v with term =
         FRun (ty, kty, resubst subs blocked, cont, comp_subs subs env) }
@@ -938,8 +954,6 @@ let zip m stk =
       let args = List.rev_append rargs (m::List.map snd kargs) in
       let f = {mark = RedState.mk red mode; term = FFlex (ConstKey c)} in
       zip {mark=RedState.neutr m.mark; term = FApp (f, Array.of_list args)} s
-    | Zunblock (ty,e,mode) :: s ->
-      zip {mark=RedState.mk ntrl mode; term=FUnblock (ty, m, e)} s
     | Zrun (ty1,ty2,k,e,mode) :: s ->
       zip {mark=RedState.mk ntrl mode; term=FRun (ty1, ty2, m, k, e)} s
   in
@@ -963,7 +977,7 @@ let strip_update_shift_absorb_app head stk =
     | Zupdate(m)::s ->
       let () = update m h.mark h.term in
       strip_rec m s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | []) as stk ->
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zrun _) :: _ | []) as stk ->
       (h, stk)
   in
   strip_rec head stk
@@ -977,7 +991,7 @@ let strip_update_shift_app_red_head head stk =
     | Zupdate(m)::s ->
         let () = update m h.mark h.term in
         strip_rec rstk m depth s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | []) as stk ->
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zrun _) :: _ | []) as stk ->
       (h, (depth,List.rev rstk, stk))
   in
   strip_rec [] head 0 stk
@@ -991,7 +1005,7 @@ let strip_update_shift_app_red head stk =
     | Zupdate(m)::s ->
         let () = update m h.mark h.term in
         strip_rec rstk m depth s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | []) as stk ->
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zrun _) :: _ | []) as stk ->
       (depth,h,List.rev rstk, stk)
   in
   strip_rec [] head 0 stk
@@ -1021,7 +1035,7 @@ let get_nth_arg head n stk =
     | Zupdate(m)::s ->
         let () = update m h.mark h.term in
         strip_rec rstk m n s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | []) as s ->
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zrun _) :: _ | []) as s ->
         (None, List.rev rstk @ s)
   in
   strip_rec [] head n stk
@@ -1053,13 +1067,13 @@ let rec get_args mode n tys f e = function
         else
           let etys = List.skipn na tys in
           get_args mode (n-na) etys f (usubs_consn l 0 na e) s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | []) as stk ->
+    | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _ | Zrun _) :: _ | []) as stk ->
       (Inr {mark=RedState.mk cstr mode; term=FLambda(n,tys,f,e)}, stk)
 
 (* Eta expansion: add a reference to implicit surrounding lambda at end of stack *)
 let rec eta_expand_stack info na = function
   | (Zapp _ | Zfix _ | ZcaseT _ | Zproj _
-        | Zshift _ | Zupdate _ | Zprimitive _ | Zunblock _ | Zrun _ as e) :: s ->
+        | Zshift _ | Zupdate _ | Zprimitive _ | Zrun _ as e) :: s ->
       e :: eta_expand_stack info na s
   | [] ->
     let arg =
@@ -1098,7 +1112,7 @@ let get_native_args ~mode op c stk =
     | Zupdate(m) :: s ->
       let () = update m h.mark h.term in
       strip_rec rnargs m depth  kargs s
-    | (Zprimitive _ | ZcaseT _ | Zproj _ | Zfix _ | Zunblock _ | Zrun _) :: _ | [] -> assert false
+    | (Zprimitive _ | ZcaseT _ | Zproj _ | Zfix _ | Zrun _) :: _ | [] -> assert false
   in strip_rec [] {mark = RedState.mk red mode; term = FFlex(ConstKey c)} 0 kargs stk
 
 let check_native_args op stk =
@@ -1286,7 +1300,8 @@ module FNativeEntries =
 
     let get_blocked _ _ e =
       match [@ocaml.warning "-4"] e.term with
-      | FBlock (_, _, t, env) -> Some (mk_clos ~mode:normal_whnf env t)
+      | FBlock (_, _, entries, t, env) ->
+        Some (mk_clos ~mode:normal_whnf (pblock_env env entries) t)
       | _ -> None
 
 
@@ -1597,7 +1612,6 @@ let rec skip_irrelevant_stack info stk = match stk with
   if is_irrelevant info r then skip_irrelevant_stack info s
   else stk
 | Zprimitive _ :: _ -> assert false (* no irrelevant primitives so far *)
-| Zunblock _ :: _ -> assert false
 | Zrun _ :: _ -> assert false
 | Zupdate m :: s ->
   (** The stack contains [Zupdate] marks only if in sharing mode *)
@@ -1639,9 +1653,6 @@ let rec knh info m stk =
        | None -> (m, stk)
        | Some s -> knh info c (s :: zupdate info m stk))
     | FConstruct _ -> strip_update_shift_absorb_app m stk
-
-    | FUnblock (ty, m1, e) ->
-      knh info m1 (Zunblock(ty, e, RedState.mode m.mark) :: stk)
 
     | FRun (ty1, ty2, m1, k, e) ->
       knh info m1 (Zrun(ty1, ty2, k, e, RedState.mode m.mark) :: stk)
@@ -1701,11 +1712,13 @@ and knht ~mode info (e : usubs) t stk : fconstr * stack =
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
         knh info { mark = RedState.mk red mode; term = FProj (p, r, mk_clos ~mode e c) } stk
-    | PBlock (u,ty,t) ->
-      let mode = if mode == identity then identity else normal_whnf in
-      knh info { mark = RedState.mk cstr mode; term = FBlock (u, ty, t, e) } stk
-    | PUnblock (ty,t) ->
-      knht ~mode:full info e t (Zunblock (ty, e, mode) :: stk)
+    | PBlock (u,ty,entries,t) ->
+      let mode =
+        if mode == identity then identity
+        else if mode == full || mode == normal_full then normal_full
+        else normal_whnf
+      in
+      knh info { mark = RedState.mk cstr mode; term = FBlock (u, ty, entries, t, e) } stk
     | PRun (ty1,ty2,t,k) ->
       if mode != identity then
         knht ~mode:full info e t (Zrun (ty1, ty2, k, e, mode) :: stk)
@@ -1999,7 +2012,7 @@ and match_elim : 'a. ('a, 'a depth) reduction -> _ -> _ -> pat_state:'a depth ->
       in
       let loc = LocStart { elims; depth; head; stack=s; next } in
       match_main red info tab ~pat_state states loc
-  | Zfix _ :: _ | Zprimitive _ :: _ | Zunblock _ :: _ | Zrun _ :: _ ->
+  | Zfix _ :: _ | Zprimitive _ :: _ | Zrun _ :: _ ->
       let states = extract_or_kill (fun _ -> None) elims states in
       ignore (zip head stk);
       match_endstack red info tab ~pat_state states next
@@ -2250,7 +2263,7 @@ let rec knr info tab ~pat_state m stk =
        | (_, _, args, (((ZcaseT _|Zproj _)::_) as stk')) ->
            let (fxe,fxbd) = contract_fix_vect ~mode:mode m.term in
            knit ~mode:mode info tab ~pat_state fxe fxbd (args@stk')
-       | (_,_,args, ((Zapp _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _ | Zunblock _ | Zrun _) :: _ | [] as s)) ->
+       | (_,_,args, ((Zapp _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _ | Zrun _) :: _ | [] as s)) ->
            knr_ret info tab ~pat_state (m,args@s))
     else knr_ret info tab ~pat_state (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set mode info RedFlags.fZETA ->
@@ -2278,15 +2291,16 @@ let rec knr info tab ~pat_state m stk =
            kni info tab ~pat_state a (Zprimitive(op,c,rargs,nargs)::s)
        end
      | (head, (_, _, s)) -> knr_ret info tab ~pat_state (head, s))
-  | FBlock (_, _, t, e) ->
+  | FBlock (_, _, entries, t, e) ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-     | (_, _, rargs, Zunblock (_,_,mode) :: stk) ->
+     | (_, _, rargs, Zrun (_, _, _k, _ek, mode) :: stk)
+         when mode == entry_force ->
        let stk = List.rev_append rargs stk in
-       knit ~mode info tab ~pat_state e t stk
-     | (_, _, rargs, Zrun (_,_,k,ek,mode) :: stk) ->
+       knit ~mode:identity info tab ~pat_state (pblock_env e entries) t stk
+     | (_, _, rargs, Zrun (_, _, k, ek, mode) :: stk) ->
        let stk = List.rev_append rargs stk in
        let k = mk_clos ~mode ek k in
-       let t = mk_clos ~mode e t in
+       let t = mk_clos ~mode (pblock_env e entries) t in
        let term = FApp (k, [|t|]) in
        kni info tab ~pat_state {mark=RedState.mk red mode; term} stk
      | (_, _, rargs, stk) ->
@@ -2305,7 +2319,7 @@ let rec knr info tab ~pat_state m stk =
   | FLambda _ | FFlex _ | FRel _
   | FLetIn _ | FCLOS _ ->
     knr_ret info tab ~pat_state (m, stk)
-  | FLOCKED | FApp _ | FCaseT _ | FLIFT _ | FUnblock _ | FRun _ ->
+  | FLOCKED | FApp _ | FCaseT _ | FLIFT _ | FRun _ ->
     assert false
 
 and knr_ret : type a. _ -> _ -> pat_state: a depth -> ?failed: _ -> _ -> a =
@@ -2376,7 +2390,7 @@ let is_val v = match v.term with
 | FFlex _ -> RedState.is_ntrl v.mark
 | FConstruct _ | FApp _ | FProj _ | FFix _ | FCoFix _ | FCaseT _ | FCaseInvert _ | FLambda _
 | FProd _ | FLetIn _ | FEvar _ | FArray _ | FLIFT _ | FCLOS _
-| FUnblock _ | FRun _ -> false
+| FRun _ -> false
 | FIrrelevant | FLOCKED -> assert false
 
 let rec kl info tab m =
@@ -2414,7 +2428,7 @@ and klt ~mode info tab (e : usubs) t =
   | Ind _ | Construct _ -> true
   | CoFix _ | Lambda _ | Fix _ | Prod _ | Evar _ | Case _
   | Cast _ | LetIn _ | Proj _ | Array _ | Meta _ | Sort _ | Int _
-  | Float _ | String _ | PBlock _ | PUnblock _ | PRun _ -> false
+  | Float _ | String _ | PBlock _ | PRun _ -> false
   | Const (cst, _) -> not (red_set mode info (RedFlags.fCONST cst))
   | Var id -> not (red_set mode info (RedFlags.fVAR id))
   | App _ -> assert false
@@ -2443,7 +2457,7 @@ and klt ~mode info tab (e : usubs) t =
   else mkProd (na', u', v')
 | Cast (t, _, _) -> klt ~mode info tab e t
 | Var _ | Const _ | CoFix _ | Fix _ | Evar _ | Case _ | LetIn _ | Proj _ | Array _
-| PBlock _ | PUnblock _ | PRun _ ->
+| PBlock _ | PRun _ ->
   let share = info.i_cache.i_share in
   let (nm,s) = knit ~mode info tab ~pat_state:(RedPattern.Nil No) e t [] in
   let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
@@ -2506,7 +2520,7 @@ and norm_head info tab m =
       | FApp _ | FCaseT _ | FCaseInvert _ | FLIFT _ | FCLOS _ | FInt _
       | FFloat _ | FString _ | FBlock _ -> term_of_fconstr ~info ~tab m
       | FIrrelevant -> assert false (* only introduced when converting *)
-      | FUnblock _ | FRun _ -> assert false
+      | FRun _ -> assert false
 
 and zip_term info tab m stk =
   match stk with
@@ -2540,15 +2554,11 @@ and zip_term info tab m stk =
       List.fold_left (fun args a -> kl info tab a ::args) (m::kargs) rargs in
     let h = mkApp (mkConstU c, Array.of_list args) in
     zip_term info tab h s
-| Zunblock (ty, e, mode)::s ->
-    let ty = klt ~mode info tab e ty in
-    let h = Constr.mkPUnblock (ty, m) in
-    zip_term info tab h s
 | Zrun (ty1, ty2, k, e, mode)::s ->
     let ty1 = klt ~mode info tab e ty1 in
     let ty2 = klt ~mode info tab e ty2 in
     let k = klt ~mode info tab e k in
-    let m = term_of_fconstr ~info ~tab (inject ~mode:normal_whnf m) in (* TODO mode? see [Zunblock] above *)
+    let m = term_of_fconstr ~info ~tab (inject ~mode:normal_whnf m) in (* TODO mode? *)
     let h = Constr.mkPRun (ty1, ty2, m, k) in
     zip_term info tab h s
 
@@ -2584,7 +2594,7 @@ let rec set_mode ~mode (m : fconstr) =
   | FCLOS (_, _)
   | FIrrelevant
   | FLOCKED
-  | FBlock (_, _, _, _) -> { m with mark=RedState.mk (RedState.red_state m.mark) mode }
+  | FBlock (_, _, _, _, _) -> { m with mark=RedState.mk (RedState.red_state m.mark) mode }
 
   | FApp (h, args) ->
     make (FApp(set_mode h, set_arr args))
@@ -2603,7 +2613,7 @@ let rec set_mode ~mode (m : fconstr) =
     make (FArray(u, Parray.map set_mode a, set_mode b))
   | FLIFT (i, m) ->
     make (FLIFT(i, set_mode m))
-  | FUnblock _ | FRun _ -> assert false
+  | FRun _ -> assert false
 
 
 let eval_lazy ~mode info tab m =

@@ -58,7 +58,8 @@ val cases_predicate_names : 'a tomatch_tuples_g -> Name.t list
 val mkGApp : ?loc:Loc.t -> 'a glob_constr_g -> 'a glob_constr_g list -> 'a glob_constr_g
 
 val map_glob_constr :
-  (glob_constr -> glob_constr) -> glob_constr -> glob_constr
+  ('a glob_constr_g -> 'a glob_constr_g) ->
+  'a glob_constr_g -> 'a glob_constr_g
 
 (** Equality on [binding_kind] *)
 val binding_kind_eq : binding_kind -> binding_kind -> bool
