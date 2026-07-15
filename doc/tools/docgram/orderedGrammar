@@ -19,7 +19,7 @@ term99: [
 term10: [
 | term_application
 | "__block" OPT univ_annot term1 term1
-| "__unblock" OPT univ_annot term1 term1
+| "__unblock" term1
 | "__run" OPT univ_annot term1 term1 term1 term1
 | term_forall_or_fun
 | term_let

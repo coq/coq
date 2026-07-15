@@ -98,7 +98,7 @@ Ltac2 rec reify (p : constr) : constr :=
 
 Fixpoint reflect (p : prop) : Blocked Prop :=
   match p with
-  | conj p1 p2 => __block Prop ((__unblock Prop (reflect p1)) /\ (__unblock Prop (reflect p2)))
+  | conj p1 p2 => __block Prop ((__unblock (reflect p1)) /\ (__unblock (reflect p2)))
   | true       => __block Prop True
   | false      => __block Prop False
   | inj P      => P
@@ -149,8 +149,8 @@ Fixpoint simplify (p : prop) : prop :=
 Lemma simplify_ok (p : prop) :
   __run Prop Prop
     (__block Prop
-      (__unblock Prop (reflect (simplify p)) <->
-       __unblock Prop (reflect p)))
+      (__unblock (reflect (simplify p)) <->
+       __unblock (reflect p)))
     (fun P => P).
 Proof.
   induction p; lazy -[iff]; fold simplify reflect.
@@ -194,7 +194,7 @@ Qed.
    and it then feeds the result to its second (non-implicit) argument. *)
 
 Lemma simplify_ok_run (p : prop) :
-  __run Prop Prop (__block Prop (__unblock Prop (reflect (simplify p)) -> __unblock Prop (reflect p))) (fun P => P).
+  __run Prop Prop (__block Prop (__unblock (reflect (simplify p)) -> __unblock (reflect p))) (fun P => P).
 Proof. lazy; fold reflect simplify. apply (proj1 (simplify_ok p)). Qed.
 
 (* The proof of [simplify_ok_run] trivially follows from [simplify_ok].

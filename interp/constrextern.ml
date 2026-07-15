@@ -1066,10 +1066,8 @@ let rec extern depth0 inctx scopes (eenv:extern_env) r =
             extern_typ depth scopes eenv ty,
             extern depth true scopes eenv c)
 
-  | GPUnblock (u,ty,c) ->
-    CUnblock (extern_instance eenv.uvars u,
-              extern_typ depth scopes eenv ty,
-              extern depth true scopes eenv c)
+  | GPUnblock c ->
+    CUnblock (extern depth true scopes eenv c)
 
   | GPRun (u,ty,k,b,cont) ->
     CRun (extern_instance eenv.uvars u,

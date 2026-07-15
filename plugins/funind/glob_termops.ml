@@ -118,8 +118,8 @@ let change_vars =
             , change_vars mapping ty )
         | GPBlock (u, ty, c) ->
           GPBlock (u, change_vars mapping ty, change_vars mapping c)
-        | GPUnblock (u, ty, c) ->
-          GPUnblock (u, change_vars mapping ty, change_vars mapping c)
+        | GPUnblock c ->
+          GPUnblock (change_vars mapping c)
         | GPRun (u, ty, k, b, cont) ->
           GPRun
             ( u
@@ -310,8 +310,8 @@ let rec alpha_rt excluded rt =
         , alpha_rt excluded ty )
     | GPBlock (u, ty, c) ->
       GPBlock (u, alpha_rt excluded ty, alpha_rt excluded c)
-    | GPUnblock (u, ty, c) ->
-      GPUnblock (u, alpha_rt excluded ty, alpha_rt excluded c)
+    | GPUnblock c ->
+      GPUnblock (alpha_rt excluded c)
     | GPRun (u, ty, k, b, cont) ->
       GPRun
         ( u
@@ -372,8 +372,9 @@ let is_free_in id =
         | GInt _ | GFloat _ | GString _ -> false
         | GArray (_u, t, def, ty) ->
           Array.exists is_free_in t || is_free_in def || is_free_in ty
-        | GPBlock (_u, ty, c) | GPUnblock (_u, ty, c) ->
+        | GPBlock (_u, ty, c) ->
           is_free_in ty || is_free_in c
+        | GPUnblock c -> is_free_in c
         | GPRun (_u, ty, k, b, cont) ->
           is_free_in ty || is_free_in k || is_free_in b || is_free_in cont)
       x
@@ -460,8 +461,8 @@ let replace_var_by_term x_id term =
             , replace_var_by_pattern ty )
         | GPBlock (u, ty, c) ->
           GPBlock (u, replace_var_by_pattern ty, replace_var_by_pattern c)
-        | GPUnblock (u, ty, c) ->
-          GPUnblock (u, replace_var_by_pattern ty, replace_var_by_pattern c)
+        | GPUnblock c ->
+          GPUnblock (replace_var_by_pattern c)
         | GPRun (u, ty, k, b, cont) ->
           GPRun
             ( u
@@ -581,8 +582,8 @@ let expand_as =
           (u, Array.map (expand_as map) t, expand_as map def, expand_as map ty)
       | GPBlock (u, ty, c) ->
         GPBlock (u, expand_as map ty, expand_as map c)
-      | GPUnblock (u, ty, c) ->
-        GPUnblock (u, expand_as map ty, expand_as map c)
+      | GPUnblock c ->
+        GPUnblock (expand_as map c)
       | GPRun (u, ty, k, b, cont) ->
         GPRun
           ( u

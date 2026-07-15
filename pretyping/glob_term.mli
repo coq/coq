@@ -117,7 +117,7 @@ type 'a glob_constr_r =
   | GString of Pstring.t
   | GArray of glob_instance option * 'a glob_constr_g array * 'a glob_constr_g * 'a glob_constr_g
   | GPBlock of glob_instance option * 'a glob_constr_g * 'a glob_constr_g
-  | GPUnblock of glob_instance option * 'a glob_constr_g * 'a glob_constr_g
+  | GPUnblock of 'a glob_constr_g
   | GPRun of glob_instance option * 'a glob_constr_g * 'a glob_constr_g * 'a glob_constr_g * 'a glob_constr_g
 and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
 

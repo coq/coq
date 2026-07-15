@@ -178,7 +178,7 @@ and constr_expr_r =
   | CDelimiters of delimiter_depth * string * constr_expr
   | CArray of instance_expr option * constr_expr array * constr_expr * constr_expr
   | CBlock of instance_expr option * constr_expr * constr_expr
-  | CUnblock of instance_expr option * constr_expr * constr_expr
+  | CUnblock of constr_expr
   | CRun of instance_expr option * constr_expr * constr_expr * constr_expr * constr_expr
 and constr_expr = constr_expr_r CAst.t
 

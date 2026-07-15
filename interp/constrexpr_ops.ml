@@ -275,9 +275,10 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         Array.equal constr_expr_eq t1 t2 &&
         constr_expr_eq def1 def2 && constr_expr_eq ty1 ty2 &&
         Option.equal instance_expr_eq u1 u2
-      | CBlock (u1,t1,c1), CBlock (u2,t2,c2)
-      | CUnblock (u1,t1,c1), CUnblock (u2,t2,c2) ->
+      | CBlock (u1,t1,c1), CBlock (u2,t2,c2) ->
         Option.equal instance_expr_eq u1 u2 && constr_expr_eq t1 t2 && constr_expr_eq c1 c2
+      | CUnblock c1, CUnblock c2 ->
+        constr_expr_eq c1 c2
       | CRun (u1,t1,k1,b1,c1), CRun (u2,t2,k2,b2,c2) ->
         Option.equal instance_expr_eq u1 u2 && constr_expr_eq t1 t2 && constr_expr_eq k1 k2 &&
         constr_expr_eq b1 b2 && constr_expr_eq c1 c2
@@ -411,7 +412,8 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
     | CCoFix (_,_) ->
       Feedback.msg_warning (strbrk "Capture check in multiple binders not done"); acc
     | CArray (_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
-    | CBlock (_u,ty,c) | CUnblock (_u,ty,c) -> f n (f n acc ty) c
+    | CBlock (_u,ty,c) -> f n (f n acc ty) c
+    | CUnblock c -> f n acc c
     | CRun (_u,ty,k,b,cont) -> f n (f n (f n (f n acc ty) k) b) cont
     | CHole _ | CGenarg _ | CGenargGlob _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
@@ -537,7 +539,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
     | CArray (u, t, def, ty) ->
       CArray (u, Array.map (f e) t, f e def, f e ty)
     | CBlock (u,ty,c) -> CBlock (u, f e ty, f e c)
-    | CUnblock (u,ty,c) -> CUnblock (u, f e ty, f e c)
+    | CUnblock c -> CUnblock (f e c)
     | CRun (u,ty,k,b,cont) -> CRun (u, f e ty, f e k, f e b, f e cont)
     | CHole _ | CGenarg _ | CGenargGlob _ | CEvar _ | CPatVar _ | CSort _
     | CPrim _ | CRef _ as x -> x

@@ -623,7 +623,7 @@ type pretyper = {
   pretype_string : pretyper -> Pstring.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_block : pretyper -> glob_instance option * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
-  pretype_unblock : pretyper -> glob_instance option * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_unblock : pretyper -> glob_constr -> unsafe_judgment pretype_fun;
   pretype_run : pretyper -> glob_instance option * glob_constr * glob_constr * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
 }
@@ -676,8 +676,8 @@ let eval_pretyper self ~flags tycon env sigma t =
     self.pretype_array self (u,t,def,ty) ?loc ~flags tycon env sigma
   | GPBlock (u,ty,c) ->
     self.pretype_block self (u,ty,c) ?loc ~flags tycon env sigma
-  | GPUnblock (u,ty,c) ->
-    self.pretype_unblock self (u,ty,c) ?loc ~flags tycon env sigma
+  | GPUnblock c ->
+    self.pretype_unblock self c ?loc ~flags tycon env sigma
   | GPRun (u,ty,kty,b,k) ->
     self.pretype_run self (u,ty,kty,b,k) ?loc ~flags tycon env sigma
 
@@ -1997,27 +1997,11 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     } in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
-  and pretype_unblock_in_block markers self (u,ty,b) =
+  and pretype_unblock_in_block markers self b =
     fun ?loc ~flags tycon env sigma ->
     let sigma, bj = eval_pretyper self ~flags empty_tycon env sigma b in
     let _u0, bty = dest_blocked_type ?loc env sigma bj.uj_type in
-    let sigma, tyj =
-      if is_type_hole ty then eval_type_pretyper self ~flags (mk_valcon bty) env sigma ty
-      else eval_type_pretyper self ~flags empty_valcon env sigma ty
-    in
-    let sigma =
-      try Evarconv.unify_leq_delay !!env sigma tyj.utj_val bty
-      with Evarconv.UnableToUnify (sigma,e) -> error_actual_type ?loc !!env sigma bj tyj.utj_val e
-    in
-    let ty = nf_evar sigma tyj.utj_val in
-    let sigma = match u with
-      | None -> sigma
-      | Some _ ->
-        let s = force_sort_of !!env sigma ty in
-        let sigma, u = force_instance ?loc env sigma [|s|] u in
-        let blocked = EConstr.of_constr (Typeops.type_of_blocked !!env u) in
-        check_actual_type !!env sigma bj (EConstr.mkApp(blocked,[|ty|]))
-    in
+    let ty = nf_evar sigma bty in
     let relevance = ESorts.relevance_of_sort (force_sort_of !!env sigma ty) in
     let annot = Context.make_annot Anonymous relevance in
     let continuation_type = EConstr.mkProd
@@ -2037,7 +2021,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     } in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
-  let pretype_unblock _self (_u,_ty,_b) =
+  let pretype_unblock _self _b =
     fun ?loc ~flags:_ _tycon _env _sigma ->
       user_err ?loc Pp.(str "__unblock may only appear inside the body of __block.")
 

@@ -8,8 +8,8 @@ Notation LAZY t := (ltac:(let x := eval lazy in t in exact x)) (only parsing).
 Notation WHNF t := (ltac:(let x := eval lazy head in t in exact x)) (only parsing).
 
 (* [__unblock] is source syntax local to a block body. *)
-Fail Check (__unblock nat (__block nat 0)).
-Fail Check (fun b : Blocked nat => __unblock nat b).
+Fail Check (__unblock (__block nat 0)).
+Fail Check (fun b : Blocked nat => __unblock b).
 
 Axiom f : bool -> Blocked (nat -> Prop).
 Axiom g : bool -> Blocked Prop.
@@ -19,26 +19,26 @@ Axiom stuck_nat : Blocked nat.
 
 (* These definitions exercise saving and checking telescope-bearing blocks. *)
 Definition captured_outer_binder : Blocked Prop :=
-  __block Prop (forall (x z : bool), __unblock _ (f x) 0).
+  __block Prop (forall (x z : bool), __unblock (f x) 0).
 
 Definition captured_inner_binder_only : Blocked Prop :=
-  __block Prop (forall (_unused : nat) (z : bool), __unblock _ (g z)).
+  __block Prop (forall (_unused : nat) (z : bool), __unblock (g z)).
 
 Definition captured_local_definition : Blocked (forall n : nat, n = n) :=
-  __block _ (fun n : nat => let m := n in __unblock _ (dep m)).
+  __block _ (fun n : nat => let m := n in __unblock (dep m)).
 
 Definition captured_nested_entry : Blocked nat :=
-  __block nat (__unblock _ (__unblock _ nested_blocked)).
+  __block nat (__unblock (__unblock nested_blocked)).
 
 Definition captured_repeated_entries : Blocked (Prop * Prop) :=
-  __block _ (__unblock _ (g true), __unblock _ (g true)).
+  __block _ (__unblock (g true), __unblock (g true)).
 
 (* Ltac2 exposes the actual entry array and telescopes, rather than an expanded
    body. Telescope declarations are exposed outermost first. *)
 Goal True.
 Proof.
   ltac2:(
-    let c := constr:(__block _ (forall (x z : bool), __unblock _ (f x) 0)) in
+    let c := constr:(__block _ (forall (x z : bool), __unblock (f x) 0)) in
     match Constr.Unsafe.kind c with
     | Constr.Unsafe.PBlock _ _ entries _ =>
       if Int.equal (Array.length entries) 1 then () else Control.throw Assertion_failure;
@@ -57,7 +57,7 @@ Proof.
 
     (* Capturing the inner sibling does not retain an unrelated outer sibling. *)
     let c := constr:(__block _
-      (forall (_unused : nat) (z : bool), __unblock _ (g z))) in
+      (forall (_unused : nat) (z : bool), __unblock (g z))) in
     match Constr.Unsafe.kind c with
     | Constr.Unsafe.PBlock _ _ entries _ =>
       match Array.get entries 0 with
@@ -75,7 +75,7 @@ Proof.
 
     (* A selected local definition closes over the assumption it depends on. *)
     let c := constr:(__block _
-      (fun n : nat => let m := n in __unblock _ (dep m))) in
+      (fun n : nat => let m := n in __unblock (dep m))) in
     match Constr.Unsafe.kind c with
     | Constr.Unsafe.PBlock _ _ entries _ =>
       match Array.get entries 0 with
@@ -91,7 +91,7 @@ Proof.
 
     (* Identical source occurrences remain distinct entries. *)
     let c := constr:(__block _
-      (__unblock _ (g true), __unblock _ (g true))) in
+      (__unblock (g true), __unblock (g true))) in
     match Constr.Unsafe.kind c with
     | Constr.Unsafe.PBlock _ _ entries _ =>
       if Int.equal (Array.length entries) 2 then () else Control.throw Assertion_failure
@@ -99,7 +99,7 @@ Proof.
     end;
 
     (* The outer nested occurrence depends on the earlier hidden entry. *)
-    let c := constr:(__block _ (__unblock _ (__unblock _ nested_blocked))) in
+    let c := constr:(__block _ (__unblock (__unblock nested_blocked))) in
     match Constr.Unsafe.kind c with
     | Constr.Unsafe.PBlock _ _ entries _ =>
       if Int.equal (Array.length entries) 2 then () else Control.throw Assertion_failure;
@@ -154,71 +154,71 @@ Qed.
 Definition concrete_dep (n : nat) : Blocked (n = n) :=
   __block _ (eq_refl n).
 
-Goal WHNF (__block _ (fun n : nat => __unblock _ (concrete_dep n))) =
+Goal WHNF (__block _ (fun n : nat => __unblock (concrete_dep n))) =
      __block _ (fun n : nat => eq_refl n).
 Proof. syn_refl. Qed.
 
 Goal WHNF
        (__block nat
-         (__unblock nat
-           (__unblock (Blocked nat)
+         (__unblock
+           (__unblock
              (__block (Blocked nat) (__block nat 3))))) =
      __block nat 3.
 Proof. syn_refl. Qed.
 
 Goal LAZY (__block _
-       (__unblock _ (__block _ 1) + __unblock _ (__block _ 1))) =
+       (__unblock (__block _ 1) + __unblock (__block _ 1))) =
      __block _ 2.
 Proof. syn_refl. Qed.
 
 (* A stuck capture reifies as [PRun], never as an internal unblock term. *)
-Goal WHNF (__block nat (__unblock nat stuck_nat)) =
+Goal WHNF (__block nat (__unblock stuck_nat)) =
      __block nat (__run nat nat stuck_nat (fun n => n)).
 Proof. syn_refl. Qed.
 
 Goal LAZY (__run nat nat
-       (__block nat (S (__unblock nat (__block nat 1))))
+       (__block nat (S (__unblock (__block nat 1))))
        (fun n => n)) = 2.
 Proof. syn_refl. Qed.
 
 Goal __run nat nat
-       (__block nat (S (__unblock nat (__block nat 1))))
+       (__block nat (S (__unblock (__block nat 1))))
        (fun n => n) = 2.
 Proof. cbn. reflexivity. Qed.
 
 Goal (__run _ _
-       (__block _ (fun n : nat => let m := n in __unblock _ (concrete_dep m)))
+       (__block _ (fun n : nat => let m := n in __unblock (concrete_dep m)))
        (fun f => f) 3) = eq_refl 3.
 Proof. cbn. reflexivity. Qed.
 
 Definition one_stuck_capture : Blocked nat :=
-  __block nat (__unblock nat stuck_nat).
+  __block nat (__unblock stuck_nat).
 Definition two_stuck_captures : Blocked nat :=
-  __block nat (let _ := __unblock nat stuck_nat in __unblock nat stuck_nat).
+  __block nat (let _ := __unblock stuck_nat in __unblock stuck_nat).
 
 Goal one_stuck_capture = one_stuck_capture.
 Proof. reflexivity. Qed.
 Fail Check (eq_refl : one_stuck_capture = two_stuck_captures).
 
 Definition under_lambda (b : Blocked nat) : nat -> Blocked nat :=
-  fun n => __block nat (n + __unblock nat b).
+  fun n => __block nat (n + __unblock b).
 
 Inductive sunit : SProp := sitt.
 Definition blocked_sunit : Blocked sunit := __block sunit sitt.
 Definition captured_sprop : Blocked sunit :=
-  __block sunit (__unblock sunit blocked_sunit).
+  __block sunit (__unblock blocked_sunit).
 Definition captured_prop (b : Blocked Prop) : Blocked Prop :=
-  __block Prop (__unblock Prop b).
+  __block Prop (__unblock b).
 Definition captured_set (b : Blocked nat) : Blocked nat :=
-  __block nat (__unblock nat b).
+  __block nat (__unblock b).
 Polymorphic Definition captured_type@{u v}
     (b : Blocked@{Type;v} Type@{u}) : Blocked@{Type;v} Type@{u} :=
-  __block@{Type;v} Type@{u} (__unblock@{Type;v} Type@{u} b).
+  __block@{Type;v} Type@{u} (__unblock b).
 
 Polymorphic Definition polymorphic_capture@{u}
     (A : Type@{u}) (b : Blocked A) : Blocked (A -> A) :=
-  __block _ (fun x : A => let y := x in __unblock _ b).
+  __block _ (fun x : A => let y := x in __unblock b).
 
 Definition extracted_capture (b : Blocked nat) : nat :=
-  __run nat nat (__block nat (S (__unblock nat b))) (fun n => n).
+  __run nat nat (__block nat (S (__unblock b))) (fun n => n).
 Extraction TestCompile extracted_capture.

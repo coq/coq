@@ -932,8 +932,8 @@ and detype_r d flags avoid env sigma t =
           DAst.make ?loc @@ GLambda (name, relevance, kind, ty, entry_value body)
         | GLetIn (name, relevance, bound, ty, body) ->
           DAst.make ?loc @@ GLetIn (name, relevance, bound, ty, entry_value body)
-        | GPRun (instance, ty, _result_ty, blocked, _identity) ->
-          DAst.make ?loc @@ GPUnblock (instance, ty, blocked)
+        | GPRun (_instance, _ty, _result_ty, blocked, _identity) ->
+          DAst.make ?loc @@ GPUnblock blocked
         | _ -> value
       in
       let rec subst_entry id replacement term =
@@ -1318,10 +1318,9 @@ let rec subst_glob_constr env subst = DAst.map (function
       let c' = subst_glob_constr env subst c in
       if ty' == ty && c' == c then raw else GPBlock (u,ty',c')
 
-  | GPUnblock (u,ty,c) as raw ->
-      let ty' = subst_glob_constr env subst ty in
+  | GPUnblock c as raw ->
       let c' = subst_glob_constr env subst c in
-      if ty' == ty && c' == c then raw else GPUnblock (u,ty',c')
+      if c' == c then raw else GPUnblock c'
 
   | GPRun (u,ty,k,b,cont) as raw ->
       let ty' = subst_glob_constr env subst ty in

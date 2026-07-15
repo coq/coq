@@ -22,7 +22,7 @@ Entry term is
 | "10" LEFTA
   [ SELF; LIST1 arg
   | "__block"; univ_annot; NEXT; NEXT
-  | "__unblock"; univ_annot; NEXT; NEXT
+  | "__unblock"; NEXT
   | "__run"; univ_annot; NEXT; NEXT; NEXT; NEXT
   | "@"; global; univ_annot; LIST0 NEXT
   | "@"; pattern_ident; LIST1 identref

@@ -701,14 +701,13 @@ let rec build_entry_lc env sigma funnames avoid rt :
         { context = ty.context @ c.context
         ; value = DAst.make ?loc:rt.loc @@ GPBlock (u, ty.value, c.value) })
       ty_res c_res
-  | GPUnblock (u, ty, c) ->
-    let ty_res = build_entry_lc env sigma funnames avoid ty in
-    let c_res = build_entry_lc env sigma funnames ty_res.to_avoid c in
-    combine_results
-      (fun ty c ->
-        { context = ty.context @ c.context
-        ; value = DAst.make ?loc:rt.loc @@ GPUnblock (u, ty.value, c.value) })
-      ty_res c_res
+  | GPUnblock c ->
+    let c_res = build_entry_lc env sigma funnames avoid c in
+    { c_res with
+      result =
+        List.map
+          (fun c -> { c with value = DAst.make ?loc:rt.loc @@ GPUnblock c.value })
+          c_res.result }
   | GPRun (u, ty, k, b, cont) ->
     let ty_res = build_entry_lc env sigma funnames avoid ty in
     let k_res = build_entry_lc env sigma funnames ty_res.to_avoid k in
@@ -1271,9 +1270,10 @@ let rec compute_cst_params relnames params gt =
       | GSort _ -> params
       | GHole _ -> params
       | GGenarg _ -> params
-      | GPBlock (_, ty, c) | GPUnblock (_, ty, c) ->
+      | GPBlock (_, ty, c) ->
         let params = compute_cst_params relnames params ty in
         compute_cst_params relnames params c
+      | GPUnblock c -> compute_cst_params relnames params c
       | GPRun (_, ty, k, b, cont) ->
         let params = compute_cst_params relnames params ty in
         let params = compute_cst_params relnames params k in

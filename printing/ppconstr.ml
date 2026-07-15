@@ -824,10 +824,9 @@ let pr ~flags pr sep lev_after inherited a =
         hov 2 (keyword "__block" ++ pr_universe_instance u ++ spc () ++
                pr mt no_after (LevelLt lapp) ty ++ spc () ++
                pr mt lev_after (LevelLt lapp) c)) lapp
-  | CUnblock (u,ty,c) ->
+  | CUnblock c ->
     return (fun lev_after ->
-        hov 2 (keyword "__unblock" ++ pr_universe_instance u ++ spc () ++
-               pr mt no_after (LevelLt lapp) ty ++ spc () ++
+        hov 2 (keyword "__unblock" ++ spc () ++
                pr mt lev_after (LevelLt lapp) c)) lapp
   | CRun (u,ty,kty,b,k) ->
     return (fun lev_after ->

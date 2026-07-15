@@ -108,8 +108,9 @@ let is_rec names =
     | GApp (c, args) | GProj (_, args, c) -> List.exists (lookup names) (c :: args)
     | GArray (_u, t, def, ty) ->
       Array.exists (lookup names) t || lookup names def || lookup names ty
-    | GPBlock (_u, ty, c) | GPUnblock (_u, ty, c) ->
+    | GPBlock (_u, ty, c) ->
       lookup names ty || lookup names c
+    | GPUnblock c -> lookup names c
     | GPRun (_u, ty, k, b, cont) ->
       lookup names ty || lookup names k || lookup names b || lookup names cont
     | GCases (_, _, el, brl) ->
@@ -2008,8 +2009,8 @@ let rec add_args id new_args =
     | CArray _ -> CErrors.anomaly ~label:"add_args " (Pp.str "CArray.")
     | CBlock (u, ty, c) ->
       CBlock (u, add_args id new_args ty, add_args id new_args c)
-    | CUnblock (u, ty, c) ->
-      CUnblock (u, add_args id new_args ty, add_args id new_args c)
+    | CUnblock c ->
+      CUnblock (add_args id new_args c)
     | CRun (u, ty, k, b, cont) ->
       CRun
         ( u

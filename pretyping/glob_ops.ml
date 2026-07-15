@@ -220,9 +220,10 @@ let mk_glob_constr_eq f g c1 c2 = match DAst.get c1, DAst.get c2 with
   | GArray (u1, t1, def1, ty1), GArray (u2, t2, def2, ty2) ->
     Array.equal f t1 t2 && f def1 def2 && f ty1 ty2 &&
     Option.equal instance_eq u1 u2
-  | GPBlock (u1,t1,c1), GPBlock (u2,t2,c2)
-  | GPUnblock (u1,t1,c1), GPUnblock (u2,t2,c2) ->
+  | GPBlock (u1,t1,c1), GPBlock (u2,t2,c2) ->
     Option.equal instance_eq u1 u2 && f t1 t2 && f c1 c2
+  | GPUnblock c1, GPUnblock c2 ->
+    f c1 c2
   | GPRun (u1,t1,k1,b1,c1), GPRun (u2,t2,k2,b2,c2) ->
     Option.equal instance_eq u1 u2 && f t1 t2 && f k1 k2 && f b1 b2 && f c1 c2
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _ | GLetIn _ |
@@ -300,7 +301,7 @@ let map_glob_constr_left_to_right_with_names f g = DAst.map (function
       let comp3 = f ty in
       GArray (u,comp1,comp2,comp3)
   | GPBlock (u,ty,c) -> GPBlock (u, f ty, f c)
-  | GPUnblock (u,ty,c) -> GPUnblock (u, f ty, f c)
+  | GPUnblock c -> GPUnblock (f c)
   | GPRun (u,ty,k,b,cont) -> GPRun (u, f ty, f k, f b, f cont)
   | (GVar _ | GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _ | GString _) as x -> x
   )
@@ -338,7 +339,8 @@ let fold_glob_constr f acc = DAst.with_val (function
   | GProj (p,args,c) ->
     f (List.fold_left f acc args) c
   | GArray (_u,t,def,ty) -> f (f (Array.fold_left f acc t) def) ty
-  | GPBlock (_u,ty,c) | GPUnblock (_u,ty,c) -> f (f acc ty) c
+  | GPBlock (_u,ty,c) -> f (f acc ty) c
+  | GPUnblock c -> f acc c
   | GPRun (_u,ty,k,b,cont) -> f (f (f (f acc ty) k) b) cont
   | (GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _ | GString _) -> acc
   )
@@ -385,7 +387,8 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GProj (p,args,c) ->
     f v (List.fold_left (f v) acc args) c
   | GArray (_u, t, def, ty) -> f v (f v (Array.fold_left (f v) acc t) def) ty
-  | GPBlock (_u,ty,c) | GPUnblock (_u,ty,c) -> f v (f v acc ty) c
+  | GPBlock (_u,ty,c) -> f v (f v acc ty) c
+  | GPUnblock c -> f v acc c
   | GPRun (_u,ty,k,b,cont) -> f v (f v (f v (f v acc ty) k) b) cont
   | (GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _ | GString _) -> acc))
 

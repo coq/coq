@@ -2190,7 +2190,7 @@ module Interner = struct
   ; delimiters : t -> (delimiter_depth * string * constr_expr) fn
   ; array : t -> (instance_expr option * constr_expr array * constr_expr * constr_expr) fn
   ; block : t -> (instance_expr option * constr_expr * constr_expr) fn
-  ; unblock : t -> (instance_expr option * constr_expr * constr_expr) fn
+  ; unblock : t -> constr_expr fn
   ; run : t -> (instance_expr option * constr_expr * constr_expr * constr_expr * constr_expr) fn
   }
 
@@ -2247,8 +2247,8 @@ module Interner = struct
       self.array self genv env lvar ?loc (u,t,def,ty)
     | CBlock (u,ty,c) ->
       self.block self genv env lvar ?loc (u,ty,c)
-    | CUnblock (u,ty,c) ->
-      self.unblock self genv env lvar ?loc (u,ty,c)
+    | CUnblock c ->
+      self.unblock self genv env lvar ?loc c
     | CRun (u,ty,k,b,cont) ->
       self.run self genv env lvar ?loc (u,ty,k,b,cont)
 
@@ -2866,9 +2866,9 @@ let block self genv env lvar ?loc (u,ty,c) =
   let intern env = intern self genv env lvar in
   DAst.make ?loc @@ GPBlock (intern_instance ~local_univs:env.local_univs u, intern env ty, intern env c)
 
-let unblock self genv env lvar ?loc (u,ty,c) =
+let unblock self genv env lvar ?loc c =
   let intern env = intern self genv env lvar in
-  DAst.make ?loc @@ GPUnblock (intern_instance ~local_univs:env.local_univs u, intern env ty, intern env c)
+  DAst.make ?loc @@ GPUnblock (intern env c)
 
 let run self genv env lvar ?loc (u,ty,k,b,cont) =
   let intern env = intern self genv env lvar in

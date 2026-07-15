@@ -1,10 +1,10 @@
-unblock_under_binders = __block Prop (forall x : bool, bool -> (__unblock (nat -> Prop) (f x)) 0)
+unblock_under_binders = __block Prop (forall x : bool, bool -> (__unblock (f x)) 0)
      : Blocked Prop
-unblock_under_local_def = __block (nat -> nat) (fun x : nat => let y := S x in __unblock nat (g (S x)))
+unblock_under_local_def = __block (nat -> nat) (fun x : nat => let y := S x in __unblock (g (S x)))
      : Blocked (nat -> nat)
-repeated_unblocks = __block nat (__unblock nat stuck + __unblock nat stuck)
+repeated_unblocks = __block nat (__unblock stuck + __unblock stuck)
      : Blocked nat
-nested_unblocks = __block nat (__unblock nat (__unblock (Blocked nat) nested))
+nested_unblocks = __block nat (__unblock (__unblock nested))
      : Blocked nat
 ordinary_identity_run = __block nat (__run nat nat stuck (fun x : nat => x))
      : Blocked nat
