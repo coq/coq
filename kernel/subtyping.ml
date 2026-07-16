@@ -66,14 +66,6 @@ type labmap = { objs : namedobject Id.Map.t; mods : namedmodule Id.Map.t }
 
 let empty_labmap = { objs = Id.Map.empty; mods = Id.Map.empty }
 
-let get_obj mp map l =
-  try Id.Map.find l map.objs
-  with Not_found -> error_no_such_label_sub l (ModPath.to_string mp)
-
-let get_mod mp map l =
-  try Id.Map.find l map.mods
-  with Not_found -> error_no_such_label_sub l (ModPath.to_string mp)
-
 let make_labmap mp list =
   let add_one (l,e) map =
    match e with
@@ -84,6 +76,76 @@ let make_labmap mp list =
     | SFBmodtype mtb -> { map with mods = Id.Map.add l (Modtype mtb) map.mods }
   in
   CList.fold_right add_one list empty_labmap
+
+(** How to look up the fields of the implementation (subtype) side of a
+    check.
+
+    [Direct] is used when the caller guarantees that the fields of the
+    module at [mp1] are part of the environment, unsubstituted — the
+    invariant documented in [check_structure] for [nargs = 0]: this holds
+    for the current interactive module (Include self), for any module
+    already added to the environment (functor application), and for a
+    module about to be closed. Fields are then looked up directly in the
+    environment, which avoids building a label map over the whole
+    signature when only a few fields are checked.
+
+    [Direct (Some reso)] additionally means that constant and submodule
+    fields must be seen strengthened w.r.t. [reso], producing the same
+    fields as looking them up in [Modops.strengthen] of the signature.
+    Strengthening of constants is performed on demand in [check_constant].
+
+    Lookups fall back to the label map (built lazily from the signature)
+    when the label does not correspond to a field of the module (e.g. the
+    name of a constructor or of a secondary inductive type of a block), so
+    behavior is unchanged in those cases. *)
+type direct_access =
+  | NoDirect
+  | Direct of Mod_subst.delta_resolver option
+
+type sigview = { sv_direct : direct_access; sv_map : labmap Lazy.t }
+
+let get_obj_fallback mp view l =
+  try Id.Map.find l (Lazy.force view.sv_map).objs
+  with Not_found -> error_no_such_label_sub l (ModPath.to_string mp)
+
+let get_obj env mp view l =
+  match view.sv_direct with
+  | NoDirect -> get_obj_fallback mp view l
+  | Direct _ ->
+    (* strengthening of constants, when required, is done in [check_constant] *)
+    begin match Environ.lookup_constant_opt (Constant.make2 mp l) env with
+    | Some cb -> Constant cb
+    | None ->
+      let mind = MutInd.make2 mp l in
+      if Environ.mem_mind mind env then
+        let mib = Environ.lookup_mind mind env in
+        if Id.equal mib.mind_packets.(0).mind_typename l
+        then IndType ((mind, 0), mib)
+        else get_obj_fallback mp view l
+      else get_obj_fallback mp view l
+    end
+
+let get_mod_fallback mp view l =
+  try Id.Map.find l (Lazy.force view.sv_map).mods
+  with Not_found -> error_no_such_label_sub l (ModPath.to_string mp)
+
+let get_mod env mp view l =
+  match view.sv_direct with
+  | NoDirect -> get_mod_fallback mp view l
+  | Direct str ->
+    let mp' = MPdot (mp, l) in
+    begin match Environ.lookup_module mp' env with
+    | mb ->
+      let mb = match str with
+        | Some _ -> Modops.strengthen_module mp' mb
+        | None -> mb
+      in
+      Module mb
+    | exception Not_found ->
+      match Environ.lookup_modtype mp' env with
+      | mtb -> Modtype mtb
+      | exception Not_found -> get_mod_fallback mp view l
+    end
 
 let check_conv_error error why state poly pb env a1 a2 =
   if poly then match Conversion.default_conv pb env a1 a2 with
@@ -275,7 +337,7 @@ let check_inductive (cst, ustate) trace env mp1 l info1 mp2 mib2 subst1 subst2 r
     cst
 
 
-let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
+let check_constant (cst, ustate) trace env mp1 l strengthen1 info1 cb2 subst1 subst2 =
   let error why = error_signature_mismatch trace l why in
   let check_conv why cst poly pb = check_conv_error error why (cst, ustate) poly pb in
   let check_type poly cst env t1 t2 =
@@ -284,17 +346,26 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
   in
   match info1 with
     | IndType _ | IndConstr _ | Rules -> error DefinitionFieldExpected
-    | Constant cb1 ->
-      let () = assert (List.is_empty cb1.const_hyps && List.is_empty cb2.const_hyps) in
-      let cb1 = Declareops.subst_const_body subst1 cb1 in
-      let cb2 = Declareops.subst_const_body subst2 cb2 in
+    | Constant cb1_0 ->
+      let cb2_0 = cb2 in
+      let () = assert (List.is_empty cb1_0.const_hyps && List.is_empty cb2_0.const_hyps) in
+      (* On-demand strengthening (see [direct_access]) only happens with an
+         empty [subst1], so it commutes with the substitution below. *)
+      let () = assert (Option.is_empty strengthen1 || is_empty_subst subst1) in
+      let scb1 = Declareops.subst_const_body subst1 cb1_0 in
+      let scb2 = Declareops.subst_const_body subst2 cb2_0 in
+      let cb1 = match strengthen1 with
+        | Some reso -> Modops.strengthen_const mp1 l scb1 reso
+        | None -> scb1
+      in
+      let cb2 = scb2 in
       (* Start by checking universes *)
       let env = check_universes error env cb1.const_universes cb2.const_universes in
       let poly = Declareops.constant_is_polymorphic cb1 in
       (* Now check types *)
       let typ1 = cb1.const_type in
       let typ2 = cb2.const_type in
-      let cst = check_type poly cst env typ1 typ2 in
+      let cst' = check_type poly cst env typ1 typ2 in
       (* Now we check the bodies:
          - A transparent constant can only be implemented by a compatible
            transparent constant.
@@ -305,43 +376,47 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
          - In the signature, an opaque is handled just as a parameter:
            anything of the right type can implement it, even if bodies differ.
       *)
-      (match cb2.const_body with
-       | Undef _ | OpaqueDef _ -> cst
-       | Primitive _ | Symbol _ -> error (NotConvertibleBodyField None)
-       | Def c2 ->
-         (match cb1.const_body with
-          | Primitive _ | Undef _ | OpaqueDef _ | Symbol _ -> error (NotConvertibleBodyField None)
-          | Def c1 ->
-            (* NB: cb1 might have been strengthened and appear as transparent.
-               Anyway [check_conv] will handle that afterwards. *)
-            check_conv (NotConvertibleBodyField (Some (env, c1, c2))) cst poly CONV env c1 c2))
+      let cst' =
+        (match cb2.const_body with
+         | Undef _ | OpaqueDef _ -> cst'
+         | Primitive _ | Symbol _ -> error (NotConvertibleBodyField None)
+         | Def c2 ->
+           (match cb1.const_body with
+            | Primitive _ | Undef _ | OpaqueDef _ | Symbol _ -> error (NotConvertibleBodyField None)
+            | Def c1 ->
+              (* NB: cb1 might have been strengthened and appear as transparent.
+                 Anyway [check_conv] will handle that afterwards. *)
+              check_conv (NotConvertibleBodyField (Some (env, c1, c2))) cst' poly CONV env c1 c2))
+      in
+      cst'
 
 let rec check_modules state trace env mp1 msb1 mp2 msb2 subst1 subst2 =
   let mty1 = module_type_of_module msb1 in
   let mty2 = module_type_of_module msb2 in
   check_modtypes state trace env mp1 mty1 mp2 mty2 subst1 subst2
 
-and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2 =
-  let map1 = make_labmap mp1 sig1 in
+and check_signatures (cst, ustate) trace env mp1 sig1 dir mp2 sig2 subst1 subst2 reso1 reso2 =
+  let view = { sv_direct = dir; sv_map = lazy (make_labmap mp1 sig1) } in
+  let strengthen1 = match dir with Direct str -> str | NoDirect -> None in
   let check_one_body cst (l,spec2) =
     match spec2 with
         | SFBconst cb2 ->
-            check_constant (cst, ustate) trace env l (get_obj mp1 map1 l)
+            check_constant (cst, ustate) trace env mp1 l strengthen1 (get_obj env mp1 view l)
               cb2 subst1 subst2
         | SFBmind mib2 ->
-            check_inductive (cst, ustate) trace env mp1 l (get_obj mp1 map1 l)
+            check_inductive (cst, ustate) trace env mp1 l (get_obj env mp1 view l)
               mp2 mib2 subst1 subst2 reso1 reso2
         | SFBrules _ ->
             error_signature_mismatch trace l NoRewriteRulesSubtyping
         | SFBmodule msb2 ->
             let mp1' = MPdot (mp1, l) in
             let mp2' = MPdot (mp2, l) in
-            begin match get_mod mp1 map1 l with
+            begin match get_mod env mp1 view l with
               | Module msb1 -> check_modules (cst, ustate) (Submodule l :: trace) env mp1' msb1 mp2' msb2 subst1 subst2
               | _ -> error_signature_mismatch trace l ModuleFieldExpected
             end
         | SFBmodtype mtb2 ->
-            let mtb1 = match get_mod mp1 map1 l with
+            let mtb1 = match get_mod env mp1 view l with
               | Modtype mtb -> mtb
               | _ -> error_signature_mismatch trace l ModuleTypeFieldExpected
             in
@@ -357,7 +432,7 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
   in
     List.fold_left check_one_body cst sig2
 
-and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
+and check_modtypes ?(dir=NoDirect) (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
   if mtb1==mtb2 || mod_type mtb1 == mod_type mtb2 then cst
   else
     (* Invariant: [delta1] is [mod_delta mtb1] transported into the name space
@@ -375,20 +450,22 @@ and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
       match struc1,struc2 with
       | NoFunctor list1,
         NoFunctor list2 ->
-        let env =
+        let env, dir =
           if Int.equal nargs 0 then
             (* Not a functor, so the body and all its subcomponents should
                already be in the environment *)
-            env
+            env, dir
           else
             (* We only add the subcomponents, the functor per se is already
                part of the environment but the subtyping check will never access
-               it directly *)
-            Modops.add_structure mp1 (subst_structure subst1 mp1 list1) delta1 env
+               it directly.  The fields added to the environment are
+               substituted, so direct access does not apply to them. *)
+            Modops.add_structure mp1 (subst_structure subst1 mp1 list1) delta1 env,
+            NoDirect
         in
         let delta_mtb2 = mod_delta mtb2 in
         check_signatures (cst, ustate) trace env
-          mp1 list1 mp2 list2 subst1 subst2
+          mp1 list1 dir mp2 list2 subst1 subst2
           delta1 delta_mtb2
       | MoreFunctor (arg_id1,arg_t1,body_t1),
         MoreFunctor (arg_id2,arg_t2,body_t2) ->
@@ -407,11 +484,20 @@ and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
     check_structure cst ~nargs:0 env (mod_type mtb1) (mod_type mtb2) subst1 subst2
       (subst_codom_delta_resolver subst1 (mod_delta mtb1))
 
-let check_subtypes state env mp_sup mp_super super =
+let check_subtypes ?(direct=false) state env mp_sup mp_super super =
   let sup = match Environ.lookup_module mp_sup env with
   | mb -> module_type_of_module mb
   | exception Not_found -> assert false
   in
-  check_modtypes state [] env
-    mp_sup (strengthen sup mp_sup) mp_super super empty_subst
-    (map_mp mp_super mp_sup (mod_delta sup))
+  let subst2 = map_mp mp_super mp_sup (mod_delta sup) in
+  if direct then
+    (* The caller guarantees that the fields of [mp_sup] are in [env],
+       unsubstituted; look them up there on demand instead of eagerly
+       strengthening the whole signature (see [direct_access]).
+       [mod_global_delta] is [None] on functors, where [strengthen] does
+       not strengthen either. *)
+    let dir = Direct (mod_global_delta sup) in
+    check_modtypes ~dir (state) [] env mp_sup sup mp_super super empty_subst subst2
+  else
+    check_modtypes state [] env
+      mp_sup (strengthen sup mp_sup) mp_super super empty_subst subst2

@@ -970,7 +970,7 @@ module Interp = struct
 let check_sub env mp sub_mtb_l =
   let fold sub_mtb (cst, env) =
     let state = ((Environ.universes env, cst), Reductionops.inferred_universes) in
-    let ugraph, cst = Subtyping.check_subtypes state env mp mp sub_mtb in
+    let ugraph, cst = Subtyping.check_subtypes ~direct:true state env mp mp sub_mtb in
     (cst, Environ.set_universes ugraph env)
   in
   let cst, _ = List.fold_right fold sub_mtb_l (Univ.UnivConstraints.empty, env) in
@@ -1454,7 +1454,7 @@ let declare_one_include_core (me,base,kind,inl) =
       let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
       (* Module subcomponents are already part of env at this point *)
       let env = Environ.shallow_add_module cur_mp mb (Global.env ()) in
-      let (_, cst) = Subtyping.check_subtypes state env cur_mp (MPbound mbid) mtb in
+      let (_, cst) = Subtyping.check_subtypes ~direct:true state env cur_mp (MPbound mbid) mtb in
       let () = Global.add_univ_constraints cst in
       let mpsup_delta = match mod_global_delta mb with
       | None -> assert false (* mb is guaranteed not to be a functor here *)

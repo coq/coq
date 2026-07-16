@@ -270,7 +270,7 @@ let rec translate_apply ustate env inl mp subst (sign, reso, cst) args = match a
     if is_empty_subst subst then farg_b
     else subst_modtype subst_codom subst (MPbound farg_id) farg_b
   in
-  let cst = Subtyping.check_subtypes (cst, ustate) env mp1 (MPbound farg_id) farg_b in
+  let cst = Subtyping.check_subtypes ~direct:true (cst, ustate) env mp1 (MPbound farg_id) farg_b in
   let mp_delta = discr_resolver mp1 (lookup_module mp1 env) in
   let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
   let nsubst = map_mbid farg_id mp1 mp_delta in
@@ -348,7 +348,7 @@ let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) resty
        is about to be closed, so all subcomponents of the module are already
        part of the environment. We only need to add the toplevel module entry. *)
     let env = Environ.shallow_add_module mp auto_mtb env in
-    let cst = Subtyping.check_subtypes (cst, ustate) env mp mp res_mtb in
+    let cst = Subtyping.check_subtypes ~direct:true (cst, ustate) env mp mp res_mtb in
     let impl = match alg with
     | Some e -> Algebraic e
     | None ->

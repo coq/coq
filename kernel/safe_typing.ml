@@ -1586,7 +1586,7 @@ let add_include me is_module inl senv =
       let state = check_state senv in
       (* Module subcomponents are already part of senv.env at this point *)
       let env = Environ.shallow_add_module mp_sup mb senv.env in
-      let (_ : UGraph.t) = Subtyping.check_subtypes state env mp_sup (MPbound mbid) mtb in
+      let (_ : UGraph.t) = Subtyping.check_subtypes ~direct:true state env mp_sup (MPbound mbid) mtb in
       let mpsup_delta =
         Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb senv.modresolver
       in

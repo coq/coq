@@ -59,6 +59,16 @@ val add_retroknowledge : Retroknowledge.action list -> env -> env
 
 val strengthen : module_type_body -> ModPath.t -> module_type_body
 
+(** Strengthening of a single constant field [l] of the module [mp], w.r.t.
+    the delta resolver of that module. Used to strengthen fields on demand
+    instead of strengthening a whole signature eagerly. *)
+val strengthen_const :
+  ModPath.t -> Id.t -> constant_body -> delta_resolver -> constant_body
+
+(** Strengthening of a single module field of a signature, as performed on
+    submodules by [strengthen]. *)
+val strengthen_module : ModPath.t -> module_body -> module_body
+
 val strengthen_and_subst_module_body : ModPath.t -> module_body -> ModPath.t -> bool -> module_body
 
 val subst_modtype_signature_and_resolver : ModPath.t -> ModPath.t ->
