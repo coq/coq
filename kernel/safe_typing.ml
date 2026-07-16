@@ -236,6 +236,12 @@ type safe_environment =
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
     opaquetab : Opaqueproof.opaquetab;
+    subtyping_cache : Subtyping.Cache.t;
+    (** Module subtyping checks already performed in (an earlier state
+        of) [env]. Storing the cache inside the safe environment ensures
+        it never outlives the monotonic evolution of [env] that cached
+        verdicts rely on: discarding or rolling back the safe
+        environment also discards the cache (see {!Subtyping.Cache}). *)
 }
 
 and modvariant =
@@ -268,6 +274,7 @@ let empty_environment =
     loads = [];
     local_retroknowledge = [];
     opaquetab = Opaqueproof.empty_opaquetab;
+    subtyping_cache = Subtyping.Cache.empty;
 }
 
 let is_initial senv =
@@ -1372,7 +1379,8 @@ let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
   let state = check_state senv in
   let vmstate = vm_state senv in
-  let mtb, _, vmtab = Mod_typing.translate_modtype state vmstate senv.env mp inl params_mte  in
+  let mtb, _, vmtab, cache = Mod_typing.translate_modtype state senv.subtyping_cache vmstate senv.env mp inl params_mte  in
+  let senv = { senv with subtyping_cache = cache } in
   let senv = set_vm_library vmtab senv in
   let mtb = Mod_declarations.hcons_module_type mtb in
   let senv = add_field (l,SFBmodtype mtb) (MT mp) senv in
@@ -1384,7 +1392,8 @@ let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
   let state = check_state senv in
   let vmstate = vm_state senv in
-  let mb, _, vmtab = Mod_typing.translate_module state vmstate senv.env mp inl me in
+  let mb, _, vmtab, cache = Mod_typing.translate_module state senv.subtyping_cache vmstate senv.env mp inl me in
+  let senv = { senv with subtyping_cache = cache } in
   let senv = set_vm_library vmtab senv in
   let mb = Mod_declarations.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) (M mp) senv in
@@ -1416,6 +1425,7 @@ let start_mod_modtype ~istype l senv =
     elims = senv.elims;
     required = senv.required;
     opaquetab = senv.opaquetab;
+    subtyping_cache = senv.subtyping_cache;
     sections = None; (* checked in check_empty_context *)
 
     (* module local fields *)
@@ -1438,7 +1448,8 @@ let add_module_parameter mbid mte inl senv =
   let mp = MPbound mbid in
   let state = check_state senv in
   let vmstate = vm_state senv in
-  let mtb, _, vmtab = Mod_typing.translate_modtype state vmstate senv.env mp inl ([],mte) in
+  let mtb, _, vmtab, cache = Mod_typing.translate_modtype state senv.subtyping_cache vmstate senv.env mp inl ([],mte) in
+  let senv = { senv with subtyping_cache = cache } in
   let senv = set_vm_library vmtab senv in
   let senv = { senv with env = Modops.add_module_parameter mbid mtb senv.env } in
   let new_variant = match senv.modvariant with
@@ -1491,12 +1502,12 @@ let build_module_body params restype senv =
   let state = check_state senv in
   let vmstate = vm_state senv in
   (* XXX why are we dropping vmtab here? *)
-  let mb, _, _vmtab =
-    Mod_typing.finalize_module state vmstate senv.env senv.modpath
+  let mb, _, _vmtab, cache =
+    Mod_typing.finalize_module state senv.subtyping_cache vmstate senv.env senv.modpath
       (struc, senv.modresolver) restype'
   in
   let mb' = functorize_module params mb in
-  mb'
+  mb', cache
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
@@ -1524,6 +1535,9 @@ let propagate_senv newdef senv oldsenv =
     local_retroknowledge =
       senv.local_retroknowledge@oldsenv.local_retroknowledge;
     opaquetab = senv.opaquetab;
+    (* Ending a module keeps its fields and universes in the
+       environment, so verdicts cached inside it remain valid. *)
+    subtyping_cache = senv.subtyping_cache;
   }
 
 let end_module l restype senv =
@@ -1532,7 +1546,8 @@ let end_module l restype senv =
   let () = check_current_label l mp in
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
-  let mb = build_module_body params restype senv in
+  let mb, cache = build_module_body params restype senv in
+  let senv = { senv with subtyping_cache = cache } in
   let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
   let newenv = Environ.set_qualities (Environ.qualities senv.env) newenv in
   let newenv = if Environ.rewrite_rules_allowed senv.env then Environ.allow_rewrite_rules newenv else newenv in
@@ -1573,29 +1588,31 @@ let add_include me is_module inl senv =
   let mp_sup = senv.modpath in
   let state = check_state senv in
   let vmstate = vm_state senv in
-  let sign,(),resolver, _, vmtab =
-    translate_mse_include is_module state vmstate senv.env mp_sup inl me
+  let sign,(),resolver, _, vmtab, cache =
+    translate_mse_include is_module state senv.subtyping_cache vmstate senv.env mp_sup inl me
   in
+  let senv = { senv with subtyping_cache = cache } in
   let senv = set_vm_library vmtab senv in
   (* Include Self support  *)
   let struc = NoFunctor (List.rev senv.revstruct) in
   let mb = Mod_declarations.make_module_body struc senv.modresolver in
-  let rec compute_sign sign resolver =
+  let rec compute_sign sign resolver cache =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
       let state = check_state senv in
       (* Module subcomponents are already part of senv.env at this point *)
       let env = Environ.shallow_add_module mp_sup mb senv.env in
-      let (_ : UGraph.t) = Subtyping.check_subtypes ~direct:true state env mp_sup (MPbound mbid) mtb in
+      let (_ : UGraph.t), cache = Subtyping.check_subtypes ~direct:true ~cache state env mp_sup (MPbound mbid) mtb in
       let mpsup_delta =
         Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb senv.modresolver
       in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
-      compute_sign (Modops.subst_signature subst mp_sup str) resolver
-    | NoFunctor str -> resolver, str
+      compute_sign (Modops.subst_signature subst mp_sup str) resolver cache
+    | NoFunctor str -> resolver, str, cache
   in
-  let resolver, str = compute_sign sign resolver in
+  let resolver, str, cache = compute_sign sign resolver senv.subtyping_cache in
+  let senv = { senv with subtyping_cache = cache } in
   let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv in
   let add senv ((l,elem) as field) =
     let new_name = match elem with
@@ -1650,6 +1667,7 @@ let start_library dir senv =
     loads = [];
     local_retroknowledge = [];
     opaquetab = Opaqueproof.empty_opaquetab;
+    subtyping_cache = senv.subtyping_cache;
   }
 
 let export ~output_native_objects senv dir =

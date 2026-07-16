@@ -66,17 +66,6 @@ type labmap = { objs : namedobject Id.Map.t; mods : namedmodule Id.Map.t }
 
 let empty_labmap = { objs = Id.Map.empty; mods = Id.Map.empty }
 
-let make_labmap mp list =
-  let add_one (l,e) map =
-   match e with
-    | SFBconst cb -> { map with objs = Id.Map.add l (Constant cb) map.objs }
-    | SFBrules _ -> { map with objs = Id.Map.add l Rules map.objs }
-    | SFBmind mib -> { map with objs = add_mib_nameobjects mp l mib map.objs }
-    | SFBmodule mb -> { map with mods = Id.Map.add l (Module mb) map.mods }
-    | SFBmodtype mtb -> { map with mods = Id.Map.add l (Modtype mtb) map.mods }
-  in
-  CList.fold_right add_one list empty_labmap
-
 (** How to look up the fields of the implementation (subtype) side of a
     check.
 
@@ -146,6 +135,75 @@ let get_mod env mp view l =
       | mtb -> Modtype mtb
       | exception Not_found -> get_mod_fallback mp view l
     end
+
+(** Cache of successful constant field checks.
+
+    A successful check of an implementation field [cb1] against an
+    expected field [cb2] is a function of the pair itself whenever both
+    substitutions leave the bodies physically unchanged (checked at run
+    time) and the check did not produce new universe constraints (the
+    returned state is physically the input one; the kernel-side checking
+    mode never produces constraints, and the inference mode returns its
+    input state unchanged when all needed constraints are already
+    entailed). Such a check stays valid later in the same process:
+    - the environment only grows, and a successful conversion is
+      preserved by adding constants, universe constraints or rewrite
+      rules (conversion success is monotone in the environment);
+    - constant bodies are immutable, and rolling back the environment
+      (Undo, Reset) also drops every object that could re-present the
+      cached pair;
+    - conversion compares constant references up to the delta resolver
+      (canonical names), so a successful check is independent of the
+      user-level path under which physically equal bodies are reached.
+
+    Cached verdicts are only valid as long as the ambient environment
+    evolves monotonically. The cache is therefore purely functional and
+    threaded through the checks: callers store it alongside the
+    environment their checks were performed in (a [safe_environment]
+    field on the kernel side), so that discarding or rolling back that
+    environment also discards or rolls back the cache.
+
+    The cache is indexed by the label of the field — whose hash is cheap,
+    and which is stable across the module paths under which the same
+    bodies may be rechecked (e.g. re-including a functor in each stage of
+    a chain of module types) — and holds a short list of successfully
+    checked pairs for that label, compared physically. The list is
+    capped, so the cache retains a bounded number of bodies per label
+    ever checked. Failures are not cached (they raise). *)
+module Cache =
+struct
+  type t = (constant_body * constant_body) list Id.Map.t
+
+  let empty = Id.Map.empty
+
+  let max_gen = 16
+
+  let mem l cb1 cb2 cache =
+    match Id.Map.find_opt l cache with
+    | None -> false
+    | Some pairs -> List.exists (fun (c1, c2) -> c1 == cb1 && c2 == cb2) pairs
+
+  let add l cb1 cb2 cache =
+    let prev = match Id.Map.find_opt l cache with
+      | None -> []
+      | Some pairs ->
+        if List.length pairs >= max_gen
+        then CList.firstn (max_gen - 1) pairs
+        else pairs
+    in
+    Id.Map.add l ((cb1, cb2) :: prev) cache
+end
+
+let make_labmap mp list =
+  let add_one (l,e) map =
+   match e with
+    | SFBconst cb -> { map with objs = Id.Map.add l (Constant cb) map.objs }
+    | SFBrules _ -> { map with objs = Id.Map.add l Rules map.objs }
+    | SFBmind mib -> { map with objs = add_mib_nameobjects mp l mib map.objs }
+    | SFBmodule mb -> { map with mods = Id.Map.add l (Module mb) map.mods }
+    | SFBmodtype mtb -> { map with mods = Id.Map.add l (Modtype mtb) map.mods }
+  in
+  CList.fold_right add_one list empty_labmap
 
 let check_conv_error error why state poly pb env a1 a2 =
   if poly then match Conversion.default_conv pb env a1 a2 with
@@ -337,7 +395,7 @@ let check_inductive (cst, ustate) trace env mp1 l info1 mp2 mib2 subst1 subst2 r
     cst
 
 
-let check_constant (cst, ustate) trace env mp1 l strengthen1 info1 cb2 subst1 subst2 =
+let check_constant (cst, ustate) cache trace env mp1 l strengthen1 info1 cb2 subst1 subst2 =
   let error why = error_signature_mismatch trace l why in
   let check_conv why cst poly pb = check_conv_error error why (cst, ustate) poly pb in
   let check_type poly cst env t1 t2 =
@@ -354,6 +412,11 @@ let check_constant (cst, ustate) trace env mp1 l strengthen1 info1 cb2 subst1 su
       let () = assert (Option.is_empty strengthen1 || is_empty_subst subst1) in
       let scb1 = Declareops.subst_const_body subst1 cb1_0 in
       let scb2 = Declareops.subst_const_body subst2 cb2_0 in
+      (* The outcome only depends on the pair of bodies when both
+         substitutions leave them physically unchanged, see [Cache]. *)
+      let context_free = scb1 == cb1_0 && scb2 == cb2_0 in
+      if context_free && Cache.mem l cb1_0 cb2_0 cache then (cst, cache)
+      else begin
       let cb1 = match strengthen1 with
         | Some reso -> Modops.strengthen_const mp1 l scb1 reso
         | None -> scb1
@@ -388,31 +451,40 @@ let check_constant (cst, ustate) trace env mp1 l strengthen1 info1 cb2 subst1 su
                  Anyway [check_conv] will handle that afterwards. *)
               check_conv (NotConvertibleBodyField (Some (env, c1, c2))) cst' poly CONV env c1 c2))
       in
-      cst'
+      (* Only cache checks that produced no new universe constraints: they
+         are then pure and stay valid as long as the environment the cache
+         is stored alongside evolves monotonically. *)
+      let cache =
+        if context_free && cst' == cst then Cache.add l cb1_0 cb2_0 cache
+        else cache
+      in
+      (cst', cache)
+      end
 
-let rec check_modules state trace env mp1 msb1 mp2 msb2 subst1 subst2 =
+let rec check_modules state cache trace env mp1 msb1 mp2 msb2 subst1 subst2 =
   let mty1 = module_type_of_module msb1 in
   let mty2 = module_type_of_module msb2 in
-  check_modtypes state trace env mp1 mty1 mp2 mty2 subst1 subst2
+  check_modtypes state cache trace env mp1 mty1 mp2 mty2 subst1 subst2
 
-and check_signatures (cst, ustate) trace env mp1 sig1 dir mp2 sig2 subst1 subst2 reso1 reso2 =
+and check_signatures (cst, ustate) cache trace env mp1 sig1 dir mp2 sig2 subst1 subst2 reso1 reso2 =
   let view = { sv_direct = dir; sv_map = lazy (make_labmap mp1 sig1) } in
   let strengthen1 = match dir with Direct str -> str | NoDirect -> None in
-  let check_one_body cst (l,spec2) =
+  let check_one_body (cst, cache) (l,spec2) =
     match spec2 with
         | SFBconst cb2 ->
-            check_constant (cst, ustate) trace env mp1 l strengthen1 (get_obj env mp1 view l)
+            check_constant (cst, ustate) cache trace env mp1 l strengthen1 (get_obj env mp1 view l)
               cb2 subst1 subst2
         | SFBmind mib2 ->
             check_inductive (cst, ustate) trace env mp1 l (get_obj env mp1 view l)
-              mp2 mib2 subst1 subst2 reso1 reso2
+              mp2 mib2 subst1 subst2 reso1 reso2,
+            cache
         | SFBrules _ ->
             error_signature_mismatch trace l NoRewriteRulesSubtyping
         | SFBmodule msb2 ->
             let mp1' = MPdot (mp1, l) in
             let mp2' = MPdot (mp2, l) in
             begin match get_mod env mp1 view l with
-              | Module msb1 -> check_modules (cst, ustate) (Submodule l :: trace) env mp1' msb1 mp2' msb2 subst1 subst2
+              | Module msb1 -> check_modules (cst, ustate) cache (Submodule l :: trace) env mp1' msb1 mp2' msb2 subst1 subst2
               | _ -> error_signature_mismatch trace l ModuleFieldExpected
             end
         | SFBmodtype mtb2 ->
@@ -423,17 +495,17 @@ and check_signatures (cst, ustate) trace env mp1 sig1 dir mp2 sig2 subst1 subst2
             let mp1' = MPdot (mp1, l) in
             let mp2' = MPdot (mp2, l) in
             (* Check for equivalence via subtyping in both directions *)
-            let cst =
+            let cst, cache =
               let env = add_module mp1' (module_body_of_type mtb1) env in
-              check_modtypes (cst, ustate) (Submodule l :: trace) env mp1' mtb1 mp2' mtb2 subst1 subst2
+              check_modtypes (cst, ustate) cache (Submodule l :: trace) env mp1' mtb1 mp2' mtb2 subst1 subst2
             in
             let env = add_module mp2' (module_body_of_type mtb2) env in
-            check_modtypes (cst, ustate) (Submodule l :: trace) env mp2' mtb2 mp1' mtb1 subst2 subst1
+            check_modtypes (cst, ustate) cache (Submodule l :: trace) env mp2' mtb2 mp1' mtb1 subst2 subst1
   in
-    List.fold_left check_one_body cst sig2
+    List.fold_left check_one_body (cst, cache) sig2
 
-and check_modtypes ?(dir=NoDirect) (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
-  if mtb1==mtb2 || mod_type mtb1 == mod_type mtb2 then cst
+and check_modtypes ?(dir=NoDirect) (cst, ustate) cache trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
+  if mtb1==mtb2 || mod_type mtb1 == mod_type mtb2 then (cst, cache)
   else
     (* Invariant: [delta1] is [mod_delta mtb1] transported into the name space
        of [env], and [subst2] sends [mp2] to [mp1] with [delta1] as resolver.
@@ -446,7 +518,7 @@ and check_modtypes ?(dir=NoDirect) (cst, ustate) trace env mp1 mtb1 mp2 mtb2 sub
        is a submodule of the module the enclosing [subst2] talks about: for a
        functor field the enclosing resolver carries no information at all,
        since [mod_global_delta] is [None] on functors. *)
-    let rec check_structure cst ~nargs env struc1 struc2 subst1 subst2 delta1 =
+    let rec check_structure (cst, cache) ~nargs env struc1 struc2 subst1 subst2 delta1 =
       match struc1,struc2 with
       | NoFunctor list1,
         NoFunctor list2 ->
@@ -464,7 +536,7 @@ and check_modtypes ?(dir=NoDirect) (cst, ustate) trace env mp1 mtb1 mp2 mtb2 sub
             NoDirect
         in
         let delta_mtb2 = mod_delta mtb2 in
-        check_signatures (cst, ustate) trace env
+        check_signatures (cst, ustate) cache trace env
           mp1 list1 dir mp2 list2 subst1 subst2
           delta1 delta_mtb2
       | MoreFunctor (arg_id1,arg_t1,body_t1),
@@ -476,15 +548,15 @@ and check_modtypes ?(dir=NoDirect) (cst, ustate) trace env mp1 mtb1 mp2 mtb2 sub
         let delta1 = subst_codom_delta_resolver nsubst delta1 in
         let subst2 = add_mp mp2 mp1 delta1 subst2 in
         let env = add_module_parameter arg_id2 arg_t2 env in
-        let cst = check_modtypes (cst, ustate) (FunctorArgument (nargs+1) :: trace) env mparg2 arg_t2 mparg1 arg_t1 subst2 subst1 in
+        let cst, cache = check_modtypes (cst, ustate) cache (FunctorArgument (nargs+1) :: trace) env mparg2 arg_t2 mparg1 arg_t1 subst2 subst1 in
         (* contravariant *)
-        check_structure cst ~nargs:(nargs + 1) env body_t1 body_t2 subst1 subst2 delta1
+        check_structure (cst, cache) ~nargs:(nargs + 1) env body_t1 body_t2 subst1 subst2 delta1
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
     in
-    check_structure cst ~nargs:0 env (mod_type mtb1) (mod_type mtb2) subst1 subst2
+    check_structure (cst, cache) ~nargs:0 env (mod_type mtb1) (mod_type mtb2) subst1 subst2
       (subst_codom_delta_resolver subst1 (mod_delta mtb1))
 
-let check_subtypes ?(direct=false) state env mp_sup mp_super super =
+let check_subtypes ?(direct=false) ~cache state env mp_sup mp_super super =
   let sup = match Environ.lookup_module mp_sup env with
   | mb -> module_type_of_module mb
   | exception Not_found -> assert false
@@ -497,7 +569,7 @@ let check_subtypes ?(direct=false) state env mp_sup mp_super super =
        [mod_global_delta] is [None] on functors, where [strengthen] does
        not strengthen either. *)
     let dir = Direct (mod_global_delta sup) in
-    check_modtypes ~dir (state) [] env mp_sup sup mp_super super empty_subst subst2
+    check_modtypes ~dir (state) cache [] env mp_sup sup mp_super super empty_subst subst2
   else
-    check_modtypes state [] env
+    check_modtypes state cache [] env
       mp_sup (strengthen sup mp_sup) mp_super super empty_subst subst2

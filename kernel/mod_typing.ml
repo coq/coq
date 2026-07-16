@@ -177,7 +177,7 @@ let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
 
 (* [mp] is the ambient modpath of [struc],
    [new_mp] is the path of the module to replace [idl] with *)
-let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
+let rec check_with_mod (cst, ustate) cache env struc (idl,new_mp) mp reso =
   let lab,idl = match idl with
     | [] -> assert false
     | id::idl -> id, idl
@@ -192,14 +192,13 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
     if List.is_empty idl then
       (* Toplevel module definition *)
       let new_mb = lookup_module new_mp env in
-      let cst = match Mod_declarations.mod_expr old with
+      let cst, cache = match Mod_declarations.mod_expr old with
         | Abstract ->
           let mtb_old = module_type_of_module old in
-          let cst = Subtyping.check_subtypes (cst, ustate) env' new_mp (MPdot (mp, lab)) mtb_old in
-          cst
+          Subtyping.check_subtypes ~cache (cst, ustate) env' new_mp (MPdot (mp, lab)) mtb_old
         | Algebraic (MENoFunctor (MEident(mp'))) ->
           check_modpath_equiv env' new_mp mp';
-          cst
+          cst, cache
         | _ -> error_generative_module_expected lab
       in
       let mp' = MPdot (mp,lab) in
@@ -211,7 +210,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
          with the identity substitution accompanied by the new resolver*)
       let id_subst = map_mp mp' mp' subreso in
       let new_after = subst_structure id_subst mp after in
-      before @ (lab, SFBmodule new_mb') :: new_after, subreso, cst
+      before @ (lab, SFBmodule new_mb') :: new_after, subreso, cst, cache
     else
       (* Module definition of a sub-module *)
       let mp' = MPdot (mp,lab) in
@@ -222,17 +221,17 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       begin match Mod_declarations.mod_expr old with
       | Abstract ->
         let struc = destr_nofunctor mp' (mod_type old) in
-        let struc', subreso, cst =
-          check_with_mod (cst, ustate) env' struc (idl,new_mp) mp' (mod_delta old)
+        let struc', subreso, cst, cache =
+          check_with_mod (cst, ustate) cache env' struc (idl,new_mp) mp' (mod_delta old)
         in
         let reso' = add_delta_resolver (mod_delta old) (upcast_delta_resolver mp' subreso) in
         let new_mb = replace_module_body struc' reso' old in
         let id_subst = map_mp mp' mp' reso' in
         let new_after = subst_structure id_subst mp after in
-        before @ (lab, SFBmodule new_mb) :: new_after, subreso, cst
+        before @ (lab, SFBmodule new_mb) :: new_after, subreso, cst, cache
       | Algebraic (MENoFunctor (MEident mp0)) ->
         let () = check_modpath_equiv env' new_mp (rebuild_mp mp0 idl) in
-        before@(lab,spec)::after, reso, cst
+        before@(lab,spec)::after, reso, cst, cache
       | _ -> error_generative_module_expected lab
       end
   with
@@ -241,41 +240,41 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
 type 'a vm_handler = { vm_handler : env -> universes -> Constr.t -> 'a -> 'a * Vmlibrary.indirect_code }
 type 'a vm_state = 'a * 'a vm_handler
 
-let check_with ustate vmstate env mp (sign,reso,cst,vm) = function
+let check_with ustate vmstate env mp (sign,reso,cst,vm,cache) = function
   | WithDef(idl, (c, ctx)) ->
     let struc = destr_nofunctor mp sign in
     let univs = match ctx with None -> Monomorphic | Some uctx -> Polymorphic uctx in
     let vm, bcode = vmstate.vm_handler env univs c vm in
     let body = { w_def = c; w_univs = univs; w_bytecode = bcode } in
     let struc', cst = check_with_def (cst, ustate) env struc (idl, body) mp reso in
-    NoFunctor struc', reso, cst, vm
+    NoFunctor struc', reso, cst, vm, cache
   | WithMod(idl,new_mp) ->
     let struc = destr_nofunctor mp sign in
-    let struc', subreso, cst = check_with_mod (cst, ustate) env struc (idl, new_mp) mp reso in
+    let struc', subreso, cst, cache = check_with_mod (cst, ustate) cache env struc (idl, new_mp) mp reso in
     let reso' = add_delta_resolver reso (upcast_delta_resolver mp subreso) in
-    NoFunctor struc', reso', cst, vm
+    NoFunctor struc', reso', cst, vm, cache
 
-let check_with_alg ustate vmstate env mp (sign, alg, reso, cst, vm) wd =
-  let struc, reso, cst, vm = check_with ustate vmstate env mp (sign, reso, cst, vm) wd in
-  struc, MEwith (alg, wd), reso, cst, vm
+let check_with_alg ustate vmstate env mp (sign, alg, reso, cst, vm, cache) wd =
+  let struc, reso, cst, vm, cache = check_with ustate vmstate env mp (sign, reso, cst, vm, cache) wd in
+  struc, MEwith (alg, wd), reso, cst, vm, cache
 
-let rec translate_apply ustate env inl mp subst (sign, reso, cst) args = match args with
+let rec translate_apply ustate env inl mp subst (sign, reso, cst, cache) args = match args with
 | [] ->
   let sign = subst_signature subst mp sign in
   let reso = subst_codom_delta_resolver subst reso in
-  (sign, reso, cst)
+  (sign, reso, cst, cache)
 | mp1 :: args ->
   let farg_id, farg_b, sign = destr_functor sign in
   let farg_b =
     if is_empty_subst subst then farg_b
     else subst_modtype subst_codom subst (MPbound farg_id) farg_b
   in
-  let cst = Subtyping.check_subtypes ~direct:true (cst, ustate) env mp1 (MPbound farg_id) farg_b in
+  let cst, cache = Subtyping.check_subtypes ~direct:true ~cache (cst, ustate) env mp1 (MPbound farg_id) farg_b in
   let mp_delta = discr_resolver mp1 (lookup_module mp1 env) in
   let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
   let nsubst = map_mbid farg_id mp1 mp_delta in
   let subst = join subst nsubst in
-  translate_apply ustate env inl mp subst (sign, reso, cst) args
+  translate_apply ustate env inl mp subst (sign, reso, cst, cache) args
 
 (** Translation of a module struct entry :
     - We translate to a module when a [module_path] is given,
@@ -288,7 +287,7 @@ let rec decompose_apply accu = function
 | MEapply (f, arg) -> decompose_apply (arg :: accu) f
 | (MEident _ | MEwith _) as f -> f, accu
 
-let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl me = match me with
+let rec translate_mse (cst, ustate) cache (vm, vmstate) env mpo inl me = match me with
   | MEident mp1 ->
     let mb = match mpo with
       | Some mp -> strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp false
@@ -296,59 +295,59 @@ let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl me = match me with
         let mt = lookup_modtype mp1 env in
         module_body_of_type mt
     in
-    mod_type mb, me, mod_delta mb, cst, vm
+    mod_type mb, me, mod_delta mb, cst, vm, cache
   | MEapply _ ->
     let fe, args = decompose_apply [] me in
-    let (sign, alg, reso, cst, vm) = translate_mse (cst, ustate) (vm, vmstate) env mpo inl fe in
+    let (sign, alg, reso, cst, vm, cache) = translate_mse (cst, ustate) cache (vm, vmstate) env mpo inl fe in
     let mp = match mpo with Some mp -> mp | None -> mp_from_mexpr fe in
-    let (sign, reso, cst) = translate_apply ustate env inl mp empty_subst (sign, reso, cst) args in
+    let (sign, reso, cst, cache) = translate_apply ustate env inl mp empty_subst (sign, reso, cst, cache) args in
     let alg = List.fold_left (fun accu arg -> MEapply (accu, arg)) alg args in
-    (sign, alg, reso, cst, vm)
+    (sign, alg, reso, cst, vm, cache)
   | MEwith(me, with_decl) ->
     assert (Option.is_empty mpo); (* No 'with' syntax for modules *)
     let mp = mp_from_mexpr me in
-    check_with_alg ustate vmstate env mp (translate_mse (cst, ustate) (vm, vmstate) env None inl me) with_decl
+    check_with_alg ustate vmstate env mp (translate_mse (cst, ustate) cache (vm, vmstate) env None inl me) with_decl
 
 let mk_modtype = Mod_declarations.make_module_type
 
-let rec translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod mp inl mse = function
+let rec translate_mse_funct (cst, ustate) cache (vm, vmstate) env ~is_mod mp inl mse = function
   | [] ->
-    let sign,alg,reso,cst,vm = translate_mse (cst, ustate) (vm, vmstate) env (if is_mod then Some mp else None) inl mse in
+    let sign,alg,reso,cst,vm,cache = translate_mse (cst, ustate) cache (vm, vmstate) env (if is_mod then Some mp else None) inl mse in
     let sign,reso =
       if is_mod then sign,reso
       else subst_modtype_signature_and_resolver (mp_from_mexpr mse) mp sign reso in
-    sign, MENoFunctor alg, reso, cst, vm
+    sign, MENoFunctor alg, reso, cst, vm, cache
   | (mbid, ty, ty_inl) :: params ->
     let mp_id = MPbound mbid in
-    let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp_id ty_inl ([],ty) in
+    let mtb, cst, vm, cache = translate_modtype (cst, ustate) cache (vm, vmstate) env mp_id ty_inl ([],ty) in
     let env' = add_module_parameter mbid mtb env in
-    let sign,alg,reso,cst,vm = translate_mse_funct (cst, ustate) (vm, vmstate) env' ~is_mod mp inl mse params in
+    let sign,alg,reso,cst,vm,cache = translate_mse_funct (cst, ustate) cache (vm, vmstate) env' ~is_mod mp inl mse params in
     let alg' = MEMoreFunctor alg in
-    MoreFunctor (mbid, mtb, sign), alg',reso, cst, vm
+    MoreFunctor (mbid, mtb, sign), alg',reso, cst, vm, cache
 
-and translate_modtype state vmstate env mp inl (params,mte) =
-  let sign,alg,reso,cst,vm = translate_mse_funct state vmstate env ~is_mod:false mp inl mte params in
+and translate_modtype state cache vmstate env mp inl (params,mte) =
+  let sign,alg,reso,cst,vm,cache = translate_mse_funct state cache vmstate env ~is_mod:false mp inl mte params in
   let mtb = mk_modtype sign reso in
-  set_algebraic_type mtb alg, cst, vm
+  set_algebraic_type mtb alg, cst, vm, cache
 
 (** [finalize_module] :
     from an already-translated (or interactive) implementation and
     an (optional) signature entry, produces a final [module_body] *)
 
-let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) restype = match restype with
+let finalize_module_alg (cst, ustate) cache (vm, vmstate) env mp (sign,alg,reso) restype = match restype with
   | None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
     let mb = make_module_body sign reso in
     let mb = set_implementation impl mb in
-    mb, cst, vm
+    mb, cst, vm, cache
   | Some (params_mte,inl) ->
-    let res_mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl params_mte in
+    let res_mtb, cst, vm, cache = translate_modtype (cst, ustate) cache (vm, vmstate) env mp inl params_mte in
     let auto_mtb = Mod_declarations.make_module_body sign reso in
     (* This function is supposed to be called in a state where the current module
        is about to be closed, so all subcomponents of the module are already
        part of the environment. We only need to add the toplevel module entry. *)
     let env = Environ.shallow_add_module mp auto_mtb env in
-    let cst = Subtyping.check_subtypes ~direct:true (cst, ustate) env mp mp res_mtb in
+    let cst, cache = Subtyping.check_subtypes ~direct:true ~cache (cst, ustate) env mp mp res_mtb in
     let impl = match alg with
     | Some e -> Algebraic e
     | None ->
@@ -363,24 +362,25 @@ let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) resty
     mb,
     (** constraints from module body typing + subtyping + module type. *)
     cst,
-    vm
+    vm,
+    cache
 
-let finalize_module univs vm env mp (sign, reso) typ =
-  finalize_module_alg univs vm env mp (sign, None, reso) typ
+let finalize_module univs cache vm env mp (sign, reso) typ =
+  finalize_module_alg univs cache vm env mp (sign, None, reso) typ
 
-let translate_module (cst, ustate) (vm, vmstate) env mp inl = function
+let translate_module (cst, ustate) cache (vm, vmstate) env mp inl = function
   | MType (params,ty) ->
-    let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl (params,ty) in
-    module_body_of_type mtb, cst, vm
+    let mtb, cst, vm, cache = translate_modtype (cst, ustate) cache (vm, vmstate) env mp inl (params,ty) in
+    module_body_of_type mtb, cst, vm, cache
   | MExpr (params,mse,oty) ->
-    let (sg,alg,reso,cst,vm) = translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod:true mp inl mse params in
+    let (sg,alg,reso,cst,vm,cache) = translate_mse_funct (cst, ustate) cache (vm, vmstate) env ~is_mod:true mp inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
     (* finalize_module_alg expects the subcomponents to be part of the environment *)
     let env = match sg with
     | NoFunctor struc -> Modops.add_structure mp struc reso env
     | MoreFunctor _ -> env
     in
-    finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sg,Some alg,reso) restype
+    finalize_module_alg (cst, ustate) cache (vm, vmstate) env mp (sg,Some alg,reso) restype
 
 (** We now forbid any Include of functors with restricted signatures.
     Otherwise, we could end with the creation of undesired axioms
@@ -409,23 +409,23 @@ let rec forbid_incl_signed_functor env = function
       forbid_incl_signed_functor env me
     | _ -> ()
 
-let rec translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl = function
+let rec translate_mse_include_module (cst, ustate) cache (vm, vmstate) env mp inl = function
   | MEident mp1 ->
     let mb = strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr (mod_type mb) in
-    sign, (), mod_delta mb, cst, vm
+    sign, (), mod_delta mb, cst, vm, cache
   | MEapply _ as me ->
     let fe, args = decompose_apply [] me in
-    let (sign, (), reso, cst, vm) = translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl fe in
-    let (sign, reso, cst) = translate_apply ustate env inl mp empty_subst (sign, reso, cst) args in
-    (sign, (), reso, cst, vm)
+    let (sign, (), reso, cst, vm, cache) = translate_mse_include_module (cst, ustate) cache (vm, vmstate) env mp inl fe in
+    let (sign, reso, cst, cache) = translate_apply ustate env inl mp empty_subst (sign, reso, cst, cache) args in
+    (sign, (), reso, cst, vm, cache)
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
-let translate_mse_include is_mod (cst, ustate) (vm, vmstate) env mp inl me =
+let translate_mse_include is_mod (cst, ustate) cache (vm, vmstate) env mp inl me =
   if is_mod then
     let () = forbid_incl_signed_functor env me in
-    translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl me
+    translate_mse_include_module (cst, ustate) cache (vm, vmstate) env mp inl me
   else
-    let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl ([],me) in
+    let mtb, cst, vm, cache = translate_modtype (cst, ustate) cache (vm, vmstate) env mp inl ([],me) in
     let sign = clean_bounded_mod_expr (mod_type mtb) in
-    sign, (), mod_delta mtb, cst, vm
+    sign, (), mod_delta mtb, cst, vm, cache

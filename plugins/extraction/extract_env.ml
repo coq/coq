@@ -194,7 +194,7 @@ let expand_mexpr env mp me =
      name that should not be part of the env and then substitute it away *)
   let mp0 = ModPath.dummy in
   let state = ((Environ.universes env, Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let mb, (_, cst), _ = Mod_typing.translate_module state vm_state env mp0 inl (MExpr ([], me, None)) in
+  let mb, (_, cst), _, _ = Mod_typing.translate_module state Subtyping.Cache.empty vm_state env mp0 inl (MExpr ([], me, None)) in
   let sign = mod_type mb in
   let reso = mod_delta mb in
   Modops.subst_modtype_signature_and_resolver mp0 mp sign reso
@@ -202,7 +202,7 @@ let expand_mexpr env mp me =
 let expand_modtype env mp me =
   let inl = Declaremods.default_inline_level () in
   let state = ((Environ.universes env, Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let mtb, _cst, _ = Mod_typing.translate_modtype state vm_state env mp inl ([],me) in
+  let mtb, _cst, _, _ = Mod_typing.translate_modtype state Subtyping.Cache.empty vm_state env mp inl ([],me) in
   mtb
 
 let no_delta = Mod_subst.empty_delta_resolver

@@ -826,6 +826,13 @@ let vm_state =
   let vm_handler _ _ _ () = (), Vmemitcodes.BCuncompiled in
   ((), { Mod_typing.vm_handler })
 
+(* Cache of the module subtyping field checks performed on the
+   inference side. Cached verdicts stay valid as long as the global
+   environment evolves monotonically; keeping the cache in the summary
+   makes rolling the state back in time also roll the cache back (see
+   {!Subtyping.Cache}). *)
+let subtyping_cache = Summary.ref ~name:"module-subtyping-cache" Subtyping.Cache.empty
+
 module RawModOps = struct
 
 module Synterp = struct
@@ -970,7 +977,8 @@ module Interp = struct
 let check_sub env mp sub_mtb_l =
   let fold sub_mtb (cst, env) =
     let state = ((Environ.universes env, cst), Reductionops.inferred_universes) in
-    let ugraph, cst = Subtyping.check_subtypes ~direct:true state env mp mp sub_mtb in
+    let (ugraph, cst), cache = Subtyping.check_subtypes ~direct:true ~cache:(Summary.Ref.get subtyping_cache) state env mp mp sub_mtb in
+    let () = Summary.Ref.set subtyping_cache cache in
     (cst, Environ.set_universes ugraph env)
   in
   let cst, _ = List.fold_right fold sub_mtb_l (Univ.UnivConstraints.empty, env) in
@@ -1010,7 +1018,8 @@ let build_subtypes env mp args mtys =
       let state = ((Environ.universes env, Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
       (* functor arguments are already part of the env, we compute the type
          and requantify over them *)
-      let mtb, (_, cst), () = Mod_typing.translate_modtype state vm_state env mp inl ([], mte) in
+      let mtb, (_, cst), (), cache = Mod_typing.translate_modtype state (Summary.Ref.get subtyping_cache) vm_state env mp inl ([], mte) in
+      let () = Summary.Ref.set subtyping_cache cache in
       let fold (mbid, mtb, _, _) accu =
         MoreFunctor (mbid, mtb, accu)
       in
@@ -1037,7 +1046,8 @@ let intern_arg (acc, cst) (mbidl,(mty, base, kind, inl)) =
   let () = Global.push_context_set cst' in
   let () =
     let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-    let _, (_, cst), _ = Mod_typing.translate_modtype state vm_state (Global.env ()) base inl ([], mty) in
+    let _, (_, cst), _, cache = Mod_typing.translate_modtype state (Summary.Ref.get subtyping_cache) vm_state (Global.env ()) base inl ([], mty) in
+    let () = Summary.Ref.set subtyping_cache cache in
     Global.add_univ_constraints cst
   in
   let env = Global.env () in
@@ -1083,7 +1093,8 @@ let start_module_core id args res =
         let env = Environ.push_context_set ctx env in
         (* We check immediately that mte is well-formed *)
         let state = ((Environ.universes env, Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-        let _, (_, cst), _ = Mod_typing.translate_modtype state vm_state env mp inl ([], mte) in
+        let _, (_, cst), _, cache = Mod_typing.translate_modtype state (Summary.Ref.get subtyping_cache) vm_state env mp inl ([], mte) in
+        let () = Summary.Ref.set subtyping_cache cache in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some (mte, inl), [], ctx
     | Check resl ->
@@ -1114,10 +1125,11 @@ let end_module_core id m_info objects fs =
   let struc = current_struct () in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) m_info.cur_typ in
   let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let _, (_, cst), _ =
-    Mod_typing.finalize_module state vm_state (Global.env ()) (Global.current_modpath ())
+  let _, (_, cst), _, cache =
+    Mod_typing.finalize_module state (Summary.Ref.get subtyping_cache) vm_state (Global.env ()) (Global.current_modpath ())
       (struc, current_modresolver ()) restype'
   in
+  let () = Summary.Ref.set subtyping_cache cache in
   let () = Global.add_univ_constraints cst in
 
   let mp,mbids,resolver = Global.end_module fs id m_info.cur_typ in
@@ -1195,7 +1207,8 @@ let declare_module id args res mexpr_o =
   in
   let () = Global.push_context_set ctx in
   let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let _, (_, cst), _ = Mod_typing.translate_module state vm_state (Global.env ()) mp inl entry in
+  let _, (_, cst), _, cache = Mod_typing.translate_module state (Summary.Ref.get subtyping_cache) vm_state (Global.env ()) mp inl entry in
+  let () = Summary.Ref.set subtyping_cache cache in
   let () = Global.add_univ_constraints cst in
   let mp_env,resolver = Global.add_module id entry inl in
 
@@ -1321,7 +1334,8 @@ let declare_modtype id args mtys (mte,base,kind,inl) =
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
   let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let _, (_, mte_cst), _ = Mod_typing.translate_modtype state vm_state env mp inl ([], mte) in
+  let _, (_, mte_cst), _, cache = Mod_typing.translate_modtype state (Summary.Ref.get subtyping_cache) vm_state env mp inl ([], mte) in
+  let () = Summary.Ref.set subtyping_cache cache in
   let () = Global.push_context_set (Univ.Level.Set.empty, mte_cst) in
   let params = List.map (fun (mbid, _, mte, b) -> (mbid, mte, b)) params in
   let entry = params, mte in
@@ -1441,9 +1455,10 @@ let declare_one_include_core (me,base,kind,inl) =
   let base_mp = get_module_path me in
 
   let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let sign, (), resolver, (_, cst), _ =
-    Mod_typing.translate_mse_include is_mod state vm_state (Global.env ()) (Global.current_modpath ()) inl me
+  let sign, (), resolver, (_, cst), _, cache =
+    Mod_typing.translate_mse_include is_mod state (Summary.Ref.get subtyping_cache) vm_state (Global.env ()) (Global.current_modpath ()) inl me
   in
+  let () = Summary.Ref.set subtyping_cache cache in
   let () = Global.add_univ_constraints cst in
   let () = assert (ModPath.equal cur_mp (Global.current_modpath ())) in
   (* Include Self support  *)
@@ -1454,7 +1469,8 @@ let declare_one_include_core (me,base,kind,inl) =
       let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
       (* Module subcomponents are already part of env at this point *)
       let env = Environ.shallow_add_module cur_mp mb (Global.env ()) in
-      let (_, cst) = Subtyping.check_subtypes ~direct:true state env cur_mp (MPbound mbid) mtb in
+      let (_, cst), cache = Subtyping.check_subtypes ~direct:true ~cache:(Summary.Ref.get subtyping_cache) state env cur_mp (MPbound mbid) mtb in
+      let () = Summary.Ref.set subtyping_cache cache in
       let () = Global.add_univ_constraints cst in
       let mpsup_delta = match mod_global_delta mb with
       | None -> assert false (* mb is guaranteed not to be a functor here *)
