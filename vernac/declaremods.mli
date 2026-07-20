@@ -131,11 +131,7 @@ val start_modtype :
 
 val end_modtype : unit -> ModPath.t
 
-val register_library :
-  library_name ->
-  Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
-  Vmlibrary.on_disk ->
-  unit
+val register_library : library_name -> library_objects -> unit
 
 (** [import_module export mp] imports the module [mp].
    It modifies Nametab and performs the [open_object] function for

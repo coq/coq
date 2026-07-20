@@ -375,11 +375,7 @@ let register_library m =
   let l = m.library_data in
   Declaremods.Interp.register_library
     m.library_name
-    l.md_compiled
-    l.md_objects
-    m.library_digests
-    m.library_vm
-  ;
+    l.md_objects;
   register_native_library m.library_name
 
 let register_library_syntax (root, m) =
@@ -445,8 +441,15 @@ let warn_require_in_module =
     (fun () -> strbrk "Use of “Require” inside a module is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
+let kernel_load_require m =
+  let l = m.library_data in
+  let mp' = Global.import l.md_compiled m.library_vm m.library_digests in
+  if not (ModPath.equal (MPfile m.library_name) mp') then
+    anomaly (Pp.str "Unexpected disk module name.")
+
 let require_library_from_dirpath needed =
   if Lib.is_module_or_modtype () then warn_require_in_module ();
+  List.iter kernel_load_require needed;
   Lib.add_leaf (in_require needed)
 
 let require_library_syntax_from_dirpath ~intern modrefl =
