@@ -32,6 +32,7 @@ type synterp_entry =
   | EVernacNotation of { local : bool; decl : Metasyntax.notation_interpretation_decl }
   | EVernacBeginSection of Names.lident
   | EVernacEndSegment of Names.lident
+  | EVernacSafeRequire of Library.library_t list * DirPath.t list * qualid list
   | EVernacRequire of
       Library.library_t list * DirPath.t list * Vernacexpr.export_with_cats option * (qualid * Vernacexpr.import_filter_expr) list
   | EVernacImport of (Vernacexpr.export_flag * Libobject.open_filter) *

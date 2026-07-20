@@ -23,7 +23,9 @@ type library_t
 
 (** {6 ... }
     Require = load in the environment *)
-val require_library_from_dirpath : library_t list -> unit
+val require_library : library_t list -> unit
+
+val safe_require_interp : library_t list -> unit
 
 (** Intern from a .vo file located by libresolver *)
 module Intern : sig
@@ -40,9 +42,14 @@ val intern_from_file : CUnix.physical_path ->
   (library_t, Exninfo.iexn) Result.t * Intern.Provenance.t
 
 val require_library_syntax_from_dirpath
-  :  intern:Intern.t
+  : intern:Intern.t
   -> DirPath.t Loc.located list
   -> library_t list
+
+val safe_require_synterp
+  : intern:Intern.t ->
+  DirPath.t Loc.located list ->
+  library_t list
 
 (** {6 Start the compilation of a library } *)
 

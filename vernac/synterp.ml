@@ -55,6 +55,7 @@ type synterp_entry =
   | EVernacNotation of { local : bool; decl : Metasyntax.notation_interpretation_decl }
   | EVernacBeginSection of lident
   | EVernacEndSegment of lident
+  | EVernacSafeRequire of Library.library_t list * DirPath.t list * qualid list
   | EVernacRequire of
       Library.library_t list * DirPath.t list * export_with_cats option * (qualid * import_filter_expr) list
   | EVernacImport of (export_flag *
@@ -268,7 +269,7 @@ let deprecated_Coq from qidl =
         let p, id = Libnames.repr_qualid qid in
         List.rev (id :: DirPath.repr p) in
       let from = match from with None -> [] | Some from -> qid2idl from in
-      List.map (fun (qid, _) -> from @ qid2idl qid) qidl in
+      List.map (fun qid -> from @ qid2idl qid) qidl in
     let ids' = List.map Id.of_string ["Init"; "Setoids"; "Ltac"] in
     let in_rocq idl = match idl with
       | id :: id' :: _ -> Id.equal id coq_id && (CList.mem_f Id.equal id' ids')
@@ -290,14 +291,14 @@ let deprecated_Coq from qidl =
   let warn, from, qidl = match from with
     | Some from -> let w, from = repl_Coq_qid from in w, Some from, qidl
     | None ->
-       let w, qidl = CList.fold_left_map (fun w (qid, fe) ->
-           let w', qid = repl_Coq_qid qid in Option.append w w', (qid, fe))
+       let w, qidl = CList.fold_left_map (fun w qid ->
+           let w', qid = repl_Coq_qid qid in Option.append w w', qid)
          None qidl in
        w, from, qidl in
   let () = warn |> Option.iter (fun qid -> warn_deprecated_from_Coq ?loc:qid.loc qid) in
   from, qidl
 
-let synterp_require ~intern from export qidl =
+let require_locate from qidl =
   let from, qidl = deprecated_Coq from qidl in
   let root = match from with
   | None -> None
@@ -305,14 +306,22 @@ let synterp_require ~intern from export qidl =
     let (hd, tl) = Libnames.repr_qualid from in
     Some (Libnames.add_dirpath_suffix hd tl)
   in
-  let locate (qid,_) =
-    let open Loadpath in
-    match locate_qualified_library ?root qid with
-    | Ok (dir,_) -> (qid.loc, dir)
-    | Error LibUnmappedDir -> Loc.raise ?loc:qid.loc (UnmappedLibrary (root, qid))
-    | Error LibNotFound -> Loc.raise ?loc:qid.loc (NotFoundLibrary (root, qid))
-  in
-  let modrefl = List.map locate qidl in
+  List.map (fun qid ->
+      let open Loadpath in
+      match locate_qualified_library ?root qid with
+      | Ok (dir,_) -> (qid.loc, dir)
+      | Error LibUnmappedDir -> Loc.raise ?loc:qid.loc (UnmappedLibrary (root, qid))
+      | Error LibNotFound -> Loc.raise ?loc:qid.loc (NotFoundLibrary (root, qid)))
+    qidl
+
+let synterp_safe_require ~intern from qidl =
+  let modrefl = require_locate from qidl in
+  Coq_config.gc_ramp_up @@ fun () ->
+  let needed = Library.safe_require_synterp ~intern modrefl in
+  needed, List.map snd modrefl
+
+let synterp_require ~intern from export qidl =
+  let modrefl = require_locate from (List.map fst qidl) in
   Coq_config.gc_ramp_up @@ fun () ->
   let filenames = Library.require_library_syntax_from_dirpath ~intern modrefl in
   Option.iter (fun (export,cats) ->
@@ -411,6 +420,9 @@ let rec synterp ~intern ?loc ~atts v =
     | VernacEndSegment lid ->
       synterp_end_segment lid;
       EVernacEndSegment lid
+    | VernacSafeRequire (from, qidl) ->
+      let needed, modrefl = synterp_safe_require ~intern from qidl in
+      EVernacSafeRequire (needed, modrefl, qidl)
     | VernacRequire (from, export, qidl) ->
       let needed, modrefl = synterp_require ~intern from export qidl in
       EVernacRequire (needed, modrefl, export, qidl)
