@@ -1681,13 +1681,23 @@ let export ~output_native_objects senv dir =
   let vmlib = Vmlibrary.export @@ Environ.vm_library senv.env in
   mp, lib, vmlib, (ast, symbols)
 
-let import lib vmtab vodigest senv =
-  let senv = check_flags_for_library lib senv in
-  let required = check_required senv.required lib.comp_deps in
-  if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
+let import_gen ~replaying lib vmtab vodigest senv =
+  let () = if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
     CErrors.user_err
       Pp.(strbrk "Cannot load a library with the same name as the current one ("
-          ++ DirPath.print lib.comp_name ++ str").");
+          ++ DirPath.print lib.comp_name ++ str").")
+  in
+  let senv = check_flags_for_library lib senv in
+  let required = check_required senv.required lib.comp_deps in
+  let required =
+    if DirPath.Map.mem lib.comp_name required then
+      if replaying then
+        (* only happens in close_section, could probably be done in a saner way *)
+        required
+      else
+        CErrors.anomaly Pp.(str "Double kernel import of " ++ DirPath.print lib.comp_name ++ str ".")
+    else DirPath.Map.add lib.comp_name { req_root = true; req_digest = vodigest } required
+  in
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let univs = lib.comp_univs in
@@ -1711,12 +1721,6 @@ let import lib vmtab vodigest senv =
         {custom with rev_reimport = (lib,vmtab,vodigest) :: custom.rev_reimport}))
       senv.sections
   in
-  let required =
-    if DirPath.Map.mem lib.comp_name required then
-      (* should probably be an error, we are requiring the same library twice *)
-      required
-    else DirPath.Map.add lib.comp_name { req_root = true; req_digest = vodigest } required
-  in
   mp,
   { senv with
     env;
@@ -1727,6 +1731,9 @@ let import lib vmtab vodigest senv =
     loads = (mp,mb)::senv.loads;
     sections;
   }
+
+let import lib vmtab vodigest senv =
+  import_gen ~replaying:false lib vmtab vodigest senv
 
 (** {6 Interactive sections} *)
 
@@ -1757,8 +1764,10 @@ let close_section senv =
         rev_reimport; rev_revstruct = revstruct; rev_paramresolver = paramresolver } = revert in
   let env = if Environ.rewrite_rules_allowed env0 then Environ.allow_rewrite_rules env else env in
   let senv = { senv with env; revstruct; sections; univ; qualities; elims; objlabels; paramresolver } in
-  (* Second phase: replay Requires *)
-  let senv = List.fold_left (fun senv (lib,vmtab,vodigest) -> snd (import lib vmtab vodigest senv))
+  (* Second phase: replay Requires
+     should probably be done in a saner way that doesn't need the [replaying] flag *)
+  let senv = List.fold_left (fun senv (lib,vmtab,vodigest) ->
+      snd (import_gen ~replaying:true lib vmtab vodigest senv))
       senv (List.rev rev_reimport)
   in
   (* Third phase: replay the discharged section contents *)
