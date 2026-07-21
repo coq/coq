@@ -130,31 +130,30 @@ let uid v =
   else begin incr fid_counter; v.fid <- !fid_counter; !fid_counter end
 
 (* Conversion result cache. Within one conversion session the same pair of
-   cells is typically compared many times over, because beta-substitution
+   cells is typically compared many times over, because β-substitution
    shares payload cells across all the occurrences of a variable. Entries
-   record the outcome (success or failure) for a pair of cells, identified
-   by their stable ids, at a given lift pair and conversion problem. Only
-   sound for checked conversion, where results are deterministic and no
-   universe constraints are accumulated. *)
+   record the outcome (success or failure) for a pair of cells — identified
+   by their stable ids, modulo FLIFT wrappers — at a given lift pair and
+   conversion problem. Lifts are interned to small ids so that keys and
+   payloads fit in machine integers, stored in a flat open-addressing
+   table. Only sound for checked conversion, where results are
+   deterministic and no universe constraints are accumulated. *)
 module ConvCache = struct
 
-  module Key = struct
-    (* ids of the two cells, and whether the problem is cumulativity *)
-    type t = int * int * bool
-    let equal (u1, v1, b1) (u2, v2, b2) =
-      Int.equal u1 u2 && Int.equal v1 v2 && Bool.equal b1 b2
-    let hash (u, v, b) =
-      (* ids are dense small integers, already good hashes *)
-      let h = u * 0x3B9ACA07 + v in
-      let h = h lxor (h lsr 16) in
-      if b then h lxor 0x5BF03635 else h
-  end
-
-  module Tbl = Hashtbl.Make(Key)
+  module LiftTbl = Hashtbl.Make(struct
+    type t = lift
+    let equal = eq_lift
+    let hash = hash_lift
+  end)
 
   type t = {
-    tbl : (lift * lift * bool) list ref Tbl.t;
-    mutable size : int;
+    (* key.(i) = (fid1 lsl 31) lor fid2; 0 = empty slot (ids are never 0) *)
+    mutable key : int array;
+    (* meta.(i) = (lid1 lsl 18) lor (lid2 lsl 3) lor (cumul lsl 1) lor result *)
+    mutable meta : int array;
+    mutable cnt : int;
+    lifts : int LiftTbl.t;
+    mutable nlifts : int;
   }
 
   (* Optional cap on cached entries per session (ROCQ_CONV_CACHE_MAX; 0 means
@@ -173,14 +172,85 @@ module ConvCache = struct
     | _ -> true
     | exception Not_found -> true
 
-  let create () = if enabled then Some { tbl = Tbl.create 16; size = 0 } else None
+  let create () =
+    if enabled then
+      Some { key = Array.make 256 0; meta = Array.make 256 0; cnt = 0;
+             lifts = LiftTbl.create 16; nlifts = 0 }
+    else None
 
-  (* Lifts are part of the entries rather than the keys: cells are shared
-     under beta-substitution at varying depths, so the same pair recurs
-     under a handful of lift pairs and a short scan beats hashing them. *)
   let rec strip_flift k v = match [@ocaml.warning "-4"] v.term with
   | FLIFT (n, v') -> strip_flift (k + n) v'
   | _ -> (k, v)
+
+  (* Interned lift id, or -1 once the 15-bit id space is exhausted. *)
+  let intern cache l =
+    match LiftTbl.find_opt cache.lifts l with
+    | Some id -> id
+    | None ->
+      let id = cache.nlifts in
+      if id >= 1 lsl 15 then -1
+      else begin
+        cache.nlifts <- id + 1;
+        LiftTbl.add cache.lifts l id;
+        id
+      end
+
+  let mix pk m =
+    let h = pk + m * 0x9E3779B97F4A7C1 in
+    let h = h lxor (h lsr 29) in
+    let h = h * 0x3F58476D1CE4E5B9 in
+    h lxor (h lsr 32)
+
+  (* -1 = absent, 0 = cached failure, 1 = cached success.
+     [meta0] must have the result bit clear. *)
+  let find cache pk meta0 =
+    let mask = Array.length cache.key - 1 in
+    let rec go i =
+      let k = Array.unsafe_get cache.key i in
+      if k == 0 then -1
+      else if k == pk
+           && (Array.unsafe_get cache.meta i) lor 1 == meta0 lor 1 then
+        (Array.unsafe_get cache.meta i) land 1
+      else go ((i + 1) land mask)
+    in
+    go ((mix pk meta0) land mask)
+
+  let insert_raw key meta pk m =
+    let mask = Array.length key - 1 in
+    let rec go i =
+      if Array.unsafe_get key i == 0 then begin
+        Array.unsafe_set key i pk;
+        Array.unsafe_set meta i m
+      end else go ((i + 1) land mask)
+    in
+    go ((mix pk (m land lnot 1)) land mask)
+
+  let resize cache =
+    let old_k = cache.key and old_m = cache.meta in
+    let n = Array.length old_k * 2 in
+    let key = Array.make n 0 and meta = Array.make n 0 in
+    for i = 0 to Array.length old_k - 1 do
+      let pk = Array.unsafe_get old_k i in
+      if pk != 0 then insert_raw key meta pk (Array.unsafe_get old_m i)
+    done;
+    cache.key <- key;
+    cache.meta <- meta
+
+  (* Packed key and (result-bit-clear) payload for a pair, or [None] when
+     the ids or interned lifts do not fit the packing: such pairs simply
+     run uncached. *)
+  let pack cache ~cumul lft1 t1 lft2 t2 =
+    let (k1, v1) = strip_flift 0 t1 in
+    let (k2, v2) = strip_flift 0 t2 in
+    let fid1 = uid v1 in
+    let fid2 = uid v2 in
+    let lid1 = intern cache (el_shft k1 lft1) in
+    let lid2 = if lid1 < 0 then -1 else intern cache (el_shft k2 lft2) in
+    if lid2 < 0 || fid1 >= 1 lsl 31 || fid2 >= 1 lsl 31 then None
+    else
+      let pk = (fid1 lsl 31) lor fid2 in
+      let pb = if cumul then 1 else 0 in
+      Some (pk, (lid1 lsl 18) lor (lid2 lsl 3) lor (pb lsl 1))
 
   (* [probe] and [record] renormalize the pair independently, so nothing
      probe computed needs to stay live across the comparison run between
@@ -188,36 +258,22 @@ module ConvCache = struct
      heap whenever the comparison spans a minor collection. *)
 
   let probe cache ~cumul lft1 t1 lft2 t2 =
-    let (k1, v1) = strip_flift 0 t1 in
-    let (k2, v2) = strip_flift 0 t2 in
-    let l1 = el_shft k1 lft1 in
-    let l2 = el_shft k2 lft2 in
-    let key = (uid v1, uid v2, cumul) in
-    match Tbl.find_opt cache.tbl key with
+    match pack cache ~cumul lft1 t1 lft2 t2 with
     | None -> None
-    | Some entries ->
-      let rec find = function
-      | [] -> None
-      | (l1', l2', r) :: rest ->
-        if eq_lift l1' l1 && eq_lift l2' l2 then
-          (* constant blocks: the hit path does not allocate *)
-          if r then Some true else Some false
-        else find rest
-      in
-      find !entries
+    | Some (pk, meta0) ->
+      match find cache pk meta0 with
+      | 1 -> Some true
+      | 0 -> Some false
+      | _ -> None
 
   let record cache ~cumul lft1 t1 lft2 t2 r =
-    if cache.size < max_size then begin
-      let (k1, v1) = strip_flift 0 t1 in
-      let (k2, v2) = strip_flift 0 t2 in
-      let l1 = el_shft k1 lft1 in
-      let l2 = el_shft k2 lft2 in
-      let key = (uid v1, uid v2, cumul) in
-      cache.size <- cache.size + 1;
-      match Tbl.find_opt cache.tbl key with
-      | Some entries -> entries := (l1, l2, r) :: !entries
-      | None -> Tbl.add cache.tbl key (ref [(l1, l2, r)])
-    end
+    if cache.cnt < max_size then
+      match pack cache ~cumul lft1 t1 lft2 t2 with
+      | None -> ()
+      | Some (pk, meta0) ->
+        if 2 * (cache.cnt + 1) > Array.length cache.key then resize cache;
+        cache.cnt <- cache.cnt + 1;
+        insert_raw cache.key cache.meta pk (meta0 lor (if r then 1 else 0))
 
 end
 

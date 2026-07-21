@@ -405,6 +405,9 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   let fast = fast_test lft1 term1 lft2 term2 in
   if fast then cuniv
   else
+    (* NOTE: entry-wise first-order comparison of same-body FCLOS pairs was
+       tried here and regressed badly (failing entries ground then thrown
+       away by the fallback); do not re-add without a failure cache. *)
     match infos.cnv_cache with
     | None ->
       eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
@@ -414,6 +417,8 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
       | Some true -> cuniv
       | Some false -> raise NotConvertible
       | None ->
+        (* NOTE: a post-whd second cache probe on the reduced bare states
+           was tried here and measured useless (2 hits in 13.2M probes). *)
         match eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv with
         | cuniv ->
           ConvCache.record cache ~cumul lft1 term1 lft2 term2 true; cuniv

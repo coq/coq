@@ -123,6 +123,9 @@ val lift_subst : (lift -> 'a -> 'b) -> lift -> 'a subs -> 'b subs
 (** Structural equality for lifts *)
 val eq_lift : lift -> lift -> bool
 
+(** Structural hash consistent with [eq_lift]. *)
+val hash_lift : lift -> int
+
 (** Debugging utilities *)
 module Internal :
 sig
