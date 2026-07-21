@@ -45,15 +45,32 @@ let current_extern = PrintingFlags.Extern.current
    and only names of goal/section variables and rel names that do
    _not_ occur in the scope of the binder to be printed are avoided. *)
 
+(* When a [Printing Reversible] flag is set, the externalization is
+   checked for reparsability and the printing flags are possibly made
+   more explicit accordingly, hence rendering uses the flags returned
+   by [ReversiblePrinting.checked_extern]. *)
+let checked_extern_constr ?inctx ?scope ~flags env sigma t =
+  ReversiblePrinting.checked_extern ~flags
+    ~extern:(fun ~flags -> extern_constr ?inctx ?scope ~flags env sigma t)
+    ~kind:ReversiblePrinting.Term env sigma t
+
+let checked_extern_type ?goal_concl_style ?impargs ~flags env sigma t =
+  ReversiblePrinting.checked_extern ~flags
+    ~extern:(fun ~flags -> extern_type ?goal_concl_style ~flags env sigma ?impargs t)
+    ~kind:ReversiblePrinting.Type env sigma t
+
 let pr_econstr_n_env ?inctx ?scope ?(flags=current_combined()) env sigma n t =
+  let flags, c = checked_extern_constr ?inctx ?scope ~flags env sigma t in
   let ppflags = Ppconstr.of_printing_flags flags in
-  pr_constr_expr_n ~flags:ppflags env sigma n (extern_constr ?inctx ?scope ~flags env sigma t)
+  pr_constr_expr_n ~flags:ppflags env sigma n c
 let pr_econstr_env ?inctx ?scope ?(flags=current_combined()) env sigma t =
+  let flags, c = checked_extern_constr ?inctx ?scope ~flags env sigma t in
   let ppflags = Ppconstr.of_printing_flags flags in
-  pr_constr_expr ~flags:ppflags env sigma (extern_constr ?inctx ?scope ~flags env sigma t)
+  pr_constr_expr ~flags:ppflags env sigma c
 let pr_leconstr_env ?inctx ?scope ?(flags=current_combined()) env sigma t =
+  let flags, c = checked_extern_constr ?inctx ?scope ~flags env sigma t in
   let ppflags = Ppconstr.of_printing_flags flags in
-  Ppconstr.pr_lconstr_expr ~flags:ppflags env sigma (extern_constr ?inctx ?scope ~flags env sigma t)
+  Ppconstr.pr_lconstr_expr ~flags:ppflags env sigma c
 
 let pr_constr_n_env ?inctx ?scope ?flags env sigma n c =
   pr_econstr_n_env ?inctx ?scope ?flags env sigma n (EConstr.of_constr c)
@@ -73,11 +90,13 @@ let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
 let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_env
 
 let pr_etype_env ?goal_concl_style ?(flags=current_combined()) env sigma t =
+  let flags, c = checked_extern_type ?goal_concl_style ~flags env sigma t in
   let ppflags = Ppconstr.of_printing_flags flags in
-  pr_constr_expr ~flags:ppflags env sigma (extern_type ?goal_concl_style ~flags env sigma t)
+  pr_constr_expr ~flags:ppflags env sigma c
 let pr_letype_env ?goal_concl_style ?(flags=current_combined()) env sigma ?impargs t =
+  let flags, c = checked_extern_type ?goal_concl_style ?impargs ~flags env sigma t in
   let ppflags = Ppconstr.of_printing_flags flags in
-  pr_lconstr_expr ~flags:ppflags env sigma (extern_type ?goal_concl_style ~flags env sigma ?impargs t)
+  pr_lconstr_expr ~flags:ppflags env sigma c
 
 let pr_type_env ?goal_concl_style ?flags env sigma c =
   pr_etype_env ?goal_concl_style ?flags env sigma (EConstr.of_constr c)

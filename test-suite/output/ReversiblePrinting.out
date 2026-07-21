@@ -1,0 +1,62 @@
+eq_refl
+     : 0 = 0
+eq_refl
+     : 0 = 0
+@eq_refl nat 0
+     : 0 = 0
+Printing Reversible Up To Unification is off
+Printing Reversible Up To Conversion Modulo Sorts And Universes is off
+Printing Reversible Up To Conversion Modulo Universe Unification is off
+Printing Reversible Up To Conversion is on
+pid@{u}
+     : forall A : Type@{u}, A -> A
+pid
+     : forall A : Type, A -> A
+Type
+     : Type
+pid
+     : forall A : Type, A -> A
+File "./output/ReversiblePrinting.v", line 50, characters 0-11:
+Warning: The printed form of this term could not be re-parsed and
+re-elaborated to an equal term (up to
+conversion modulo universe unification), even with all printing options
+turned on. [reversible-printing,default]
+File "./output/ReversiblePrinting.v", line 50, characters 0-11:
+Warning: The printed form of this term could not be re-parsed and
+re-elaborated to an equal term (up to
+conversion modulo universe unification), even with all printing options
+turned on. [reversible-printing,default]
+Type@{ReversiblePrinting.47}
+     : Type@{ReversiblePrinting.47+1}
+pid
+     : forall A : Type, A -> A
+idT@{Prop ; Set}
+     : forall A : Prop, A -> A
+idT
+     : forall A : Prop, A -> A
+idT
+     : forall A : Prop, A -> A
+Type
+     : Type
+@eq_refl nat 0
+     : 0 = 0
+eq_refl
+     : 0 = 0
+2 * 3
+     : nat
+Nat.add 2 3
+     : nat
+1 goal
+  
+  ============================
+  @eq_refl nat 0 = @eq_refl nat 0
+File "./output/ReversiblePrinting.v", line 106, characters 0-11:
+Warning: The printed form of this term could not be re-parsed and
+re-elaborated to an equal term (up to conversion), even with all printing
+options turned on. [reversible-printing,default]
+File "./output/ReversiblePrinting.v", line 106, characters 0-11:
+Warning: The printed form of this term could not be re-parsed and
+re-elaborated to an equal term (up to conversion), even with all printing
+options turned on. [reversible-printing,default]
+Type@{ReversiblePrinting.88}
+     : Type@{ReversiblePrinting.88+1}
