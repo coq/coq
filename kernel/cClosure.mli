@@ -112,6 +112,11 @@ val mk_clos_vect : usubs -> constr array -> fconstr array
 val zip : fconstr -> stack -> fconstr
 
 val fterm_of : fconstr -> fterm
+
+(** Stable id of a cell, lazily assigned; survives in-place reduction
+    updates. Used by the conversion cache. *)
+val get_fid : fconstr -> int
+
 val term_of_fconstr : fconstr -> constr
 val term_of_process : fconstr -> stack -> constr
 val destFLambda :
