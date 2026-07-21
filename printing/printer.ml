@@ -624,6 +624,7 @@ type axiom =
   | Positive of MutInd.t
   | Guarded of GlobRef.t
   | TypeInType of GlobRef.t
+  | UncheckedEliminations of GlobRef.t
   | UIP of MutInd.t
   | IndicesNotMattering of MutInd.t
 
@@ -647,7 +648,8 @@ struct
     | IndicesNotMattering m1, IndicesNotMattering m2 ->
       MutInd.UserOrd.compare m1 m2
     | Guarded k1 , Guarded k2
-    | TypeInType k1, TypeInType k2 ->
+    | TypeInType k1, TypeInType k2
+    | UncheckedEliminations k1, UncheckedEliminations k2 ->
       GlobRef.UserOrd.compare k1 k2
     | Constant _, _ -> -1
     | _, Constant _ -> 1
@@ -657,6 +659,8 @@ struct
     | _, Guarded _ -> 1
     | TypeInType _, _ -> -1
     | _, TypeInType _ -> 1
+    | UncheckedEliminations _, _ -> -1
+    | _, UncheckedEliminations _ -> 1
     | UIP _, _ -> -1
     | _, UIP _ -> 1
 
@@ -681,6 +685,7 @@ type theory_assumptions = {
   has_impredicative_set : bool;
   has_rewrite_rules : bool;
   has_type_in_type : bool;
+  has_unchecked_eliminations : bool;
 }
 
 let pr_assumptionset ?(flags=current_combined()) env sigma theory_info s =
@@ -697,6 +702,7 @@ let pr_assumptionset ?(flags=current_combined()) env sigma theory_info s =
   let show_theory_impredicative_set = (print_all && theory_info.has_impredicative_set) || is_impredicative_set env in
   let show_theory_rewrite_rules = (print_all && theory_info.has_rewrite_rules) || rewrite_rules_allowed env in
   let show_theory_type_in_type = (print_all && theory_info.has_type_in_type) || type_in_type env in
+  let show_theory_unchecked_eliminations = (print_all && theory_info.has_unchecked_eliminations) || ignore_elim_constraints env in
   if ContextObjectMap.is_empty s &&
        not show_theory_rewrite_rules &&
        not show_theory_impredicative_set then
@@ -740,6 +746,8 @@ let pr_assumptionset ?(flags=current_combined()) env sigma theory_info s =
           hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"is assumed to be guarded.")
       | TypeInType gr ->
           hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
+      | UncheckedEliminations gr ->
+          hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on unchecked sort eliminations.")
       | UIP mind ->
           hov 2 (safe_pr_inductive env mind ++ spc () ++ strbrk"relies on definitional UIP.")
       | IndicesNotMattering mind ->
@@ -793,6 +801,11 @@ let pr_assumptionset ?(flags=current_combined()) env sigma theory_info s =
         str "Type hierarchy is collapsed (logic is inconsistent)" :: theory
       else theory
     in
+    let theory =
+      if show_theory_unchecked_eliminations then
+        str "Sort elimination constraints are not checked (logic is inconsistent)" :: theory
+      else theory
+    in
     let opt_list title = function
     | [] -> None
     | l ->
@@ -814,6 +827,7 @@ let pr_typing_flags flags =
   str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
   ++ str "check_positive: " ++ bool flags.check_positive ++ fnl ()
   ++ str "check_universes: " ++ bool flags.check_universes ++ fnl ()
+  ++ str "check_eliminations: " ++ bool flags.check_eliminations ++ fnl ()
   ++ str "definitional uip: " ++ bool flags.allow_uip
 
 module Debug =

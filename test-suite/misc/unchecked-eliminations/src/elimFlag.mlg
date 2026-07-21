@@ -1,0 +1,10 @@
+{
+open ElimFlagImpl
+}
+
+DECLARE PLUGIN "coq-test-suite.elim_flag"
+
+VERNAC COMMAND EXTEND ElimChecking CLASSIFIED AS SIDEFF
+| [ "Unset" "Test" "Elimination" "Checking" ] -> { set_elimination_checking false }
+| [ "Set" "Test" "Elimination" "Checking" ] -> { set_elimination_checking true }
+END

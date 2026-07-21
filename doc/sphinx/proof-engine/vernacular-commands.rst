@@ -449,7 +449,9 @@ Requests to the environment
    (i.e., whose behavior would change under ``-indices-matter`` or :flag:`Indices Matter`),
    as well as uses of disabled typing flags such as
    :flag:`Guard Checking`, :flag:`Positivity Checking`,
-   :flag:`Universe Checking`, and :flag:`Definitional UIP`.
+   :flag:`Universe Checking`, :flag:`Definitional UIP`, and disabled
+   sort elimination checking (the ``check_eliminations`` typing flag,
+   which has no vernacular setter and can only be disabled from a plugin).
 
    The message "Closed under the global context" indicates that all the theorems and
    definitions have no dependencies.
@@ -458,7 +460,8 @@ Requests to the environment
 
    Turn this :term:`flag` on to make :cmd:`Print Assumptions` report
    theory assumptions (impredicativity of :g:`Set`, rewrite rules,
-   disabled universe checking, indices not mattering) according to the
+   disabled universe checking, disabled sort elimination checking,
+   indices not mattering) according to the
    typing flags each dependency was typechecked with, in addition to
    the settings of the current environment.  For instance, a definition
    typechecked with ``-impredicative-set`` is reported as assuming the
@@ -1223,8 +1226,13 @@ Controlling Typing Flags
 
 .. cmd:: Print Typing Flags
 
-   Print the status of the three typing flags: guard checking, positivity checking
-   and universe checking.
+   Print the status of the typing flags: guard checking, positivity checking,
+   universe checking and elimination checking.
+
+   The elimination checking flag has no vernacular setter; it can only be
+   disabled from a plugin (via ``Global.set_typing_flags``). When it is
+   disabled, inductive types (and constants depending on them) declared in
+   that state are reported by :cmd:`Print Assumptions`.
 
 .. example::
 

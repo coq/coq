@@ -234,6 +234,7 @@ type axiom =
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
   | Guarded of GlobRef.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
   | TypeInType of GlobRef.t (* a constant which relies on type in type *)
+  | UncheckedEliminations of GlobRef.t (* a constant or inductive whose sort elimination constraints were not checked *)
   | UIP of MutInd.t (* An inductive using the special reduction rule. *)
   | IndicesNotMattering of MutInd.t (* An inductive relying on indices not mattering. *)
 
@@ -251,6 +252,7 @@ type theory_assumptions = {
   has_impredicative_set : bool;
   has_rewrite_rules : bool;
   has_type_in_type : bool;
+  has_unchecked_eliminations : bool;
 }
 
 val pr_assumptionset : ?flags:PrintingFlags.t ->

@@ -1,0 +1,11 @@
+package "elim_flag" (
+    directory = "."
+    version = "dev"
+    description = "A test plugin toggling the check_eliminations typing flag"
+    requires = "rocq-runtime.plugins.ltac"
+    archive(byte) = "elim_flag_plugin.cma"
+    archive(native) = "elim_flag_plugin.cmxa"
+    plugin(byte) = "elim_flag_plugin.cma"
+    plugin(native) = "elim_flag_plugin.cmxs"
+)
+directory = "."
