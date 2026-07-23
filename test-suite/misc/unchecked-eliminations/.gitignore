@@ -1,4 +1,3 @@
 /Makefile*
-/log
-/chklog
+/*.real
 /src/elimFlag.ml

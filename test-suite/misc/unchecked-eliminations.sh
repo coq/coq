@@ -4,9 +4,10 @@
 # typing flag. This test builds a tiny plugin that toggles it via
 # [Global.set_typing_flags] (the way rocq-lean-import does), declares a
 # squashed Prop inductive with a large elimination while the flag is off, and
-# checks that both [Print Assumptions] and [rocq check] report it.
+# compares the output of [Print Assumptions], [Print Typing Flags] and
+# [rocq check] against reference files.
 
-set -ex
+set -e
 
 export COQBIN=$BIN
 export PATH=$COQBIN:$PATH
@@ -20,30 +21,8 @@ make clean
 
 make src/elim_flag_plugin.cmxs
 
-# Compile the .v, capturing the Print Assumptions / Print Typing Flags output.
-rocq c -I src -Q theories UncheckedElim theories/unchecked.v 2>&1 | tee log
+rocq c -q -I src -Q theories UncheckedElim theories/unchecked.v > unchecked.out.real 2>&1
+diff -u --strip-trailing-cr unchecked.out unchecked.out.real
 
-# checked_or (declared with the flag on) must NOT be reported.
-# Anchor at line start so this does not match "unchecked_or".
-grep -q "^checked_or relies on unchecked sort eliminations" log && {
-  >&2 echo "checked_or should not rely on unchecked eliminations"
-  exit 1
-}
-
-# unchecked_or and its constructors (declared with the flag off) must be
-# reported as relying on unchecked sort eliminations.
-grep -q "^unchecked_or relies on unchecked sort eliminations" log
-grep -q "^unchecked_l relies on unchecked sort eliminations" log
-grep -q "^unchecked_r relies on unchecked sort eliminations" log
-
-# The theory summary line appears under Set Printing All Assumptions.
-grep -q "Sort elimination constraints are not checked (logic is inconsistent)" log
-
-# Print Typing Flags reports the flag.
-grep -q "check_eliminations:" log
-
-# rocq check must report the inductive in its context summary.
-rocq check -Q theories UncheckedElim -o -silent -norec UncheckedElim.unchecked 2>&1 | tee chklog
-
-grep -q "Constants/Inductives relying on unchecked sort eliminations" chklog
-grep -q "UncheckedElim.unchecked.unchecked_or" chklog
+rocq check -Q theories UncheckedElim -o -silent -norec UncheckedElim.unchecked > unchecked.chk.real 2>&1
+diff -u --strip-trailing-cr unchecked.chk unchecked.chk.real

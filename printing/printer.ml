@@ -827,7 +827,10 @@ let pr_typing_flags flags =
   str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
   ++ str "check_positive: " ++ bool flags.check_positive ++ fnl ()
   ++ str "check_universes: " ++ bool flags.check_universes ++ fnl ()
-  ++ str "check_eliminations: " ++ bool flags.check_eliminations ++ fnl ()
+  (* shown only when disabled: this flag has no vernacular setter and should
+     stay obscure (see #22294 discussion) *)
+  ++ (if flags.check_eliminations then mt ()
+      else str "check_eliminations: " ++ bool flags.check_eliminations ++ fnl ())
   ++ str "definitional uip: " ++ bool flags.allow_uip
 
 module Debug =
