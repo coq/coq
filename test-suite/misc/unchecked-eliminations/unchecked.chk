@@ -1,0 +1,28 @@
+
+CONTEXT SUMMARY
+===============
+
+* Theory: Set is predicative
+  
+* Theory: Rewrite rules are not allowed
+  
+* Axioms: <none>
+  
+* Constants/Inductives relying on type-in-type: <none>
+  
+* Constants/Inductives relying on unchecked sort eliminations:
+    UncheckedElim.unchecked.unchecked_or
+    UncheckedElim.unchecked.unchecked_or_sind
+    UncheckedElim.unchecked.unchecked_or_rect
+    UncheckedElim.unchecked.unchecked_large
+    UncheckedElim.unchecked.unchecked_or_rec
+    UncheckedElim.unchecked.unchecked_or_ind
+  
+* Constants/Inductives relying on unsafe (co)fixpoints: <none>
+  
+* Inductives whose positivity is assumed: <none>
+  
+* Inductives relying on indices not mattering:
+    Corelib.Init.Datatypes.eq_true
+    Corelib.Init.Logic.eq
+  

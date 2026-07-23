@@ -17,6 +17,10 @@ Print Assumptions checked_or.
    does; there is intentionally no vernacular setter for this flag. *)
 Unset Test Elimination Checking.
 
+(* While disabled, Print Typing Flags shows the flag; when it is at its
+   default (true) the line is omitted entirely. *)
+Print Typing Flags.
+
 Inductive unchecked_or (A B : Prop) : Prop :=
 | unchecked_l : A -> unchecked_or A B
 | unchecked_r : B -> unchecked_or A B.
