@@ -1033,6 +1033,16 @@ It means that `s` and `s'` can respectively be instantiated to e.g., `Type` and 
    become at the end of the definition unless it is unified with
    another rigid quality).
 
+.. flag:: Printing Sort Quality Variables Anonymously
+
+   When this :term:`flag` is on (it is off by default), sort quality
+   variables that cannot be referred to by name are printed as ``_``
+   (which, when parsed back, denotes a fresh quality variable) instead
+   of their raw representation — ``α`` followed by a number — which
+   cannot be parsed back. Quality variables that have a name (such as
+   the ``s`` of a ``@{s;u}`` universe declaration, in contexts where it
+   is bound) are printed by name as usual.
+
 Explicit Sorts
 ---------------
 

@@ -787,36 +787,44 @@ let extern_glob_sort_name uvars = function
       | None -> CRawType u
     end
 
-let extern_glob_quality uvars = function
+let extern_glob_quality ~anon_qvars uvars = function
   | GLocalQVar {v=Anonymous;loc} -> CQAnon loc
   | GLocalQVar {v=Name id; loc} -> CQVar (qualid_of_ident ?loc id)
   | GRawQVar q -> CRawQuality (QVar q)
   | GQuality q -> begin match UnivNames.qualid_of_quality uvars q with
     | Some qid -> CQVar qid
-    | None -> CRawQuality q
+    | None ->
+      (* A quality variable with no name has no parsable form; print it
+         as "_" (a fresh quality variable when parsed back) when
+         [anon_qvars]. *)
+      match q with
+      | QVar _ when anon_qvars -> CQAnon None
+      | _ -> CRawQuality q
     end
 
-let extern_relevance uvars = function
+let extern_relevance ~anon_qvars uvars = function
   | GRelevant -> CRelevant
   | GIrrelevant -> CIrrelevant
-  | GRelevanceVar q -> CRelevanceVar (extern_glob_quality uvars q)
+  | GRelevanceVar q -> CRelevanceVar (extern_glob_quality ~anon_qvars uvars q)
 
-let extern_relevance_info uvars = Option.map (extern_relevance uvars)
+let extern_relevance_info ~anon_qvars uvars = Option.map (extern_relevance ~anon_qvars uvars)
 
-let extern_glob_sort uvars (q, l) =
-  Option.map (extern_glob_quality uvars) q,
+let extern_glob_sort ~anon_qvars uvars (q, l) =
+  Option.map (extern_glob_quality ~anon_qvars uvars) q,
   map_glob_sort_gen (List.map (on_fst (extern_glob_sort_name uvars))) l
 
-let extern_instance uvars = function
+let extern_instance ~anon_qvars uvars = function
   | Some (ql,ul) ->
-    let ql = List.map (extern_glob_quality uvars) ql in
+    let ql = List.map (extern_glob_quality ~anon_qvars uvars) ql in
     let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) ul in
     Some (ql,ul)
   | None -> None
 
-let extern_ref {vars; uvars} ref us =
+let anon_qvars eenv = eenv.flags.ExternFlags.anonymous_qvars
+
+let extern_ref ({vars; uvars; _} as eenv) ref us =
   extern_global (select_stronger_impargs (implicits_of_global ref))
-    (extern_reference vars ref) (extern_instance uvars us)
+    (extern_reference vars ref) (extern_instance ~anon_qvars:(anon_qvars eenv) uvars us)
 
 let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 
@@ -926,7 +934,7 @@ let rec extern depth0 inctx scopes (eenv:extern_env) r =
              (* Otherwise... *)
                extern_applied_ref ~flags inctx
                  (select_stronger_impargs (implicits_of_global ref))
-                 (ref,extern_reference ?loc eenv.vars ref) (extern_instance eenv.uvars us) args)
+                 (ref,extern_reference ?loc eenv.vars ref) (extern_instance ~anon_qvars:(anon_qvars eenv) eenv.uvars us) args)
          | GProj (f,params,c) ->
              extern_applied_proj depth inctx scopes eenv f params c args
          | _ ->
@@ -1030,7 +1038,7 @@ let rec extern depth0 inctx scopes (eenv:extern_env) r =
              in
              CCoFix (CAst.(make ?loc idv.(n)),Array.to_list listdecl))
 
-  | GSort s -> CSort (extern_glob_sort eenv.uvars s)
+  | GSort s -> CSort (extern_glob_sort ~anon_qvars:(anon_qvars eenv) eenv.uvars s)
 
   | GHole e -> CHole (Some e)
 
@@ -1056,7 +1064,7 @@ let rec extern depth0 inctx scopes (eenv:extern_env) r =
 
   | GArray(u,t,def,ty) ->
     CArray(
-      extern_instance eenv.uvars u,
+      extern_instance ~anon_qvars:(anon_qvars eenv) eenv.uvars u,
       Array.map (extern depth inctx scopes eenv) t,
       extern depth inctx scopes eenv def,
       extern_typ depth scopes eenv ty)
@@ -1070,7 +1078,7 @@ and sub_extern depth inctx (subentry,(_,scopes)) = extern depth inctx (subentry,
 
 and factorize_prod depth scopes eenv na r bk t c =
   let implicit_type = is_reserved_type ~flags:eenv.flags na t in
-  let r = extern_relevance_info eenv.uvars r in
+  let r = extern_relevance_info ~anon_qvars:(anon_qvars eenv) eenv.uvars r in
   let aty = extern_typ depth scopes eenv t in
   let eenv = add_vname eenv na in
   let store, get = set_temporary_memory () in
@@ -1107,7 +1115,7 @@ and factorize_prod depth scopes eenv na r bk t c =
 
 and factorize_lambda depth inctx scopes eenv na r bk t c =
   let implicit_type = is_reserved_type ~flags:eenv.flags na t in
-  let r = extern_relevance_info eenv.uvars r in
+  let r = extern_relevance_info ~anon_qvars:(anon_qvars eenv) eenv.uvars r in
   let aty = extern_typ depth scopes eenv t in
   let eenv = add_vname eenv na in
   let store, get = set_temporary_memory () in
@@ -1150,7 +1158,7 @@ and extern_local_binder depth scopes eenv = function
       let (assums,ids,l) =
         extern_local_binder depth scopes (on_eenv_vars (Name.fold_right Id.Set.add na) eenv) l in
       (assums,na::ids,
-       CLocalDef(CAst.make na, extern_relevance_info eenv.uvars r, extern depth false scopes eenv bd,
+       CLocalDef(CAst.make na, extern_relevance_info ~anon_qvars:(anon_qvars eenv) eenv.uvars r, extern depth false scopes eenv bd,
                    Option.map (extern_typ depth scopes eenv) ty) :: l)
 
     | GLocalAssum (na,r,bk,ty) ->
@@ -1167,7 +1175,7 @@ and extern_local_binder depth scopes eenv = function
        | (assums,ids,l) ->
          let ty = if implicit_type then hole else ty in
          (na::assums,na::ids,
-          CLocalAssum([CAst.make na],extern_relevance_info eenv.uvars r,Default bk,ty) :: l))
+          CLocalAssum([CAst.make na],extern_relevance_info ~anon_qvars:(anon_qvars eenv) eenv.uvars r,Default bk,ty) :: l))
 
     | GLocalPattern ((p,_),_,bk,_) ->
       let p = mkCPatOr (List.map (extern_cases_pattern ~flags:eenv.flags eenv.vars) p) in
@@ -1305,7 +1313,7 @@ and extern_applied_proj depth inctx scopes eenv (cst,us) params c extraargs =
   let args = extern_args (extern depth true) eenv args in
   let imps = select_stronger_impargs (implicits_of_global ref) in
   let f = extern_reference eenv.vars ref in
-  let us = extern_instance eenv.uvars us in
+  let us = extern_instance ~anon_qvars:(anon_qvars eenv) eenv.uvars us in
   extern_projection ~flags:eenv.flags inctx (f,us) nparams args imps
 
 let extern inctx scopes eenv c : constr_expr = extern (init_depth eenv.flags) inctx scopes eenv c
@@ -1346,8 +1354,8 @@ let extern_type ?(goal_concl_style=false) ~(flags:PrintingFlags.t) env sigma ?im
   let r = Detyping.detype Detyping.Later ~isgoal:goal_concl_style ~avoid ~flags:flags.detype env sigma t in
   extern_glob_type ?impargs (extern_env ~flags:flags.extern env sigma) r
 
-let extern_sort ~universes ~qualities sigma s =
-  extern_glob_sort (Evd.universe_binders sigma)
+let extern_sort ~universes ~qualities ~anonymous_qvars sigma s =
+  extern_glob_sort ~anon_qvars:anonymous_qvars (Evd.universe_binders sigma)
     (detype_sort ~universes ~qualities sigma s)
 
 let extern_closed_glob ?(goal_concl_style=false) ?(inctx=false) ?scope ~(flags:PrintingFlags.t) env sigma t =
