@@ -56,7 +56,10 @@ Check pid@{u}.
    though universe levels need not. [idT] is polymorphic over a sort
    quality [s]; used at [Prop], its printed form must keep the sort
    instance, because dropping it re-elaborates [idT] at a fresh quality
-   (defaulting to [Type], quality [QType]) which differs from [Prop]. *)
+   (defaulting to [Type], quality [QType]) which differs from [Prop].
+   The sort rung supplies the instance at sort level ([idT@{Prop ; _}],
+   universe hidden), which already re-parses, so escalating to the full
+   universe instance is not needed. *)
 Set Universe Polymorphism.
 Definition idT@{s;u} (A : Univ@{s;u}) (a : A) := a.
 Set Printing Reversible Up To Conversion Modulo Universes.
@@ -93,6 +96,25 @@ Module LyingNotation.
   Check 2 * 3.
   Check 2 + 3.
 End LyingNotation.
+
+(* Sort printing composes with the ladder. With sort printing on, the
+   instance of a sort-polymorphic constant used at a concrete quality is
+   shown at sort level ([Prop], with the universe hidden as [_]); this
+   re-parses (an instance accepts [_] in universe position), so no
+   escalation or warning is needed. *)
+Set Printing Reversible Up To Unification.
+Set Printing Sorts.
+Check idT@{Prop;Set}.
+(* A bare sort-polymorphic constant exposes a sort quality *variable*,
+   which sort printing shows as a raw, unparsable alpha-name. The
+   ladder's anonymous rung prints it as [_] instead: in the instance
+   ([idT@{_ ; _}]) and in the type's sort, where an anonymous quality
+   is left out ([Univ@{_}]). The quality [_] re-parses to a fresh
+   quality variable and the universe [_] to a fresh universe, both of
+   which unification matches, so the whole term round-trips with no
+   warning. *)
+Check idT.
+Unset Printing Sorts.
 
 (* Goal display is checked too. *)
 Set Printing Reversible Up To Conversion.
