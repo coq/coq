@@ -459,4 +459,68 @@ let repr (s : 'a subs) =
   let subs = get_subst 0 [] s in
   subs, shift
 
+(* Allocation-free fold over the entries of a substitution, in [repr]
+   order: [frel] receives the relocated index of each REL entry, [fval]
+   the accumulated shift and value of each VAL entry. Also returns the
+   total relocation shift (the second component of [repr]). *)
+let rec fold_tree frel fval shift accu = function
+| Leaf (w, x) ->
+  begin match x with
+  | Var i -> frel accu (i + shift + w)
+  | Arg v -> fval accu (shift + w) v
+  end
+| Node (w, x, l, r, _) ->
+  let shift = shift + w in
+  let accu = match x with
+  | Var i -> frel accu (i + shift)
+  | Arg v -> fval accu shift v
+  in
+  let accu = fold_tree frel fval shift accu l in
+  fold_tree frel fval (shift + eval l) accu r
+
+let rec fold_subs frel fval shift accu = function
+| Nil (w, n) ->
+  let rec loop i accu =
+    if i >= n then accu else loop (i + 1) (frel accu (w + i + shift + 1))
+  in
+  loop 0 accu, shift + w + n
+| Cons (_, t, s) ->
+  let accu = fold_tree frel fval shift accu t in
+  fold_subs frel fval (shift + eval t) accu s
+
+let fold frel fval accu s = fold_subs frel fval 0 accu s
+
+(* Semantic equality (same [repr]). The fast path requires structurally
+   identical skew lists, which implies equal reprs; rebuilt-but-equal
+   substitutions that took different construction paths fall back to the
+   allocating [repr] comparison. *)
+let equal_or_var eq x1 x2 = match x1, x2 with
+| Var i, Var j -> Int.equal i j
+| Arg v1, Arg v2 -> eq v1 v2
+| (Var _ | Arg _), _ -> false
+
+let rec equal_tree eq t1 t2 = t1 == t2 || match t1, t2 with
+| Leaf (w1, x1), Leaf (w2, x2) -> Int.equal w1 w2 && equal_or_var eq x1 x2
+| Node (w1, x1, l1, r1, _), Node (w2, x2, l2, r2, _) ->
+  Int.equal w1 w2 && equal_or_var eq x1 x2
+  && equal_tree eq l1 l2 && equal_tree eq r1 r2
+| (Leaf _ | Node _), _ -> false
+
+let rec equal_strict eq s1 s2 = s1 == s2 || match s1, s2 with
+| Nil (w1, n1), Nil (w2, n2) -> Int.equal w1 w2 && Int.equal n1 n2
+| Cons (h1, t1, r1), Cons (h2, t2, r2) ->
+  Int.equal h1 h2 && equal_tree eq t1 t2 && equal_strict eq r1 r2
+| (Nil _ | Cons _), _ -> false
+
+let equal_entry eq e1 e2 = match e1, e2 with
+| REL i, REL j -> Int.equal i j
+| VAL (k1, v1), VAL (k2, v2) -> Int.equal k1 k2 && eq v1 v2
+| (REL _ | VAL _), _ -> false
+
+let equal eq s1 s2 =
+  equal_strict eq s1 s2 ||
+  (let (sp1, k1) = repr s1 in
+   let (sp2, k2) = repr s2 in
+   Int.equal k1 k2 && List.equal (equal_entry eq) sp1 sp2)
+
 end

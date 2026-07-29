@@ -220,6 +220,7 @@ end)
    prints the counters at exit. *)
 
 type clos_pair_key = {
+  ck_hash : int; (* precomputed [clos_pair_hash], stable: see below *)
   ck_c1 : Constr.t;
   ck_s1 : subs_content Esubst.subs;
   ck_u1 : UVars.Instance.t;
@@ -236,46 +237,43 @@ type clos_pair_key = {
    substitution (the cells are shared), and fids survive the in-place cell
    updates that make content hashing unstable. Content hashing would also
    collide massively here, since keys typically differ only in their
-   substitutions. *)
-let subs_hash s =
-  let (spine, shft) = Esubst.Internal.repr s in
-  List.fold_left (fun h e ->
-      let x = match e with
-        | Esubst.Internal.REL i -> i * 2 + 1
-        | Esubst.Internal.VAL (k, sc) -> (subs_content_fid sc lsl 5) lxor (k * 2)
-      in
-      h * 0x9E3779B9 + x)
-    shft spine
+   substitutions. The fingerprint and the comparison go through
+   [Esubst.Internal.fold]/[equal] rather than [repr] to avoid
+   materializing the spine as a list on every probe. *)
+let subs_hash_rel h i = h * 0x9E3779B9 + (i * 2 + 1)
+let subs_hash_val h k sc = h * 0x9E3779B9 + ((subs_content_fid sc lsl 5) lxor (k * 2))
 
-let subs_equal s1 s2 =
-  s1 == s2 ||
-  let (sp1, k1) = Esubst.Internal.repr s1 in
-  let (sp2, k2) = Esubst.Internal.repr s2 in
-  Int.equal k1 k2 &&
-  CList.equal (fun e1 e2 -> match e1, e2 with
-      | Esubst.Internal.REL i, Esubst.Internal.REL j -> Int.equal i j
-      | Esubst.Internal.VAL (k1, c1), Esubst.Internal.VAL (k2, c2) ->
-        Int.equal k1 k2 && subs_content_equal c1 c2
-      | (Esubst.Internal.REL _ | Esubst.Internal.VAL _), _ -> false)
-    sp1 sp2
+let subs_hash s =
+  let (h, shft) = Esubst.Internal.fold subs_hash_rel subs_hash_val 0 s in
+  h * 0x9E3779B9 + shft
+
+let subs_equal s1 s2 = Esubst.Internal.equal subs_content_equal s1 s2
+
+(* Computed once per probe, at key construction: the deep body traversals
+   dominate the probe cost, and the [find]-then-[add] pattern would
+   otherwise hash the same key twice on the insert path. Stability: bodies
+   are immutable constrs and the substitution fingerprint only reads cell
+   fids, which survive in-place cell updates. *)
+let clos_pair_hash c1 s1 c2 s2 lid1 lid2 pb =
+  (* The default shallow constr hash (10 meaningful nodes) collides on
+     self-similar telescope terms; traverse deeper at bounded cost. *)
+  Stdlib.Hashtbl.hash
+    (Stdlib.Hashtbl.hash_param 128 256 c1,
+     Stdlib.Hashtbl.hash_param 128 256 c2,
+     subs_hash s1, subs_hash s2,
+     lid1, lid2, pb)
 
 module ClosPairTbl = Hashtbl.Make(struct
   type t = clos_pair_key
   let equal a b =
-    a.ck_c1 == b.ck_c1 && a.ck_c2 == b.ck_c2
+    Int.equal a.ck_hash b.ck_hash
+    && a.ck_c1 == b.ck_c1 && a.ck_c2 == b.ck_c2
     && Int.equal a.ck_lid1 b.ck_lid1 && Int.equal a.ck_lid2 b.ck_lid2
     && Int.equal a.ck_pb b.ck_pb
     && subs_equal a.ck_s1 b.ck_s1 && subs_equal a.ck_s2 b.ck_s2
     && (a.ck_u1 == b.ck_u1 || UVars.Instance.equal a.ck_u1 b.ck_u1)
     && (a.ck_u2 == b.ck_u2 || UVars.Instance.equal a.ck_u2 b.ck_u2)
-  (* The default shallow constr hash (10 meaningful nodes) collides on
-     self-similar telescope terms; traverse deeper at bounded cost. *)
-  let hash a =
-    Stdlib.Hashtbl.hash
-      (Stdlib.Hashtbl.hash_param 128 256 a.ck_c1,
-       Stdlib.Hashtbl.hash_param 128 256 a.ck_c2,
-       subs_hash a.ck_s1, subs_hash a.ck_s2,
-       a.ck_lid1, a.ck_lid2, a.ck_pb)
+  let hash a = a.ck_hash
 end)
 
 (* Pointer pair of bodies only: upper bound on what any (node, subst)
@@ -659,7 +657,8 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
               match fterm_of v1, fterm_of v2 with
               | FCLOS (c1, (s1, u1)), FCLOS (c2, (s2, u2)) ->
                 Some (cp,
-                      { ck_c1 = c1; ck_s1 = s1; ck_u1 = u1;
+                      { ck_hash = clos_pair_hash c1 s1 c2 s2 lid1 lid2 pb;
+                        ck_c1 = c1; ck_s1 = s1; ck_u1 = u1;
                         ck_c2 = c2; ck_s2 = s2; ck_u2 = u2;
                         ck_lid1 = lid1; ck_lid2 = lid2; ck_pb = pb })
               | _ -> None
