@@ -210,6 +210,115 @@ module LiftTbl = Hashtbl.Make(struct
   let hash = hash_lift
 end)
 
+(* (node, subst)-keyed closure-pair memo: the second level of the
+   conversion cache. Probed for FCLOS/FCLOS pairs when the cell-id lookup
+   misses: keyed on the identity of the closure components (body constr by
+   pointer, substitution by the spine of cells it contains), so distinct
+   cells rebuilt over the same closure still hit. Session-scoped like the
+   first level. On by default; ROCQ_CLOS_MEMO=0 disables it, =stats counts
+   hits without acting on them (diagnostics); ROCQ_CLOS_MEMO_STATS=1
+   prints the counters at exit. *)
+
+type clos_pair_key = {
+  ck_c1 : Constr.t;
+  ck_s1 : subs_content Esubst.subs;
+  ck_u1 : UVars.Instance.t;
+  ck_c2 : Constr.t;
+  ck_s2 : subs_content Esubst.subs;
+  ck_u2 : UVars.Instance.t;
+  ck_lid1 : int;
+  ck_lid2 : int;
+  ck_pb : int;
+}
+
+(* Substitutions are fingerprinted and compared through the stable fids of
+   the cells on their spine: keys with the same spine denote the same
+   substitution (the cells are shared), and fids survive the in-place cell
+   updates that make content hashing unstable. Content hashing would also
+   collide massively here, since keys typically differ only in their
+   substitutions. *)
+let subs_hash s =
+  let (spine, shft) = Esubst.Internal.repr s in
+  List.fold_left (fun h e ->
+      let x = match e with
+        | Esubst.Internal.REL i -> i * 2 + 1
+        | Esubst.Internal.VAL (k, sc) -> (subs_content_fid sc lsl 5) lxor (k * 2)
+      in
+      h * 0x9E3779B9 + x)
+    shft spine
+
+let subs_equal s1 s2 =
+  s1 == s2 ||
+  let (sp1, k1) = Esubst.Internal.repr s1 in
+  let (sp2, k2) = Esubst.Internal.repr s2 in
+  Int.equal k1 k2 &&
+  CList.equal (fun e1 e2 -> match e1, e2 with
+      | Esubst.Internal.REL i, Esubst.Internal.REL j -> Int.equal i j
+      | Esubst.Internal.VAL (k1, c1), Esubst.Internal.VAL (k2, c2) ->
+        Int.equal k1 k2 && subs_content_equal c1 c2
+      | (Esubst.Internal.REL _ | Esubst.Internal.VAL _), _ -> false)
+    sp1 sp2
+
+module ClosPairTbl = Hashtbl.Make(struct
+  type t = clos_pair_key
+  let equal a b =
+    a.ck_c1 == b.ck_c1 && a.ck_c2 == b.ck_c2
+    && Int.equal a.ck_lid1 b.ck_lid1 && Int.equal a.ck_lid2 b.ck_lid2
+    && Int.equal a.ck_pb b.ck_pb
+    && subs_equal a.ck_s1 b.ck_s1 && subs_equal a.ck_s2 b.ck_s2
+    && (a.ck_u1 == b.ck_u1 || UVars.Instance.equal a.ck_u1 b.ck_u1)
+    && (a.ck_u2 == b.ck_u2 || UVars.Instance.equal a.ck_u2 b.ck_u2)
+  (* The default shallow constr hash (10 meaningful nodes) collides on
+     self-similar telescope terms; traverse deeper at bounded cost. *)
+  let hash a =
+    Stdlib.Hashtbl.hash
+      (Stdlib.Hashtbl.hash_param 128 256 a.ck_c1,
+       Stdlib.Hashtbl.hash_param 128 256 a.ck_c2,
+       subs_hash a.ck_s1, subs_hash a.ck_s2,
+       a.ck_lid1, a.ck_lid2, a.ck_pb)
+end)
+
+(* Pointer pair of bodies only: upper bound on what any (node, subst)
+   design could hit, however clever its substitution comparison. *)
+module BodyPairTbl = Hashtbl.Make(struct
+  type t = Constr.t * Constr.t
+  let equal (a1, b1) (a2, b2) = a1 == a2 && b1 == b2
+  let hash (a, b) =
+    Stdlib.Hashtbl.hash
+      (Stdlib.Hashtbl.hash_param 128 256 a, Stdlib.Hashtbl.hash_param 128 256 b)
+end)
+
+type clos_pair_tables = {
+  cp_full : int ClosPairTbl.t;
+  cp_bodies : unit BodyPairTbl.t;
+}
+
+let clos_memo_mode = (* 0 = off, 1 = stats only, 2 = active (default) *)
+  match Sys.getenv "ROCQ_CLOS_MEMO" with
+  | "stats" -> 1
+  | "0" -> 0
+  | _ -> 2
+  | exception Not_found -> 2
+
+let clos_memo_print_stats =
+  match Sys.getenv "ROCQ_CLOS_MEMO_STATS" with
+  | "0" -> false
+  | _ -> true
+  | exception Not_found -> false
+
+let clos_memo_probes = ref 0
+let clos_memo_full_hits = ref 0
+let clos_memo_body_hits = ref 0
+let clos_memo_inserts = ref 0
+
+let () =
+  if clos_memo_mode = 1 || clos_memo_print_stats then
+    at_exit (fun () ->
+      Printf.eprintf
+        "[clos-memo] probes %d full-hits %d body-hits %d inserts %d\n%!"
+        !clos_memo_probes !clos_memo_full_hits !clos_memo_body_hits
+        !clos_memo_inserts)
+
 type conv_cache = {
   (* cc_key.(i) = (fid1 lsl 31) lor fid2; 0 = empty slot *)
   mutable cc_key : int array;
@@ -218,6 +327,7 @@ type conv_cache = {
   mutable cc_cnt : int;
   cc_lifts : int LiftTbl.t;
   mutable cc_nlifts : int;
+  cc_clos : clos_pair_tables option;
 }
 
 let cc_intern cache l =
@@ -539,11 +649,50 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
               cc_insert_raw cache.cc_key cache.cc_meta pk (meta0 lor r)
             end
           in
-          (* NOTE: a post-whd second cache probe on the reduced bare states
-             was tried here and measured useless (2 hits in 13.2M probes). *)
-          match eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv with
-          | cuniv -> add 1; cuniv
-          | exception NotConvertible -> add 0; raise NotConvertible
+          (* (node, subst) closure-pair probe: only reached when the
+             cell-id lookup was absent, so any hit here is coverage the
+             cell-id cache cannot express. The key is captured before
+             [eqappr] runs, since reduction updates cells in place. *)
+          let ckey = match cache.cc_clos with
+            | None -> None
+            | Some cp ->
+              match fterm_of v1, fterm_of v2 with
+              | FCLOS (c1, (s1, u1)), FCLOS (c2, (s2, u2)) ->
+                Some (cp,
+                      { ck_c1 = c1; ck_s1 = s1; ck_u1 = u1;
+                        ck_c2 = c2; ck_s2 = s2; ck_u2 = u2;
+                        ck_lid1 = lid1; ck_lid2 = lid2; ck_pb = pb })
+              | _ -> None
+          in
+          let cached = match ckey with
+            | None -> -1
+            | Some (cp, k) ->
+              incr clos_memo_probes;
+              (* body-pair upper-bound bookkeeping: diagnostics only *)
+              if clos_memo_mode = 1 then begin
+                if BodyPairTbl.mem cp.cp_bodies (k.ck_c1, k.ck_c2)
+                then incr clos_memo_body_hits
+                else BodyPairTbl.add cp.cp_bodies (k.ck_c1, k.ck_c2) ()
+              end;
+              match ClosPairTbl.find_opt cp.cp_full k with
+              | Some r -> incr clos_memo_full_hits; r
+              | None -> -1
+          in
+          if cached >= 0 && clos_memo_mode = 2 then begin
+            add cached;
+            if cached = 1 then cuniv else raise NotConvertible
+          end else begin
+            let addc r = match ckey with
+              | Some (cp, k) when cached < 0 ->
+                incr clos_memo_inserts; ClosPairTbl.add cp.cp_full k r
+              | _ -> ()
+            in
+            (* NOTE: a post-whd second cache probe on the reduced bare states
+               was tried here and measured useless (2 hits in 13.2M probes). *)
+            match eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv with
+            | cuniv -> add 1; addc 1; cuniv
+            | exception NotConvertible -> add 0; addc 0; raise NotConvertible
+          end
       end
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
@@ -1140,7 +1289,14 @@ let clos_gen_conv (type err) ~typed ~use_cache trans cv_pb l2r evars env graph u
       let cache =
         if use_cache && cc_enabled then
           Some { cc_key = Array.make 256 0; cc_meta = Array.make 256 0;
-                 cc_cnt = 0; cc_lifts = LiftTbl.create 16; cc_nlifts = 0 }
+                 cc_cnt = 0; cc_lifts = LiftTbl.create 16; cc_nlifts = 0;
+                 cc_clos =
+                   if clos_memo_mode > 0 then
+                     Some { cp_full = ClosPairTbl.create 256;
+                            cp_bodies =
+                              BodyPairTbl.create
+                                (if clos_memo_mode = 1 then 256 else 1) }
+                   else None }
         else None
       in
       let infos = {

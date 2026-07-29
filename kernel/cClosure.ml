@@ -125,6 +125,20 @@ let get_fid v =
   if v.fid != 0 then v.fid
   else begin incr fid_counter; v.fid <- !fid_counter; !fid_counter end
 
+(* Stable discriminators for substitution entries, for keying conversion
+   memo tables: fids survive the in-place cell updates that make content
+   hashing unstable. *)
+let subs_content_fid = function
+  | Regular f -> get_fid f * 2
+  | HigherOrder (n, f) -> ((get_fid f * 2 + 1) lsl 4) lxor n
+
+let subs_content_equal a b =
+  a == b ||
+  match a, b with
+  | Regular f1, Regular f2 -> f1 == f2
+  | HigherOrder (n1, f1), HigherOrder (n2, f2) -> Int.equal n1 n2 && f1 == f2
+  | (Regular _ | HigherOrder _), _ -> false
+
 let set_ntrl v = v.mark <- Ntrl
 
 (* Could issue a warning if no is still Red, pointing out that we loose
