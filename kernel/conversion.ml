@@ -195,16 +195,52 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
       cmp_cumul cv_pb variances u1 u2 s
 
 (* Conversion result cache. Within one conversion session the same pair of
-   cells is typically compared many times over, because beta-substitution
+   cells is typically compared many times over, because β-substitution
    shares payload cells across all the occurrences of a variable. Entries
-   record the outcome (success or failure) for a pair of cells, identified
-   by their stable ids, at a given lift pair and conversion problem. Only
-   sound for checked conversion, where results are deterministic and no
-   universe constraints are accumulated. *)
+   record the outcome (success or failure) for a pair of cells — identified
+   by their stable ids, modulo FLIFT wrappers — at a given lift pair and
+   conversion problem. Lifts are interned to small ids so that each entry
+   packs into two machine integers: the cell-id pair as the key, the lift
+   ids, problem kind and result as the payload. Only sound for checked
+   conversion, where results are deterministic and no universe constraints
+   are accumulated. *)
+
+module LiftTbl = Hashtbl.Make(struct
+  type t = lift
+  let equal = eq_lift
+  let hash = hash_lift
+end)
+
 type conv_cache = {
-  cc_tbl : (int * int * int, (lift * lift * bool) list ref) Hashtbl.t;
-  mutable cc_size : int;
+  (* pk = (fid1 lsl 31) lor fid2
+     -> meta = (lid1 lsl 18) lor (lid2 lsl 3) lor (pb lsl 1) lor result;
+     several bindings per pk, one per distinct meta modulo the result bit *)
+  cc_tbl : (int, int) Hashtbl.t;
+  mutable cc_cnt : int;
+  cc_lifts : int LiftTbl.t;
+  mutable cc_nlifts : int;
 }
+
+let cc_intern cache l =
+  match LiftTbl.find_opt cache.cc_lifts l with
+  | Some id -> id
+  | None ->
+    let id = cache.cc_nlifts in
+    if id >= 1 lsl 15 then -1
+    else begin
+      cache.cc_nlifts <- id + 1;
+      LiftTbl.add cache.cc_lifts l id;
+      id
+    end
+
+(* -1 = absent, 0 = cached failure, 1 = cached success.
+   [meta0] must have the result bit clear. *)
+let cc_find cache pk meta0 =
+  let rec go = function
+    | [] -> -1
+    | m :: rest -> if m lor 1 == meta0 lor 1 then m land 1 else go rest
+  in
+  go (Hashtbl.find_all cache.cc_tbl pk)
 
 type 'e conv_tab = {
   cnv_inf : clos_infos;
@@ -440,42 +476,41 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   let fast = fast_test lft1 term1 lft2 term2 in
   if fast then cuniv
   else
+    (* NOTE: entry-wise first-order comparison of same-body FCLOS pairs was
+       tried here and regressed badly (failing entries ground then thrown
+       away by the fallback); do not re-add without a failure cache. *)
     match infos.cnv_cache with
     | None ->
       eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
     | Some cache ->
       let (k1, v1) = strip_flift 0 term1 in
       let (k2, v2) = strip_flift 0 term2 in
-      let l1 = el_shft k1 lft1 in
-      let l2 = el_shft k2 lft2 in
-      let pb = match cv_pb with CONV -> 0 | CUMUL -> 1 in
-      let key = (CClosure.get_fid v1, CClosure.get_fid v2, pb) in
-      let bucket = Hashtbl.find_opt cache.cc_tbl key in
-      let cached = match bucket with
-      | None -> None
-      | Some entries ->
-        let rec find = function
-        | [] -> None
-        | (l1', l2', r) :: rest ->
-          if eq_lift l1' l1 && eq_lift l2' l2 then Some r else find rest
-        in
-        find !entries
-      in
-      begin match cached with
-      | Some true -> cuniv
-      | Some false -> raise NotConvertible
-      | None ->
-        let add r =
-          if cache.cc_size < cc_max_size then begin
-            cache.cc_size <- cache.cc_size + 1;
-            match bucket with
-            | Some entries -> entries := (l1, l2, r) :: !entries
-            | None -> Hashtbl.add cache.cc_tbl key (ref [(l1, l2, r)])
-          end
-        in
-        match eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv with
-        | cuniv -> add true; cuniv
-        | exception NotConvertible -> add false; raise NotConvertible
+      let fid1 = CClosure.get_fid v1 in
+      let fid2 = CClosure.get_fid v2 in
+      let lid1 = cc_intern cache (el_shft k1 lft1) in
+      let lid2 = if lid1 < 0 then -1 else cc_intern cache (el_shft k2 lft2) in
+      if lid2 < 0 || fid1 >= 1 lsl 31 || fid2 >= 1 lsl 31 then
+        (* out of packing range: run uncached *)
+        eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+      else begin
+        let pk = (fid1 lsl 31) lor fid2 in
+        let pb = match cv_pb with CONV -> 0 | CUMUL -> 1 in
+        let meta0 = (lid1 lsl 18) lor (lid2 lsl 3) lor (pb lsl 1) in
+        match cc_find cache pk meta0 with
+        | 1 -> cuniv
+        | 0 -> raise NotConvertible
+        | _ ->
+          let add r =
+            if cache.cc_cnt < cc_max_size then begin
+              cache.cc_cnt <- cache.cc_cnt + 1;
+              Hashtbl.add cache.cc_tbl pk (meta0 lor r)
+            end
+          in
+          (* NOTE: a post-whd second cache probe on the reduced bare states
+             was tried here and measured useless (2 hits in 13.2M probes). *)
+          match eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv with
+          | cuniv -> add 1; cuniv
+          | exception NotConvertible -> add 0; raise NotConvertible
       end
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
@@ -1071,7 +1106,8 @@ let clos_gen_conv (type err) ~typed ~use_cache trans cv_pb l2r evars env graph u
       let box e = Error.Error e in
       let cache =
         if use_cache && cc_enabled then
-          Some { cc_tbl = Hashtbl.create 16; cc_size = 0 }
+          Some { cc_tbl = Hashtbl.create 256;
+                 cc_cnt = 0; cc_lifts = LiftTbl.create 16; cc_nlifts = 0 }
         else None
       in
       let infos = {
