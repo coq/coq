@@ -349,11 +349,6 @@ let rec_intern_library ~intern libs (loc, dir) =
   Library_info.warn_library_info m.library_name m.library_info;
   libs
 
-let native_name_from_filename f =
-  let ch = raw_intern_library f in
-  let lmd, digest_lmd = ObjFile.marshal_in_segment ch ~segment:summary_seg in
-  Nativecode.mod_uid_of_dirpath lmd.md_name
-
 (**********************************************************************)
 (*s [require_library] loads and possibly opens a library. This is a
     synchronized operation. It is performed as follows:

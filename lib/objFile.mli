@@ -40,3 +40,7 @@ val marshal_out_binary : out_handle -> segment:'a id -> out_channel * (unit -> u
     [Stdlib.output_*] APIs should be used on [oc]. [stop ()] must be invoked in
     order to signal that all data was written to [oc] (which should not be used
     afterwards). Only after calling [stop] the other API can be used on [oh]. *)
+
+val library_name : string -> string list
+(** For a given .vo (or .vos) filename return the library name stored in the "summary" segment
+    (a dirpath, but we don't have access to Names.DirPath in this file) *)

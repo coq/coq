@@ -205,3 +205,17 @@ let close_out { out_channel = ch; out_segments = seg } =
   let () = output_int64 ch pos in
   let () = flush ch in
   close_out ch
+
+type summary_disk = {
+  md_name : string list;
+  md_deps : Obj.t;
+  md_ocaml : Obj.t;
+  md_info : Obj.t;
+} [@@warning "-unused-field"]
+
+let summary_seg : summary_disk id = make_id "summary"
+
+let library_name f =
+  let ch = with_magic_number_check (fun file -> open_in ~file) f in
+  let md, _ = marshal_in_segment ch ~segment: summary_seg in
+  md.md_name

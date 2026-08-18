@@ -75,9 +75,6 @@ val loaded_libraries : unit -> DirPath.t list
 
 val library_compiled : DirPath.t -> Safe_typing.compiled_library
 
-(** {6 Native compiler. } *)
-val native_name_from_filename : string -> string
-
 (** {6 Opaque accessors} *)
 val indirect_accessor : Global.indirect_accessor
 [@@deprecated
