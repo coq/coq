@@ -49,7 +49,8 @@ val translate_modtype :
 val finalize_module :
   ('a, Conversion.graph_inconsistency) Conversion.universe_state ->
   'b vm_state ->
-  env -> ModPath.t -> module_signature * mod_type delta_resolver ->
+  env -> ModPath.t ->
+  module_signature * mod_type delta_resolver * Declarations.typing_flags ->
   (module_type_entry * inline) option ->
   module_body * 'a * 'b
 
@@ -59,4 +60,5 @@ val finalize_module :
 val translate_mse_include :
   bool -> ('a, Conversion.graph_inconsistency) Conversion.universe_state -> 'b vm_state ->
   Environ.env -> ModPath.t -> module_body -> inline ->
-  module_struct_entry -> structure_body * mod_type delta_resolver * 'a * 'b
+  module_struct_entry ->
+  structure_body * mod_type delta_resolver * 'a * 'b * Declarations.typing_flags

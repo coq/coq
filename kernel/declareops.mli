@@ -79,6 +79,20 @@ val is_record_with_eta : mind_specif -> Instance.t -> bool
 (** A default, safe set of flags for kernel type-checking *)
 val safe_flags : Conv_oracle.oracle -> typing_flags
 
+(** The four checks recorded on declarations and modules and reported by
+    [Print Assumptions]: [check_guarded], [check_positive], [check_universes]
+    and [check_eliminations]. *)
+
+val same_checks : typing_flags -> typing_flags -> bool
+
+(** [full_checking flags] holds when [flags] disables none of them. *)
+val full_checking : typing_flags -> bool
+
+(** [weaken_checks ~weak flags] turns off in [flags] every check that [weak]
+    turns off, leaving the other fields of [flags] alone. Physically equal to
+    [flags] when [full_checking weak]. *)
+val weaken_checks : weak:typing_flags -> typing_flags -> typing_flags
+
 (** {6 Hash-consing} *)
 
 (** Here, strictly speaking, we don't perform true hash-consing

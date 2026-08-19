@@ -231,6 +231,9 @@ type safe_environment =
     modpath : ModPath.t;
     modvariant : modvariant;
     modresolver : Mod_subst.mod_type Mod_subst.delta_resolver;
+    modflags : Declarations.typing_flags;
+    (** checks skipped by module operations performed inside the module being
+        built, i.e. by [Include]; see [Mod_declarations.mod_typing_flags] *)
     paramresolver : ParamResolver.t;
     revstruct : structure_body;
     modlabels : Id.Set.t;
@@ -262,6 +265,7 @@ let empty_environment =
     modpath = ModPath.dummy;
     modvariant = NONE;
     modresolver = Mod_subst.empty_delta_resolver ModPath.dummy;
+    modflags = Declareops.safe_flags Conv_oracle.empty;
     paramresolver = ParamResolver.empty DirPath.dummy;
     revstruct = [];
     modlabels = Id.Set.empty;
@@ -1426,6 +1430,7 @@ let start_mod_modtype ~istype l senv =
     env = senv.env;
     future_cst = senv.future_cst;
     modresolver = Mod_subst.empty_delta_resolver mp;
+    modflags = Declareops.safe_flags (Environ.oracle senv.env);
     paramresolver = ParamResolver.add_delta_resolver senv.modpath senv.modresolver senv.paramresolver;
     univ = senv.univ;
     qualities = senv.qualities;
@@ -1509,7 +1514,7 @@ let build_module_body params restype senv =
   (* XXX why are we dropping vmtab here? *)
   let mb, _, _vmtab =
     Mod_typing.finalize_module state vmstate senv.env senv.modpath
-      (struc, senv.modresolver) restype'
+      (struc, senv.modresolver, senv.modflags) restype'
   in
   let mb' = functorize_module params mb in
   mb'
@@ -1610,10 +1615,15 @@ let add_include me is_module inl senv =
     if not is_module then
       warn_modtype_include (head me, senv.modpath)
   in
-  let str, resolver, _, vmtab =
+  let str, resolver, _, vmtab, flags =
     translate_mse_include is_module state vmstate senv.env mp_sup self inl me
   in
   let senv = set_vm_library vmtab senv in
+  (* An Include is an operation of the module we are building: what it skipped
+     is recorded on that module, not on the fields it adds. *)
+  let senv =
+    { senv with modflags = Declareops.weaken_checks ~weak:flags senv.modflags }
+  in
   let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv in
   let add senv ((l,elem) as field) =
     let new_name = match elem with
@@ -1669,6 +1679,7 @@ let start_library dir senv =
     required = senv.required;
 
     modresolver = Mod_subst.empty_delta_resolver mp;
+    modflags = Declareops.safe_flags (Environ.oracle senv.env);
     paramresolver = ParamResolver.empty dir;
     revstruct = [];
     modlabels = Id.Set.empty;
