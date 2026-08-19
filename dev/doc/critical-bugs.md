@@ -1078,7 +1078,7 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - introduced: rocq-prover/rocq#79
 - impacted released versions: V8.6-V9.3
 - impacted coqchk versions: none
-- fixed in: rocq-prover/rocq#XXXXX
+- fixed in: rocq-prover/rocq#22374
 - found by: Jason Gross
 - GH issue number: rocq-prover/rocq#12155
 - exploit: see issue
@@ -1090,7 +1090,7 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - introduced: v8.11 (#10291) or earlier
 - impacted released versions: V8.11-V9.3
 - impacted coqchk versions: none
-- fixed in: rocq-prover/rocq#XXXXX
+- fixed in: rocq-prover/rocq#22374
 - found by: Gaëtan Gilbert
 - GH issue number: rocq-prover/rocq#16646
 - exploit: see issue

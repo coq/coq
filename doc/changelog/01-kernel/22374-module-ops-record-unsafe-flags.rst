@@ -6,7 +6,7 @@
   signature, were both lost, so a definition obtained that way was reported as
   closed under the global context; :cmd:`rocqchk` rejected some of these files
   outright instead of reporting them
-  (`#XXXXX <https://github.com/rocq-prover/rocq/pull/XXXXX>`_,
+  (`#22374 <https://github.com/rocq-prover/rocq/pull/22374>`_,
   fixes `#12155 <https://github.com/rocq-prover/rocq/issues/12155>`_
   and `#16646 <https://github.com/rocq-prover/rocq/issues/16646>`_,
   by Jason Gross).
