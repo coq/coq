@@ -39,7 +39,13 @@ and 'a generic_module_body =
     mod_type : module_signature; (** expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
     mod_delta : 'a Mod_subst.delta_resolver; (**
-      quotiented set of equivalent constants and inductive names *) }
+      quotiented set of equivalent constants and inductive names *)
+    mod_typing_flags : typing_flags; (** the checks that were performed to
+      build this module. Unlike the flags of a constant these are not the
+      flags some declaration was written under: they are the flags of the
+      module operation itself, i.e. of its subtyping checks and of the bodies
+      it inlined. The checker weakens its own re-checking by them, and
+      [Print Assumptions] reports them. *) }
 
 (** For a module, there are five possible situations:
     - [Declare Module M : T] then [mod_expr = Abstract; mod_type_alg = Some T]
@@ -70,11 +76,17 @@ and module_type_body = mod_type generic_module_body
 
 (** Builders *)
 
+(* Nothing was skipped until an operation says so; a module whose own
+   declarations were written under weakened flags records that on those
+   declarations, not here. *)
+let default_typing_flags = Declareops.safe_flags Conv_oracle.empty
+
 let make_module_body typ delta = {
   mod_expr = ModBodyVal FullStruct;
   mod_type = typ;
   mod_type_alg = None;
   mod_delta = delta;
+  mod_typing_flags = default_typing_flags;
 }
 
 let make_module_type typ delta = {
@@ -82,6 +94,7 @@ let make_module_type typ delta = {
   mod_type = typ;
   mod_type_alg = None;
   mod_delta = delta;
+  mod_typing_flags = default_typing_flags;
 }
 
 let strengthen_module_body ~src typ delta mb =
@@ -109,6 +122,7 @@ let module_type_of_module mb = {
   mod_type = mb.mod_type;
   mod_type_alg = None;
   mod_delta = of_body_delta_resolver mb.mod_delta;
+  mod_typing_flags = mb.mod_typing_flags;
 }
 
 let module_body_of_type mtb = {
@@ -119,6 +133,7 @@ let module_body_of_type mtb = {
      of the module type, and a module implementing it does not declare
      anything. *)
   mod_delta = forget_inline_delta_resolver mtb.mod_delta;
+  mod_typing_flags = mtb.mod_typing_flags;
 }
 
 (** Setters *)
@@ -135,12 +150,28 @@ let set_algebraic_type mb alg =
 let set_delta : type a. a delta_resolver -> a generic_module_body -> a generic_module_body =
   fun delta mb -> { mb with mod_delta = delta }
 
+(* Records that the operation which produced [mb] ran under [flags]. Only the
+   checks are taken from [flags]; the rest is not about this module. *)
+let weaken_typing_flags flags mb =
+  let cur = mb.mod_typing_flags in
+  let flags =
+    { cur with
+      check_guarded = cur.check_guarded && flags.check_guarded;
+      check_positive = cur.check_positive && flags.check_positive;
+      check_universes = cur.check_universes && flags.check_universes;
+      check_eliminations = cur.check_eliminations && flags.check_eliminations;
+    }
+  in
+  if Declareops.same_checks flags cur then mb
+  else { mb with mod_typing_flags = flags }
+
 (** Accessors *)
 
 let mod_expr { mod_expr = ModBodyVal v; _ } = v
 let mod_type m = m.mod_type
 let mod_type_alg m = m.mod_type_alg
 let mod_delta m = m.mod_delta
+let mod_typing_flags m = m.mod_typing_flags
 
 let mod_global_delta m = match m.mod_type with
 | MoreFunctor _ -> None
@@ -232,6 +263,7 @@ and hcons_generic_module_body :
     mod_type = type';
     mod_type_alg = type_alg';
     mod_delta = delta';
+    mod_typing_flags = mb.mod_typing_flags;
   }
 
 let hcons_module_body =
@@ -339,6 +371,7 @@ and subst_module_body : type a. _ -> _ -> _ -> _ -> a generic_module_body -> a g
       mod_type = ty';
       mod_type_alg = aty';
       mod_delta = delta';
+      mod_typing_flags = mb.mod_typing_flags;
     }
 
 and subst_module skind subst mp mb =

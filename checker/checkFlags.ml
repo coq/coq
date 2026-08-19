@@ -14,11 +14,13 @@ let set_local_flags flags env =
   (* Explicitly ignored flags are set to not change *)
   let envflags = Environ.typing_flags env in
   let flags = {
-    (* These flags may be overridden *)
-    check_guarded = flags.check_guarded;
-    check_positive = flags.check_positive;
-    check_universes = flags.check_universes;
-    check_eliminations = flags.check_eliminations;
+    (* These flags may be overridden, but only downwards: the env may already
+       be recording checks that the enclosing module operation skipped, and a
+       declaration cannot ask for those back. *)
+    check_guarded = flags.check_guarded && envflags.check_guarded;
+    check_positive = flags.check_positive && envflags.check_positive;
+    check_universes = flags.check_universes && envflags.check_universes;
+    check_eliminations = flags.check_eliminations && envflags.check_eliminations;
     conv_oracle = flags.conv_oracle;
     share_reduction = flags.share_reduction;
     unfold_dep_heuristic = flags.unfold_dep_heuristic;
@@ -37,3 +39,10 @@ let set_local_flags flags env =
    this rather than the environment's flag when deciding whether to recompile
    the VM bytecode of a library. *)
 let enable_vm = ref false
+
+(* Modules record the checks their own operation performed, not the flags some
+   declaration was written under, so only the checks are taken from them: the
+   oracle, sharing and allow_uip belong to the declarations. *)
+let weaken_checks flags env =
+  let envflags = Environ.typing_flags env in
+  Environ.set_typing_flags (Declareops.weaken_checks ~weak:flags envflags) env

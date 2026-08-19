@@ -261,15 +261,20 @@ let check_with ustate vmstate env mp (sign,reso,cst,vm) = function
     let reso' = add_delta_resolver reso (upcast_delta_resolver mp subreso) in
     NoFunctor struc', reso', cst, vm
 
-let check_with_alg ustate vmstate env mp (sign, alg, reso, cst, vm) wd =
+let check_with_alg ustate vmstate env mp (sign, alg, reso, cst, vm, flags) wd =
   let struc, reso, cst, vm = check_with ustate vmstate env mp (sign, reso, cst, vm) wd in
-  struc, MEwith (alg, wd), reso, cst, vm
+  (* [with Definition] typechecks a term with whatever checks are in force. *)
+  let flags = Declareops.weaken_checks ~weak:(Environ.typing_flags env) flags in
+  struc, MEwith (alg, wd), reso, cst, vm, flags
 
-let rec translate_apply ustate env inl mp subst (sign, reso, cst) args = match args with
+(* [flags] accumulates what the application skipped: the checks in force for
+   its subtyping checks, and the checks the inlined bodies were accepted with.
+   Neither leaves any other trace in the resulting module (#12155, #16646). *)
+let rec translate_apply ustate env inl mp subst (sign, reso, cst, flags) args = match args with
 | [] ->
   let sign = subst_signature subst mp sign in
   let reso = subst_codom_delta_resolver subst reso in
-  (sign, reso, cst)
+  (sign, reso, cst, flags)
 | mp1 :: args ->
   let farg_id, farg_b, sign = destr_functor sign in
   let farg_b =
@@ -278,10 +283,11 @@ let rec translate_apply ustate env inl mp subst (sign, reso, cst) args = match a
   in
   let cst = Subtyping.check_subtypes (cst, ustate) env mp1 (MPbound farg_id) farg_b in
   let mp_delta = discr_resolver mp1 (lookup_module mp1 env) in
-  let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
+  let mp_delta, inlined = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
+  let flags = Declareops.weaken_checks ~weak:inlined flags in
   let nsubst = map_mbid farg_id mp1 mp_delta in
   let subst = join subst nsubst in
-  translate_apply ustate env inl mp subst (sign, reso, cst) args
+  translate_apply ustate env inl mp subst (sign, reso, cst, flags) args
 
 (** Translation of a module struct entry :
     - We translate to a module when a [module_path] is given,
@@ -306,14 +312,15 @@ let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl me = match me with
         let mt = lookup_modtype mp1 env in
         mod_type mt, mod_delta mt
     in
-    sign, me, reso, cst, vm
+    sign, me, reso, cst, vm, Declareops.safe_flags (Environ.oracle env)
   | MEapply _ ->
     let fe, args = decompose_apply [] me in
-    let (sign, alg, reso, cst, vm) = translate_mse (cst, ustate) (vm, vmstate) env mpo inl fe in
+    let (sign, alg, reso, cst, vm, flags) = translate_mse (cst, ustate) (vm, vmstate) env mpo inl fe in
     let mp = match mpo with Some mp -> mp | None -> mp_from_mexpr fe in
-    let (sign, reso, cst) = translate_apply ustate env inl mp empty_subst (sign, reso, cst) args in
+    let flags = Declareops.weaken_checks ~weak:(Environ.typing_flags env) flags in
+    let (sign, reso, cst, flags) = translate_apply ustate env inl mp empty_subst (sign, reso, cst, flags) args in
     let alg = List.fold_left (fun accu arg -> MEapply (accu, arg)) alg args in
-    (sign, alg, reso, cst, vm)
+    (sign, alg, reso, cst, vm, flags)
   | MEwith(me, with_decl) ->
     assert (Option.is_empty mpo); (* No 'with' syntax for modules *)
     let mp = mp_from_mexpr me in
@@ -323,34 +330,34 @@ let mk_modtype = Mod_declarations.make_module_type
 
 let rec translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod mp inl mse = function
   | [] ->
-    let sign,alg,reso,cst,vm = translate_mse (cst, ustate) (vm, vmstate) env (if is_mod then Some mp else None) inl mse in
+    let sign,alg,reso,cst,vm,flags = translate_mse (cst, ustate) (vm, vmstate) env (if is_mod then Some mp else None) inl mse in
     let sign,reso =
       if is_mod then sign,reso
       else subst_modtype_signature_and_resolver (mp_from_mexpr mse) mp sign reso in
-    sign, MENoFunctor alg, reso, cst, vm
+    sign, MENoFunctor alg, reso, cst, vm, flags
   | (mbid, ty, ty_inl) :: params ->
     let mp_id = MPbound mbid in
     let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp_id ty_inl ([],ty) in
     let env' = add_module_parameter mbid mtb env in
-    let sign,alg,reso,cst,vm = translate_mse_funct (cst, ustate) (vm, vmstate) env' ~is_mod mp inl mse params in
+    let sign,alg,reso,cst,vm,flags = translate_mse_funct (cst, ustate) (vm, vmstate) env' ~is_mod mp inl mse params in
     let alg' = MEMoreFunctor alg in
-    MoreFunctor (mbid, mtb, sign), alg',reso, cst, vm
+    MoreFunctor (mbid, mtb, sign), alg',reso, cst, vm, flags
 
 and translate_modtype state vmstate env mp inl (params,mte) =
-  let sign,alg,reso,cst,vm = translate_mse_funct state vmstate env ~is_mod:false mp inl mte params in
+  let sign,alg,reso,cst,vm,flags = translate_mse_funct state vmstate env ~is_mod:false mp inl mte params in
   let mtb = mk_modtype sign reso in
-  set_algebraic_type mtb alg, cst, vm
+  weaken_typing_flags flags (set_algebraic_type mtb alg), cst, vm
 
 (** [finalize_module] :
     from an already-translated (or interactive) implementation and
     an (optional) signature entry, produces a final [module_body] *)
 
-let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) restype = match restype with
+let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso,flags) restype = match restype with
   | None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
     let mb = make_module_body sign (forget_inline_delta_resolver reso) in
     let mb = set_implementation impl mb in
-    mb, cst, vm
+    weaken_typing_flags flags mb, cst, vm
   | Some (params_mte,inl) ->
     let res_mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl params_mte in
     let auto_mtb =
@@ -372,13 +379,17 @@ let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) resty
     in
     let mb = module_body_of_type res_mtb in
     let mb = set_implementation impl mb in
+    (* Sealing M with T is a check of its own, run with whatever checks are in
+       force here. *)
+    let mb = weaken_typing_flags (Environ.typing_flags env) mb in
+    let mb = weaken_typing_flags flags mb in
     mb,
     (** constraints from module body typing + subtyping + module type. *)
     cst,
     vm
 
-let finalize_module univs vm env mp (sign, reso) typ =
-  finalize_module_alg univs vm env mp (sign, None, reso) typ
+let finalize_module univs vm env mp (sign, reso, flags) typ =
+  finalize_module_alg univs vm env mp (sign, None, reso, flags) typ
 
 let translate_module (cst, ustate) (vm, vmstate) env mp inl = function
   | MType (params,ty) ->
@@ -388,7 +399,7 @@ let translate_module (cst, ustate) (vm, vmstate) env mp inl = function
        declarations of [T], which the module body itself cannot hold. *)
     (module_body_of_type mtb, mod_global_delta mtb), cst, vm
   | MExpr (params,mse,oty) ->
-    let (sg,alg,reso,cst,vm) = translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod:true mp inl mse params in
+    let (sg,alg,reso,cst,vm,flags) = translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod:true mp inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
     (* finalize_module_alg expects the subcomponents to be part of the environment *)
     let env = match sg with
@@ -396,7 +407,7 @@ let translate_module (cst, ustate) (vm, vmstate) env mp inl = function
     | MoreFunctor _ -> env
     in
     let mb, cst, vm =
-      finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sg,Some alg,reso) restype
+      finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sg,Some alg,reso,flags) restype
     in
     let delta = Option.map of_body_delta_resolver (mod_global_delta mb) in
     (mb, delta), cst, vm
@@ -432,12 +443,13 @@ let rec translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl = fu
   | MEident mp1 ->
     let mb = strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr (mod_type mb) in
-    sign, (), of_body_delta_resolver (mod_delta mb), cst, vm
+    sign, (), of_body_delta_resolver (mod_delta mb), cst, vm, mod_typing_flags mb
   | MEapply _ as me ->
     let fe, args = decompose_apply [] me in
-    let (sign, (), reso, cst, vm) = translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl fe in
-    let (sign, reso, cst) = translate_apply ustate env inl mp empty_subst (sign, reso, cst) args in
-    (sign, (), reso, cst, vm)
+    let (sign, (), reso, cst, vm, flags) = translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl fe in
+    let flags = Declareops.weaken_checks ~weak:(Environ.typing_flags env) flags in
+    let (sign, reso, cst, flags) = translate_apply ustate env inl mp empty_subst (sign, reso, cst, flags) args in
+    (sign, (), reso, cst, vm, flags)
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
 let translate_mse_include is_mod (cst, ustate) (vm, vmstate) env mp inl me =
@@ -447,4 +459,4 @@ let translate_mse_include is_mod (cst, ustate) (vm, vmstate) env mp inl me =
   else
     let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl ([],me) in
     let sign = clean_bounded_mod_expr (mod_type mtb) in
-    sign, (), mod_delta mtb, cst, vm
+    sign, (), mod_delta mtb, cst, vm, mod_typing_flags mtb

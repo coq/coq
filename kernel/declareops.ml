@@ -39,6 +39,30 @@ let safe_flags oracle = {
   allow_uip = false;
 }
 
+(* The four checks that are recorded and reported. The remaining fields of
+   [typing_flags] are either not checks at all (the oracle, sharing) or are
+   properties of the theory rather than of a particular check. *)
+
+let same_checks f1 f2 =
+  f1.check_guarded == f2.check_guarded
+  && f1.check_positive == f2.check_positive
+  && f1.check_universes == f2.check_universes
+  && f1.check_eliminations == f2.check_eliminations
+
+let full_checking flags =
+  flags.check_guarded && flags.check_positive
+  && flags.check_universes && flags.check_eliminations
+
+let weaken_checks ~weak flags =
+  if full_checking weak then flags
+  else
+    { flags with
+      check_guarded = flags.check_guarded && weak.check_guarded;
+      check_positive = flags.check_positive && weak.check_positive;
+      check_universes = flags.check_universes && weak.check_universes;
+      check_eliminations = flags.check_eliminations && weak.check_eliminations;
+    }
+
 (** {6 Arities } *)
 
 let hcons_template_universe ar =

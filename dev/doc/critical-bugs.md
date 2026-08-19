@@ -11,8 +11,6 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [buffer overflow on large records and closures (infinite loop with OCaml 5)](#buffer-overflow-on-large-records-and-closures-infinite-loop-with-ocaml-5)
       - [memory corruption by evaluating on ill-typed terms (obtained from unsafe tactics)](#memory-corruption-by-evaluating-on-ill-typed-terms-obtained-from-unsafe-tactics)
       - [coqchk checks too little about primitive declarations](#coqchk-checks-too-little-about-primitive-declarations)
-      - [Print Assumptions + Parameter Inline fails to report some inconsistent flags](#print-assumptions-parameter-inline-fails-to-report-some-inconsistent-flags)
-      - [Print Assumptions does not report Unset Universe Checking used during functor application](#print-assumptions-does-not-report-unset-universe-checking-used-during-functor-application)
   - [Fixed bugs](#fixed-bugs)
     - [Typing constructions](#typing-constructions)
       - [substitution missing in the body of a let](#substitution-missing-in-the-body-of-a-let)
@@ -88,6 +86,8 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [Section variables used in side effects not checked by Proof using](#section-variables-used-in-side-effects-not-checked-by-proof-using)
     - [Forgetting unsafe flags](#forgetting-unsafe-flags)
       - [unsafe typing flags used inside a section would not be reported by Print Assumptions after closing the section](#unsafe-typing-flags-used-inside-a-section-would-not-be-reported-by-print-assumptions-after-closing-the-section)
+      - [Print Assumptions + Parameter Inline fails to report some inconsistent flags](#print-assumptions-parameter-inline-fails-to-report-some-inconsistent-flags)
+      - [Print Assumptions does not report Unset Universe Checking used during functor application](#print-assumptions-does-not-report-unset-universe-checking-used-during-functor-application)
     - [Conflicts with axioms in library](#conflicts-with-axioms-in-library)
       - [axiom of description and decidability of equality on real numbers in library Reals was inconsistent with impredicative Set](#axiom-of-description-and-decidability-of-equality-on-real-numbers-in-library-reals-was-inconsistent-with-impredicative-set)
       - [guard condition was unknown to be inconsistent with propositional extensionality in library Sets](#guard-condition-was-unknown-to-be-inconsistent-with-propositional-extensionality-in-library-sets)
@@ -140,28 +140,6 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
 - GH issue number: rocq-prover/rocq#12439
 - exploit: not fully worked out, requires crafted .vo file
 - risk: none (requires crafted .vo file)
-
-#### Print Assumptions + Parameter Inline fails to report some inconsistent flags
-
-- component: module functors
-- introduced: rocq-prover/rocq#79
-- impacted versions: V8.6-NOW
-- impacted coqchk versions: none
-- found by: Jason Gross
-- GH issue number: rocq-prover/rocq#12155
-- exploit: see issue
-- risk: moderate if not using coqchk, none if using coqchk (coqchk rejects the produced file)
-
-#### Print Assumptions does not report Unset Universe Checking used during functor application
-
-- component: module functors
-- introduced: v8.11 (#10291) or earlier
-- impacted versions: V8.11-NOW
-- impacted coqchk versions: none
-- found by: Gaëtan Gilbert
-- GH issue number: rocq-prover/rocq#16646
-- exploit: see issue
-- risk: moderate if not using coqchk, none if using coqchk (coqchk rejects the produced file)
 
 ## Fixed bugs
 
@@ -1093,6 +1071,30 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - found by: Anton Trunov
 - GH issue number: rocq-prover/rocq#14317
 - risk: low as it needs the use of explicit unsafe flags
+
+#### Print Assumptions + Parameter Inline fails to report some inconsistent flags
+
+- component: module functors
+- introduced: rocq-prover/rocq#79
+- impacted released versions: V8.6-V9.3
+- impacted coqchk versions: none
+- fixed in: rocq-prover/rocq#XXXXX
+- found by: Jason Gross
+- GH issue number: rocq-prover/rocq#12155
+- exploit: see issue
+- risk: moderate if not using coqchk, none if using coqchk (coqchk rejects the produced file)
+
+#### Print Assumptions does not report Unset Universe Checking used during functor application
+
+- component: module functors
+- introduced: v8.11 (#10291) or earlier
+- impacted released versions: V8.11-V9.3
+- impacted coqchk versions: none
+- fixed in: rocq-prover/rocq#XXXXX
+- found by: Gaëtan Gilbert
+- GH issue number: rocq-prover/rocq#16646
+- exploit: see issue
+- risk: moderate if not using coqchk, none if using coqchk (coqchk rejects the produced file)
 
 ### Conflicts with axioms in library
 

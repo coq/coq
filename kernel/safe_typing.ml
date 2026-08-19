@@ -231,6 +231,9 @@ type safe_environment =
     modpath : ModPath.t;
     modvariant : modvariant;
     modresolver : Mod_subst.mod_type Mod_subst.delta_resolver;
+    modflags : Declarations.typing_flags;
+    (** checks skipped by module operations performed inside the module being
+        built, i.e. by [Include]; see [Mod_declarations.mod_typing_flags] *)
     paramresolver : ParamResolver.t;
     revstruct : structure_body;
     modlabels : Id.Set.t;
@@ -262,6 +265,7 @@ let empty_environment =
     modpath = ModPath.dummy;
     modvariant = NONE;
     modresolver = Mod_subst.empty_delta_resolver ModPath.dummy;
+    modflags = Declareops.safe_flags Conv_oracle.empty;
     paramresolver = ParamResolver.empty DirPath.dummy;
     revstruct = [];
     modlabels = Id.Set.empty;
@@ -1419,6 +1423,7 @@ let start_mod_modtype ~istype l senv =
     env = senv.env;
     future_cst = senv.future_cst;
     modresolver = Mod_subst.empty_delta_resolver mp;
+    modflags = Declareops.safe_flags (Environ.oracle senv.env);
     paramresolver = ParamResolver.add_delta_resolver senv.modpath senv.modresolver senv.paramresolver;
     univ = senv.univ;
     qualities = senv.qualities;
@@ -1502,7 +1507,7 @@ let build_module_body params restype senv =
   (* XXX why are we dropping vmtab here? *)
   let mb, _, _vmtab =
     Mod_typing.finalize_module state vmstate senv.env senv.modpath
-      (struc, senv.modresolver) restype'
+      (struc, senv.modresolver, senv.modflags) restype'
   in
   let mb' = functorize_module params mb in
   mb'
@@ -1584,16 +1589,23 @@ let add_include me is_module inl senv =
   let mp_sup = senv.modpath in
   let state = check_state senv in
   let vmstate = vm_state senv in
-  let sign,(),resolver, _, vmtab =
+  let sign,(),resolver, _, vmtab, flags =
     translate_mse_include is_module state vmstate senv.env mp_sup inl me
   in
   let senv = set_vm_library vmtab senv in
+  (* An Include is an operation of the module we are building: what it skipped
+     is recorded on that module, not on the fields it adds. *)
+  let senv =
+    { senv with modflags = Declareops.weaken_checks ~weak:flags senv.modflags }
+  in
   (* Include Self support  *)
   let struc = NoFunctor (List.rev senv.revstruct) in
   let mb =
     Mod_declarations.make_module_body struc
       (Mod_subst.forget_inline_delta_resolver senv.modresolver)
   in
+  (* Include Self applies the functor here; same accounting as an application. *)
+  let incl_flags = ref (Environ.typing_flags senv.env) in
   let rec compute_sign sign resolver =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
@@ -1601,15 +1613,21 @@ let add_include me is_module inl senv =
       (* Module subcomponents are already part of senv.env at this point *)
       let env = Environ.shallow_add_module mp_sup mb senv.env in
       let (_ : UGraph.t) = Subtyping.check_subtypes state env mp_sup (MPbound mbid) mtb in
-      let mpsup_delta =
+      let mpsup_delta, inlined =
         Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb senv.modresolver
       in
+      let () = incl_flags := Declareops.weaken_checks ~weak:inlined !incl_flags in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
       compute_sign (Modops.subst_signature subst mp_sup str) resolver
     | NoFunctor str -> resolver, str
   in
   let resolver, str = compute_sign sign resolver in
+  let senv = match sign with
+  | NoFunctor _ -> senv (* nothing was applied, nothing was checked *)
+  | MoreFunctor _ ->
+    { senv with modflags = Declareops.weaken_checks ~weak:!incl_flags senv.modflags }
+  in
   let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv in
   let add senv ((l,elem) as field) =
     let new_name = match elem with
@@ -1665,6 +1683,7 @@ let start_library dir senv =
     required = senv.required;
 
     modresolver = Mod_subst.empty_delta_resolver mp;
+    modflags = Declareops.safe_flags (Environ.oracle senv.env);
     paramresolver = ParamResolver.empty dir;
     revstruct = [];
     modlabels = Id.Set.empty;

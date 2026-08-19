@@ -193,7 +193,8 @@ struct
           let resolver = match mod_global_delta mb with
           | None -> empty_delta_resolver mp
           | Some delta ->
-            Modops.inline_delta_resolver env inl mp farg_id farg_b delta
+            (* the flags are recorded by the kernel, see Mod_typing *)
+            fst (Modops.inline_delta_resolver env inl mp farg_id farg_b delta)
           in
           mbid_left,join (map_mbid mbid mp resolver) subst
 
@@ -1027,7 +1028,8 @@ let inlined_bodies env inl ~is_mod me =
       | None -> accu (* a functor argument declares nothing *)
       | Some delta ->
         let reso =
-          Modops.inline_delta_resolver env inl mparg farg_id farg_b delta
+          (* the flags are recorded by the kernel, see Mod_typing *)
+          fst (Modops.inline_delta_resolver env inl mparg farg_id farg_b delta)
         in
         let fold kn c accu =
           let can = Constant.canonical (constant_of_delta_kn delta kn) in
@@ -1192,7 +1194,8 @@ let end_module_core id m_info objects fs =
   let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
   let _, (_, cst), _ =
     Mod_typing.finalize_module state vm_state (Global.env ()) (Global.current_modpath ())
-      (struc, current_modresolver ()) restype'
+      (* only the constraints are used here; the kernel records the flags *)
+      (struc, current_modresolver (), Declareops.safe_flags Conv_oracle.empty) restype'
   in
   let () = Global.add_univ_constraints cst in
 
@@ -1489,7 +1492,8 @@ let rec include_subst env mp reso mbids sign inline = match mbids with
   | mbid::mbids ->
     let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
     let subst = include_subst env mp reso mbids fbody_b inline in
-    let mp_delta =
+    let mp_delta, _flags =
+      (* the flags are recorded by the kernel, see Mod_typing *)
       Modops.inline_delta_resolver env inline mp farg_id farg_b reso
     in
     join (map_mbid mbid mp mp_delta) subst
@@ -1530,7 +1534,7 @@ let declare_one_include_core (me,base,kind,inl) =
   let base_mp = get_module_path me in
 
   let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let sign, (), resolver, (_, cst), _ =
+  let sign, (), resolver, (_, cst), _, _flags =
     Mod_typing.translate_mse_include is_mod state vm_state (Global.env ()) (Global.current_modpath ()) inl me
   in
   let () = Global.add_univ_constraints cst in
@@ -1551,7 +1555,8 @@ let declare_one_include_core (me,base,kind,inl) =
       let mpsup_delta = match mod_global_delta mb with
       | None -> assert false (* mb is guaranteed not to be a functor here *)
       | Some delta ->
-        Modops.inline_delta_resolver (Global.env ()) inl cur_mp mbid mtb delta
+        (* the flags are recorded by the kernel, see Safe_typing.add_include *)
+        fst (Modops.inline_delta_resolver (Global.env ()) inl cur_mp mbid mtb delta)
       in
       let subst = Mod_subst.map_mbid mbid cur_mp mpsup_delta in
       compute_sign (Modops.subst_signature subst cur_mp str)
