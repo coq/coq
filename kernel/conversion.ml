@@ -326,6 +326,7 @@ type conv_cache = {
   cc_lifts : int LiftTbl.t;
   mutable cc_nlifts : int;
   cc_clos : clos_pair_tables option;
+  mutable max_uid : int;
 }
 
 let cc_intern cache l =
@@ -349,6 +350,8 @@ let cc_mix pk m =
 (* -1 = absent, 0 = cached failure, 1 = cached success.
    [meta0] must have the result bit clear. *)
 let cc_find cache pk meta0 =
+  if pk lsr 31 > cache.max_uid || pk land 0x7fffffff > cache.max_uid then -1
+  else
   let mask = Array.length cache.cc_key - 1 in
   let rec go i =
     let k = Array.unsafe_get cache.cc_key i in
@@ -640,6 +643,8 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
         | 0 -> raise NotConvertible
         | _ ->
           let add r =
+            let maxid = if fid1 > fid2 then fid1 else fid2 in
+            let () = if maxid > cache.max_uid then cache.max_uid <- maxid in
             if cache.cc_cnt < cc_max_size then begin
               if 2 * (cache.cc_cnt + 1) > Array.length cache.cc_key then
                 cc_resize cache;
@@ -1289,6 +1294,7 @@ let clos_gen_conv (type err) ~typed ~use_cache trans cv_pb l2r evars env graph u
         if use_cache && cc_enabled then
           Some { cc_key = Array.make 256 0; cc_meta = Array.make 256 0;
                  cc_cnt = 0; cc_lifts = LiftTbl.create 16; cc_nlifts = 0;
+                 max_uid = 0;
                  cc_clos =
                    if clos_memo_mode > 0 then
                      Some { cp_full = ClosPairTbl.create 256;
