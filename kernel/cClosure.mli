@@ -116,6 +116,7 @@ val fterm_of : fconstr -> fterm
 (** Stable id of a cell, lazily assigned; survives in-place reduction
     updates. Used by the conversion cache. *)
 val get_fid : fconstr -> int
+val has_default_fid : fconstr -> bool
 
 (** Stable discriminator and identity test for substitution entries, in
     terms of the fids of the cells they carry. Two entries testing equal

@@ -614,7 +614,7 @@ let cc_enabled =
   | exception Not_found -> true
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
-let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
+let rec ccnv ~cache:docache cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   let fast = fast_test lft1 term1 lft2 term2 in
   if fast then cuniv
   else
@@ -627,6 +627,11 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
     | Some cache ->
       let (k1, v1) = strip_flift 0 term1 in
       let (k2, v2) = strip_flift 0 term2 in
+      let docache = if docache then true else not (CClosure.has_default_fid v1 || CClosure.has_default_fid v2) in
+      if not docache then
+        (* arguments are not referenced anywhere else, no point in caching *)
+        eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+      else
       let fid1 = CClosure.get_fid v1 in
       let fid2 = CClosure.get_fid v2 in
       let lid1 = cc_intern cache (el_shft k1 lft1) in
@@ -733,7 +738,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_stacks l2r infos lft1 lft2 v1 v2 cuniv in
-          convert_list l2r infos el1 el2
+          convert_list ~cache:false l2r infos el1 el2
             (List.map (mk_clos env1) args1)
             (List.map (mk_clos env2) args2) cuniv
         else raise NotConvertible
@@ -843,7 +848,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
              && compare_stack_shape v1 v2 then
             let el1 = el_stack lft1 v1 in
             let el2 = el_stack lft2 v2 in
-            let u1 = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
+            let u1 = ccnv ~cache:true CONV l2r infos el1 el2 c1 c2 cuniv in
               convert_stacks l2r infos lft1 lft2 v1 v2 u1
           else (* Two projections in WHNF: unfold *)
             raise NotConvertible)
@@ -890,8 +895,8 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
-        let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
-        ccnv CONV l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) bd1 bd2 cuniv
+        let cuniv = ccnv ~cache:false CONV l2r infos el1 el2 ty1 ty2 cuniv in (* FIXME ty1 / ty2 fresh *)
+        ccnv ~cache:false CONV l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) bd1 bd2 cuniv
 
     | (FProd (x1, c1, c2, e), FProd (_, c'1, c'2, e')) ->
         if not (is_empty_stack v1 && is_empty_stack v2) then
@@ -900,9 +905,9 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         (* Luo's system *)
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
-        let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
+        let cuniv = ccnv ~cache:true CONV l2r infos el1 el2 c1 c'1 cuniv in
         let x1 = usubst_binder e x1 in
-        ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (usubs_lift e) c2) (mk_clos (usubs_lift e') c'2) cuniv
+        ccnv ~cache:false cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (usubs_lift e) c2) (mk_clos (usubs_lift e') c'2) cuniv
 
     (* Eta-expansion on the fly *)
     | (FLambda _, _) ->
@@ -1038,12 +1043,12 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
           let fcl2 = Array.map (mk_clos (usubs_liftn n e2)) cl2 in
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
-          let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
+          let cuniv = convert_vect ~cache:false l2r infos el1 el2 fty1 fty2 cuniv in (*FIXME*)
           let cuniv =
             let na1 = Array.map (usubst_binder e1) na1 in
             let infos = push_relevances infos na1 in
-            convert_vect l2r infos
-                         (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv
+            convert_vect ~cache:false l2r infos
+                         (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv (*FIXME*)
           in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
@@ -1058,12 +1063,12 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
           let fcl2 = Array.map (mk_clos (usubs_liftn n e2)) cl2 in
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
-          let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
+          let cuniv = convert_vect ~cache:false l2r infos el1 el2 fty1 fty2 cuniv in (*FIXME*)
           let cuniv =
             let na1 = Array.map (usubst_binder e1) na1 in
             let infos = push_relevances infos na1 in
-            convert_vect l2r infos
-                         (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv
+            convert_vect ~cache:false l2r infos
+                         (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv (*FIXME*)
           in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
@@ -1083,7 +1088,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
     | FCaseInvert (ci1,u1,pms1,p1,iv1,_,br1,e1), FCaseInvert (ci2,u2,pms2,p2,iv2,_,br2,e2) ->
       (if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then raise NotConvertible);
       let el1 = el_stack lft1 v1 and el2 = el_stack lft2 v2 in
-      let fold c1 c2 cuniv = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
+      let fold c1 c2 cuniv = ccnv ~cache:true CONV l2r infos el1 el2 c1 c2 cuniv in
       (** FIXME: cache the presence of let-bindings in the case_info *)
       let mind = Environ.lookup_mind (fst ci1.ci_ind) (info_env infos.cnv_inf) in
       let mip = mind.Declarations.mind_packets.(snd ci1.ci_ind) in
@@ -1098,12 +1103,12 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
       let pms2 = mk_clos_vect e2 pms2 in
       let cuniv = Array.fold_right2 fold pms1 pms2 cuniv in
       let cuniv = Array.fold_right2 fold (get_invert iv1) (get_invert iv2) cuniv in
-      let cuniv = convert_return_clause mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 p1 p2 cuniv in
+      let cuniv = convert_return_clause ~cache:true mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 p1 p2 cuniv in (* FIXME *)
       (* not clear if we need to pass both u1 and u2 as
          convert_inductives should have enforced that they are
          equivalent when used to instantiate this inductive's
          components, but we may as well *)
-      let cuniv = convert_branches mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 br1 br2 cuniv in
+      let cuniv = convert_branches ~cache:true mind mip l2r infos e1 e2 el1 el2 u1 u2 pms1 pms2 br1 br2 cuniv in
       convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
 
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
@@ -1112,8 +1117,8 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
       let cuniv = fail_check infos @@ convert_instances_cumul CONV [|UVars.Variance.Irrelevant|] u1 u2 cuniv in
       let el1 = el_stack lft1 v1 in
       let el2 = el_stack lft2 v2 in
-      let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
-      let cuniv = Parray.fold_left2 (fun u v1 v2 -> ccnv CONV l2r infos el1 el2 v1 v2 u) cuniv t1 t2 in
+      let cuniv = ccnv ~cache:true CONV l2r infos el1 el2 ty1 ty2 cuniv in
+      let cuniv = Parray.fold_left2 (fun u v1 v2 -> ccnv ~cache:true CONV l2r infos el1 el2 v1 v2 u) cuniv t1 t2 in
       convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
 
     | (FRel n1, FIrrelevant) ->
@@ -1145,7 +1150,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
        | FArray _ | FIrrelevant), _ -> raise NotConvertible
 
 and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
-  let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
+  let f (l1, t1) (l2, t2) cuniv = ccnv ~cache:true CONV l2r infos l1 l2 t1 t2 cuniv in
   let rec cmp_rec nargs pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
       | (z1::s1, z2::s2) ->
@@ -1194,12 +1199,13 @@ and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
                     | Some variances -> convert_instances_cumul CONV variances u1 u2 cu
                 in
                 let cu = fail_check infos cu in
+                (* FIXME: do not cache when parameters not needed *)
                 let pms1 = mk_clos_vect e1 pms1 in
                 let pms2 = mk_clos_vect e2 pms2 in
-                let fold_params c1 c2 accu = f (l1, c1) (l2, c2) accu in
+                let fold_params c1 c2 accu = ccnv ~cache:false CONV l2r infos l1 l2 c1 c2 accu in
                 let cu = Array.fold_right2 fold_params pms1 pms2 cu in
-                let cu = convert_return_clause mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu in
-                convert_branches mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 br1 br2 cu
+                let cu = convert_return_clause ~cache:false mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu in
+                convert_branches ~cache:false mind mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 br1 br2 cu (* FIXME *)
             | (Zlprimitive(op1,_,rargs1,kargs1),Zlprimitive(op2,_,rargs2,kargs2)) ->
               if not (CPrimitives.equal op1 op2) then raise NotConvertible else
                 let cu2 = List.fold_right2 f rargs1 rargs2 cu1 in
@@ -1212,7 +1218,7 @@ and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
     cmp_rec nargs (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
   else raise NotConvertible
 
-and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
+and convert_vect ~cache l2r infos lft1 lft2 v1 v2 cuniv =
   let lv1 = Array.length v1 in
   let lv2 = Array.length v2 in
   if Int.equal lv1 lv2
@@ -1220,12 +1226,12 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
     let rec fold n cuniv =
       if n >= lv1 then cuniv
       else
-        let cuniv = ccnv CONV l2r infos lft1 lft2 v1.(n) v2.(n) cuniv in
+        let cuniv = ccnv ~cache CONV l2r infos lft1 lft2 v1.(n) v2.(n) cuniv in
         fold (n+1) cuniv in
     fold 0 cuniv
   else raise NotConvertible
 
-and convert_under_context l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu =
+and convert_under_context ~cache l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu =
   let n = Array.length nas1 in
   let () = assert (Int.equal n (Array.length nas2)) in
   let nas, n, e1, e2 = match ctx with
@@ -1244,9 +1250,9 @@ and convert_under_context l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu
   let lft1 = el_liftn n lft1 in
   let lft2 = el_liftn n lft2 in
   let infos = push_relevances infos (Array.map (usubst_binder e1) nas) in
-  ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cu
+  ccnv ~cache CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cu
 
-and convert_return_clause mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu =
+and convert_return_clause ~cache mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu =
   let ctx =
     if Int.equal mip.mind_nrealargs mip.mind_nrealdecls then None
     else
@@ -1258,9 +1264,9 @@ and convert_return_clause mib mip l2r infos e1 e2 l1 l2 u1 u2 pms1 pms2 p1 p2 cu
       let ctx = None :: List.map get_value ctx in
       Some (ctx, pms1, pms2)
   in
-  convert_under_context l2r infos e1 e2 l1 l2 ctx (fst p1) (fst p2) cu
+  convert_under_context ~cache l2r infos e1 e2 l1 l2 ctx (fst p1) (fst p2) cu
 
-and convert_branches mib mip l2r infos e1 e2 lft1 lft2 u1 u2 pms1 pms2 br1 br2 cuniv =
+and convert_branches ~cache mib mip l2r infos e1 e2 lft1 lft2 u1 u2 pms1 pms2 br1 br2 cuniv =
   let fold i (ctx, _) cuniv =
     let ctx =
       if Int.equal mip.mind_consnrealdecls.(i) mip.mind_consnrealargs.(i) then None
@@ -1273,15 +1279,15 @@ and convert_branches mib mip l2r infos e1 e2 lft1 lft2 u1 u2 pms1 pms2 br1 br2 c
     in
     let c1 = br1.(i) in
     let c2 = br2.(i) in
-    convert_under_context l2r infos e1 e2 lft1 lft2 ctx c1 c2 cuniv
+    convert_under_context ~cache l2r infos e1 e2 lft1 lft2 ctx c1 c2 cuniv
   in
   Array.fold_right_i fold mip.mind_nf_lc cuniv
 
-and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
+and convert_list ~cache l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 | [], [] -> cuniv
 | c1 :: v1, c2 :: v2 ->
-  let cuniv = ccnv CONV l2r infos lft1 lft2 c1 c2 cuniv in
-  convert_list l2r infos lft1 lft2 v1 v2 cuniv
+  let cuniv = ccnv ~cache CONV l2r infos lft1 lft2 c1 c2 cuniv in
+  convert_list ~cache l2r infos lft1 lft2 v1 v2 cuniv
 | _, _ -> raise NotConvertible
 
 let clos_gen_conv (type err) ~typed ~use_cache trans cv_pb l2r evars env graph univs t1 t2 =
@@ -1312,7 +1318,7 @@ let clos_gen_conv (type err) ~typed ~use_cache trans cv_pb l2r evars env graph u
         err_ret = box;
         cnv_cache = cache;
       } in
-      try Result.Ok (ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
+      try Result.Ok (ccnv ~cache:false cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
       with
       | NotConvertible -> Result.Error None
       | NotConvertibleTrace (Error.Error e) -> Result.Error (Some e)
@@ -1360,7 +1366,7 @@ let () =
       let state = info_univs infos in
       let qual_equal q1 q2 = CClosure.eq_quality infos q1 q2 in
       let infos = { cnv_inf = infos; cnv_typ = true; lft_tab = tab; rgt_tab = tab; err_ret = box; cnv_cache = None; } in
-      let state', _ = ccnv CONV false infos el_id el_id a b (state, checked_universes_gen qual_equal) in
+      let state', _ = ccnv ~cache:true CONV false infos el_id el_id a b (state, checked_universes_gen qual_equal) in
       assert (state==state');
       true
     with

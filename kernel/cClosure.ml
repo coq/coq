@@ -125,6 +125,8 @@ let get_fid v =
   if v.fid != 0 then v.fid
   else begin incr fid_counter; v.fid <- !fid_counter; !fid_counter end
 
+let has_default_fid v = v.fid == 0
+
 (* Stable discriminators for substitution entries, for keying conversion
    memo tables: fids survive the in-place cell updates that make content
    hashing unstable. *)
@@ -355,9 +357,14 @@ let destFLambda clos_fun t =
 let mk_clos (e:usubs) t =
   match kind t with
     | Rel i ->
-      begin match clos_rel (fst e) i with
-      | Regular v -> v
-      | HigherOrder _ -> CErrors.anomaly Pp.(str "Uncaught pattern variable")
+      begin match expand_rel i (fst e) with
+      | Inl (n, Regular mt) ->
+        let ans = lift_fconstr n mt in
+        let _  = get_fid ans in
+        ans
+      | Inl (_, HigherOrder _) -> CErrors.anomaly Pp.(str "Uncaught pattern variable")
+      | Inr (k, None) -> {fid = 0; mark =Ntrl; term= FRel k}
+      | Inr (k, Some p) -> (lift_fconstr (k-p) {fid = 0; mark =Red;term=FFlex(RelKey p)})
       end
     | Var x -> {fid = 0; mark = Red; term = FFlex (VarKey x) }
     | Const c -> {fid = 0; mark = Red; term = FFlex (ConstKey (usubst_punivs e c)) }
