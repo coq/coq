@@ -27,6 +27,9 @@ type ('a, 'err) universe_compare = {
   compare_instances: flex:bool -> UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err option) result;
   compare_cumul_instances : conv_pb -> UVars.Variance.t array ->
     UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err option) result;
+  compare_irrelevant : bool;
+  (** If true, the above functions must be irrelevant on their 'a argument,
+      i.e. they must return the same constructor regardless of that value. *)
 }
 
 type ('a, 'err) universe_state = 'a * ('a, 'err) universe_compare

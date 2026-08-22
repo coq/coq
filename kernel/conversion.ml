@@ -153,6 +153,7 @@ type ('a, 'err) universe_compare = {
   compare_instances: flex:bool -> UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err option) result;
   compare_cumul_instances : conv_pb -> UVars.Variance.t array ->
     UVars.Instance.t -> UVars.Instance.t -> 'a -> ('a, 'err option) result;
+  compare_irrelevant : bool;
 }
 
 type ('a, 'err) universe_state = 'a * ('a, 'err) universe_compare
@@ -1354,12 +1355,13 @@ let check_inductive_instances qeq = (); fun cv_pb variance u1 u2 state ->
   then Result.Ok state
   else Result.Error None
 
-let checked_universes_gen qeq =
+let checked_universes_gen irr qeq =
   { compare_sorts = checked_sort_cmp_universes qeq;
     compare_instances = check_convert_instances qeq;
-    compare_cumul_instances = check_inductive_instances qeq; }
+    compare_cumul_instances = check_inductive_instances qeq;
+    compare_irrelevant = irr }
 
-let checked_universes = checked_universes_gen Sorts.Quality.equal
+let checked_universes = checked_universes_gen true Sorts.Quality.equal
 
 let () =
   let conv infos tab a b =
@@ -1368,7 +1370,7 @@ let () =
       let state = info_univs infos in
       let qual_equal q1 q2 = CClosure.eq_quality infos q1 q2 in
       let infos = { cnv_inf = infos; cnv_typ = true; lft_tab = tab; rgt_tab = tab; err_ret = box; cnv_cache = None; } in
-      let state', _ = ccnv ~cache:true CONV false infos el_id el_id a b (state, checked_universes_gen qual_equal) in
+      let state', _ = ccnv ~cache:true CONV false infos el_id el_id a b (state, checked_universes_gen false qual_equal) in
       assert (state==state');
       true
     with
@@ -1395,7 +1397,8 @@ let conv_leq = gen_conv ~typed:false CUMUL
 
 let generic_conv cv_pb ~l2r reds env ?(evars=default_evar_handler env) state t1 t2 =
   let graph = Environ.universes env in
-  match clos_gen_conv ~typed:false ~use_cache:false reds cv_pb l2r evars env graph state t1 t2 with
+  let use_cache = (snd state).compare_irrelevant in
+  match clos_gen_conv ~typed:false ~use_cache reds cv_pb l2r evars env graph state t1 t2 with
   | Result.Ok (s, _) -> Result.Ok s
   | Result.Error e -> Result.Error e
 

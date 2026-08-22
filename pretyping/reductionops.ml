@@ -1240,7 +1240,8 @@ let check_inductive_instances cv_pb variance u1 u2 univs =
 let checked_universes =
   { compare_sorts = checked_sort_cmp_universes;
     compare_instances = check_convert_instances;
-    compare_cumul_instances = check_inductive_instances; }
+    compare_cumul_instances = check_inductive_instances;
+    compare_irrelevant = false; }
 
 end
 
@@ -1284,6 +1285,7 @@ let is_conv_nounivs ?(reds=TransparentState.full) env sigma t1 t2 =
         compare_sorts = (fun _ _ _ () -> Ok ());
         compare_instances = (fun ~flex:_ _ _ () -> Ok ());
         compare_cumul_instances = (fun _ _ _ _ () -> Ok ());
+        compare_irrelevant = true;
       }
       in
       begin match Conversion.generic_conv ~l2r:false CONV ~evars reds env ((), ignore_univs) t1 t2 with
@@ -1324,7 +1326,8 @@ let sigma_univ_state =
   let open Conversion in
   { compare_sorts = sigma_compare_sorts;
     compare_instances = sigma_compare_instances;
-    compare_cumul_instances = sigma_check_inductive_instances; }
+    compare_cumul_instances = sigma_check_inductive_instances;
+    compare_irrelevant = false; }
 
 let univproblem_compare_sorts pb s0 s1 uset =
   let open UnivProblem in
@@ -1342,7 +1345,8 @@ let univproblem_univ_state =
   let open Conversion in
   { compare_sorts = univproblem_compare_sorts;
     compare_instances = univproblem_compare_instances;
-    compare_cumul_instances = univproblem_check_inductive_instances; }
+    compare_cumul_instances = univproblem_check_inductive_instances;
+    compare_irrelevant = true; }
 
 type genconv = {
   genconv : 'a 'err. conv_pb -> l2r:bool -> Evd.evar_map -> TransparentState.t ->
@@ -1731,7 +1735,8 @@ let infer_inductive_instances cv_pb variance u1 u2 (univs,csts) =
 let inferred_universes =
   { compare_sorts = infer_cmp_universes;
     compare_instances = infer_convert_instances;
-    compare_cumul_instances = infer_inductive_instances; }
+    compare_cumul_instances = infer_inductive_instances;
+    compare_irrelevant = false }
 
 end
 
