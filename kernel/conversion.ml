@@ -630,38 +630,59 @@ let rec ccnv ~cache:docache cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
     | Some cache ->
       let (k1, v1) = strip_flift 0 term1 in
       let (k2, v2) = strip_flift 0 term2 in
-      let docache = if docache then true else not (CClosure.has_default_fid v1 || CClosure.has_default_fid v2) in
-      if not docache then
-        (* arguments are not referenced anywhere else, no point in caching *)
+      (* The two levels are keyed differently, so they must be gated
+         separately. Level 1 is keyed on cell identity: a cell nobody else
+         references gets a brand new id, so the probe can never hit and the
+         insert is pure bookkeeping -- skip it, and leave the cell uninterned.
+         Level 2 is keyed on (node, subst) and needs no id for [v1]/[v2]
+         themselves (only for the substitution entries, which are shared by
+         construction), so it applies to freshly built closures too -- exactly
+         the population level 1 has to give up on. *)
+      let usefid =
+        docache || not (CClosure.has_default_fid v1 || CClosure.has_default_fid v2)
+      in
+      let useclos = match cache.cc_clos with
+        | None -> false
+        | Some _ ->
+          match fterm_of v1, fterm_of v2 with
+          | FCLOS _, FCLOS _ -> true
+          | _ -> false
+      in
+      if not usefid && not useclos then
+        (* neither level can hit: run uncached and assign no ids *)
         eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
       else
-      let fid1 = CClosure.get_fid v1 in
-      let fid2 = CClosure.get_fid v2 in
       let lid1 = cc_intern cache (el_shft k1 lft1) in
       let lid2 = if lid1 < 0 then -1 else cc_intern cache (el_shft k2 lft2) in
-      if lid2 < 0 || fid1 >= 1 lsl 31 || fid2 >= 1 lsl 31 then
-        (* out of packing range: run uncached *)
+      if lid2 < 0 then
+        (* out of lift interning range: run uncached *)
         eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
       else begin
+        let fid1 = if usefid then CClosure.get_fid v1 else 0 in
+        let fid2 = if usefid then CClosure.get_fid v2 else 0 in
+        (* out of packing range: fall back to level 2 alone *)
+        let usefid = usefid && fid1 < 1 lsl 31 && fid2 < 1 lsl 31 in
         let pk = (fid1 lsl 31) lor fid2 in
         let pb = match cv_pb with CONV -> 0 | CUMUL -> 1 in
         let meta0 = (lid1 lsl 18) lor (lid2 lsl 3) lor (pb lsl 1) in
-        match cc_find cache pk meta0 with
+        match (if usefid then cc_find cache pk meta0 else -1) with
         | 1 -> cuniv
         | 0 -> raise NotConvertible
         | _ ->
           let add r =
-            let maxid = if fid1 > fid2 then fid1 else fid2 in
-            let () = if maxid > cache.max_uid then cache.max_uid <- maxid in
-            if cache.cc_cnt < cc_max_size then begin
-              if 2 * (cache.cc_cnt + 1) > Array.length cache.cc_key then
-                cc_resize cache;
-              cache.cc_cnt <- cache.cc_cnt + 1;
-              cc_insert_raw cache.cc_key cache.cc_meta pk (meta0 lor r)
+            if usefid then begin
+              let maxid = if fid1 > fid2 then fid1 else fid2 in
+              let () = if maxid > cache.max_uid then cache.max_uid <- maxid in
+              if cache.cc_cnt < cc_max_size then begin
+                if 2 * (cache.cc_cnt + 1) > Array.length cache.cc_key then
+                  cc_resize cache;
+                cache.cc_cnt <- cache.cc_cnt + 1;
+                cc_insert_raw cache.cc_key cache.cc_meta pk (meta0 lor r)
+              end
             end
           in
-          (* (node, subst) closure-pair probe: only reached when the
-             cell-id lookup was absent, so any hit here is coverage the
+          (* (node, subst) closure-pair probe: only reached when the cell-id
+             lookup was absent or skipped, so any hit here is coverage the
              cell-id cache cannot express. The key is captured before
              [eqappr] runs, since reduction updates cells in place. *)
           let ckey = match cache.cc_clos with
