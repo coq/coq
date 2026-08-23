@@ -362,6 +362,7 @@ let mk_clos (e:usubs) t =
         let ans = lift_fconstr n mt in
         let _  = get_fid ans in
         ans
+      | Inl (_, HigherOrder (0, mt)) -> let _ = get_fid mt in mt
       | Inl (_, HigherOrder _) -> CErrors.anomaly Pp.(str "Uncaught pattern variable")
       | Inr (k, None) -> {fid = 0; mark =Ntrl; term= FRel k}
       | Inr (k, Some p) -> (lift_fconstr (k-p) {fid = 0; mark =Red;term=FFlex(RelKey p)})
