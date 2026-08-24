@@ -202,7 +202,7 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
    sound for checked conversion, where results are deterministic and no
    universe constraints are accumulated. *)
 type conv_cache = {
-  cc_tbl : (int * int * int, (lift * lift * bool) list ref) Hashtbl.t;
+  cc_tbl : (int * int * conv_pb, (lift * lift * bool) list ref) Hashtbl.t;
   mutable cc_size : int;
 }
 
@@ -448,8 +448,7 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
       let (k2, v2) = strip_flift 0 term2 in
       let l1 = el_shft k1 lft1 in
       let l2 = el_shft k2 lft2 in
-      let pb = match cv_pb with CONV -> 0 | CUMUL -> 1 in
-      let key = (CClosure.get_fid v1, CClosure.get_fid v2, pb) in
+      let key = (CClosure.get_fid v1, CClosure.get_fid v2, cv_pb) in
       let bucket = Hashtbl.find_opt cache.cc_tbl key in
       let cached = match bucket with
       | None -> None
