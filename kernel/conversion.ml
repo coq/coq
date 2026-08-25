@@ -201,8 +201,23 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
    by their stable ids, at a given lift pair and conversion problem. Only
    sound for checked conversion, where results are deterministic and no
    universe constraints are accumulated. *)
+module CCKey = struct
+  type t = CClosure.Uid.t * CClosure.Uid.t * conv_pb
+  let equal (u1, v1, pb1) (u2, v2, pb2) =
+    CClosure.Uid.equal u1 u2 && CClosure.Uid.equal v1 v2 &&
+    (match pb1, pb2 with
+     | CONV, CONV | CUMUL, CUMUL -> true
+     | (CONV | CUMUL), _ -> false)
+  let hash (u, v, pb) =
+    let h = CClosure.Uid.hash u * 0x3B9ACA07 + CClosure.Uid.hash v in
+    let h = h lxor (h lsr 16) in
+    match pb with CONV -> h | CUMUL -> h lxor 0x5BF03635
+end
+
+module CCTbl = Hashtbl.Make(CCKey)
+
 type conv_cache = {
-  cc_tbl : (int * int * conv_pb, (lift * lift * bool) list ref) Hashtbl.t;
+  cc_tbl : (lift * lift * bool) list ref CCTbl.t;
   mutable cc_size : int;
 }
 
@@ -448,8 +463,8 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
       let (k2, v2) = strip_flift 0 term2 in
       let l1 = el_shft k1 lft1 in
       let l2 = el_shft k2 lft2 in
-      let key = (CClosure.get_fid v1, CClosure.get_fid v2, cv_pb) in
-      let bucket = Hashtbl.find_opt cache.cc_tbl key in
+      let key = (CClosure.uid v1, CClosure.uid v2, cv_pb) in
+      let bucket = CCTbl.find_opt cache.cc_tbl key in
       let cached = match bucket with
       | None -> None
       | Some entries ->
@@ -469,7 +484,7 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
             cache.cc_size <- cache.cc_size + 1;
             match bucket with
             | Some entries -> entries := (l1, l2, r) :: !entries
-            | None -> Hashtbl.add cache.cc_tbl key (ref [(l1, l2, r)])
+            | None -> CCTbl.add cache.cc_tbl key (ref [(l1, l2, r)])
           end
         in
         match eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv with
@@ -1070,7 +1085,7 @@ let clos_gen_conv (type err) ~typed ~use_cache trans cv_pb l2r evars env graph u
       let box e = Error.Error e in
       let cache =
         if use_cache && cc_enabled then
-          Some { cc_tbl = Hashtbl.create 16; cc_size = 0 }
+          Some { cc_tbl = CCTbl.create 16; cc_size = 0 }
         else None
       in
       let infos = {

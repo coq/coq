@@ -120,8 +120,19 @@ let get_invert fiv = fiv
 
 let fterm_of v = v.term
 
+(* Identities are drawn from a global counter, so they are dense and
+   distinct; 0 is reserved for "not yet assigned" and never handed out.
+   Clients see them through [Uid] only, so the counter representation
+   stays local to this module. *)
+module Uid = struct
+  type t = int
+  let equal = Int.equal
+  (* dense small integers: the identity is already a good hash *)
+  let hash x = x
+end
+
 let fid_counter = ref 0
-let get_fid v =
+let uid v =
   if v.fid != 0 then v.fid
   else begin incr fid_counter; v.fid <- !fid_counter; !fid_counter end
 

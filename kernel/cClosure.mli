@@ -113,9 +113,21 @@ val zip : fconstr -> stack -> fconstr
 
 val fterm_of : fconstr -> fterm
 
-(** Stable id of a cell, lazily assigned; survives in-place reduction
-    updates. Used by the conversion cache. *)
-val get_fid : fconstr -> int
+(** Stable identity of a cell. The representation is opaque on purpose:
+    only equality and hashing are meaningful, and in particular the
+    numeric value carries no information a client may rely on. *)
+module Uid : sig
+  type t
+  val equal : t -> t -> bool
+  val hash : t -> int
+end
+
+(** Identity of a cell, {e assigned on demand}: the first call on a given
+    cell allocates a fresh identity and stores it, later calls return that
+    one. The identity survives the in-place [update] performed during
+    reduction, and a copy of a cell gets a fresh one. Used to key the
+    conversion cache. *)
+val uid : fconstr -> Uid.t
 
 val term_of_fconstr : fconstr -> constr
 val term_of_process : fconstr -> stack -> constr
