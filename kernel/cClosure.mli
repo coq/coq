@@ -117,7 +117,7 @@ val fterm_of : fconstr -> fterm
     only equality and hashing are meaningful, and in particular the
     numeric value carries no information a client may rely on. *)
 module Uid : sig
-  type t
+  type t [@@immediate]
   val equal : t -> t -> bool
   val hash : t -> int
 end
