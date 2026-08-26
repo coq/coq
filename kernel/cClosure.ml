@@ -122,19 +122,104 @@ let fterm_of v = v.term
 
 (* Identities are drawn from a global counter, so they are dense and
    distinct; 0 is reserved for "not yet assigned" and never handed out.
-   Clients see them through [Uid] only, so the counter representation
-   stays local to this module. *)
-module Uid = struct
-  type t = int
-  let equal = Int.equal
-  (* dense small integers: the identity is already a good hash *)
-  let hash x = x
-end
-
+   They are only ever consumed by [ConvCache] below, so both the counter
+   and the identities stay local to this module. *)
 let fid_counter = ref 0
 let uid v =
   if v.fid != 0 then v.fid
   else begin incr fid_counter; v.fid <- !fid_counter; !fid_counter end
+
+(* Conversion result cache. Within one conversion session the same pair of
+   cells is typically compared many times over, because beta-substitution
+   shares payload cells across all the occurrences of a variable. Entries
+   record the outcome (success or failure) for a pair of cells, identified
+   by their stable ids, at a given lift pair and conversion problem. Only
+   sound for checked conversion, where results are deterministic and no
+   universe constraints are accumulated. *)
+module ConvCache = struct
+
+  module Key = struct
+    (* ids of the two cells, and whether the problem is cumulativity *)
+    type t = int * int * bool
+    let equal (u1, v1, b1) (u2, v2, b2) =
+      Int.equal u1 u2 && Int.equal v1 v2 && Bool.equal b1 b2
+    let hash (u, v, b) =
+      (* ids are dense small integers, already good hashes *)
+      let h = u * 0x3B9ACA07 + v in
+      let h = h lxor (h lsr 16) in
+      if b then h lxor 0x5BF03635 else h
+  end
+
+  module Tbl = Hashtbl.Make(Key)
+
+  type t = {
+    tbl : (lift * lift * bool) list ref Tbl.t;
+    mutable size : int;
+  }
+
+  (* Optional cap on cached entries per session (ROCQ_CONV_CACHE_MAX; 0 means
+     unlimited). Unbounded by default: like [clos_tab], the table is
+     session-scoped, so its lifetime bounds memory. *)
+  let max_size =
+    match int_of_string (Sys.getenv "ROCQ_CONV_CACHE_MAX") with
+    | 0 -> max_int
+    | n -> n
+    | exception _ -> max_int
+
+  (* The cache is enabled by default; set ROCQ_CONV_CACHE=0 to disable. *)
+  let enabled =
+    match Sys.getenv "ROCQ_CONV_CACHE" with
+    | "0" -> false
+    | _ -> true
+    | exception Not_found -> true
+
+  let create () = if enabled then Some { tbl = Tbl.create 16; size = 0 } else None
+
+  (* Lifts are part of the entries rather than the keys: cells are shared
+     under beta-substitution at varying depths, so the same pair recurs
+     under a handful of lift pairs and a short scan beats hashing them. *)
+  let rec strip_flift k v = match [@ocaml.warning "-4"] v.term with
+  | FLIFT (n, v') -> strip_flift (k + n) v'
+  | _ -> (k, v)
+
+  (* [probe] and [record] renormalize the pair independently, so nothing
+     probe computed needs to stay live across the comparison run between
+     the two calls: a memoized lookup state would be promoted to the major
+     heap whenever the comparison spans a minor collection. *)
+
+  let probe cache ~cumul lft1 t1 lft2 t2 =
+    let (k1, v1) = strip_flift 0 t1 in
+    let (k2, v2) = strip_flift 0 t2 in
+    let l1 = el_shft k1 lft1 in
+    let l2 = el_shft k2 lft2 in
+    let key = (uid v1, uid v2, cumul) in
+    match Tbl.find_opt cache.tbl key with
+    | None -> None
+    | Some entries ->
+      let rec find = function
+      | [] -> None
+      | (l1', l2', r) :: rest ->
+        if eq_lift l1' l1 && eq_lift l2' l2 then
+          (* constant blocks: the hit path does not allocate *)
+          if r then Some true else Some false
+        else find rest
+      in
+      find !entries
+
+  let record cache ~cumul lft1 t1 lft2 t2 r =
+    if cache.size < max_size then begin
+      let (k1, v1) = strip_flift 0 t1 in
+      let (k2, v2) = strip_flift 0 t2 in
+      let l1 = el_shft k1 lft1 in
+      let l2 = el_shft k2 lft2 in
+      let key = (uid v1, uid v2, cumul) in
+      cache.size <- cache.size + 1;
+      match Tbl.find_opt cache.tbl key with
+      | Some entries -> entries := (l1, l2, r) :: !entries
+      | None -> Tbl.add cache.tbl key (ref [(l1, l2, r)])
+    end
+
+end
 
 let set_ntrl v = v.mark <- Ntrl
 

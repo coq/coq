@@ -194,40 +194,13 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
     else
       cmp_cumul cv_pb variances u1 u2 s
 
-(* Conversion result cache. Within one conversion session the same pair of
-   cells is typically compared many times over, because beta-substitution
-   shares payload cells across all the occurrences of a variable. Entries
-   record the outcome (success or failure) for a pair of cells, identified
-   by their stable ids, at a given lift pair and conversion problem. Only
-   sound for checked conversion, where results are deterministic and no
-   universe constraints are accumulated. *)
-module CCKey = struct
-  type t = CClosure.Uid.t * CClosure.Uid.t * conv_pb
-  let equal (u1, v1, pb1) (u2, v2, pb2) =
-    CClosure.Uid.equal u1 u2 && CClosure.Uid.equal v1 v2 &&
-    (match pb1, pb2 with
-     | CONV, CONV | CUMUL, CUMUL -> true
-     | (CONV | CUMUL), _ -> false)
-  let hash (u, v, pb) =
-    let h = CClosure.Uid.hash u * 0x3B9ACA07 + CClosure.Uid.hash v in
-    let h = h lxor (h lsr 16) in
-    match pb with CONV -> h | CUMUL -> h lxor 0x5BF03635
-end
-
-module CCTbl = Hashtbl.Make(CCKey)
-
-type conv_cache = {
-  cc_tbl : (lift * lift * bool) list ref CCTbl.t;
-  mutable cc_size : int;
-}
-
 type 'e conv_tab = {
   cnv_inf : clos_infos;
   cnv_typ : bool; (* true if the input terms were well-typed *)
   lft_tab : clos_tab;
   rgt_tab : clos_tab;
   err_ret : 'e -> payload;
-  cnv_cache : conv_cache option;
+  cnv_cache : ConvCache.t option;
 }
 (** Invariant: for any tl ∈ lft_tab and tr ∈ rgt_tab, there is no mutable memory
     location contained both in tl and in tr. *)
@@ -430,26 +403,6 @@ let assert_reduced_constructor s =
   if not @@ CList.is_empty s then
     CErrors.anomaly Pp.(str "conversion was given unreduced term (FConstruct).")
 
-let rec strip_flift k v = match fterm_of v with
-| FLIFT (n, v') -> strip_flift (k + n) v'
-| _ -> (k, v)
-
-(* Optional cap on cached entries per session (ROCQ_CONV_CACHE_MAX; 0 means
-   unlimited). Unbounded by default: like [clos_tab], the table is
-   session-scoped, so its lifetime bounds memory. *)
-let cc_max_size =
-  match int_of_string (Sys.getenv "ROCQ_CONV_CACHE_MAX") with
-  | 0 -> max_int
-  | n -> n
-  | exception _ -> max_int
-
-(* The cache is enabled by default; set ROCQ_CONV_CACHE=0 to disable. *)
-let cc_enabled =
-  match Sys.getenv "ROCQ_CONV_CACHE" with
-  | "0" -> false
-  | _ -> true
-  | exception Not_found -> true
-
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   let fast = fast_test lft1 term1 lft2 term2 in
@@ -459,38 +412,17 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
     | None ->
       eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
     | Some cache ->
-      let (k1, v1) = strip_flift 0 term1 in
-      let (k2, v2) = strip_flift 0 term2 in
-      let l1 = el_shft k1 lft1 in
-      let l2 = el_shft k2 lft2 in
-      let key = (CClosure.uid v1, CClosure.uid v2, cv_pb) in
-      let bucket = CCTbl.find_opt cache.cc_tbl key in
-      let cached = match bucket with
-      | None -> None
-      | Some entries ->
-        let rec find = function
-        | [] -> None
-        | (l1', l2', r) :: rest ->
-          if eq_lift l1' l1 && eq_lift l2' l2 then Some r else find rest
-        in
-        find !entries
-      in
-      begin match cached with
+      let cumul = match cv_pb with CONV -> false | CUMUL -> true in
+      match ConvCache.probe cache ~cumul lft1 term1 lft2 term2 with
       | Some true -> cuniv
       | Some false -> raise NotConvertible
       | None ->
-        let add r =
-          if cache.cc_size < cc_max_size then begin
-            cache.cc_size <- cache.cc_size + 1;
-            match bucket with
-            | Some entries -> entries := (l1, l2, r) :: !entries
-            | None -> CCTbl.add cache.cc_tbl key (ref [(l1, l2, r)])
-          end
-        in
         match eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv with
-        | cuniv -> add true; cuniv
-        | exception NotConvertible -> add false; raise NotConvertible
-      end
+        | cuniv ->
+          ConvCache.record cache ~cumul lft1 term1 lft2 term2 true; cuniv
+        | exception NotConvertible ->
+          ConvCache.record cache ~cumul lft1 term1 lft2 term2 false;
+          raise NotConvertible
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
@@ -1083,11 +1015,7 @@ let clos_gen_conv (type err) ~typed ~use_cache trans cv_pb l2r evars env graph u
       let infos = create_conv_infos ~univs:graph ~evars reds env in
       let module Error = struct type payload += Error of err end in
       let box e = Error.Error e in
-      let cache =
-        if use_cache && cc_enabled then
-          Some { cc_tbl = CCTbl.create 16; cc_size = 0 }
-        else None
-      in
+      let cache = if use_cache then ConvCache.create () else None in
       let infos = {
         cnv_inf = infos;
         cnv_typ = typed;
