@@ -141,13 +141,17 @@ module ConvCache = struct
   module Key = struct
     (* ids of the two cells, and whether the problem is cumulativity *)
     type t = int * int * bool
+    (* branch-free: all three comparisons are computed and combined with
+       [land] instead of short-circuiting *)
     let equal (u1, v1, b1) (u2, v2, b2) =
-      Int.equal u1 u2 && Int.equal v1 v2 && Bool.equal b1 b2
+      (Bool.to_int (Int.equal u1 u2)
+       land Bool.to_int (Int.equal v1 v2)
+       land Bool.to_int (Bool.equal b1 b2)) = 1
     let hash (u, v, b) =
       (* ids are dense small integers, already good hashes *)
       let h = u * 0x3B9ACA07 + v in
       let h = h lxor (h lsr 16) in
-      if b then h lxor 0x5BF03635 else h
+      h lxor (Bool.to_int b * 0x5BF03635)
   end
 
   module Tbl = Hashtbl.Make(Key)
