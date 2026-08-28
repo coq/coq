@@ -573,7 +573,25 @@ let subst_mp_delta subst mp mkey =
     (* root(resolve) ⊆ mp' *)
       let mp1 = find_prefix resolve mp' in
       let resolve1 = subset_prefixed_by mp1 resolve in
-      subst_dom_delta_resolver mp1 mkey resolve1, mp1
+      let reso = subst_dom_delta_resolver mp1 mkey resolve1 in
+      let reso =
+        if ModPath.equal mp1 mp' then reso
+        else
+          (* [mp1] is the canonical form of [mp'], so the equivalences [resolve]
+             records under [mp'] describe the same names as the ones it records
+             under [mp1]. The latter are typically absent so we must not drop
+             the former to preserve canonicity of the names. *)
+          let subst' = map_mp mp' mkey (empty_delta_resolver mkey) in
+          let transfer kn hint accu = match hint with
+          | Inline _ -> accu
+          | Equiv _ ->
+            if mp_in_mp mp' (KerName.modpath kn) then
+              Deltamap.add_kn (subst_kn subst' kn) hint accu
+            else accu
+          in
+          Deltamap.fold_kn transfer resolve reso
+      in
+      reso, mp1
 
 let gen_subst_delta_resolver dom subst resolver =
   let mp_apply_subst mkey mequ rslv =
