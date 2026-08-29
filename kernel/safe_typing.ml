@@ -81,7 +81,11 @@ module NamedDecl = Context.Named.Declaration
       module parameters [params] and earlier environment [oldsenv]
     * SIG (params,oldsenv) : same for a local module type
   - [modresolver] : delta_resolver concerning the module content, that needs to
-    be marshalled on disk. Its root must be [modpath].
+    be marshalled on disk. Its root must be [modpath]. It is typed at the
+    [mod_type] kind because the module under construction may be a module type,
+    in which case it collects the [Parameter Inline] declarations; when the
+    module is closed as a plain module the kind is downgraded and no such
+    declaration may be present (see [add_constant_aux]).
   - [paramresolver] : delta_resolver in scope but not part of the library per
     se, that is from functor parameters and required libraries
   - [revstruct] : current module content, most recent declarations first
@@ -120,14 +124,16 @@ module ParamResolver :
 sig
   type t
   val empty : DirPath.t -> t
-  val add_delta_resolver : ModPath.t -> Mod_subst.delta_resolver -> t -> t
+  val add_delta_resolver : ModPath.t -> 'a Mod_subst.delta_resolver -> t -> t
   val constant_of_delta_kn : t -> KerName.t -> Constant.t
   val mind_of_delta_kn : t -> KerName.t -> MutInd.t
 end =
 struct
+  (** This is only ever used to resolve names, so the inlining information of
+      the resolvers it is fed is dropped on the way in. *)
   type t = {
     root : DirPath.t;
-    data : Mod_subst.delta_resolver ModPath.Map.t;
+    data : Mod_subst.mod_body Mod_subst.delta_resolver ModPath.Map.t;
     (** Invariant: No [MPdot] in data *)
   }
 
@@ -141,6 +147,7 @@ struct
   | MPdot (mp, _) -> head mp
 
   let add_delta_resolver mp delta preso =
+    let delta = Mod_subst.forget_inline_delta_resolver delta in
     let self = MPfile preso.root in
     let data =
       if ModPath.subpath self mp then
@@ -223,7 +230,7 @@ type safe_environment =
     sections : section_data Section.t option;
     modpath : ModPath.t;
     modvariant : modvariant;
-    modresolver : Mod_subst.delta_resolver;
+    modresolver : Mod_subst.mod_type Mod_subst.delta_resolver;
     paramresolver : ParamResolver.t;
     revstruct : structure_body;
     modlabels : Id.Set.t;
@@ -911,7 +918,7 @@ let add_constant_aux senv ?hbody (kn, cb) =
       (* An inlining declaration only makes sense in a module type *)
       if is_modtype senv' then
         update_resolver
-          (Mod_subst.add_inline_delta_resolver (Constant.user kn) (lev,None)) senv'
+          (Mod_subst.add_inline_delta_resolver (Constant.user kn) lev) senv'
       else
         let () = warn_inline_in_module kn in
         senv'
@@ -1384,11 +1391,13 @@ let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
   let state = check_state senv in
   let vmstate = vm_state senv in
-  let mb, _, vmtab = Mod_typing.translate_module state vmstate senv.env mp inl me in
+  let (mb, gdelta), _, vmtab =
+    Mod_typing.translate_module state vmstate senv.env mp inl me
+  in
   let senv = set_vm_library vmtab senv in
   let mb = Mod_declarations.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) (M mp) senv in
-  let senv = match mod_global_delta mb with
+  let senv = match gdelta with
   | None -> senv
   | Some delta -> update_resolver (Mod_subst.add_delta_resolver delta) senv
   in
@@ -1541,7 +1550,9 @@ let end_module l restype senv =
   let newenv = Modops.add_module mp mb newenv in
   let newresolver = match mod_global_delta mb with
   | None -> oldsenv.modresolver
-  | Some delta -> Mod_subst.add_delta_resolver delta oldsenv.modresolver
+  | Some delta ->
+    Mod_subst.add_delta_resolver (Mod_subst.of_body_delta_resolver delta)
+      oldsenv.modresolver
   in
   let () = assert (List.is_empty params || List.is_empty senv.local_retroknowledge) in
   (mp, mbids, mod_delta mb),
@@ -1579,7 +1590,10 @@ let add_include me is_module inl senv =
   let senv = set_vm_library vmtab senv in
   (* Include Self support  *)
   let struc = NoFunctor (List.rev senv.revstruct) in
-  let mb = Mod_declarations.make_module_body struc senv.modresolver in
+  let mb =
+    Mod_declarations.make_module_body struc
+      (Mod_subst.forget_inline_delta_resolver senv.modresolver)
+  in
   let rec compute_sign sign resolver =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
@@ -1669,7 +1683,12 @@ let export ~output_native_objects senv dir =
   let () = check_current_library dir senv in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
-  let mb = Mod_declarations.make_module_body str senv.modresolver in
+  (* A library is a module, not a module type: its resolver holds no inlining
+     declaration. *)
+  let mb =
+    Mod_declarations.make_module_body str
+      (Mod_subst.forget_inline_delta_resolver senv.modresolver)
+  in
   let ast, symbols =
     if output_native_objects then
       Nativelibrary.dump_library mp senv.env str

@@ -119,7 +119,7 @@ val genppj : ('a -> Pp.t * Pp.t) -> 'a -> Pp.t
 val ppj : EConstr.unsafe_judgment -> unit
 
 val ppsubst : Mod_subst.substitution -> unit
-val ppdelta : Mod_subst.delta_resolver -> unit
+val ppdelta : 'a Mod_subst.delta_resolver -> unit
 
 val pp_idpred : Names.Id.Pred.t -> unit
 val pp_cpred : Names.Cpred.t -> unit

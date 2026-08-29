@@ -1346,7 +1346,8 @@ module Internal = struct
     let new_mods = ModPath.Map.add mp mb env.env_modules in
     { env with env_modules = new_mods }
 
-  let rec overwrite_structure mp sign resolver env =
+  let rec overwrite_structure : type a. _ -> _ -> a Mod_subst.delta_resolver -> _ -> _ =
+    fun mp sign resolver env ->
     let add_field env (l,elem) = match elem with
       | SFBconst cb ->
         let c = Mod_subst.constant_of_delta_kn resolver (KerName.make mp l) in

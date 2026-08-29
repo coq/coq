@@ -1029,9 +1029,9 @@ let inlined_bodies env inl ~is_mod me =
         let reso =
           Modops.inline_delta_resolver env inl mparg farg_id farg_b delta
         in
-        let fold kn body accu =
+        let fold kn c accu =
           let can = Constant.canonical (constant_of_delta_kn delta kn) in
-          KerName.Map.add can body (KerName.Map.add kn body accu)
+          KerName.Map.add can c (KerName.Map.add kn c accu)
         in
         fold_inline_body_delta_resolver fold reso accu
       in
@@ -1039,11 +1039,13 @@ let inlined_bodies env inl ~is_mod me =
     in
     collect (type_of_mod mp1 env is_mod) mp_l KerName.Map.empty
 
-(** [subst_reso_of_struct inlined mp struc reso] enriches [reso], the resolver
-    of the module [mp] whose fields are [struc], with the body of every field of
-    [mp] whose canonical name is that of an inlinable field of an argument. *)
+(** [subst_reso_of_struct inlined mp struc reso] reads [reso], the resolver of
+    the module [mp] whose fields are [struc], as the resolver of a
+    substitution, adding the body of every field of [mp] whose canonical name
+    is that of an inlinable field of an argument. *)
 let subst_reso_of_struct inlined mp struc reso =
-  if KerName.Map.is_empty inlined then reso
+  let accu = forget_inline_delta_resolver reso in
+  if KerName.Map.is_empty inlined then accu
   else
     let rec walk mp struc accu =
       let fold accu (l, field) = match field with
@@ -1051,7 +1053,7 @@ let subst_reso_of_struct inlined mp struc reso =
         let kn = KerName.make mp l in
         begin match KerName.Map.find_opt (kn_of_delta reso kn) inlined with
         | None -> accu
-        | Some (lev, c) -> add_inline_delta_resolver kn (lev, Some c) accu
+        | Some c -> add_inline_body_delta_resolver kn c accu
         end
       | SFBmodule mb ->
         begin match mod_type mb with
@@ -1062,13 +1064,13 @@ let subst_reso_of_struct inlined mp struc reso =
       in
       List.fold_left fold accu struc
     in
-    walk mp struc reso
+    walk mp struc accu
 
 (** Same, for a module whose signature may be functorial: nothing is
     instantiated yet in that case. *)
 let subst_reso_of_module env inlined mp reso =
   match mod_type (Environ.lookup_module mp env) with
-  | MoreFunctor _ -> reso
+  | MoreFunctor _ -> forget_inline_delta_resolver reso
   | NoFunctor struc -> subst_reso_of_struct inlined mp struc reso
 
 (** Prepare the module type list for check of subtypes *)
@@ -1121,7 +1123,9 @@ let intern_arg (acc, cst) (mbidl,(mty, base, kind, inl)) =
     let mp = MPbound mbid in
     let mtb = Global.add_module_parameter mbid mty inl in
     let resolver = mod_delta mtb in
-    let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
+    let sobjs =
+      subst_sobjs (map_mp mp0 mp (forget_inline_delta_resolver resolver)) sobjs
+    in
     InterpVisitor.load_module 1 sp mp sobjs;
     (mbid, mtb, mty, inl) :: acc
   in
@@ -1202,7 +1206,8 @@ let end_module_core id m_info objects fs =
     match m_info.cur_typ with
       | None -> sobjs
       | Some (mty, _) ->
-        subst_sobjs (map_mp (get_module_path mty) mp resolver) sobjs
+        subst_sobjs
+          (map_mp (get_module_path mty) mp (of_body_delta_resolver resolver)) sobjs
   in
   let node = ModuleObject (id,sobjs) in
   (* We add the keep objects, if any, and if this isn't a functor *)
@@ -1531,7 +1536,10 @@ let declare_one_include_core (me,base,kind,inl) =
   let () = Global.add_univ_constraints cst in
   let () = assert (ModPath.equal cur_mp (Global.current_modpath ())) in
   (* Include Self support  *)
-  let mb = make_module_body (RawModOps.Interp.current_struct ()) (RawModOps.Interp.current_modresolver ()) in
+  let mb =
+    make_module_body (RawModOps.Interp.current_struct ())
+      (forget_inline_delta_resolver (RawModOps.Interp.current_modresolver ()))
+  in
   let rec compute_sign sign =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->

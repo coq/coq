@@ -145,7 +145,7 @@ val add_mind :
 
 val add_module :
   Id.t -> Entries.module_entry -> Declarations.inline ->
-    (ModPath.t * Mod_subst.delta_resolver) safe_transformer
+    (ModPath.t * Mod_subst.mod_body Mod_subst.delta_resolver) safe_transformer
 val add_modtype :
   Id.t -> Entries.module_type_entry -> Declarations.inline ->
     ModPath.t safe_transformer
@@ -223,13 +223,13 @@ val allow_delayed_constants : bool ref
 
 val end_module :
   Id.t -> (Entries.module_struct_entry * Declarations.inline) option ->
-    (ModPath.t * MBId.t list * Mod_subst.delta_resolver) safe_transformer
+    (ModPath.t * MBId.t list * Mod_subst.mod_body Mod_subst.delta_resolver) safe_transformer
 
 val end_modtype : Id.t -> (ModPath.t * MBId.t list) safe_transformer
 
 val add_include :
   Entries.module_struct_entry -> bool -> Declarations.inline ->
-   Mod_subst.delta_resolver safe_transformer
+   Mod_subst.mod_type Mod_subst.delta_resolver safe_transformer
 
 val current_modpath : safe_environment -> ModPath.t
 
@@ -280,7 +280,7 @@ val typing : safe_environment -> Constr.constr -> judgment
 
 val exists_objlabel : Id.t -> safe_environment -> bool
 
-val delta_of_senv : safe_environment -> Mod_subst.delta_resolver
+val delta_of_senv : safe_environment -> Mod_subst.mod_type Mod_subst.delta_resolver
 
 val constant_of_delta_kn_senv : safe_environment -> KerName.t -> Constant.t
 val mind_of_delta_kn_senv : safe_environment -> KerName.t -> MutInd.t

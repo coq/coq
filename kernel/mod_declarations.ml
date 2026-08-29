@@ -31,14 +31,14 @@ and module_signature = (module_type_body,structure_body) functorize
 and module_implementation =
   | Abstract (** no accessible implementation *)
   | Algebraic of module_expression (** non-interactive algebraic expression *)
-  | Struct of delta_resolver * structure_body (** interactive body living in the parameter context of [mod_type] *)
+  | Struct of mod_body delta_resolver * structure_body (** interactive body living in the parameter context of [mod_type] *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 and 'a generic_module_body =
   { mod_expr : ('a, module_implementation) when_mod_body; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
-    mod_delta : Mod_subst.delta_resolver; (**
+    mod_delta : 'a Mod_subst.delta_resolver; (**
       quotiented set of equivalent constants and inductive names *) }
 
 (** For a module, there are five possible situations:
@@ -104,11 +104,22 @@ let replace_module_body struc delta mb =
     mod_type_alg = None;
     mod_delta = delta }
 
-let module_type_of_module mb =
-  { mb with mod_expr = ModTypeNul; mod_type_alg = None; }
+let module_type_of_module mb = {
+  mod_expr = ModTypeNul;
+  mod_type = mb.mod_type;
+  mod_type_alg = None;
+  mod_delta = of_body_delta_resolver mb.mod_delta;
+}
 
-let module_body_of_type mtb =
-  { mtb with mod_expr = ModBodyVal Abstract; }
+let module_body_of_type mtb = {
+  mod_expr = ModBodyVal Abstract;
+  mod_type = mtb.mod_type;
+  mod_type_alg = mtb.mod_type_alg;
+  (* The inlining declarations of [mtb] are not inherited: they are a property
+     of the module type, and a module implementing it does not declare
+     anything. *)
+  mod_delta = forget_inline_delta_resolver mtb.mod_delta;
+}
 
 (** Setters *)
 
@@ -121,7 +132,7 @@ let set_signature typ mb =
 let set_algebraic_type mb alg =
   { mb with mod_type_alg = Some alg }
 
-let set_delta : type a. delta_resolver -> a generic_module_body -> a generic_module_body =
+let set_delta : type a. a delta_resolver -> a generic_module_body -> a generic_module_body =
   fun delta mb -> { mb with mod_delta = delta }
 
 (** Accessors *)

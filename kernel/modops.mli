@@ -41,7 +41,7 @@ val subst_structure : substitution -> ModPath.t -> structure_body -> structure_b
 (** {6 Adding to an environment } *)
 
 val add_structure :
-  ModPath.t -> structure_body -> delta_resolver -> env -> env
+  ModPath.t -> structure_body -> 'a delta_resolver -> env -> env
 
 (** adds a module and its components, but not the constraints *)
 val add_module : ModPath.t -> module_body -> env -> env
@@ -60,7 +60,7 @@ val add_module_parameter : MBId.t -> module_type_body -> env -> env
     exactly as [add_structure] does. Used by the checker, which does not trust
     the VM bytecode serialized in a [.vo] file. *)
 val compile_signature :
-  env -> Vmlibrary.t -> ModPath.t -> delta_resolver -> module_signature ->
+  env -> Vmlibrary.t -> ModPath.t -> 'a delta_resolver -> module_signature ->
   Vmlibrary.t * module_signature
 
 (** Same, for a whole module (type) body. *)
@@ -77,13 +77,16 @@ val strengthen : module_type_body -> ModPath.t -> module_type_body
 val strengthen_and_subst_module_body : ModPath.t -> module_body -> ModPath.t -> bool -> module_body
 
 val subst_modtype_signature_and_resolver : ModPath.t -> ModPath.t ->
-  module_signature -> delta_resolver -> module_signature * delta_resolver
+  module_signature -> 'a delta_resolver -> module_signature * 'a delta_resolver
 
 (** {6 Building map of constants to inline } *)
 
 val inline_delta_resolver :
   env -> inline -> ModPath.t -> MBId.t -> module_type_body ->
-  delta_resolver -> delta_resolver
+  'a delta_resolver -> mod_subst delta_resolver
+(** Enrich the resolver of the module being passed as a functor argument with
+    the bodies of the fields the parameter type declared [Inline]. The result
+    carries inlined bodies, hence is a substitution resolver. *)
 
 (** {6 Cleaning a module expression from bounded parts }
 

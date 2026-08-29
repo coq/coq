@@ -73,3 +73,10 @@ Check I2.Inner.u 1.
 Check I3.N.u 1.
 Check J1.u 1.
 Check J2.u 1.
+
+(* An inlinable field of a functor argument stays identified with the
+   argument's field: the inlining does not replace the name equivalence. *)
+Module K (X : T). Include F X. End K.
+Module K1 := K A.
+Definition check_alias : K1.t = A.t := eq_refl.
+Definition check_alias' : K1.u = A.u := eq_refl.

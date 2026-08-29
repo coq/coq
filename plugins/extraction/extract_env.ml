@@ -194,7 +194,7 @@ let expand_mexpr env mp me =
      name that should not be part of the env and then substitute it away *)
   let mp0 = ModPath.dummy in
   let state = ((Environ.universes env, Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let mb, (_, cst), _ = Mod_typing.translate_module state vm_state env mp0 inl (MExpr ([], me, None)) in
+  let (mb, _), (_, cst), _ = Mod_typing.translate_module state vm_state env mp0 inl (MExpr ([], me, None)) in
   let sign = mod_type mb in
   let reso = mod_delta mb in
   Modops.subst_modtype_signature_and_resolver mp0 mp sign reso
@@ -239,7 +239,9 @@ let make_mind resolver mp l =
 (* From a [structure_body] (i.e. a list of [structure_field_body])
    to specifications. *)
 
-let rec extract_structure_spec table venv env mp reso = function
+let rec extract_structure_spec : type a.
+  State.t -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ -> _ =
+  fun table venv env mp reso -> function
   | [] -> []
   | (l, SFBconst cb) :: msig ->
     let insts = get_mono_inst_univs cb.const_universes in
@@ -329,7 +331,9 @@ and extract_mexpression_spec table venv env mp1 (me_struct,me_alg) = match me_al
                 extract_mexpression_spec table venv env' mp1 (me_struct', me_alg'))
   | MENoFunctor m -> extract_mexpr_spec table venv env mp1 (Some me_struct, m)
 
-and extract_msignature_spec table venv env mp1 reso = function
+and extract_msignature_spec : type a.
+  State.t -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ -> _ =
+  fun table venv env mp1 reso -> function
   | NoFunctor struc ->
       let env' = Environ.Internal.overwrite_structure mp1 struc reso env in
       MTsig (mp1, extract_structure_spec table venv env' mp1 reso struc)

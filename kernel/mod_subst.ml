@@ -28,25 +28,42 @@ type mp_hint =
 | MPequiv of ModPath.t  (** the canonical form of the key *)
 | MPlift                (** the prefix rule stops here *)
 
-(* For Inline, the int is an inlining level, and the constr (if present)
-   is the term into which we should inline.
-   Equiv gives the canonical name in the given context. *)
-type delta_hint =
-  | Inline of int * constr UVars.univ_abstracted option
-  | Equiv of KerName.t
+(* Delta-resolvers come in three kinds, tracked by the index of [delta_hint].
+   [Equiv] gives the canonical name in the given context and makes sense for
+   all of them. [Inline] records the level of a [Parameter Inline] and only
+   makes sense in a module type. [InlineBody] records the term a constant is to
+   be replaced with, which only makes sense in a substitution. *)
+
+type mod_body = [ `ModBody ]
+type mod_type = [ `ModType ]
+type mod_subst = [ `ModSubst ]
+
+type _ delta_hint =
+| Equiv : KerName.t -> 'a delta_hint
+| Inline : int -> mod_type delta_hint
+| InlineBody : constr UVars.univ_abstracted -> mod_subst delta_hint
 
 (* NB: earlier constructor Prefix_equiv of ModPath.t
    is now stored in a separate table, see Deltamap.t below *)
 
 module Deltamap = struct
-  type t = {
+  type 'a t = {
     root : ModPath.t;
     (** Common root of all keys in the deltamap *)
     mmap : mp_hint ModPath.Map.t;
     (** All bindings [mp ↦ _] must satisfy [mp ⊆ root] *)
-    kmap : delta_hint KerName.Map.t;
+    kmap : 'a delta_hint KerName.Map.t;
     (** All bindings [kn ↦ _] must satisfy [modpath(kn) ⊆ root] *)
   }
+
+  let forget_inline (type a b) (reso : a t) : b t =
+    let fold kn (hint : a delta_hint) accu : b delta_hint KerName.Map.t = match hint with
+    | Equiv kn' -> KerName.Map.add kn (Equiv kn') accu
+    | Inline _ -> accu
+    | InlineBody _ -> accu
+    in
+    { root = reso.root; mmap = reso.mmap;
+      kmap = KerName.Map.fold fold reso.kmap KerName.Map.empty }
 
   let empty root = {
     root;
@@ -136,7 +153,10 @@ end
 (* Invariant: in the [delta_hint] map, an [Equiv] should only
    relate [KerName.t] with the same label (and section dirpath). *)
 
-type delta_resolver = Deltamap.t
+type 'a delta_resolver = 'a Deltamap.t
+
+let forget_inline_delta_resolver = Deltamap.forget_inline
+let of_body_delta_resolver = Deltamap.forget_inline
 
 let empty_delta_resolver = Deltamap.empty
 let has_root_delta_resolver mp reso =
@@ -165,7 +185,7 @@ module Umap :
   let join map1 map2 = fold add_mp map1 map2
 end
 
-type substitution = delta_resolver Umap.t
+type substitution = mod_subst delta_resolver Umap.t
 
 let empty_subst = Umap.empty
 
@@ -173,9 +193,10 @@ let is_empty_subst = Umap.is_empty
 
 (* <debug> *)
 
-let string_of_hint pr = function
-  | Inline (_, Some c) -> str "inline(" ++ pr c ++ str ")"
-  | Inline (lvl, None) -> str "inline[" ++ int lvl ++ str "]"
+let string_of_hint (type a) pr (hint : a delta_hint) =
+  match hint with
+  | InlineBody c -> str "inline(" ++ pr c ++ str ")"
+  | Inline lvl -> str "inline[" ++ int lvl ++ str "]"
   | Equiv kn -> str "equiv(" ++ KerName.print kn ++ str ")"
 
 let debug_pr_mp_hint = function
@@ -217,7 +238,9 @@ let debug_pr_subst subst =
 
 (** Extending a [delta_resolver] *)
 
-let add_inline_delta_resolver kn (lev,oc) = Deltamap.add_kn kn (Inline (lev,oc))
+let add_inline_delta_resolver kn lev = Deltamap.add_kn kn (Inline lev)
+
+let add_inline_body_delta_resolver kn c = Deltamap.add_kn kn (InlineBody c)
 
 let add_kn_delta_resolver kn kn' =
   assert (Id.equal (KerName.label kn) (KerName.label kn'));
@@ -264,27 +287,17 @@ let mp_is_alias resolve mp = not (ModPath.equal mp (find_prefix resolve mp))
 
 (** Applying a resolver to a kernel name *)
 
-let solve_delta_kn resolve kn =
-  match Deltamap.find_kn kn resolve with
-  | Equiv _ | Inline (_, Some _) as v -> v
-  | exception Not_found | Inline (_, None) ->
+let kn_of_delta (type a) (resolve : a delta_resolver) kn =
+  let by_prefix () =
     let mp,l = KerName.repr kn in
     let new_mp = find_prefix resolve mp in
-    if mp == new_mp then
-      Equiv kn
-    else
-      Equiv (KerName.make new_mp l)
-
-let kn_of_delta resolve kn =
+    if mp == new_mp then kn else KerName.make new_mp l
+  in
   match Deltamap.find_kn kn resolve with
   | Equiv kn1 -> kn1
-  | exception Not_found | Inline _ ->
-    let mp,l = KerName.repr kn in
-    let new_mp = find_prefix resolve mp in
-    if mp == new_mp then
-      kn
-    else
-      (KerName.make new_mp l)
+  | Inline _ -> by_prefix ()
+  | InlineBody _ -> by_prefix ()
+  | exception Not_found -> by_prefix ()
 
 let constant_of_delta_kn resolve kn =
   Constant.make kn (kn_of_delta resolve kn)
@@ -294,8 +307,8 @@ let mind_of_delta_kn resolve kn =
 
 let fold_inline_body_delta_resolver f resolver accu =
   let fold kn hint accu = match hint with
-  | Inline (lev, Some c) -> f kn (lev, c) accu
-  | Inline (_, None) | Equiv _ -> accu
+  | InlineBody c -> f kn c accu
+  | Equiv _ -> accu
   in
   Deltamap.fold_kn fold resolver accu
 
@@ -305,14 +318,14 @@ let inline_of_delta inline resolver =
     | Some inl_lev ->
       let extract kn hint l =
         match hint with
-          | Inline (lev,_) -> if lev <= inl_lev then (lev,kn)::l else l
+          | Inline lev -> if lev <= inl_lev then kn :: l else l
           | _ -> l
       in
       Deltamap.fold_kn extract resolver []
 
 let search_delta_inline resolve kn1 kn2 =
   let find kn = match Deltamap.find_kn kn resolve with
-    | Inline (_,o) -> o
+    | InlineBody o -> Some o
     | Equiv _ -> raise Not_found
   in
   try find kn1
@@ -341,12 +354,27 @@ let subst_mp subst mp =
     None -> mp
   | Some (mp',_) -> mp'
 
+(* Substituting the target of an [Equiv]. The image may be a constant that
+   [subst] inlines, in which case the binding must become that body. This is how
+   the inlining of a functor argument survives the composition of substitutions. *)
+let subst_kn_hint_subst subst kn : mod_subst delta_hint =
+  let mp, l = KerName.repr kn in
+  match subst_mp_opt subst mp with
+  | None -> Equiv kn
+  | Some (mp', resolve) ->
+    let kn' = KerName.make mp' l in
+    match Deltamap.find_kn kn' resolve with
+    | InlineBody _ as hint -> hint
+    | Equiv _ -> Equiv (kn_of_delta resolve kn')
+    | exception Not_found -> Equiv (kn_of_delta resolve kn')
+
+(* Same as above but drops inlining payload by only returning the equivalent
+   kername. *)
 let subst_kn_delta subst kn =
  let mp,l = KerName.repr kn in
   match subst_mp_opt subst mp with
-     Some (mp',resolve) ->
-      solve_delta_kn resolve (KerName.make mp' l)
-   | None -> Equiv kn
+     Some (mp',resolve) -> kn_of_delta resolve (KerName.make mp' l)
+   | None -> kn
 
 
 let subst_kn subst kn =
@@ -575,15 +603,20 @@ let replace_mp_in_kn mpfrom mpto kn =
 
 let mp_in_mp = ModPath.subpath
 
-let subset_prefixed_by mp resolver =
-  let mp_prefix mkey hint rslv =
-    if mp_in_mp mp mkey then Deltamap.add_mp_hint mkey hint rslv else rslv
+(* Only the equivalences survive: the result describes names under [mp], for
+   whatever kind of resolver the caller is building, so it cannot carry
+   inlining information of the resolver it comes from. *)
+let subset_prefixed_by (type a b) mp (resolver : a delta_resolver) : b delta_resolver =
+  let mp_prefix mkey mequ rslv =
+    if mp_in_mp mp mkey then Deltamap.add_mp_hint mkey mequ rslv else rslv
   in
-  let kn_prefix kn hint rslv =
-    match hint with
-      | Inline (_,None) -> rslv
-      | Equiv _ | Inline (_,Some _) ->
-        if mp_in_mp mp (KerName.modpath kn) then Deltamap.add_kn kn hint rslv else rslv
+  let kn_prefix kn (hint : a delta_hint) rslv : b delta_resolver = match hint with
+  | Inline _ -> rslv
+  | InlineBody _ -> rslv
+  | Equiv kn' ->
+    if mp_in_mp mp (KerName.modpath kn) then
+      Deltamap.add_kn kn (Equiv kn') rslv
+    else rslv
   in
   Deltamap.fold mp_prefix kn_prefix resolver (empty_delta_resolver mp)
 
@@ -599,8 +632,8 @@ let subst_dom_delta_resolver mp_from mp_to resolver =
   let root = subst_mp subst (Deltamap.root resolver) in
   Deltamap.fold mp_apply_subst kn_apply_subst resolver (empty_delta_resolver root)
 
-let subst_mp_delta subst mp mkey =
- match subst_mp_opt subst mp with
+let subst_mp_delta (type a) subst mp mkey : a delta_resolver * ModPath.t =
+  match subst_mp_opt subst mp with
     None -> empty_delta_resolver mp, mp
   | Some (mp',resolve) ->
     (* root(resolve) ⊆ mp' *)
@@ -615,18 +648,22 @@ let subst_mp_delta subst mp mkey =
              under [mp1]. The latter are typically absent so we must not drop
              the former to preserve canonicity of the names. *)
           let subst' = map_mp mp' mkey (empty_delta_resolver mkey) in
-          let transfer kn hint accu = match hint with
-          | Inline _ -> accu
-          | Equiv _ ->
+          let transfer kn (hint : mod_subst delta_hint) accu : a delta_resolver = match hint with
+          | InlineBody _ -> accu
+          | Equiv kn' ->
             if mp_in_mp mp' (KerName.modpath kn) then
-              Deltamap.add_kn (subst_kn subst' kn) hint accu
+              Deltamap.add_kn (subst_kn subst' kn) (Equiv kn') accu
             else accu
           in
           Deltamap.fold_kn transfer resolve reso
       in
       reso, mp1
 
-let gen_subst_delta_resolver dom subst resolver =
+type 'a inline_handler =
+| InlineKeep : mod_subst inline_handler (* keep inlining data *)
+| InlineDrop : 'a inline_handler  (* drop inlining data *)
+
+let gen_subst_delta_resolver (type a) (handler : a inline_handler) dom subst (resolver : a delta_resolver) : a delta_resolver =
   let mp_apply_subst mkey hint rslv =
     let mkey' = if dom then subst_mp subst mkey else mkey in
     match hint with
@@ -635,39 +672,53 @@ let gen_subst_delta_resolver dom subst resolver =
       let rslv', mequ' = subst_mp_delta subst mequ mkey' in
       Deltamap.join rslv' (Deltamap.add_mp_hint mkey' (MPequiv mequ') rslv)
   in
-  let kn_apply_subst kkey hint rslv =
+  let kn_apply_subst kkey (hint : a delta_hint) rslv : a delta_resolver =
     let kkey' = if dom then subst_kn subst kkey else kkey in
-    let hint' = match hint with
-      | Equiv kequ -> subst_kn_delta subst kequ
-      | Inline (lev,Some t) -> Inline (lev,Some (UVars.map_univ_abstracted (subst_mps subst) t))
-      | Inline (_,None) -> hint
+    let hint' : a delta_hint = match hint with
+    | Equiv kequ ->
+      begin match handler with
+      | InlineDrop -> Equiv (subst_kn_delta subst kequ)
+      | InlineKeep -> subst_kn_hint_subst subst kequ
+      end
+    | InlineBody t -> InlineBody (UVars.map_univ_abstracted (subst_mps subst) t)
+    | Inline lev -> Inline lev
     in
     Deltamap.add_kn kkey' hint' rslv
   in
   let root = if dom then subst_mp subst (Deltamap.root resolver) else Deltamap.root resolver in
   Deltamap.fold mp_apply_subst kn_apply_subst resolver (empty_delta_resolver root)
 
-let subst_codom_delta_resolver = gen_subst_delta_resolver false
-let subst_dom_codom_delta_resolver = gen_subst_delta_resolver true
+let subst_codom_delta_resolver subst reso =
+  gen_subst_delta_resolver InlineDrop false subst reso
 
-let update_delta_resolver resolver1 resolver2 =
+let subst_dom_codom_delta_resolver subst reso =
+  gen_subst_delta_resolver InlineDrop true subst reso
+
+let subst_codom_delta_resolver_subst subst (reso : mod_subst delta_resolver) =
+  gen_subst_delta_resolver InlineKeep false subst reso
+
+let subst_dom_codom_delta_resolver_subst subst (reso : mod_subst delta_resolver) =
+  gen_subst_delta_resolver InlineKeep true subst reso
+
+let update_delta_resolver (type a) resolver1 resolver2 : a delta_resolver =
   let mp_apply_rslv mkey hint rslv = match hint with
     | MPlift -> Deltamap.add_mp_hint mkey MPlift rslv
     | MPequiv mequ ->
       Deltamap.add_mp_hint mkey (MPequiv (find_prefix resolver2 mequ)) rslv
   in
-  let kn_apply_rslv kkey hint1 rslv =
-    let hint = match hint1 with
+  let kn_apply_rslv : KerName.t -> a delta_hint -> a delta_resolver ->
+    a delta_resolver = fun kkey hint1 rslv ->
+    let hint : a delta_hint = match hint1 with
       | Equiv kequ -> Equiv (kn_of_delta resolver2 kequ)
-      | Inline (_,Some _) -> hint1
-      | Inline (_,None) ->
+      | InlineBody _ -> hint1
+      | Inline _ ->
         (try Deltamap.find_kn kkey resolver2 with Not_found -> hint1)
     in
     Deltamap.add_kn kkey hint rslv
   in
   Deltamap.fold mp_apply_rslv kn_apply_rslv resolver1 resolver2
 
-let add_delta_resolver resolver1 resolver2 =
+let add_delta_resolver (type a) resolver1 resolver2 : a delta_resolver =
   let () =
     if mp_in_mp (Deltamap.root resolver2) (Deltamap.root resolver1) then ()
     else CErrors.anomaly Pp.(strbrk "Incompatible resolver roots: " ++
@@ -690,13 +741,13 @@ let join subst1 subst2 =
     let mp = Deltamap.root resolve in
     let mp', resolve' = match subst_mp_opt subst2 mp with
     | None ->
-      let resolve' = subst_codom_delta_resolver subst2 resolve in
+      let resolve' = subst_codom_delta_resolver_subst subst2 resolve in
       mp, resolve'
     | Some (mp', resolve') ->
       (* root(resolve') ⊆ mp' = subst2(mp) = root(subst_dom_codom_delta_resolver subst2 resolve) *)
       let resolve' =
         add_delta_resolver
-          (subst_dom_codom_delta_resolver subst2 resolve) resolve'
+          (subst_dom_codom_delta_resolver_subst subst2 resolve) resolve'
       in
       (* We need to reroot, as in general we only have root(resolve'') ⊆ mp' *)
       let resolve' = Deltamap.reroot mp' resolve' in

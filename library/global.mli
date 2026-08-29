@@ -75,12 +75,12 @@ val merge_elim_constraints : Sorts.ElimConstraints.t -> unit
 
 val add_module :
   Id.t -> Entries.module_entry -> inline ->
-    ModPath.t * Mod_subst.delta_resolver
+    ModPath.t * Mod_subst.mod_body Mod_subst.delta_resolver
 val add_modtype :
   Id.t -> Entries.module_type_entry -> inline -> ModPath.t
 val add_include :
   Entries.module_struct_entry -> bool -> inline ->
-    Mod_subst.delta_resolver
+    Mod_subst.mod_type Mod_subst.delta_resolver
 
 (** Sections *)
 
@@ -114,7 +114,7 @@ val start_modtype : Id.t -> ModPath.t
 
 val end_module : Summary.Interp.frozen -> Id.t ->
   (Entries.module_struct_entry * inline) option ->
-    ModPath.t * MBId.t list * Mod_subst.delta_resolver
+    ModPath.t * MBId.t list * Mod_subst.mod_body Mod_subst.delta_resolver
 
 val end_modtype : Summary.Interp.frozen -> Id.t -> ModPath.t * MBId.t list
 

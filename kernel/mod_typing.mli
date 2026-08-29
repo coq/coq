@@ -24,12 +24,16 @@ type 'a vm_state = 'a * 'a vm_handler
     In the output fields:
     - [mod_expr] is [Abstract] for a [MType] entry, or [Algebraic] for [MExpr].
     - [mod_type_alg] is [None] only for a [MExpr] without explicit signature.
-*)
+
+    The second component is the resolver an enclosing module type inherits
+    from this declaration, or [None] if the module is a functor. It is the
+    resolver of the module's type rather than of its body. *)
 
 val translate_module :
   ('a, Conversion.graph_inconsistency) Conversion.universe_state ->
   'b vm_state ->
-  env -> ModPath.t -> inline -> module_entry -> module_body * 'a * 'b
+  env -> ModPath.t -> inline -> module_entry ->
+  (module_body * mod_type delta_resolver option) * 'a * 'b
 
 (** [translate_modtype] produces a [module_type_body] whose [mod_type_alg]
     cannot be [None] (and of course [mod_expr] is [Abstract]). *)
@@ -45,7 +49,7 @@ val translate_modtype :
 val finalize_module :
   ('a, Conversion.graph_inconsistency) Conversion.universe_state ->
   'b vm_state ->
-  env -> ModPath.t -> module_signature * delta_resolver ->
+  env -> ModPath.t -> module_signature * mod_type delta_resolver ->
   (module_type_entry * inline) option ->
   module_body * 'a * 'b
 
@@ -54,4 +58,4 @@ val finalize_module :
 
 val translate_mse_include :
   bool -> ('a, Conversion.graph_inconsistency) Conversion.universe_state -> 'b vm_state -> Environ.env -> ModPath.t -> inline ->
-  module_struct_entry -> module_signature * unit * delta_resolver * 'a * 'b
+  module_struct_entry -> module_signature * unit * mod_type delta_resolver * 'a * 'b

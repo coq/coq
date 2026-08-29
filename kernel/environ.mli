@@ -556,7 +556,7 @@ module Internal : sig
   val overwrite_module_parameter : MBId.t -> module_type_body -> env -> env
   (** Overwriting variant of Modops.add_module_parameter, see above. *)
 
-  val overwrite_structure : ModPath.t -> structure_body -> Mod_subst.delta_resolver -> env -> env
+  val overwrite_structure : ModPath.t -> structure_body -> 'a Mod_subst.delta_resolver -> env -> env
   (** Overwriting variant of Modops.add_structure, see above. *)
 
 end
