@@ -292,6 +292,13 @@ let constant_of_delta_kn resolve kn =
 let mind_of_delta_kn resolve kn =
   MutInd.make kn (kn_of_delta resolve kn)
 
+let fold_inline_body_delta_resolver f resolver accu =
+  let fold kn hint accu = match hint with
+  | Inline (lev, Some c) -> f kn (lev, c) accu
+  | Inline (_, None) | Equiv _ -> accu
+  in
+  Deltamap.fold_kn fold resolver accu
+
 let inline_of_delta inline resolver =
   match inline with
     | None -> []

@@ -71,6 +71,10 @@ val constant_of_delta_kn : delta_resolver -> KerName.t -> Constant.t
 
 val mind_of_delta_kn : delta_resolver -> KerName.t -> MutInd.t
 
+val fold_inline_body_delta_resolver :
+  (KerName.t -> int * constr UVars.univ_abstracted -> 'a -> 'a) ->
+  delta_resolver -> 'a -> 'a
+
 (** Extract the set of inlined constant in the resolver *)
 val inline_of_delta : int option -> delta_resolver -> (int * KerName.t) list
 
