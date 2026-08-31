@@ -241,6 +241,16 @@ type compiled_library
 
 val dirpath_of_library : compiled_library -> DirPath.t
 val module_of_library : compiled_library -> Mod_declarations.module_body
+val recompile_vm_library : Environ.env -> compiled_library -> Vmlibrary.t * compiled_library
+
+(** The empty table [recompile_vm_library] would have started from, for callers
+    that decide not to recompile. *)
+val empty_vm_library : Environ.env -> compiled_library -> Vmlibrary.t
+(** Recompile the VM bytecode of the library's module from its declarations,
+    returning the resulting table and the library with the recompiled code
+    substituted in. Used by the checker, which does not trust the VM bytecode
+    serialized in the file. A no-op returning an empty table when the VM is
+    disabled. *)
 val univs_of_library : compiled_library -> (Sorts.QGlobal.Set.t * Sorts.ElimConstraints.t) * Univ.ContextSet.t
 val retroknowledge_of_library : compiled_library -> Retroknowledge.action list
 val check_flags_for_library : compiled_library -> safe_transformer0

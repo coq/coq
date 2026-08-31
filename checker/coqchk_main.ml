@@ -171,7 +171,10 @@ let make_senv () =
     if !enable_vm && not Coq_config.bytecode_compiler then begin
       warn_no_bytecode ();
       senv
-    end else Safe_typing.set_VM !enable_vm senv
+    end else begin
+      CheckFlags.enable_vm := !enable_vm;
+      Safe_typing.set_VM !enable_vm senv
+    end
   in
   let senv = Safe_typing.set_allow_sprop true senv in (* be smarter later *)
   Safe_typing.set_native_compiler false senv

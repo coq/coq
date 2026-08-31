@@ -53,6 +53,21 @@ val add_linked_module : ModPath.t -> module_body -> link_info -> env -> env
 (** add an abstract module parameter to the environment *)
 val add_module_parameter : MBId.t -> module_type_body -> env -> env
 
+(** {6 Recompiling the VM bytecode of a module} *)
+
+(** Recompile the VM bytecode of every constant of a signature from its body,
+    discarding whatever code the declarations carry, threading the environment
+    exactly as [add_structure] does. Used by the checker, which does not trust
+    the VM bytecode serialized in a [.vo] file. *)
+val compile_signature :
+  env -> Vmlibrary.t -> ModPath.t -> delta_resolver -> module_signature ->
+  Vmlibrary.t * module_signature
+
+(** Same, for a whole module (type) body. *)
+val compile_module_bytecode :
+  env -> Vmlibrary.t -> ModPath.t -> 'a generic_module_body ->
+  Vmlibrary.t * 'a generic_module_body
+
 val add_retroknowledge : Retroknowledge.action list -> env -> env
 
 (** {6 Strengthening } *)

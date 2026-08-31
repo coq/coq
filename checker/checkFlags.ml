@@ -32,3 +32,8 @@ let set_local_flags flags env =
   }
   in
   Environ.set_typing_flags flags env
+
+(* Set from the -bytecode-compiler command line option. The checker consults
+   this rather than the environment's flag when deciding whether to recompile
+   the VM bytecode of a library. *)
+let enable_vm = ref false

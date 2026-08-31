@@ -115,6 +115,9 @@ let module_body_of_type mtb =
 let set_implementation e mb =
   { mb with mod_expr = ModBodyVal e }
 
+let set_signature typ mb =
+  { mb with mod_type = typ }
+
 let set_algebraic_type mb alg =
   { mb with mod_type_alg = Some alg }
 

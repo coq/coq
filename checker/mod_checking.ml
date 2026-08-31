@@ -290,6 +290,16 @@ let rec check_module env opac mp mb opacify =
       let opacify = collect_constants_without_body (mod_type mb) mp opacify in
       (* TODO: a bit wasteful, we recheck the types of parameters twice *)
       let sign_struct = Modops.annotate_struct_body sign_struct (mod_type mb) in
+      (* The implementation is checked in its own right, hence its bytecode is
+         compiled too; it is local to this check and never exported. With the VM
+         disabled the bytecode is never run, so we skip the recompilation. *)
+      let env, sign_struct =
+        if !CheckFlags.enable_vm then
+          let vmtab, sign_struct =
+            Modops.compile_signature env (Environ.vm_library env) mp reso sign_struct in
+          Environ.set_vm_library vmtab env, sign_struct
+        else env, sign_struct
+      in
       let opac = check_signature env opac sign_struct mp reso opacify in
       Some (sign_struct, reso), opac
     | Algebraic me -> Some (check_mexpression env me (mod_type mb) mp delta_mb), opac
