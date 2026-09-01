@@ -106,6 +106,11 @@ type mode_match =
   | NoMode
   | WithMode of Evarsolve.AllowedEvars.t
 
+type mode_restriction = {
+  mode_match : mode_match;
+  mode_frozen_evars : Evar.Set.t;
+}
+
 type 'a with_mode =
   | ModeMatch of mode_match * 'a
   | ModeMismatch
@@ -136,12 +141,13 @@ module Hint_db :
     val map_eauto : env -> evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> FullHint.t list with_mode
 
     (** As [map_eauto], but returns the nonempty list of distinct matching
-        mode restrictions in lookup order. The result is [None] when modes are
-        declared but none matches, and the mode list is [[NoMode]] when none
+        mode restrictions in lookup order, including the evars frozen by each
+        restriction. The result is [None] when modes are declared but none
+        matches, and the mode list contains one [NoMode] restriction when none
         are declared. *)
     val map_eauto_modes : env -> evar_map -> secvars:Id.Pred.t ->
       (GlobRef.t * constr array) -> constr -> t ->
-      (mode_match list * FullHint.t list) option
+      (mode_restriction list * FullHint.t list) option
 
     (** All hints associated to the reference.
         Precondition: no evars should appear in the arguments, so no modes

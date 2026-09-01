@@ -81,8 +81,63 @@ Module ExternModes.
 
   Global Hint Mode C = : typeclass_instances.
 
-  (* Mode [=] gates the extern hint but does not restrict the tactic run by
-     that hint, so [exact c_0] may instantiate the query evar. *)
+  (* A successful extern result is rejected if it instantiates an evar frozen
+     by the matching mode.  Rejecting it also rolls back the assignment. *)
+  Goal exists n, C n.
+  Proof.
+    eexists ?[n].
+    Fail typeclasses eauto.
+    instantiate (n := 1).
+  Abort.
+End ExternModes.
+
+Module ExternAlternativeModes.
+  Class C (x y : nat).
+
+  Definition c_y1 (x : nat) : C x 1.
+  Proof. constructor. Defined.
+  Global Hint Extern 0 (C ?x _) => exact (c_y1 x) : typeclass_instances.
+
+  Global Hint Mode C = - : typeclass_instances.
+  Global Hint Mode C - = : typeclass_instances.
+
+  (* The newer mode freezes [y], so its extern result is rejected.  Search must
+     retry the extern under the older mode, which freezes [x] instead. *)
+  Goal exists x y, C x y /\ x = 0 /\ y = 1.
+  Proof.
+    eexists ?[x], ?[y].
+    split.
+    - typeclasses eauto.
+    - split; reflexivity.
+  Qed.
+End ExternAlternativeModes.
+
+Module ExternGeneratedSubgoals.
+  Class C (n : nat).
+  Class D (n : nat).
+
+  Definition c_of_d (n : nat) (_ : D n) : C n.
+  Proof. constructor. Defined.
+  Global Instance d_0 : D 0 := {}.
+  Global Hint Extern 0 (C ?n) => eapply (c_of_d n) : typeclass_instances.
+  Global Hint Mode C = : typeclass_instances.
+
+  (* The extern itself leaves [n] undefined.  Its generated [D n] subgoal may
+     instantiate [n], since modes constrain only the hint application. *)
   Goal exists n, C n.
   Proof. eexists. typeclasses eauto. Qed.
-End ExternModes.
+End ExternGeneratedSubgoals.
+
+Module StrictExternException.
+  #[local] Set Typeclasses Strict Resolution.
+
+  Class C (n : nat).
+
+  Definition c_0 : C 0.
+  Proof. constructor. Defined.
+  Global Hint Extern 0 (C _) => exact c_0 : typeclass_instances.
+
+  (* Strict Resolution historically does not constrain Hint Extern. *)
+  Goal exists n, C n.
+  Proof. eexists. typeclasses eauto. Qed.
+End StrictExternException.
