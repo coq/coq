@@ -360,7 +360,18 @@ and check_signatures (cst, ustate) trace env mp1 sig1 mp2 sig2 subst1 subst2 res
 and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
   if mtb1==mtb2 || mod_type mtb1 == mod_type mtb2 then cst
   else
-    let rec check_structure cst ~nargs env struc1 struc2 subst1 subst2 =
+    (* Invariant: [delta1] is [mod_delta mtb1] transported into the name space
+       of [env], and [subst2] sends [mp2] to [mp1] with [delta1] as resolver.
+       As we descend into a functor, [subst1] renames the implementation's
+       parameters into the signature's ones, so [delta1] must follow, and the
+       resolver carried by [subst2] must be kept in sync with it. Otherwise the
+       canonical names computed through [subst2] live in a different name space
+       than the ones computed through [subst1] and can never be recognised as
+       equal. Note that re-adding the binding for [mp2] also matters when [mp2]
+       is a submodule of the module the enclosing [subst2] talks about: for a
+       functor field the enclosing resolver carries no information at all,
+       since [mod_global_delta] is [None] on functors. *)
+    let rec check_structure cst ~nargs env struc1 struc2 subst1 subst2 delta1 =
       match struc1,struc2 with
       | NoFunctor list1,
         NoFunctor list2 ->
@@ -373,25 +384,28 @@ and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
             (* We only add the subcomponents, the functor per se is already
                part of the environment but the subtyping check will never access
                it directly *)
-            Modops.add_structure mp1 (subst_structure subst1 mp1 list1) (mod_delta mtb1) env
+            Modops.add_structure mp1 (subst_structure subst1 mp1 list1) delta1 env
         in
-        let delta_mtb1 = mod_delta mtb1 in
         let delta_mtb2 = mod_delta mtb2 in
         check_signatures (cst, ustate) trace env
           mp1 list1 mp2 list2 subst1 subst2
-          delta_mtb1 delta_mtb2
+          delta1 delta_mtb2
       | MoreFunctor (arg_id1,arg_t1,body_t1),
         MoreFunctor (arg_id2,arg_t2,body_t2) ->
         let mparg1 = MPbound arg_id1 in
         let mparg2 = MPbound arg_id2 in
-        let subst1 = join (map_mbid arg_id1 mparg2 (mod_delta arg_t2)) subst1 in
+        let nsubst = map_mbid arg_id1 mparg2 (mod_delta arg_t2) in
+        let subst1 = join nsubst subst1 in
+        let delta1 = subst_codom_delta_resolver nsubst delta1 in
+        let subst2 = add_mp mp2 mp1 delta1 subst2 in
         let env = add_module_parameter arg_id2 arg_t2 env in
         let cst = check_modtypes (cst, ustate) (FunctorArgument (nargs+1) :: trace) env mparg2 arg_t2 mparg1 arg_t1 subst2 subst1 in
         (* contravariant *)
-        check_structure cst ~nargs:(nargs + 1) env body_t1 body_t2 subst1 subst2
+        check_structure cst ~nargs:(nargs + 1) env body_t1 body_t2 subst1 subst2 delta1
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
     in
     check_structure cst ~nargs:0 env (mod_type mtb1) (mod_type mtb2) subst1 subst2
+      (subst_codom_delta_resolver subst1 (mod_delta mtb1))
 
 let check_subtypes state env mp_sup mp_super super =
   let sup = match Environ.lookup_module mp_sup env with
