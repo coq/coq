@@ -52,11 +52,11 @@ ENV NJOBS="2" \
 RUN mkdir -p ~/.config/dune && printf '(lang dune 2.1)\n(jobs %s)\n' $NJOBS > ~/.config/dune/config
 
 # Edge opam is the set of edge packages required by Coq
-ENV COMPILER="4.14.2" \
+ENV COMPILER="5.4.1" \
     BASE_OPAM="zarith.1.14 ounit2.2.2.7 camlzip.1.14" \
     CI_OPAM="ocamlgraph.2.0.0 cppo.1.8.0" \
     BASE_OPAM_EDGE="dune.3.23.1 dune-build-info.3.23.1 dune-release.2.2.1 ocamlfind.1.9.8 odoc.3.2.1" \
-    CI_OPAM_EDGE="memprof-limits.0.3.0 elpi.3.7.1 ppx_import.1.12.0 cmdliner.2.1.1 sexplib.v0.16.0 ppx_sexp_conv.v0.16.0 ppx_hash.v0.16.0 ppx_compare.v0.16.0 ppx_deriving_yojson.3.9.1 yojson.2.2.2 uri.4.4.0 ppx_yojson_conv.v0.16.0 ppx_inline_test.v0.16.1 ppx_assert.v0.16.0 ppx_optcomp.v0.16.0 lsp.1.26.0 sel.0.8.0" \
+    CI_OPAM_EDGE="memprof-limits.0.3.0 elpi.3.7.1 ppx_import.1.12.0 cmdliner.2.1.1 sexplib.v0.17.0 ppx_sexp_conv.v0.17.1 ppx_hash.v0.17.0 ppx_compare.v0.17.0 ppx_deriving_yojson.3.10.0 yojson.2.2.2 uri.4.4.0 ppx_yojson_conv ppx_inline_test.v0.17.1 ppx_assert.v0.17.0 ppx_optcomp.v0.17.1 lsp.1.26.0 sel.0.8.0" \
     COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.5"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
