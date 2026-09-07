@@ -260,46 +260,8 @@ let cache_clear () = cache_key := [||]; cache_gen := [||]
 
 let fresh_gen () = incr gen_count; !gen_count
 
-(* A bounded hash of the top of the term.  Any function of a term agrees with
-   [==]; what this one has to be is O(1), where [Constr.hash] walks the whole
-   term.  Every name hash it uses is a memoized field. *)
-let rec hash_top n c =
-  let open Hashset.Combine in
-  let sub c = if n <= 1 then 0 else hash_top (n - 1) c in
-  match Constr.kind c with
-  | Constr.Const (kn, _) -> combinesmall 1 (Constant.UserOrd.hash kn)
-  | Constr.Ind ((mi, i), _) -> combinesmall 2 (combine (MutInd.UserOrd.hash mi) i)
-  | Constr.Construct (((mi, i), j), _) ->
-    combinesmall 3 (combine3 (MutInd.UserOrd.hash mi) i j)
-  | Constr.Var id -> combinesmall 4 (Id.hash id)
-  | Constr.Rel i -> combinesmall 5 i
-  | Constr.App (f, args) ->
-    let k = Array.length args in
-    combinesmall 6
-      (combine3 (sub f) k (if Int.equal k 0 then 0 else sub args.(k - 1)))
-  | Constr.Lambda (_, t, b) -> combinesmall 7 (combine (sub t) (sub b))
-  | Constr.Prod (_, t, b) -> combinesmall 8 (combine (sub t) (sub b))
-  | Constr.LetIn (_, b, t, c) -> combinesmall 9 (combine3 (sub b) (sub t) (sub c))
-  | Constr.Proj (p, _, c) ->
-    combinesmall 10 (combine (Projection.CanOrd.hash p) (sub c))
-  | Constr.Case (ci, _, _, _, _, c, br) ->
-    combinesmall 11 (combine3 (Ind.UserOrd.hash ci.Constr.ci_ind)
-                       (Array.length br) (sub c))
-  | Constr.Cast (c, _, _) -> combinesmall 12 (sub c)
-  | Constr.Fix (_, (_, tl, _)) -> combinesmall 13 (Array.length tl)
-  | Constr.CoFix (_, (_, tl, _)) -> combinesmall 14 (Array.length tl)
-  | Constr.Array (_, t, _, _) -> combinesmall 15 (Array.length t)
-  | Constr.Int i -> combinesmall 16 (Uint63.hash i)
-  | Constr.Float _ -> 17
-  | Constr.String _ -> 18
-  | Constr.Sort _ -> 19
-  | Constr.Meta i -> combinesmall 20 i
-  | Constr.Evar _ -> 21
-
-let hash_top c = hash_top 3 c
-
 let seen gen c =
-  let i = hash_top c land (cache_size - 1) in
+  let i = Constr.hash_bounded c land (cache_size - 1) in
   let keys = !cache_key and gens = !cache_gen in
   if Int.equal (Array.unsafe_get gens i) gen && Array.unsafe_get keys i == c
   then true
@@ -311,7 +273,7 @@ let seen gen c =
 
 (* Undo a [seen]: walk the node again if it is met again. *)
 let unsee gen c =
-  let i = hash_top c land (cache_size - 1) in
+  let i = Constr.hash_bounded c land (cache_size - 1) in
   let keys = !cache_key and gens = !cache_gen in
   if Int.equal (Array.unsafe_get gens i) gen && Array.unsafe_get keys i == c
   then Array.unsafe_set gens i (-1)
