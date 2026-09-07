@@ -1043,6 +1043,18 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - exploit: see issue
 - risk: ?
 
+#### translation of identifiers from Coq to OCaml was not injective
+
+- component: native
+- introduced: V8.5
+- impacted released versions: V8.5-V9.2.0
+- impacted coqchk versions: none (no native computation in coqchk)
+- fixed in: V9.2.1
+- found by: christos-spearbit
+- GH issue number: rocq-rocq-prover/rocq#22364
+- exploit: see issue
+- risk: systematic when using native compilation
+
 ### Side-effects
 
 #### polymorphic side-effects inside monomorphic definitions incorrectly handled as not inlined

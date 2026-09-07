@@ -1772,20 +1772,53 @@ let string_of_label_def l =
     | None -> ""
     | Some l -> string_of_id l
 
+let escape_underscore s =
+  let len = String.length s in
+  let rec count accu i =
+    if i < len then
+      let accu = match s.[i] with
+      | '_' -> accu + 1
+      | _ -> accu
+      in
+      count accu (i + 1)
+    else accu
+  in
+  let count = count 0 0 in
+  if Int.equal count 0 then s
+  else
+    let nlen = len + count in
+    let ans = Bytes.create nlen in
+    let rec setc pos npos =
+      if pos < len then match s.[pos] with
+      | '_' ->
+        let () = Bytes.set ans npos '_' in
+        let () = Bytes.set ans (npos + 1) '_' in
+        setc (pos + 1) (npos + 2)
+      | c ->
+        let () = Bytes.set ans npos c in
+        setc (pos + 1) (npos + 1)
+    in
+    let () = setc 0 0 in
+    Bytes.unsafe_to_string ans
+
+let escaped_string_of_id s = escape_underscore (string_of_id s)
+
 (* Relativization of module paths *)
 let rec list_of_mp acc = function
-  | MPdot (mp,l) -> list_of_mp (string_of_id l::acc) mp
+  | MPdot (mp, l) -> list_of_mp ("_d" :: escaped_string_of_id l :: acc) mp
   | MPfile dp ->
       let dp = DirPath.repr dp in
-      string_of_dirpath dp :: acc
-  | MPbound mbid -> ("X"^string_of_id (MBId.to_id mbid))::acc
+      let dp = List.map escaped_string_of_id dp in
+      "_f" :: List.rev_append dp acc
+  | MPbound mbid -> "_b" :: escaped_string_of_id (MBId.to_id mbid) :: acc
 
 let list_of_mp mp = list_of_mp [] mp
 
+(* This function **must** be injective for soundness *)
 let string_of_kn kn =
   let (mp,l) = KerName.repr kn in
   let mp = list_of_mp mp in
-  String.concat "_" mp ^ "_" ^ string_of_id l
+  String.concat "_l" mp ^ "_l" ^ (escaped_string_of_id l)
 
 let string_of_con c = string_of_kn (Constant.user c)
 let string_of_mind mind = string_of_kn (MutInd.user mind)
