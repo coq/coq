@@ -687,7 +687,13 @@ let rec ccnv ~cache:docache cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
             | Some cp ->
               match fterm_of v1, fterm_of v2 with
               | FCLOS (c1, (s1, u1)), FCLOS (c2, (s2, u2)) ->
-                Some (cp,
+                (* Hashing the whole substitution at each binder becomes
+                   quadratic in the context depth. Bound the combined size
+                   before constructing a key; [size] uses cached subtree
+                   sizes and leaves compact identity substitutions intact. *)
+                let size1 = Esubst.Internal.size s1 in
+                if size1 > 256 || Esubst.Internal.size s2 > 256 - size1 then None
+                else Some (cp,
                       { ck_hash = clos_pair_hash c1 s1 c2 s2 lid1 lid2 pb;
                         ck_c1 = c1; ck_s1 = s1; ck_u1 = u1;
                         ck_c2 = c2; ck_s2 = s2; ck_u2 = u2;

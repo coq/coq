@@ -490,6 +490,12 @@ let rec fold_subs frel fval shift accu = function
 
 let fold frel fval accu s = fold_subs frel fval 0 accu s
 
+let rec size accu = function
+| Nil (_, n) -> accu + n
+| Cons (h, _, s) -> size (accu + h) s
+
+let size s = size 0 s
+
 (* Semantic equality (same [repr]). The fast path requires structurally
    identical skew lists, which implies equal reprs; rebuilt-but-equal
    substitutions that took different construction paths fall back to the

@@ -146,6 +146,10 @@ type 'a or_rel = REL of int | VAL of int * 'a
     the substitution. *)
 val repr : 'a subs -> 'a or_rel list * int
 
+(** Number of entries in [repr], using cached subtree sizes without
+    traversing the entries or expanding identity substitutions. *)
+val size : 'a subs -> int
+
 (** Allocation-free fold over the entries of a substitution, in [repr]
     order: [frel] receives the relocated index of each [REL] entry, [fval]
     the accumulated shift and value of each [VAL] entry. Also returns the
