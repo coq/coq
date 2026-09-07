@@ -206,16 +206,22 @@ let close_out { out_channel = ch; out_segments = seg } =
   let () = flush ch in
   close_out ch
 
-type summary_disk = {
-  md_name : string list;
-  md_deps : Obj.t;
-  md_ocaml : Obj.t;
-  md_info : Obj.t;
-} [@@warning "-unused-field"]
+(** cf library.ml for real type *)
+type summary_disk
 
 let summary_seg : summary_disk id = make_id "summary"
+
+let rec assert_string_list v =
+  if Obj.is_int v then assert (Int.equal (Obj.magic v) 0)
+  else
+    let () = assert (Obj.tag v = 0 && Obj.size v = 2 && Obj.tag (Obj.field v 0) = Obj.string_tag) in
+    assert_string_list (Obj.field v 1)
 
 let library_name f =
   let ch = with_magic_number_check (fun file -> open_in ~file) f in
   let md, _ = marshal_in_segment ch ~segment: summary_seg in
-  md.md_name
+  let md = Obj.repr md in
+  assert (Obj.tag md = 0 && Obj.size md > 1);
+  let v = Obj.field (Obj.repr md) 0 in
+  assert_string_list v;
+  (Obj.magic v : string list)
