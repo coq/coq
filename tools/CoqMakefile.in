@@ -339,7 +339,7 @@ ALLSRCFILES := \
 # helpers
 vo_to_obj = $(addsuffix .o,\
   $(filter-out Warning: Error:,\
-  $(shell $(COQTOP) -q -noinit -batch -quiet -print-mod-uid $(1))))
+  $(shell $(COQBIN)rocq print-mod-uid $(1))))
 strip_dotslash = $(patsubst ./%,%,$(1))
 
 # without this we get undefined variables in the expansion for the

@@ -107,7 +107,7 @@ let ltac_debug_parse () =
   | Ok act -> act
   | Error error -> ltac_debug_answer (Answer.Output (str error)); Action.Failed
 
-type query = PrintTags | PrintModUid of string list
+type query = PrintTags
 type run_mode = Interactive | Batch | Query of query
 
 type toplevel_options = {
@@ -152,7 +152,6 @@ let coqtop_parse_extra opts extras =
   let rec parse_extra run_mode  = function
   | "-batch" :: rest -> parse_extra Batch  rest
   | "-list-tags" :: rest -> Query PrintTags, []
-  | "-print-mod-uid" :: rest -> Query (PrintModUid rest), []
   |   x :: rest ->
     let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
   | [] -> run_mode, [] in
@@ -161,28 +160,10 @@ let coqtop_parse_extra opts extras =
   let async_opts, extras = Stmargs.parse_args opts extras in
   ({ run_mode; color_mode}, async_opts), extras
 
-let fix_windows_dirsep s =
-  if Sys.win32 then Str.(global_replace (regexp "\\(.\\)\\") "\\1/" s)
-  else s
-
-let get_native_name s =
-  (* We ignore even critical errors because this mode has to be super silent *)
-  try
-    fix_windows_dirsep @@
-    Filename.(List.fold_left concat (dirname s)
-                [ !Nativelib.output_dir
-                ; Library.native_name_from_filename s
-                ])
-  with _ -> ""
-
 let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   match run_mode with
   | Interactive -> Coqloop.run ~opts ~state;
   | Query PrintTags -> Colors.print_style_tags color_mode; exit 0
-  | Query (PrintModUid sl) ->
-      let s = String.concat " " (List.map get_native_name sl) in
-      print_endline s;
-      exit 0
   | Batch -> exit 0
 
 let coqtop_specific_usage = Boot.Usage.{

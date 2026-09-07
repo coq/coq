@@ -26,6 +26,28 @@ let with_sibling_exe opts prog args =
   let argv = Array.of_list (prog :: args) in
   Rocqshim.exec_or_create_process prog argv
 
+let native_lib_name f =
+  let dp = ObjFile.library_name f in
+  let dp = List.rev_map Unicode.ascii_of_ident dp in
+  "N" ^ (String.concat "_" dp)
+
+let fix_windows_dirsep s =
+  if Sys.win32 then Str.(global_replace (regexp "\\(.\\)\\") "\\1/" s)
+  else s
+
+let get_native_name f =
+  (* deliberately ignore even critical errors *)
+  try
+    fix_windows_dirsep @@
+    Filename.(List.fold_left concat (dirname f)
+      [ ".coq-native"
+      ; native_lib_name f
+      ])
+  with _ -> ""
+
+let print_mod_uid args =
+  print_endline (String.concat " " (List.map get_native_name args))
+
 type subcommand =
   | Compile
   | Repl
@@ -42,6 +64,7 @@ type subcommand =
   | Tex
   | Makefile
   | Timelog2Html
+  | PrintModUid
 
 let subcommands = [
   ("compile", "Compile a Rocq source file", Compile);
@@ -63,6 +86,7 @@ let subcommands = [
   ("tex", "Process Rocq code in a Latex document", Tex);
   ("makefile", "Generate a Makefile to compile a Rocq project", Makefile);
   ("timelog2html", "Combine timing information and a Rocq source file", Timelog2Html);
+  ("print-mod-uid", "Print the native-compile name of the library in a .vo file (internal)", PrintModUid);
 ]
 
 let print_usage fmt () =
@@ -103,6 +127,7 @@ let run_subcommand opts args = function
   | Tex -> Rocqtex.main ~prog:(Sys.argv.(0) ^ " tex") args
   | Makefile -> Rocqmakefile.main ~prog:[Sys.argv.(0); "makefile"] args
   | Timelog2Html -> with_worker_gen opts ~package:"rocq-devtools" "timelog2html" args
+  | PrintModUid -> print_mod_uid args
 
 let () =
   if Array.length Sys.argv < 2 then error_usage ();
