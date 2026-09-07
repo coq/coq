@@ -89,6 +89,7 @@ val functorize_module : (Names.MBId.t * module_type_body) list -> module_body ->
 
 val set_implementation : module_implementation -> module_body -> module_body
 val set_algebraic_type : module_type_body -> module_expression -> module_type_body
+val set_delta : Mod_subst.delta_resolver -> 'a generic_module_body -> 'a generic_module_body
 
 (** {6 Substitution} *)
 

@@ -118,6 +118,9 @@ let set_implementation e mb =
 let set_algebraic_type mb alg =
   { mb with mod_type_alg = Some alg }
 
+let set_delta : type a. delta_resolver -> a generic_module_body -> a generic_module_body =
+  fun delta mb -> { mb with mod_delta = delta }
+
 (** Accessors *)
 
 let mod_expr { mod_expr = ModBodyVal v; _ } = v

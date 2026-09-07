@@ -224,7 +224,7 @@ let strengthen_const mp_from l cb resolver =
 let rec strengthen_module mp mb = match mod_type mb with
 | NoFunctor struc ->
   let delta_mb = get_global_delta mb in
-  if mp_in_delta mp delta_mb then mb
+  if mp_is_alias delta_mb mp then mb (* already strengthened *)
   else
     let reso, struc' = strengthen_signature mp struc delta_mb in
     let reso = add_mp_delta_resolver mp mp (add_delta_resolver delta_mb reso) in
@@ -255,7 +255,7 @@ let strengthen mtb mp = match mod_type mtb with
 | NoFunctor struc ->
   let delta_mtb = get_global_delta mtb in
   (* Has mtb already been strengthened ? *)
-  if mp_in_delta mp delta_mtb then mtb
+  if mp_is_alias delta_mtb mp then mtb
   else
     let reso', struc' = strengthen_signature mp struc delta_mtb in
     let reso' = add_delta_resolver delta_mtb (add_mp_delta_resolver mp mp reso') in
@@ -268,7 +268,7 @@ let rec strengthen_and_subst_module mb subst mp_from mp_to =
   match mod_type mb with
   | NoFunctor struc ->
     let delta_mb = get_global_delta mb in
-    let mb_is_an_alias = mp_in_delta mp_from delta_mb in
+    let mb_is_an_alias = mp_is_alias delta_mb mp_from in
     if mb_is_an_alias then
       subst_module subst_dom_codom subst mp_from mb
     else
@@ -356,6 +356,53 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
   in
   List.Smart.fold_left_map strengthen_and_subst_field (empty_delta_resolver mp_to) struc
 
+(** Delta-resolver of the inclusion of an application.
+
+    An inclusion must not add an equivalence for the includer itself: the
+    module it is included into will typically receive further fields, and such
+    an equivalence is applied to every label under the includer, so those fields
+    would silently be identified with unrelated ones of the included module.
+
+    The non-functor case of [strengthen_and_subst_module_body] already avoids
+    it, by building the resolver field by field and dropping [new_resolver]
+    when [include_b] is set. The functor case cannot: [mod_delta] of a functor
+    whose body is one of its arguments, e.g. [Module F (X : T) := X.], has a
+    binding for the functor path itself, and [subst_module] keeps it. We
+    therefore expand that binding into the per-field equivalences it stands for,
+    and drop it. Doing so before the functor is applied also prevents
+    [Mod_subst.subst_mp_delta] from later injecting the whole resolver of the
+    argument under the includer's path. *)
+
+let expand_self_delta mp sign reso =
+  if not (mp_is_alias reso mp) then reso
+  else
+    let rec struct_of_signature = function
+    | NoFunctor struc -> struc
+    | MoreFunctor (_, _, sign) -> struct_of_signature sign
+    in
+    let self = mp_of_delta reso mp in
+    (* [mp] is only equivalent to itself, it stops the prefix rule from reaching
+       the fields the includer will get later. *)
+    let reso0 = add_mp_delta_resolver mp mp reso in
+    let expand accu (l, item) = match item with
+    | SFBconst _ | SFBmind _ | SFBrules _ ->
+      let kn = KerName.make mp l in
+      let kn' = kn_of_delta reso kn in
+      if KerName.equal kn kn' then accu else add_kn_delta_resolver kn kn' accu
+    | SFBmodule _ ->
+      let mp' = MPdot (mp, l) in
+      (* a more precise equivalence takes precedence and is already there *)
+      if mp_is_alias reso0 mp' then accu
+      else
+        let mp'' = MPdot (self, l) in
+        if ModPath.equal mp' mp'' then accu else add_mp_delta_resolver mp' mp'' accu
+    | SFBmodtype _ ->
+      (* as in [strengthen_and_subst_struct], module types are only equivalent
+         to themselves *)
+      add_mp_delta_resolver (MPdot (mp, l)) (MPdot (mp, l)) accu
+    in
+    List.fold_left expand reso0 (struct_of_signature sign)
+
 (** Let P be a module path when we write:
      "Module M:=P." or "Module M. Include P. End M."
     We need to perform two operations to compute the body of M.
@@ -375,7 +422,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
 let strengthen_and_subst_module_body mp_from mb mp include_b = match mod_type mb with
   | NoFunctor struc ->
     let delta_mb = get_global_delta mb in
-    let mb_is_an_alias = mp_in_delta mp_from delta_mb in
+    let mb_is_an_alias = mp_is_alias delta_mb mp_from in
     (* if mb.mod_mp is an alias then the strengthening is useless
        (i.e. it is already done)*)
     let mp_alias = mp_of_delta delta_mb mp_from in
@@ -392,7 +439,11 @@ let strengthen_and_subst_module_body mp_from mb mp include_b = match mod_type mb
     strengthen_module_body ~src:mp_from (NoFunctor struc') reso' mb
   | MoreFunctor _ ->
     let subst = map_mp mp_from mp (empty_delta_resolver mp) in
-    Mod_declarations.subst_module subst_dom_codom subst mp_from mb
+    let mb = Mod_declarations.subst_module subst_dom_codom subst mp_from mb in
+    if include_b then
+      Mod_declarations.set_delta
+        (expand_self_delta mp (mod_type mb) (mod_delta mb)) mb
+    else mb
 
 (* [mp_from] is the ambient modpath of [sign] *)
 let subst_modtype_signature_and_resolver mp_from mp_to sign reso =
