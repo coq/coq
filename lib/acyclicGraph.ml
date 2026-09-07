@@ -587,7 +587,10 @@ module Make (Point:Point) = struct
         if strict then raise CycleDetected (* Set < u *)
         else true, accu
       else if topo_compare ucan vcan < 0 then false, accu
-      else if Status.mem status vcan then Status.find status vcan, accu
+      else if Status.mem status vcan then
+        let found = Status.find status vcan in
+        let () = if found && strict then raise CycleDetected in
+        found, accu
       else
         let fold w nstrict (found, accu) =
           let wcan = repr g w in
@@ -626,7 +629,10 @@ module Make (Point:Point) = struct
         if strict then raise CycleDetected (* Set < u *)
         else true
       else if topo_compare ucan vcan < 0 then false
-      else if Status.mem status vcan then Status.find status vcan
+      else if Status.mem status vcan then
+        let found = Status.find status vcan in
+        let () = if found && strict then raise CycleDetected in
+        found
       else
         let fold w nstrict found =
           let wcan = repr g w in
