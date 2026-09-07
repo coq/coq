@@ -264,9 +264,9 @@ let clos_pair_hash c1 s1 c2 s2 lid1 lid2 pb =
      subs_hash s1, subs_hash s2,
      lid1, lid2, pb)
 
-module ClosPairTbl = Hashtbl.Make(struct
+module ClosPairKey = struct
   type t = clos_pair_key
-  let equal a b =
+  let equal (a : t) (b : t) =
     Int.equal a.ck_hash b.ck_hash
     && a.ck_c1 == b.ck_c1 && a.ck_c2 == b.ck_c2
     && Int.equal a.ck_lid1 b.ck_lid1 && Int.equal a.ck_lid2 b.ck_lid2
@@ -274,8 +274,44 @@ module ClosPairTbl = Hashtbl.Make(struct
     && subs_equal a.ck_s1 b.ck_s1 && subs_equal a.ck_s2 b.ck_s2
     && (a.ck_u1 == b.ck_u1 || UVars.Instance.equal a.ck_u1 b.ck_u1)
     && (a.ck_u2 == b.ck_u2 || UVars.Instance.equal a.ck_u2 b.ck_u2)
-  let hash a = a.ck_hash
+end
+
+(* Bounded structural hashes can coincide for many distinct body pointers.
+   Keep at most 16 full keys per hash so these collisions cannot cause
+   unbounded full-key scans. Saturated buckets lose memoization entries;
+   every hit still requires the complete key comparison. *)
+module ClosHashTbl = Hashtbl.Make(struct
+  type t = int
+  let equal = Int.equal
+  let hash h = h
 end)
+module ClosPairTbl = struct
+  type 'a bucket = { mutable count : int; mutable entries : (clos_pair_key * 'a) list }
+  type 'a t = 'a bucket ClosHashTbl.t
+  let create = ClosHashTbl.create
+  let find_opt table key =
+    match ClosHashTbl.find_opt table key.ck_hash with
+    | None -> None
+    | Some bucket ->
+      let rec find = function
+      | [] -> None
+      | (k, v) :: rest ->
+        if ClosPairKey.equal k key then Some v else find rest
+      in
+      find bucket.entries
+  (* Conversion between lookup and insertion may have filled the bucket. *)
+  let add table key value =
+    match ClosHashTbl.find_opt table key.ck_hash with
+    | None ->
+      ClosHashTbl.add table key.ck_hash { count = 1; entries = [key, value] };
+      true
+    | Some bucket ->
+      if bucket.count < 16 then begin
+        bucket.count <- bucket.count + 1;
+        bucket.entries <- (key, value) :: bucket.entries;
+        true
+      end else false
+end
 
 (* Pointer pair of bodies only: upper bound on what any (node, subst)
    design could hit, however clever its substitution comparison. *)
@@ -720,7 +756,7 @@ let rec ccnv ~cache:docache cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
           end else begin
             let addc r = match ckey with
               | Some (cp, k) when cached < 0 ->
-                incr clos_memo_inserts; ClosPairTbl.add cp.cp_full k r
+                if ClosPairTbl.add cp.cp_full k r then incr clos_memo_inserts
               | _ -> ()
             in
             (* NOTE: a post-whd second cache probe on the reduced bare states
