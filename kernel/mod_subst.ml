@@ -649,4 +649,10 @@ let join subst1 subst2 =
     Umap.join prefixed_subst (Umap.add_mp mpk resolve' res)
   in
   let subst = Umap.fold apply_subst subst1 empty_subst in
-  Umap.join subst2 subst
+  let fold mp delta accu = match subst_mp_opt subst1 mp with
+  | None -> Umap.add_mp mp delta accu
+  | Some _ ->
+    (* [mp] was already mapped away by [subst1] *)
+    accu
+  in
+  Umap.fold fold subst2 subst
