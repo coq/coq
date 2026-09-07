@@ -360,6 +360,9 @@ let explain_exn = function
   | Mod_checking.BadConstant (cst, why) ->
     hov 0 (Constant.print cst ++ spc() ++ why)
 
+  | Modops.ModuleTypingError _ ->
+    hov 0 (str "Module typing error")
+
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
                (if s = "" then mt ()
