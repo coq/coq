@@ -1,0 +1,6 @@
+-R . Test22292
+
+file1.v
+file2.v
+file3.v
+file3bad.v
