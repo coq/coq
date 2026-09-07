@@ -72,51 +72,53 @@ module Deltamap = struct
 
   (** keep only data that is relevant for names with a modpath ⊇ root *)
   let reroot root reso =
-    let () = assert (ModPath.subpath reso.root root) in
-    let km = reso.kmap in
-    let mm = reso.mmap in
-    (* filter the modpaths *)
-    let fold_mp mp data (glb, accu) =
-      if ModPath.subpath root mp then
-        (* root ⊆ mp, keep it *)
-        glb, ModPath.Map.add mp data accu
-      else if ModPath.subpath mp root then
-        (* This is a subpath of the root. It may be relevant due to find_prefix,
-           but only when 1. root is not in mm, and 2. this is the most precise
-           path in mm above root, as find_prefix will always return this one
-           without considering the less precise ones. *)
-        let glb = match glb with
-        | None -> Some mp
-        | Some glb -> if ModPath.subpath glb mp then Some mp else Some glb
-        in
-        glb, accu
-      else
-        (* path that is incomparable, skip it *)
-        glb, accu
-    in
-    let glb, mm' = ModPath.Map.fold fold_mp mm (None, ModPath.Map.empty) in
-    let mm' = match glb with
-    | None -> mm'
-    | Some glb ->
-      if ModPath.Map.mem root mm then mm'
-      else
-        (* Add root to the resolver and map it to what find_prefix would have
-           returned on root *)
-        let rec diff accu mp =
-          if ModPath.equal mp glb then accu
-          else match mp with
-          | MPdot (mp, l) -> diff (l :: accu) mp
-          | MPbound _ | MPfile _ -> assert false
-        in
-        let diff = diff [] root in
-        let data = ModPath.Map.get glb mm in
-        let data' = List.fold_left (fun accu l -> MPdot (accu, l)) data diff in
-        ModPath.Map.add root data' mm'
-    in
-    (* filter the kernames *)
-    let filter_kn kn _ = ModPath.subpath root (KerName.modpath kn) in
-    let km' = KerName.Map.filter filter_kn km in
-    { kmap = km'; mmap = mm'; root = root }
+    if ModPath.equal root reso.root then reso
+    else
+      let () = assert (ModPath.subpath reso.root root) in
+      let km = reso.kmap in
+      let mm = reso.mmap in
+      (* filter the modpaths *)
+      let fold_mp mp data (glb, accu) =
+        if ModPath.subpath root mp then
+          (* root ⊆ mp, keep it *)
+          glb, ModPath.Map.add mp data accu
+        else if ModPath.subpath mp root then
+          (* This is a subpath of the root. It may be relevant due to find_prefix,
+            but only when 1. root is not in mm, and 2. this is the most precise
+            path in mm above root, as find_prefix will always return this one
+            without considering the less precise ones. *)
+          let glb = match glb with
+          | None -> Some mp
+          | Some glb -> if ModPath.subpath glb mp then Some mp else Some glb
+          in
+          glb, accu
+        else
+          (* path that is incomparable, skip it *)
+          glb, accu
+      in
+      let glb, mm' = ModPath.Map.fold fold_mp mm (None, ModPath.Map.empty) in
+      let mm' = match glb with
+      | None -> mm'
+      | Some glb ->
+        if ModPath.Map.mem root mm then mm'
+        else
+          (* Add root to the resolver and map it to what find_prefix would have
+            returned on root *)
+          let rec diff accu mp =
+            if ModPath.equal mp glb then accu
+            else match mp with
+            | MPdot (mp, l) -> diff (l :: accu) mp
+            | MPbound _ | MPfile _ -> assert false
+          in
+          let diff = diff [] root in
+          let data = ModPath.Map.get glb mm in
+          let data' = List.fold_left (fun accu l -> MPdot (accu, l)) data diff in
+          ModPath.Map.add root data' mm'
+      in
+      (* filter the kernames *)
+      let filter_kn kn _ = ModPath.subpath root (KerName.modpath kn) in
+      let km' = KerName.Map.filter filter_kn km in
+      { kmap = km'; mmap = mm'; root = root }
 
 end
 
