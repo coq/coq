@@ -5,7 +5,7 @@
  (modules coqargs)
  (wrapped false)
  ; don't depend on rocq-runtime.lib -> impossible to imperatively set random flags
- (libraries rocq-runtime.config rocq-runtime.boot rocq-runtime.clib rocq-runtime.lib))
+ (libraries rocq-runtime.config rocq-runtime.boot rocq-runtime.clib))
 
 (library
  (name sysinit)
@@ -13,4 +13,4 @@
  (synopsis "Rocq's initialization")
  (wrapped false)
  (modules :standard \ coqargs)
- (libraries rocq-runtime.boot rocq-runtime.vernac coqargs findlib))
+ (libraries rocq-runtime.boot rocq-runtime.lib rocq-runtime.vernac coqargs findlib))

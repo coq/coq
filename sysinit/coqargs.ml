@@ -432,19 +432,22 @@ let parse_args ~init arglist : t * string list =
   in
   parse init
 
-(* We need to reverse a few lists *)
+(* These lists are accumulated in reverse order by the parser. This helper
+   converts both from and to that representation. *)
+let reverse_accumulators opts =
+  { opts with
+    pre = { opts.pre with
+            ml_includes = List.rev opts.pre.ml_includes
+          ; vo_includes = List.rev opts.pre.vo_includes
+          ; load_vernacular_list = List.rev opts.pre.load_vernacular_list
+          ; injections = List.rev opts.pre.injections
+          }
+  }
+
 let parse_args ~init args =
+  let init = reverse_accumulators init in
   let opts, extra = parse_args ~init args in
-  let opts =
-    { opts with
-      pre = { opts.pre with
-              ml_includes = List.rev opts.pre.ml_includes
-            ; vo_includes = List.rev opts.pre.vo_includes
-            ; load_vernacular_list = List.rev opts.pre.load_vernacular_list
-            ; injections = List.rev opts.pre.injections
-            }
-    } in
-  opts, extra
+  reverse_accumulators opts, extra
 
 (******************************************************************************)
 (* Startup LoadPath and Modules                                               *)
