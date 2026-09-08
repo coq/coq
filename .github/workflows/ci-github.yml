@@ -73,6 +73,7 @@ jobs:
         run: opam install --deps-only ${{ matrix.packages }}
 
       - name: Enable native
+        if: matrix.os == 'macos-latest'
         run: opam exec -- ./configure -relocatable -native-compiler yes
 
       - name: 🧱 Build Rocq
