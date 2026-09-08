@@ -141,3 +141,65 @@ Module StrictExternException.
   Goal exists n, C n.
   Proof. eexists. typeclasses eauto. Qed.
 End StrictExternException.
+
+Module EmptyHintDatabases.
+  Class C (n : nat).
+
+  Create HintDb hint_mode_empty_no_mode.
+
+  (* A head with no declared mode and no applicable hints. *)
+  Goal exists n, C n.
+  Proof.
+    eexists.
+    Fail typeclasses eauto with hint_mode_empty_no_mode nocore.
+  Abort.
+
+  Create HintDb hint_mode_empty_with_mode.
+  Hint Mode C = : hint_mode_empty_with_mode.
+
+  (* A matching declared mode and no applicable hints. *)
+  Goal exists n, C n.
+  Proof.
+    eexists.
+    Fail typeclasses eauto with hint_mode_empty_with_mode nocore.
+  Abort.
+
+  Create HintDb hint_mode_empty_mismatch.
+  Hint Mode C + : hint_mode_empty_mismatch.
+
+  (* A declared mode that does not match, again with no applicable hints. *)
+  Goal exists n, C n.
+  Proof.
+    eexists.
+    Fail typeclasses eauto with hint_mode_empty_mismatch nocore.
+  Abort.
+End EmptyHintDatabases.
+
+Module NoHeadConstant.
+  Create HintDb hint_mode_no_head.
+  Hint Extern 0 => exact I : hint_mode_no_head.
+
+  (* The goal's head is itself an evar, so only headless hints are considered. *)
+  Goal exists P : Prop, P.
+  Proof.
+    eexists ?[P].
+    typeclasses eauto with hint_mode_no_head nocore.
+  Qed.
+End NoHeadConstant.
+
+Module UnfoldAlternativeModes.
+  Definition C (x y : nat) : Prop := x = 0 /\ y = 0.
+
+  Create HintDb hint_mode_unfold.
+  Hint Unfold C : hint_mode_unfold.
+  Hint Constructors and eq : hint_mode_unfold.
+  Hint Mode C = - : hint_mode_unfold.
+  Hint Mode C - = : hint_mode_unfold.
+
+  (* Matching mode alternatives do not prevent use of an unfold hint. *)
+  Goal exists x y, C x y.
+  Proof.
+    eexists; eexists.
+    typeclasses eauto with hint_mode_unfold.
+  Qed.
+End UnfoldAlternativeModes.
