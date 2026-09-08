@@ -293,7 +293,7 @@ let rec strengthen_module mp mb = match mod_type mb with
   if mp_is_alias delta_mb mp then mb (* already strengthened *)
   else
     let reso, struc' = strengthen_signature mp struc delta_mb in
-    let reso = add_mp_delta_resolver mp mp (add_delta_resolver delta_mb reso) in
+    let reso = lift_mp_delta_resolver mp (add_delta_resolver delta_mb reso) in
     strengthen_module_body ~src:mp (NoFunctor struc') reso mb
 | MoreFunctor _ -> mb
 
@@ -307,7 +307,7 @@ and strengthen_signature mp struc reso0 =
     let reso = match mod_global_delta mb with
     | None ->
       (* See {!strengthen_and_subst_module} *)
-      add_mp_delta_resolver mp' mp' reso
+      lift_mp_delta_resolver mp' reso
     | Some delta ->
       add_delta_resolver delta reso
     in
@@ -324,7 +324,7 @@ let strengthen mtb mp = match mod_type mtb with
   if mp_is_alias delta_mtb mp then mtb
   else
     let reso', struc' = strengthen_signature mp struc delta_mtb in
-    let reso' = add_delta_resolver delta_mtb (add_mp_delta_resolver mp mp reso') in
+    let reso' = add_delta_resolver delta_mtb (lift_mp_delta_resolver mp reso') in
     strengthen_module_type struc' reso' mtb
 | MoreFunctor _ -> mtb
 
@@ -408,7 +408,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
            semantic for functor this should be changed.*)
         begin match mod_global_delta mb' with
         | None -> (* functor case *)
-          add_mp_delta_resolver mp_to' mp_to' reso', item'
+          lift_mp_delta_resolver mp_to' reso', item'
         | Some delta ->
           add_delta_resolver delta reso', item'
         end
@@ -418,7 +418,7 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
         let subst' = add_mp mp_from' mp_to' (empty_delta_resolver mp_to') subst in
         let mty' = subst_modtype subst_dom_codom subst' mp_from' mty in
         let item' = if mty' == mty then item else (l, SFBmodtype mty') in
-        add_mp_delta_resolver mp_to' mp_to' reso', item'
+        lift_mp_delta_resolver mp_to' reso', item'
   in
   List.Smart.fold_left_map strengthen_and_subst_field (empty_delta_resolver mp_to) struc
 
@@ -449,7 +449,7 @@ let expand_self_delta mp sign reso =
     let self = mp_of_delta reso mp in
     (* [mp] is only equivalent to itself, it stops the prefix rule from reaching
        the fields the includer will get later. *)
-    let reso0 = add_mp_delta_resolver mp mp reso in
+    let reso0 = lift_mp_delta_resolver mp reso in
     let expand accu (l, item) = match item with
     | SFBconst _ | SFBmind _ | SFBrules _ ->
       let kn = KerName.make mp l in
@@ -465,7 +465,7 @@ let expand_self_delta mp sign reso =
     | SFBmodtype _ ->
       (* as in [strengthen_and_subst_struct], module types are only equivalent
          to themselves *)
-      add_mp_delta_resolver (MPdot (mp, l)) (MPdot (mp, l)) accu
+      lift_mp_delta_resolver (MPdot (mp, l)) accu
     in
     List.fold_left expand reso0 (struct_of_signature sign)
 
