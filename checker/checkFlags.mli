@@ -10,3 +10,6 @@
 
 val set_local_flags : Declarations.typing_flags -> Environ.env -> Environ.env
 (** Set flags except for those ignored by the checker (see .ml file for those). *)
+
+(** Whether the user asked for the VM, i.e. the value of -bytecode-compiler. *)
+val enable_vm : bool ref

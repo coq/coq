@@ -1617,6 +1617,19 @@ let dirpath_of_library lib = lib.comp_name
 
 let module_of_library lib = lib.comp_mod
 
+(* Recompile the VM bytecode of the library's module from its declarations,
+   returning the table and the library with the recompiled code substituted in.
+   The bytecode is never taken from the file; see [Modops.compile_module_bytecode].
+   Whether to recompile at all is the caller's decision. *)
+let recompile_vm_library env lib =
+  let vmtab = Vmlibrary.set_path lib.comp_name (Environ.vm_library env) in
+  let vmtab, comp_mod =
+    Modops.compile_module_bytecode env vmtab (ModPath.MPfile lib.comp_name) lib.comp_mod
+  in
+  vmtab, { lib with comp_mod }
+
+let empty_vm_library env lib = Vmlibrary.set_path lib.comp_name (Environ.vm_library env)
+
 let univs_of_library lib = lib.comp_sorts, lib.comp_univs
 
 let retroknowledge_of_library lib = lib.comp_retro

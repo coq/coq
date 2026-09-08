@@ -16,12 +16,10 @@ val import
   : safe_environment
   -> Mod_checking.opaques
   -> compiled_library
-  -> Vmlibrary.on_disk
   -> vodigest -> safe_environment * Mod_checking.opaques
 
 val unsafe_import
   : safe_environment
   -> compiled_library
-  -> Vmlibrary.on_disk
   -> vodigest
   -> safe_environment

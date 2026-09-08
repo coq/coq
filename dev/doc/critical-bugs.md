@@ -98,6 +98,7 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [guard condition issue made it inconsistent with propositional extensionality in library Sets](#guard-condition-issue-made-it-inconsistent-with-propositional-extensionality-in-library-sets)
     - [Deserialization](#deserialization)
       - [deserialization of .vo data not properly checked](#deserialization-of-vo-data-not-properly-checked)
+      - [rocqchk trusts the serialized VM bytecode segment](#rocqchk-trusts-the-serialized-vm-bytecode-segment)
   - [Probably non exploitable fixed bugs](#probably-non-exploitable-fixed-bugs)
       - [bug in 31bit arithmetic](#bug-in-31bit-arithmetic)
 
@@ -1189,6 +1190,28 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - GH issue number: N/A (fix pull requests: rocq-prover/rocq#18403, rocq-prover/rocq#18406)
 - risk: can lead to segfaults or arbitrary code execution on crafted .vo files
     (files produced by coqc are fine)
+
+#### rocqchk trusts the serialized VM bytecode segment
+
+- component: rocqchk (trusts the vmlibrary segment of a .vo, and the code
+    descriptors stored in the declarations)
+- introduced: 8.20 (dedicated vmlibrary .vo segment, e6535d48bd)
+- impacted released versions: 8.20-9.3
+- impacted rocqchk versions: same, only with -bytecode-compiler yes
+- fixed in: 9.4 (fix pull request: rocq-prover/rocq#22353), by not reading the
+    vmlibrary segment at all and recompiling the bytecode of every constant from
+    the body being checked
+- found by: Claude Opus/Fable (fix by Archana Burra); reproducer by Jason Gross
+- GH issue number: rocq-prover/rocq#22352
+- exploit: two `rocq compile` builds of one constant differing only in its value
+    produce byte-identical opaques/summary segments, so splicing one .vo's library
+    onto the other's vmlibrary yields a well-formed file whose VM bytecode disagrees
+    with the typechecked body; a library compiled against that file can then hold a
+    VMcast that only typechecks because the compiler believed the bogus bytecode,
+    and rocqchk -bytecode-compiler yes accepted the resulting proof of False, with
+    no axioms reported
+- risk: proof of False accepted by rocqchk, but only with the non-default
+    -bytecode-compiler yes on a crafted .vo (files produced by `rocq compile` are fine)
 
 There were otherwise several bugs in beta-releases, from memory, bugs with beta versions of primitive projections or template polymorphism or native compilation or guard (e7fc96366, 2a4d714a1).
 
