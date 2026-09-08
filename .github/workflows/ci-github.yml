@@ -73,7 +73,7 @@ jobs:
         run: opam install --deps-only ${{ matrix.packages }}
 
       - name: Enable native
-        run: ./configure -relocatable -native-compiler yes
+        run: opam exec -- ./configure -relocatable -native-compiler yes
 
       - name: 🧱 Build Rocq
         run: opam exec -- make world
