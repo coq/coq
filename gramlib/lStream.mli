@@ -13,21 +13,17 @@
 type ('e,'a) t
 val from : ?loc:Loc.t -> ('e -> ('a * Loc.t) option) -> ('e,'a) t
 
+type position
+
 (** Returning the loc of the last consumed element or the initial loc
     if no element is consumed *)
 val current_loc : ('e,'a) t -> Loc.t
 
+val current : ('e, 'a) t -> position
+
 (** Returning the loc of the max visited element or the initial loc
     if no element is consumed *)
 val max_peek_loc : ('e,'a) t -> Loc.t
-
-(** [interval_loc bp ep strm] returns the loc starting after element
-    [bp] (counting from 0) and spanning up to already peeked element
-    at position [ep], under the assumption that [bp] <= [ep]; returns
-    an empty interval if [bp] = [ep]; returns the empty initial
-    interval if additionally [bp] = 0; fails if the elements have not
-    been peeked yet *)
-val interval_loc : int -> int -> ('e,'a) t -> Loc.t
 
 (** Return location of an already peeked element at some position counting from
     {!count}; fails if the element has not been peeked yet. That is,
@@ -58,3 +54,9 @@ val next : 'e -> ('e,'a) t -> 'a option
 val peek_nth : 'e -> int -> ('e,'a) t -> 'a option
   (** [peek_nth e n strm] returns the nth element counting from 0 without
       consuming the stream; [None] if not enough elements *)
+
+(** Position manipulation. Internal. *)
+
+val pos_offset : position -> int
+val pos_current : position -> Loc.t
+val pos_next : position -> Loc.t

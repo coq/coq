@@ -8,69 +8,137 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module Stream :
+sig
+
+type ('e, 'a) t = private { mutable data : ('e, 'a) node }
+and ('e, 'a) node =
+| Nil
+| Cons of 'a * ('e, 'a) t
+| Gen of ('e -> 'a option)
+
+val make : ('e -> 'a option) -> ('e, 'a) t
+val force : 'e -> ('e, 'a) t -> unit
+
+end =
+struct
+
+type ('e, 'a) t = { mutable data : ('e, 'a) node }
+and ('e, 'a) node =
+| Nil
+| Cons of 'a * ('e, 'a) t
+| Gen of ('e -> 'a option)
+
+let make f = { data = Gen f }
+
+let force e s = match s.data with
+| Nil -> ()
+| Cons (x, s) -> ()
+| Gen f as gen ->
+  let v = f e in
+  match v with
+  | None -> s.data <- Nil
+  | Some x ->
+    let next = { data = gen } in
+    s.data <- Cons (x, next)
+
+end
+
 (** Streams equipped with a (non-canonical) location function *)
 
-type ('e,'a) t = {
-  strm : ('e,'a) Stream.t;
-  (* Give the loc of i-th element (counting from 1) and the empty initial interval if 0 *)
-  fun_loc : int -> Loc.t;
-  (* Remember max token peeked *)
-  mutable max_peek : int;
+type ('e, 'a) t = {
+  mutable strm : ('e, 'a * Loc.t) Stream.t;
+  mutable loc : Loc.t;
+  mutable count : int;
 }
 
+type position = Position : int * Loc.t * ('e, 'a * Loc.t) Stream.t -> position
+
 let from ?(loc=Loc.(initial ToplevelInput)) f =
-  let loct = Hashtbl.create 207 in
-  let loct_func loct i = Hashtbl.find loct i in
-  let loct_add loct i loc = Hashtbl.add loct i loc in
-  let strm =
-    let i = ref 0 in
-    Stream.from
-      (fun e ->
-        match f e with
-        | None -> None
-        | Some (a,loc) ->
-        loct_add loct !i loc; incr i; Some a) in
-  let fun_loc i = if i = 0 then loc else loct_func loct (i - 1) in
-  { strm; max_peek = 0; fun_loc }
+  let strm = Stream.make f in
+  { strm; loc; count = 0; }
 
-let count strm = Stream.count strm.strm
+let count s = s.count
 
-let current_loc strm =
-  strm.fun_loc (Stream.count strm.strm)
+let current s =
+  Position (s.count, s.loc, s.strm)
 
-let max_peek_loc strm =
-  strm.fun_loc strm.max_peek
+let current_loc s = s.loc
 
-let interval_loc bp ep strm =
-  assert (bp <= ep);
-  if ep > strm.max_peek then failwith "Not peeked position";
-  if bp == ep then
-    Loc.after (strm.fun_loc bp) 0 0
-  else
-    let loc1 = strm.fun_loc (bp + 1) in
-    let loc2 = strm.fun_loc ep in
-    Loc.merge loc1 loc2
+let max_peek_loc s =
+  let open Stream in
+  let rec get_max cur s = match s.data with
+  | Nil -> cur
+  | Cons ((_, loc), s) -> get_max loc s
+  | Gen _ -> cur
+  in
+  get_max s.loc s.strm
 
 let get_relative_loc n strm =
+  let open Stream in
   let () = assert (0 <= n) in
-  let pos = Stream.count strm.strm in
-  strm.fun_loc (pos + n + 1)
+  let rec get_pos n s = match s.data with
+  | Nil | Gen _ -> assert false
+  | Cons ((_, loc), s) ->
+    if Int.equal n 0 then loc
+    else get_pos (n - 1) s
+  in
+  get_pos n strm.strm
 
-let peek e strm =
-  let a = Stream.peek e strm.strm in
-  if Option.has_some a then strm.max_peek <- max (Stream.count strm.strm + 1) strm.max_peek;
-  a
+let peek e s =
+  let s = s.strm in
+  let () = Stream.force e s in
+  let open Stream in
+  match s.data with
+  | Nil -> None
+  | Cons ((x, _), _) -> Some x
+  | Gen _ -> assert false
 
-let npeek e n strm =
-  let l = Stream.npeek e n strm.strm in
-  strm.max_peek <- max (Stream.count strm.strm + List.length l) strm.max_peek;
-  l
+let npeek e n s =
+  let rec npeek n s =
+    if Int.equal n 0 then []
+    else
+      let open Stream in
+      let () = Stream.force e s in
+      match s.Stream.data with
+      | Nil -> []
+      | Cons ((x, _), s) ->
+        let l = npeek (n - 1) s in
+        x :: l
+      | Gen _ -> assert false
+  in
+  npeek n s.strm
 
 let peek_nth e n strm =
   let list = npeek e (n + 1) strm in
   List.nth_opt list n
 
-let junk e strm = Stream.junk e strm.strm
-let njunk e len strm = Stream.njunk e len strm.strm
+let junk e strm =
+  let s = strm.strm in
+  let () = Stream.force e s in
+  let open Stream in
+  let () = strm.count <- strm.count + 1 in
+  match s.data with
+  | Nil -> ()
+  | Cons ((x, loc), next) ->
+    let () = strm.strm <- next in
+    strm.loc <- loc
+  | Gen _ -> assert false
 
-let next e strm = Stream.next e strm.strm
+let rec njunk e len strm =
+  if Int.equal len 0 then ()
+  else
+    let () = junk e strm in
+    njunk e (len - 1) strm
+
+let next e strm = match peek e strm with
+| None -> None
+| Some v ->
+  let () = junk e strm in
+  Some v
+
+let pos_offset (Position (i, _, _)) = i
+let pos_current (Position (_, cur, _)) = cur
+let pos_next (Position (_, _, strm)) = match strm.Stream.data with
+| Stream.Cons ((_, loc), _) -> loc
+| Stream.Nil | Stream.Gen _ -> assert false
