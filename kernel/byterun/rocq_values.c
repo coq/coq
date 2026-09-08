@@ -153,8 +153,8 @@ asm(".align 4\n\t"
 
 asm(".align 8\n\t"
     ".quad 2043\n"
-    "rocq_curry2_1:\n\t"
-    "b caml_curry2_1\n");
+    "_rocq_curry2_1:\n\t"
+    "b _caml_curry2_1\n");
 
 #else
 #error "Unsupported architecture for native_compute."
