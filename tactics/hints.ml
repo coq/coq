@@ -596,9 +596,7 @@ let rec subst_hints_path subst hp =
       if p' == p && q' == q then hp else PathOr (p', q')
   | _ -> hp
 
-type mode_match =
-  | NoMode
-  | WithMode of Evarsolve.AllowedEvars.t
+type mode_match = Evarsolve.AllowedEvars.t
 
 type mode_restriction = {
   mode_match : mode_match;
@@ -606,7 +604,7 @@ type mode_restriction = {
 }
 
 type 'a with_mode =
-  | ModeMatch of mode_match * 'a
+  | ModeMatch of mode_match option * 'a
   | ModeMismatch
 
 module Hint_db :
@@ -619,7 +617,7 @@ val map_eauto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                 (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
 val map_eauto_modes : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                 (GlobRef.t * constr array) -> constr -> t ->
-                (mode_restriction list * full_hint list) option
+                (mode_restriction NeList.t option * full_hint list) option
 val map_auto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val add_list : env -> evar_map -> hint_entry list -> t -> t
@@ -715,32 +713,27 @@ struct
     else None
 
   let matches_modes sigma args modes =
-    if List.is_empty modes then
-      Some [{ mode_match = NoMode; mode_frozen_evars = Evar.Set.empty }]
-    else
-      (* Modes are alternatives. Keep their restrictions separate: merging the
-         sets of allowed evars could permit an application that satisfies none
-         of the declared modes. *)
-      let rec aux forbids = function
-        | [] ->
-          let to_restriction forbid =
-            let allowed =
-              if Evar.Set.is_empty forbid then Evarsolve.AllowedEvars.all
-              else Evarsolve.AllowedEvars.except forbid
-            in
-            { mode_match = WithMode allowed; mode_frozen_evars = forbid }
+    (* Modes are alternatives. Keep their restrictions separate: merging the
+        sets of allowed evars could permit an application that satisfies none
+        of the declared modes. *)
+    let rec aux forbids = function
+      | [] ->
+        let to_restriction forbid =
+          let allowed =
+            if Evar.Set.is_empty forbid then Evarsolve.AllowedEvars.all
+            else Evarsolve.AllowedEvars.except forbid
           in
-          List.rev_map to_restriction forbids
-        | mode :: modes ->
-          match matches_mode sigma args mode with
-          | None -> aux forbids modes
-          | Some forbid ->
-            if List.exists (Evar.Set.equal forbid) forbids then aux forbids modes
-            else aux (forbid :: forbids) modes
-      in
-      match aux [] modes with
-      | [] -> None
-      | modes -> Some modes
+          { mode_match = allowed; mode_frozen_evars = forbid }
+        in
+        List.rev_map to_restriction forbids
+      | mode :: modes ->
+        match matches_mode sigma args mode with
+        | None -> aux forbids modes
+        | Some forbid ->
+          if List.exists (Evar.Set.equal forbid) forbids then aux forbids modes
+          else aux (forbid :: forbids) modes
+    in
+    aux [] modes
 
   let merge_entry secvars db nopat pat =
     let fold uid accu = UID.Map.get uid db.hintdb_data :: accu in
@@ -770,16 +763,24 @@ struct
   (* [c] contains an existential *)
   let map_eauto_modes env sigma ~secvars (k,args) concl db =
     let se = find env k db in
-    match matches_modes sigma args se.sentry_mode with
-    | Some modes ->
+    match se.sentry_mode with
+    | [] ->
       let pat = lookup_tacs env sigma concl db.hintdb_data se in
-      Some (modes, merge_entry secvars db [] pat)
-    | None -> None
+      let mode_matches = None in
+      Some (mode_matches, merge_entry secvars db [] pat)
+    | modes ->
+      match matches_modes sigma args modes with
+      | [] -> None
+      | m :: ms ->
+        let pat = lookup_tacs env sigma concl db.hintdb_data se in
+        let mode_matches = Some (NeList.of_repr (m, ms)) in
+        Some (mode_matches, merge_entry secvars db [] pat)
 
   let map_eauto env sigma ~secvars hdc concl db =
     match map_eauto_modes env sigma ~secvars hdc concl db with
-    | Some ({ mode_match } :: _, hints) -> ModeMatch (mode_match, hints)
-    | Some ([], _) -> assert false
+    | Some (mode_matches, hints) ->
+      let mode_match = Option.map (fun ms -> (NeList.head ms).mode_match) mode_matches in
+      ModeMatch (mode_match, hints)
     | None -> ModeMismatch
 
   let is_exact = function
