@@ -1164,6 +1164,101 @@ Printing constructions in full
 
    This flag is off by default.
 
+.. _reversible-printing:
+
+Checking that printed terms can be parsed back (reversible printing)
+--------------------------------------------------------------------
+
+Because notations, hidden implicit arguments, hidden coercions or hidden
+universe instances can make different terms print alike, the printed form
+of a term cannot always be parsed and elaborated back to the term it
+stands for. Rather than unconditionally making printing fully explicit as
+:flag:`Printing All` does, the following flags keep the current printing
+options, but check, each time a term is printed, that its printed form
+can be parsed and elaborated back to a term equal to the original one, up
+to the equivalence selected by the flag; when the check fails, printing
+options are progressively turned on — first :flag:`Printing Coercions`,
+then :flag:`Printing Implicit`, then unsetting :flag:`Printing Notations`,
+then :flag:`Printing Universes` (first with, then without notations),
+then :flag:`Printing Parentheses` and finally all the options implied by
+:flag:`Printing All` — until the printed form passes the check.
+
+These five flags are mutually exclusive: setting one of them unsets the
+others, and unsetting the currently set one turns the checks off
+entirely. All are off by default. Since every displayed term is re-parsed
+and re-elaborated (possibly several times), printing can become
+noticeably more expensive when one of these flags is set.
+
+.. flag:: Printing Reversible Up To Unification
+
+   The re-parsed form must unify with the original term: holes standing
+   for arguments that are not printed and universes introduced by the
+   re-elaboration may be instantiated by unifying against the original
+   term. This is the most permissive of the five checks; it accepts any
+   printed form that can denote the original term, even if only in a
+   context where the expected type is known.
+
+   .. warn:: The printed form of this term could not be re-parsed and re-elaborated to an equal term (up to ...), even with all printing options turned on.
+
+      If no printed form, however explicit, passes the check, the most
+      explicit one is printed anyway and this warning is emitted. This
+      happens for instance for terms mentioning universes that cannot be
+      referred to by name, such as the sort of ``Check Type``.
+
+.. flag:: Printing Reversible Up To Conversion Modulo Sorts And Universes
+
+   The printed form must re-elaborate on its own (without help from the
+   original term) to a term with no unresolved holes, and that term must
+   be convertible to the original one when sorts and universes are
+   ignored entirely: sort qualities (``SProp``, ``Prop``, ``Type``),
+   universe levels and universe instances may all differ. This is the
+   laxest of the conversion-based checks; in particular, unlike
+   :flag:`Printing Reversible Up To Conversion Modulo Universes` below,
+   it accepts a printed form whose re-elaboration lives at a different
+   sort quality than the original term.
+
+.. flag:: Printing Reversible Up To Conversion Modulo Universes
+
+   The printed form must re-elaborate on its own (without help from the
+   original term) to a term with no unresolved holes, and that term must
+   be convertible to the original one when universe levels (and the level
+   components of universe instances) are ignored, but *sort qualities
+   must agree*: ``Set`` and ``Type@{u}`` are accepted, but ``Prop``,
+   ``SProp`` and ``Type`` are pairwise distinguished. With this flag,
+   implicit arguments that can only be inferred from the type of the
+   original term get printed, and the universe levels of sorts (such as
+   the sort of ``Check Type``) generally do not, but the *sort quality*
+   part of a polymorphic instance is kept when it would otherwise
+   re-elaborate to a different quality.
+
+.. flag:: Printing Reversible Up To Conversion Modulo Universe Unification
+
+   Like :flag:`Printing Reversible Up To Conversion Modulo Universes`,
+   but instead of ignoring universe levels it lets the universes (and
+   sort qualities) introduced by the re-elaboration be unified against
+   the original ones, enforcing new universe (in)equalities as needed.
+   This is stricter than
+   :flag:`Printing Reversible Up To Conversion Modulo Universes` on
+   universe levels — a universe level cannot be unified with an
+   algebraic universe, so the sort of ``Check Type`` is printed
+   explicitly — but laxer on sort qualities, which get unified rather
+   than required to match syntactically.
+
+.. flag:: Printing Reversible Up To Conversion
+
+   Like :flag:`Printing Reversible Up To Conversion Modulo Universe
+   Unification`, but no new universe constraints are enforced: the
+   universe (in)equalities needed for convertibility must already be
+   valid in the current universe graph. With this flag, universe
+   instances of polymorphic constants generally need to be printed
+   (turning on :flag:`Printing Universes` for the terms where they
+   matter).
+
+For all five flags, when the printed expression stands for a term (as
+opposed to a type), the types of the original and re-elaborated terms
+are compared as well, so that, e.g., a printed form whose re-elaboration
+lives at a different universe instance is not considered reversible.
+
 .. _controlling-typing-flags:
 
 Controlling Typing Flags
