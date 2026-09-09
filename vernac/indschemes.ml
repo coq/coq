@@ -96,12 +96,7 @@ let () =
       optwrite = (fun b -> rewriting_flag := b) }
 
 (* Util *)
-let define ~poly ~cumulative ?loc name sigma c types =
-  let poly =
-    PolyFlags.make ~univ_poly:poly
-      ~collapse_sort_variables:true (* FIXME sort_poly not supported *)
-      ~cumulative
-  in
+let define ~poly ?loc name sigma c types =
   let info = Declare.Info.make ~poly () in
   let cinfo = Declare.CInfo.make ~name ~typ:types () in
   let fth_ref = Declare.declare_definition ~info:info ~cinfo:cinfo ~opaque:false ~body:c sigma in
@@ -404,17 +399,16 @@ let do_mutual_induction_scheme ~register ?(force_mutual=false) env ?(isrec=true)
           sigma, c)
         sigma lrecspec
   in
-  let poly, cumulative =
+  let poly =
     (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
        (force_mutual is about the generated schemes) *)
     let _,_,ind,_ = List.hd l in
-    Global.is_polymorphic (Names.GlobRef.IndRef ind),
-    Global.is_cumulative (Names.GlobRef.IndRef ind)
+    UnivOptions.poly_for_ind (Global.lookup_mind (fst ind))
   in
   let is_mutual = isrec && List.length listdecl > 1 in
   let declare decl ({CAst.v=fi; loc},dep,ind, sort) =
     let decltype = Retyping.get_type_of env sigma decl in
-    let cst = define ?loc ~poly ~cumulative fi sigma decl (Some decltype) in
+    let cst = define ?loc ~poly fi sigma decl (Some decltype) in
     let kind =
       let open Elimschemes in
       let open UnivGen.QualityOrSet in
@@ -549,7 +543,12 @@ let do_combined_scheme name csts =
   let gr = Names.GlobRef.ConstRef (List.hd csts) in
   let poly = Global.is_polymorphic gr in
   let cumulative = Global.is_cumulative gr in
-  ignore (define ~poly ~cumulative ?loc:name.loc name.v sigma body (Some typ));
+  let poly =
+    PolyFlags.make ~univ_poly:poly
+      ~collapse_sort_variables:true (* FIXME sort_poly not supported *)
+      ~cumulative
+  in
+  ignore (define ~poly ?loc:name.loc name.v sigma body (Some typ));
   Declare.fixpoint_message None [name.v]
 
 (**********************************************************************)

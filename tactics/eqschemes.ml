@@ -81,8 +81,8 @@ let fresh env id avoid =
 let with_context_set ctx (b, ctx') =
   (b, UnivGen.sort_context_union ctx ctx')
 
-let of_context_set env ctx =
-  UState.merge_sort_context_set ~sideff:false ~src:UState.Internal UnivRigid (UState.from_env env) ctx
+let of_context_set env ?(rigid=UState.UnivRigid) ctx =
+  UState.merge_sort_context_set ~sideff:false ~src:UState.Internal rigid (UState.from_env env) ctx
 
 let build_dependent_inductive ind (mib,mip) =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
@@ -182,7 +182,7 @@ let get_sym_eq_data env (ind,u) =
   if mip.mind_nrealargs > mib.mind_nparams then
     error "Constructors arguments must repeat the parameters.";
   let _,params2 = List.chop (mib.mind_nparams-mip.mind_nrealargs) params in
-  let paramsctxt = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let paramsctxt = Vars.subst_instance_context u paramsctxt in
   let paramsctxt1,_ =
     List.chop (mib.mind_nparams-mip.mind_nrealargs) paramsctxt in
   if not (List.equal Constr.equal params2 constrargs) then
@@ -200,7 +200,7 @@ let get_sym_eq_data env (ind,u) =
 (* such that symmetry is a priori definable                           *)
 (**********************************************************************)
 
-let get_non_sym_eq_data env (ind,u) =
+let get_non_sym_eq_data env ctx (ind,u) =
   let (mib,mip as specif) = lookup_mind_specif env ind in
   let u, ctx = maybe_template_instance specif u in
   if not (Int.equal (Array.length mib.mind_packets) 1) ||
@@ -370,7 +370,8 @@ let build_sym_involutive_scheme env handle ind =
                NoInvert,
                mkRel 1 (* varH *),
                [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|])))))
-  in (c, of_context_set env ctx)
+  in
+  typecheck env ctx c
 
 let sym_involutive_scheme_kind =
   declare_individual_scheme_object "sym_involutive"
@@ -530,7 +531,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
        [|main_body|]))
    else
      main_body))))))
-  in (c, of_context_set env ctx)
+  in typecheck env ctx c
 
 (**********************************************************************)
 (* Build the left-to-right rewriting lemma for hypotheses associated  *)
@@ -623,7 +624,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
           (if dep then realsign_ind_P 1 applied_ind_P' else realsign_P 2) s)
       (mkNamedLambda (make_annot varHC sr) applied_PC'
         (mkVar varHC))|]))))))
-  in c, of_context_set env ctx
+  in  c, of_context_set env ctx
 
 (**********************************************************************)
 (* Build the right-to-left rewriting lemma for hypotheses associated  *)

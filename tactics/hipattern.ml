@@ -437,12 +437,34 @@ let find_this_eq_data_decompose env sigma eqn =
 
 (*** Sigma-types *)
 
+let get_level_of env sigma ty =
+  let _, s = Reductionops.dest_arity env sigma ty in
+  let s = EConstr.ESorts.kind sigma s in
+  Sorts.univ_of_sort s
+
+let make_info env sigma data u a p car cdr =
+  let (ind, _) = Globnames.destIndRef data.typ in
+  (* Template-poly sigma + univ poly projections case *)
+  match (Environ.lookup_mind ind env).mind_template with
+  | Some templ when Environ.is_polymorphic env data.proj1 ->
+    let au = Retyping.get_type_of env sigma a in
+    let pu = Retyping.get_type_of env sigma p in
+    let al = get_level_of env sigma au in
+    let pl = get_level_of env sigma pu in
+    let _, inst = CList.filter2 (fun isp x -> Option.has_some isp) templ.template_param_arguments [al; pl] in
+    let u = EConstr.EInstance.make (UVars.Instance.of_array ([||], Array.of_list inst)) in
+    data, (u, a, p, car, cdr)
+  | _ ->
+    data, (u, a, p, car, cdr)
+
 let match_sigma_data env sigma ex =
   match EConstr.kind sigma ex with
   | App (f, [| a; p; car; cdr |]) when is_lib_ref env sigma "core.sig.intro" f ->
-      build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)
+     let data = build_sigma () in
+     make_info env sigma data (snd (destConstruct sigma f)) a p car cdr
   | App (f, [| a; p; car; cdr |]) when is_lib_ref env sigma "core.sigT.intro" f ->
-    build_sigma_type (), (snd (destConstruct sigma f), a, p, car, cdr)
+    let data = build_sigma_type () in
+    make_info env sigma data (snd (destConstruct sigma f)) a p car cdr
   | _ -> raise PatternMatchingFailure
 
 let find_sigma_data_decompose env ex = (* fails with PatternMatchingFailure *)
