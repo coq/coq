@@ -239,7 +239,7 @@ let check_inductive env mind mb retro =
     | Template template, Template mind_template -> check "mind_template" (check_template template mind_template)
     | Polymorphic _, Polymorphic _ -> ()
     | _, _ -> check "mind_universes" false);
-  check "mind_sec_variance" (Option.is_empty mind_sec_variance);
+  check "mind_sec_variance" (match mind_sec_variance with None -> true | Some arr -> UVars.Variances.is_empty arr);
   ignore mind_private; (* passed through Indtypes *)
 
   ignore mind_typing_flags;
