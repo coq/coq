@@ -217,8 +217,8 @@ let tclNOTSAMEGOAL tac =
     Proofview.Goal.goals >>= fun gls ->
     let check accu gl' =
       gl' >>= fun gl' ->
-      let accu = accu || Proofview.Progress.goal_equal
-                            ~evd:sigma ~extended_evd:(Proofview.Goal.sigma gl') ev (goal gl')
+      let accu = accu ||
+        Proofview.Progress.same_goals sigma (Proofview.Goal.sigma gl') [ev] [goal gl']
       in
       Proofview.tclUNIT accu
     in

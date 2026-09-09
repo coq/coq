@@ -898,11 +898,64 @@ let give_up =
 
 module Progress = struct
 
-  let eq_constr evd extended_evd =
-    Evarutil.eq_constr_univs_test ~evd ~extended_evd
+  (** [eq_constr_upto eq_evar sigma1 sigma2 t u] tests equality of
+      [t] and [u] up to existential variable instantiation. The term
+      [t] is interpreted in [sigma1] while [u] is interpreted in [sigma2]. *)
+  let eq_constr_upto eq_evar sigma1 sigma2 t u =
+    (* spiwack: mild code duplication with {!Evd.eq_constr_univs}. *)
+    let t = EConstr.Unsafe.to_constr t
+    and u = EConstr.Unsafe.to_constr u in
+    let kind1 = EConstr.kind_upto sigma1
+    and kind2 = EConstr.kind_upto sigma2 in
+    let is_flexible_qvar sigma = function Sorts.Quality.QVar q -> not (Evd.is_rigid_qvar sigma q) | _ -> false in
+    let eq_universes _ u1 u2 =
+      let u1 = EConstr.EInstance.(kind sigma1 (make u1)) in
+      let u2 = EConstr.EInstance.(kind sigma2 (make u2)) in
+      let open UVars.Instance in
+      if is_empty u1 && is_empty u2 then true
+      else if not (UVars.eq_sizes (length u1) (length u2)) then false
+      else
+        let (q1, l1) = to_array u1 and (q2, l2) = to_array u2 in
+        Array.equal (fun q1 q2 -> match is_flexible_qvar sigma1 q1, is_flexible_qvar sigma2 q2 with
+          | true, true -> true
+          | true, false | false, true -> false
+          | false, false -> Sorts.Quality.equal q1 q2)
+          q1 q2 &&
+        Array.equal (fun l1 l2 -> match Evd.is_flexible_level sigma1 l1, Evd.is_flexible_level sigma2 l2 with
+          | true, true -> true
+          | true, false | false, true -> false
+          | false, false -> Univ.Level.equal l1 l2)
+          l1 l2
+    in
+    let eq_sorts s1 s2 =
+      let s1 = EConstr.ESorts.(kind sigma1 (make s1)) in
+      let s2 = EConstr.ESorts.(kind sigma2 (make s2)) in
+      let open Sorts in
+      let q1 = quality s1 and q2 = quality s2 in
+      let l1 = Sorts.levels s1 and l2 = Sorts.levels s2 in
+      begin match is_flexible_qvar sigma1 q1, is_flexible_qvar sigma2 q2 with
+      | true, true -> true
+      | true, false | false, true -> false
+      | false, false -> Sorts.Quality.equal q1 q2
+      end &&
+      match Univ.Level.Set.exists (fun l -> Evd.is_flexible_level sigma1 l) l1, Univ.Level.Set.exists (fun l -> Evd.is_flexible_level sigma2 l) l2 with
+      | true, true -> true
+      | true, false | false, true -> false
+      | false, false -> Univ.Universe.equal (univ_of_sort s1) (univ_of_sort s2)
+    in
+    let rec eq_existential (evk1, _ as ev1) (evk2, _ as ev2) =
+      eq_evar evk1 evk2 &&
+      let args1 = Evd.expand_existential0 sigma1 ev1 in
+      let args2 = Evd.expand_existential0 sigma2 ev2 in
+      List.for_all2eq eq_constr args1 args2
+    and eq_constr_nargs nargs m n =
+      Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_existential eq_constr_nargs nargs m n
+    and eq_constr m n = eq_constr_nargs 0 m n
+    in
+    eq_constr t u
 
   (** equality function on hypothesis contexts *)
-  let eq_named_context_val sigma1 sigma2 ctx1 ctx2 =
+  let eq_named_context_val eq_evar sigma1 sigma2 ctx1 ctx2 =
     let r_eq _ _ = true (* ignore relevances *) in
     let c1 = EConstr.named_context_of_val ctx1 and c2 = EConstr.named_context_of_val ctx2 in
     (* should we check variable status? if x is secvar,
@@ -912,34 +965,34 @@ module Progress = struct
     let eq_named_declaration d1 d2 =
       match d1, d2 with
       | LocalAssum (i1,t1), LocalAssum (i2,t2) ->
-        Context.eq_annot Names.Id.equal r_eq i1 i2 && eq_constr sigma1 sigma2 t1 t2
+        Context.eq_annot Names.Id.equal r_eq i1 i2 && eq_constr_upto eq_evar sigma1 sigma2 t1 t2
       | LocalDef (i1,c1,t1), LocalDef (i2,c2,t2) ->
-        Context.eq_annot Names.Id.equal r_eq i1 i2 && eq_constr sigma1 sigma2 c1 c2 &&
-        eq_constr sigma1 sigma2 t1 t2
+        Context.eq_annot Names.Id.equal r_eq i1 i2 && eq_constr_upto eq_evar sigma1 sigma2 c1 c2 &&
+        eq_constr_upto eq_evar sigma1 sigma2 t1 t2
       | _ ->
         false
     in
     (* NB: can't use List.equal because it shortcuts on physical equality *)
     List.for_all2eq eq_named_declaration c1 c2
 
-  let eq_evar_body (type a1 a2) sigma1 sigma2 (b1 : a1 Evd.evar_body) (b2 : a2 Evd.evar_body) =
+  let eq_evar_body (type a1 a2) eq_evar sigma1 sigma2 (b1 : a1 Evd.evar_body) (b2 : a2 Evd.evar_body) =
     let open Evd in
     match b1, b2 with
     | Evar_empty, Evar_empty -> true
-    | Evar_defined t1, Evar_defined t2 -> eq_constr sigma1 sigma2 t1 t2
+    | Evar_defined t1, Evar_defined t2 -> eq_constr_upto eq_evar sigma1 sigma2 t1 t2
     | _ -> false
 
-  let eq_evar_concl (type a1 a2) sigma1 sigma2 (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
+  let eq_evar_concl (type a1 a2) eq_evar sigma1 sigma2 (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
     let open Evd in
     match Evd.evar_body e1, Evd.evar_body e2 with
-    | Evar_empty, Evar_empty -> eq_constr sigma1 sigma2 (Evd.evar_concl e1) (Evd.evar_concl e2)
+    | Evar_empty, Evar_empty -> eq_constr_upto eq_evar sigma1 sigma2 (Evd.evar_concl e1) (Evd.evar_concl e2)
     | Evar_defined _, Evar_defined _ -> true
     | _ -> false
 
-  let eq_evar_info sigma1 sigma2 ei1 ei2 =
-    eq_evar_concl sigma1 sigma2 ei1 ei2 &&
-    eq_named_context_val sigma1 sigma2 (Evd.evar_hyps ei1) (Evd.evar_hyps ei2) &&
-    eq_evar_body sigma1 sigma2 (Evd.evar_body ei1) (Evd.evar_body ei2)
+  let eq_evar_info eq_evar sigma1 sigma2 ei1 ei2 =
+    eq_evar_concl eq_evar sigma1 sigma2 ei1 ei2 &&
+    eq_named_context_val eq_evar sigma1 sigma2 (Evd.evar_hyps ei1) (Evd.evar_hyps ei2) &&
+    eq_evar_body eq_evar sigma1 sigma2 (Evd.evar_body ei1) (Evd.evar_body ei2)
 
   let fast_eq_evar_body (type a1 a2) (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
     let open Evd in
@@ -966,13 +1019,40 @@ module Progress = struct
     fast_eq_named_context_val (Evd.evar_hyps ei1) (Evd.evar_hyps ei2)
 
   (** Equality function on goals *)
-  let goal_equal ~evd ~extended_evd evar extended_evar =
-    let EvarInfo evi = Evd.find evd evar in
-    let EvarInfo extended_evi = Evd.find extended_evd extended_evar in
-    if fast_eq_evar_info evi extended_evi then
-      eq_evar_info evd extended_evd evi extended_evi
+  let goal_equal eq_evar sigma1 sigma2 evk1 evk2 =
+    let EvarInfo evi1 = Evd.find sigma1 evk1 in
+    let EvarInfo evi2 = Evd.find sigma2 evk2 in
+    if fast_eq_evar_info evi1 evi2 then
+      eq_evar_info eq_evar sigma1 sigma2 evi1 evi2
     else false
 
+  let same_goals evd extended_evd init_goals final_goals =
+    List.same_length init_goals final_goals &&
+    let assoc_for = ref Evar.Map.empty in
+    let assoc_back = ref Evar.Map.empty in
+    let rec eq evk evk' =
+      match Evar.Map.find_opt evk !assoc_for, Evar.Map.find_opt evk' !assoc_back with
+      | Some evk1, Some evk2 when Evar.equal evk' evk1 && Evar.equal evk evk2 -> true
+      | Some _, _ | _, Some _ -> false
+      | None, None ->
+        assoc_for := Evar.Map.add evk evk' !assoc_for;
+        assoc_back := Evar.Map.add evk' evk !assoc_back;
+        goal_equal eq evd extended_evd evk evk'
+    in
+    let () = List.iter2 (fun evk evk' ->
+        assoc_for := Evar.Map.add evk evk' !assoc_for;
+        assoc_back := Evar.Map.add evk' evk !assoc_back
+      ) init_goals final_goals
+    in
+    List.for_all2 (fun evk evk' -> goal_equal eq evd extended_evd evk evk') init_goals final_goals
+
+  let progress initial final =
+    if Evd.defined_map initial.solution == Evd.defined_map final.solution && initial.comb == final.comb
+    then false
+    else
+      let init_goals = List.map drop_state initial.comb in
+      let final_goals = List.map drop_state final.comb in
+      not (same_goals initial.solution final.solution init_goals final_goals)
 end
 
 let tclPROGRESS t =
@@ -980,20 +1060,8 @@ let tclPROGRESS t =
   Pv.get >>= fun initial ->
   t >>= fun res ->
   Pv.get >>= fun final ->
-  (* [*_test] test absence of progress. [quick_test] is approximate
-     whereas [exhaustive_test] is complete. *)
-  let quick_test =
-    Evd.defined_map initial.solution == Evd.defined_map final.solution && initial.comb == final.comb
-  in
-  let test =
-    quick_test ||
-    (CList.same_length initial.comb final.comb &&
-    Util.List.for_all2eq begin fun i f ->
-      Progress.goal_equal ~evd:initial.solution
-        ~extended_evd:final.solution (drop_state i) (drop_state f)
-    end initial.comb final.comb)
-  in
-  if not test then
+  let progress = Progress.progress initial final in
+  if progress then
     tclUNIT res
   else
     let info = Exninfo.reify () in
