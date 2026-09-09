@@ -821,7 +821,7 @@ let infer_named_context env ~evars variances ctx =
   let _env, sec_binders, variances = Context.Named.fold_outside infer_typ ctx ~init:(env, 0, variances) in
   sec_binders, variances
 
-let infer_context env ~evars ~(skip_lets=true) ?(shift = 0) ?(binder_pos = fun i -> Position.InBinder i) variances ctx =
+let infer_context env ~evars ?(skip_lets=true) ?(shift = 0) ?(binder_pos = fun i -> Position.InBinder i) variances ctx =
   let infer_typ typ (env, i, variances) =
     let variances = Inf.set_position (binder_pos i) variances in
     match typ with
