@@ -93,7 +93,7 @@ else
   COQLIB_NOT_FOUND:=false
 endif
 
-COQEXTRAFLAGS?=
+COQEXTRAFLAGS?=-unset "Universe Polymorphism"
 COQFLAGS?=$(COQEXTRAFLAGS)
 
 coqc := $(BIN)rocq c -q -R prerequisite TestSuite $(COQFLAGS)
