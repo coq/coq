@@ -93,7 +93,7 @@ and fields_of_mp mp =
        no idea about what we are doing. *)
     if ModPath.equal inner_mp mp then subs
     else if has_root_delta_resolver mp delta_mb then
-      add_mp inner_mp mp delta_mb subs
+      add_mp inner_mp mp (of_body_delta_resolver delta_mb) subs
     else
       add_mp inner_mp mp (empty_delta_resolver mp) subs
   in

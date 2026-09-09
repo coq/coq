@@ -394,10 +394,12 @@ and check_modtypes (cst, ustate) trace env mp1 mtb1 mp2 mtb2 subst1 subst2 =
         MoreFunctor (arg_id2,arg_t2,body_t2) ->
         let mparg1 = MPbound arg_id1 in
         let mparg2 = MPbound arg_id2 in
-        let nsubst = map_mbid arg_id1 mparg2 (mod_delta arg_t2) in
+        let nsubst =
+          map_mbid arg_id1 mparg2 (forget_inline_delta_resolver (mod_delta arg_t2))
+        in
         let subst1 = join nsubst subst1 in
         let delta1 = subst_codom_delta_resolver nsubst delta1 in
-        let subst2 = add_mp mp2 mp1 delta1 subst2 in
+        let subst2 = add_mp mp2 mp1 (forget_inline_delta_resolver delta1) subst2 in
         let env = add_module_parameter arg_id2 arg_t2 env in
         let cst = check_modtypes (cst, ustate) (FunctorArgument (nargs+1) :: trace) env mparg2 arg_t2 mparg1 arg_t1 subst2 subst1 in
         (* contravariant *)
@@ -414,4 +416,4 @@ let check_subtypes state env mp_sup mp_super super =
   in
   check_modtypes state [] env
     mp_sup (strengthen sup mp_sup) mp_super super empty_subst
-    (map_mp mp_super mp_sup (mod_delta sup))
+    (map_mp mp_super mp_sup (forget_inline_delta_resolver (mod_delta sup)))

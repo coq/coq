@@ -42,7 +42,7 @@ type module_signature = (module_type_body,structure_body) functorize
 type module_implementation =
   | Abstract (** no accessible implementation *)
   | Algebraic of module_expression (** non-interactive algebraic expression *)
-  | Struct of delta_resolver * structure_body (** interactive body living in the parameter context of [mod_type] *)
+  | Struct of mod_body delta_resolver * structure_body (** interactive body living in the parameter context of [mod_type] *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 (** Extra invariants :
@@ -60,23 +60,23 @@ type module_implementation =
 val mod_expr : module_body -> module_implementation
 val mod_type : 'a generic_module_body -> module_signature
 val mod_type_alg : 'a generic_module_body -> module_expression option
-val mod_delta : 'a generic_module_body -> delta_resolver
+val mod_delta : 'a generic_module_body -> 'a delta_resolver
 
-val mod_global_delta : 'a generic_module_body -> delta_resolver option
+val mod_global_delta : 'a generic_module_body -> 'a delta_resolver option
 (** [None] if the argument is a functor, [mod_delta] otherwise *)
 
 (** {6 Builders} *)
 
-val make_module_body : module_signature -> Mod_subst.delta_resolver -> module_body
-val make_module_type : module_signature -> Mod_subst.delta_resolver -> module_type_body
+val make_module_body : module_signature -> Mod_subst.mod_body Mod_subst.delta_resolver -> module_body
+val make_module_type : module_signature -> Mod_subst.mod_type Mod_subst.delta_resolver -> module_type_body
 
 val strengthen_module_body : src:ModPath.t ->
-  module_signature -> delta_resolver -> module_body -> module_body
+  module_signature -> mod_body delta_resolver -> module_body -> module_body
 
 val strengthen_module_type :
-  structure_body -> delta_resolver -> module_type_body -> module_type_body
+  structure_body -> mod_type delta_resolver -> module_type_body -> module_type_body
 
-val replace_module_body : structure_body -> delta_resolver -> module_body -> module_body
+val replace_module_body : structure_body -> mod_body delta_resolver -> module_body -> module_body
 
 val module_type_of_module : module_body -> module_type_body
 val module_body_of_type : module_type_body -> module_body
@@ -89,7 +89,7 @@ val functorize_module : (Names.MBId.t * module_type_body) list -> module_body ->
 
 val set_implementation : module_implementation -> module_body -> module_body
 val set_algebraic_type : module_type_body -> module_expression -> module_type_body
-val set_delta : Mod_subst.delta_resolver -> 'a generic_module_body -> 'a generic_module_body
+val set_delta : 'a Mod_subst.delta_resolver -> 'a generic_module_body -> 'a generic_module_body
 
 val set_signature : module_signature -> 'a generic_module_body -> 'a generic_module_body
 (** Replace the expanded type, keeping the implementation and the algebraic

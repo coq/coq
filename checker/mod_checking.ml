@@ -267,7 +267,9 @@ let rec check_mexpr env mse mp_mse res = match mse with
       | NoFunctor _ -> mod_delta mb
       | MoreFunctor _ -> Mod_subst.empty_delta_resolver mp
     in
-    let subst = Mod_subst.map_mbid farg_id mp mp_delta in
+    let subst =
+      Mod_subst.map_mbid farg_id mp (Mod_subst.of_body_delta_resolver mp_delta)
+    in
     Modops.subst_signature subst mp_mse fbody_b, Mod_subst.subst_codom_delta_resolver subst delta
   | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
 
@@ -279,7 +281,7 @@ let rec check_mexpression env sign mbtyp mp_mse res = match sign with
     MoreFunctor(arg_id,mtb,body), delta
   | MENoFunctor me -> check_mexpr env me mp_mse res
 
-let rec check_module env opac mp mb opacify =
+let rec check_module env opac mp (mb : Mod_declarations.module_body) opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let delta_mb = mod_delta mb in
   let opac =
@@ -308,8 +310,8 @@ let rec check_module env opac mp mb opacify =
   let () = match optsign with
   | None -> ()
   | Some (sign,delta) ->
-    let mtb1 = mk_mtb sign delta
-    and mtb2 = mk_mtb (mod_type mb) delta_mb in
+    let mtb1 = mk_mtb sign (Mod_subst.of_body_delta_resolver delta)
+    and mtb2 = mk_mtb (mod_type mb) (Mod_subst.of_body_delta_resolver delta_mb) in
     let state = (Environ.universes env, Conversion.checked_universes) in
     let env = Modops.add_module mp (module_body_of_type mtb1) env in
     let _ : UGraph.t = Subtyping.check_subtypes state env mp mp mtb2 in
@@ -317,13 +319,14 @@ let rec check_module env opac mp mb opacify =
   in
   opac
 
-and check_module_type env mp mty =
+and check_module_type env mp (mty : Mod_declarations.module_type_body) =
   Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string @@ mp));
   let _ : check_state =
     check_signature env empty_state (mod_type mty) mp (mod_delta mty) empty_cset in
   ()
 
-and check_structure_field env opac mp lab res opacify = function
+and check_structure_field : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ -> _ -> _ =
+  fun env opac mp lab res opacify -> function
   | SFBconst cb ->
       let kn = KerName.make mp lab in
       let kn = Mod_subst.constant_of_delta_kn res kn in
@@ -352,7 +355,8 @@ and check_structure_field env opac mp lab res opacify = function
       check_rewrite_rules_body env lab rrb;
       Environ.add_rewrite_rules rrb.rewrules_rules env, opac
 
-and check_signature env opac sign mp_mse res opacify = match sign with
+and check_signature : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ -> _ =
+  fun env opac sign mp_mse res opacify -> match sign with
   | MoreFunctor (arg_id, mtb, body) ->
       let () = check_module_type env (MPbound arg_id) mtb in
       let env' = Modops.add_module_parameter arg_id mtb env in

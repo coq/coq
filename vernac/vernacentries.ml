@@ -2261,7 +2261,7 @@ let vernac_print_debug_delta qid =
       match Nametab.locate_module qid with
       | mp ->
         let mb = Global.lookup_module mp in
-        Mod_declarations.mod_delta mb
+        Mod_subst.of_body_delta_resolver (Mod_declarations.mod_delta mb)
       | exception Not_found ->
         CErrors.user_err Pp.(str "Unknown module or module type " ++ pr_qualid qid)
   in

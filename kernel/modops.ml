@@ -169,7 +169,8 @@ let subst_structure subst = subst_structure subst_codom subst
 let add_retroknowledge l env =
   List.fold_left Primred.add_retroknowledge env l
 
-let rec add_structure mp sign resolver linkinfo env =
+let rec add_structure : type a. _ -> _ -> a delta_resolver -> _ -> _ -> _ =
+  fun mp sign resolver linkinfo env ->
   let add_field env (l,elem) = match elem with
     | SFBconst cb ->
       let c = constant_of_delta_kn resolver (KerName.make mp l) in
@@ -297,7 +298,10 @@ let rec strengthen_module mp mb = match mod_type mb with
     strengthen_module_body ~src:mp (NoFunctor struc') reso mb
 | MoreFunctor _ -> mb
 
-and strengthen_signature mp struc reso0 =
+and strengthen_signature : type a.
+  ModPath.t -> structure_body -> a delta_resolver ->
+    mod_body delta_resolver * structure_body =
+  fun mp struc reso0 ->
   let strengthen_field reso item = match item with
   | (l, SFBconst cb) ->
     reso, (l, SFBconst (strengthen_const mp l cb reso0))
@@ -324,7 +328,7 @@ let strengthen mtb mp = match mod_type mtb with
   if mp_is_alias delta_mtb mp then mtb
   else
     let reso', struc' = strengthen_signature mp struc delta_mtb in
-    let reso' = add_delta_resolver delta_mtb (lift_mp_delta_resolver mp reso') in
+    let reso' = add_delta_resolver delta_mtb (of_body_delta_resolver (lift_mp_delta_resolver mp reso')) in
     strengthen_module_type struc' reso' mtb
 | MoreFunctor _ -> mtb
 
@@ -496,7 +500,7 @@ let strengthen_and_subst_module_body mp_from mb mp include_b = match mod_type mb
       add_mp_delta_resolver mp mp_alias
         (subst_dom_delta_resolver mp_from mp delta_mb)
     in
-    let subst = map_mp mp_from mp new_resolver in
+    let subst = map_mp mp_from mp (of_body_delta_resolver new_resolver) in
     let reso',struc' =
       strengthen_and_subst_struct struc subst
         mp_from mp mb_is_an_alias include_b delta_mb
@@ -529,11 +533,13 @@ let clean_bounded_mod_expr sign =
 
 (** {6 Building map of constants to inline } *)
 
+(* The result carries inlined bodies, so it is a substitution resolver; the
+   [delta] it starts from is the resolver of the module being passed. *)
 let inline_delta_resolver env inl mp mbid mtb delta =
   let constants = inline_of_delta inl (mod_delta mtb) in
   let rec make_inline delta = function
     | [] -> delta
-    | (lev,kn)::r ->
+    | kn :: r ->
       let kn = replace_mp_in_kn (MPbound mbid) mp kn in
       let con = constant_of_delta_kn delta kn in
       if not (Environ.mem_constant con env) then
@@ -547,6 +553,6 @@ let inline_delta_resolver env inl mp mbid mtb delta =
         | Def constr ->
           let ctx = Declareops.constant_polymorphic_context constant in
           let constr = {UVars.univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
-          add_inline_delta_resolver kn (lev, Some constr) l
+          add_inline_body_delta_resolver kn constr l
   in
-  make_inline delta constants
+  make_inline (forget_inline_delta_resolver delta) constants

@@ -297,18 +297,37 @@ let v_section_ctxt = v_enum "emptylist" 1
 
 let v_univ_abstracted v = v_tuple "univ_abstracted" [|v;v_abs_context|]
 
-let v_delta_hint =
-  v_sum "delta_hint" 0 [|[|v_int; v_opt (v_univ_abstracted v_constr)|];[|v_kn|]|]
+let v_modbody_delta_hint =
+  v_sum "delta_hint" 0
+    [|[|v_kn|]; [|v_fail "inline"|]; [|v_fail "inline"|]|]
 
 let v_mp_hint = v_sum "mp_hint" 1 [|[|v_mp|]|]
 
-let v_resolver =
+let v_modtype_delta_hint =
+  v_sum "delta_hint" 0
+    [|[|v_kn|]; [|v_int|]; [|v_fail "inline"|]|]
+
+let v_modsubs_delta_hint =
+  v_sum "delta_hint" 0
+    [|[|v_kn|]; [|v_fail "inline"|]; [|v_opt v_kn; v_univ_abstracted v_constr|]|]
+
+let v_modbody_resolver =
   v_tuple "delta_resolver"
     [|v_mp; v_map v_mp v_mp_hint;
-      v_hmap v_kn v_delta_hint|]
+      v_hmap v_kn v_modbody_delta_hint|]
+
+let v_modtype_resolver =
+  v_tuple "delta_resolver"
+    [|v_mp; v_map v_mp v_mp_hint;
+      v_hmap v_kn v_modtype_delta_hint|]
+
+let v_modsubs_resolver =
+  v_tuple "delta_resolver"
+    [|v_mp; v_map v_mp v_mp_hint;
+      v_hmap v_kn v_modsubs_delta_hint|]
 
 let v_subst =
-  v_annot_c ("substitution", v_map v_mp v_resolver)
+  v_annot_c ("substitution", v_map v_mp v_modsubs_resolver)
 
 (** kernel/lazyconstr *)
 
@@ -589,13 +608,13 @@ let [_v_sfb;_v_struc;_v_sign;_v_mexpr;_v_impl;v_module;_v_modtype] : _ Vector.t 
   and v_impl =
     v_sum_c ("module_impl",2, (* Abstract, FullStruct *)
          [|[|v_mexpr|];  (* Algebraic *)
-           [|v_resolver; v_struc|]|])  (* Struct *)
+           [|v_modbody_resolver; v_struc|]|])  (* Struct *)
   and v_module =
     v_tuple_c ("module_body",
-           [|v_sum_c ("when_mod_body", 0, [|[|v_impl|]|]);v_sign;v_opt v_mexpr;v_resolver|])
+           [|v_sum_c ("when_mod_body", 0, [|[|v_impl|]|]);v_sign;v_opt v_mexpr;v_modbody_resolver|])
   and v_modtype =
     v_tuple_c ("module_type_body",
-           [|v_noimpl;v_sign;v_opt v_mexpr;v_resolver|])
+           [|v_noimpl;v_sign;v_opt v_mexpr;v_modtype_resolver|])
   in
   [v_sfb;v_struc;v_sign;v_mexpr;v_impl;v_module;v_modtype])
 

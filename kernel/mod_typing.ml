@@ -64,7 +64,9 @@ type with_body = {
   w_bytecode : Vmlibrary.indirect_code;
 }
 
-let rec check_with_def (cst, ustate) env struc (idl, wth) mp reso =
+let rec check_with_def : type a.
+  _ -> _ -> _ -> _ -> _ -> a delta_resolver -> _ =
+  fun (cst, ustate) env struc (idl, wth) mp reso ->
   let lab,idl = match idl with
     | [] -> assert false
     | id::idl -> id, idl
@@ -209,9 +211,10 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       let subreso = mod_delta new_mb in
       (* we propagate the new equality in the rest of the signature
          with the identity substitution accompanied by the new resolver*)
-      let id_subst = map_mp mp' mp' subreso in
+      let id_subst = map_mp mp' mp' (of_body_delta_resolver subreso) in
       let new_after = subst_structure id_subst mp after in
-      before @ (lab, SFBmodule new_mb') :: new_after, subreso, cst
+      before @ (lab, SFBmodule new_mb') :: new_after,
+      of_body_delta_resolver subreso, cst
     else
       (* Module definition of a sub-module *)
       let mp' = MPdot (mp,lab) in
@@ -223,11 +226,14 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       | Abstract ->
         let struc = destr_nofunctor mp' (mod_type old) in
         let struc', subreso, cst =
-          check_with_mod (cst, ustate) env' struc (idl,new_mp) mp' (mod_delta old)
+          check_with_mod (cst, ustate) env' struc (idl,new_mp)
+            mp' (of_body_delta_resolver (mod_delta old))
         in
-        let reso' = add_delta_resolver (mod_delta old) (upcast_delta_resolver mp' subreso) in
-        let new_mb = replace_module_body struc' reso' old in
-        let id_subst = map_mp mp' mp' reso' in
+        let reso' = add_delta_resolver (of_body_delta_resolver (mod_delta old))
+          (upcast_delta_resolver mp' subreso) in
+        (* [old] is a submodule, so [reso'] carries no inlining declaration. *)
+        let new_mb = replace_module_body struc' (forget_inline_delta_resolver reso') old in
+        let id_subst = map_mp mp' mp' (forget_inline_delta_resolver reso') in
         let new_after = subst_structure id_subst mp after in
         before @ (lab, SFBmodule new_mb) :: new_after, subreso, cst
       | Algebraic (MENoFunctor (MEident mp0)) ->
@@ -290,13 +296,17 @@ let rec decompose_apply accu = function
 
 let rec translate_mse (cst, ustate) (vm, vmstate) env mpo inl me = match me with
   | MEident mp1 ->
-    let mb = match mpo with
-      | Some mp -> strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp false
+    let sign, reso = match mpo with
+      | Some mp ->
+        let mb = strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp false in
+        mod_type mb, of_body_delta_resolver (mod_delta mb)
       | None ->
+        (* Keep the inlining declarations of [mp1]: they are part of the module
+           type being elaborated. *)
         let mt = lookup_modtype mp1 env in
-        module_body_of_type mt
+        mod_type mt, mod_delta mt
     in
-    mod_type mb, me, mod_delta mb, cst, vm
+    sign, me, reso, cst, vm
   | MEapply _ ->
     let fe, args = decompose_apply [] me in
     let (sign, alg, reso, cst, vm) = translate_mse (cst, ustate) (vm, vmstate) env mpo inl fe in
@@ -338,12 +348,14 @@ and translate_modtype state vmstate env mp inl (params,mte) =
 let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) restype = match restype with
   | None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
-    let mb = make_module_body sign reso in
+    let mb = make_module_body sign (forget_inline_delta_resolver reso) in
     let mb = set_implementation impl mb in
     mb, cst, vm
   | Some (params_mte,inl) ->
     let res_mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl params_mte in
-    let auto_mtb = Mod_declarations.make_module_body sign reso in
+    let auto_mtb =
+      Mod_declarations.make_module_body sign (forget_inline_delta_resolver reso)
+    in
     (* This function is supposed to be called in a state where the current module
        is about to be closed, so all subcomponents of the module are already
        part of the environment. We only need to add the toplevel module entry. *)
@@ -356,7 +368,7 @@ let finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sign,alg,reso) resty
       | NoFunctor s -> s
       | MoreFunctor _ -> assert false (* All non-algebraic callers enforce this *)
       in
-      Struct (reso,sign)
+      Struct (forget_inline_delta_resolver reso,sign)
     in
     let mb = module_body_of_type res_mtb in
     let mb = set_implementation impl mb in
@@ -371,7 +383,10 @@ let finalize_module univs vm env mp (sign, reso) typ =
 let translate_module (cst, ustate) (vm, vmstate) env mp inl = function
   | MType (params,ty) ->
     let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl (params,ty) in
-    module_body_of_type mtb, cst, vm
+    (* [Declare Module M : T] inside a module type is a specification, not an
+       implementation: an enclosing module type inherits the inlining
+       declarations of [T], which the module body itself cannot hold. *)
+    (module_body_of_type mtb, mod_global_delta mtb), cst, vm
   | MExpr (params,mse,oty) ->
     let (sg,alg,reso,cst,vm) = translate_mse_funct (cst, ustate) (vm, vmstate) env ~is_mod:true mp inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
@@ -380,7 +395,11 @@ let translate_module (cst, ustate) (vm, vmstate) env mp inl = function
     | NoFunctor struc -> Modops.add_structure mp struc reso env
     | MoreFunctor _ -> env
     in
-    finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sg,Some alg,reso) restype
+    let mb, cst, vm =
+      finalize_module_alg (cst, ustate) (vm, vmstate) env mp (sg,Some alg,reso) restype
+    in
+    let delta = Option.map of_body_delta_resolver (mod_global_delta mb) in
+    (mb, delta), cst, vm
 
 (** We now forbid any Include of functors with restricted signatures.
     Otherwise, we could end with the creation of undesired axioms
@@ -413,7 +432,7 @@ let rec translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl = fu
   | MEident mp1 ->
     let mb = strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr (mod_type mb) in
-    sign, (), mod_delta mb, cst, vm
+    sign, (), of_body_delta_resolver (mod_delta mb), cst, vm
   | MEapply _ as me ->
     let fe, args = decompose_apply [] me in
     let (sign, (), reso, cst, vm) = translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl fe in
