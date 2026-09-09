@@ -218,6 +218,8 @@ let v_univ_instance = v_annot_c ("instance", v_pair (v_array v_quality) (v_array
 let v_abs_context = v_tuple "abstract_universe_context" [|v_pair (v_array v_name) (v_array v_name); v_cstrs|]
 let v_univ_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_univ_cstrs|]
 
+let v_ucontext = v_tuple "universe_context" [|v_pair (v_array v_name) (v_array v_name); v_pair v_level_instance v_cstrs|]
+
 (** kernel/term *)
 
 let v_sort = v_sum "sort" 3 (*SProp, Prop, Set*)
@@ -388,7 +390,9 @@ let v_variance_occurrence =
 
 let v_variances = v_array v_variance_occurrence
 
-let v_univs = v_sum "universes" 1 [|[|v_abs_context; v_opt v_variances|]|]
+let v_univs = v_tuple "universes" [|v_abs_context; v_opt v_variances|]
+    
+let v_ind_univs = v_sum "ind_universes" 0 [| [| v_template_universes |]; [| v_univs |] |]
 
 let v_vm_reloc_table = v_array (v_pair v_int v_int)
 
@@ -444,6 +448,7 @@ let v_vm_to_patch = v_tuple "vm_to_patch" [|v_vm_emitcodes; v_vm_fv; v_vm_positi
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
+    v_list v_ucontext;
     v_level_instance;
     v_cst_def;
     v_constr;
@@ -495,16 +500,18 @@ let v_one_ind = v_tuple "one_inductive_body"
 
 let v_finite = v_enum "recursivity_kind" 3
 
+
+
 let v_ind_pack = v_tuple "mutual_inductive_body"
   [|v_array v_one_ind;
     v_finite;
     v_section_ctxt;
+    v_list v_ucontext;
     v_level_instance;
     v_int;
     v_int;
     v_rctxt;
-    v_univs; (* universes *)
-    v_opt v_template_universes;
+    v_ind_univs; (* universes *)
     v_opt v_variances;
     v_opt v_bool;
     v_typing_flags|]
