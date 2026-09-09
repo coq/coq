@@ -58,4 +58,5 @@ val finalize_module :
 
 val translate_mse_include :
   bool -> ('a, Conversion.graph_inconsistency) Conversion.universe_state -> 'b vm_state -> Environ.env -> ModPath.t -> inline ->
-  module_struct_entry -> module_signature * unit * mod_type delta_resolver * 'a * 'b
+  module_struct_entry ->
+  module_signature * ModPath.t option * mod_type delta_resolver * 'a * 'b

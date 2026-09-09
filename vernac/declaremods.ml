@@ -1530,7 +1530,7 @@ let declare_one_include_core (me,base,kind,inl) =
   let base_mp = get_module_path me in
 
   let state = ((Global.universes (), Univ.UnivConstraints.empty), Reductionops.inferred_universes) in
-  let sign, (), resolver, (_, cst), _ =
+  let sign, _origin, resolver, (_, cst), _ =
     Mod_typing.translate_mse_include is_mod state vm_state (Global.env ()) (Global.current_modpath ()) inl me
   in
   let () = Global.add_univ_constraints cst in
