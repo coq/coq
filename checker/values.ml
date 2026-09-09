@@ -374,6 +374,7 @@ let v_vm_caml_prim = v_enum "vm_caml_prim" 12
 
 let v_non_subst_reloc = v_sum "vm_non_subst_reloc" 0 [|
   [|v_sort|];
+  [|v_id|];
   [|v_fail "Evar"|];
   [|v_int|];
   [|v_instance|];

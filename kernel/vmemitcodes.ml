@@ -120,6 +120,7 @@ struct
     memory footprint, this data is kept on the VM segment. *)
 type t =
 | SReloc_Const_sort of Sorts.t
+| SReloc_Const_var of Id.t
 | SReloc_Const_evar of Evar.t
 | SReloc_Const_b0 of tag
 | SReloc_Const_univ_instance of UVars.Instance.t
@@ -132,6 +133,7 @@ type t =
 
 let to_reloc = function
 | SReloc_Const_sort s -> Reloc_const (Const_sort s)
+| SReloc_Const_var id -> Reloc_const (Const_var id)
 | SReloc_Const_evar e -> Reloc_const (Const_evar e)
 | SReloc_Const_b0 tag -> Reloc_const (Const_b0 tag)
 | SReloc_Const_univ_instance u -> Reloc_const (Const_univ_instance u)
@@ -673,6 +675,7 @@ let to_memory fv code =
     | Reloc_annot annot -> push (SReloc_annot annot)
     | Reloc_caml_prim prm -> push (SReloc_caml_prim prm)
     | Reloc_const (Const_sort s) -> push (SReloc_Const_sort s)
+    | Reloc_const (Const_var id) -> push (SReloc_Const_var id)
     | Reloc_const (Const_evar e) -> push (SReloc_Const_evar e)
     | Reloc_const (Const_b0 tag) -> push (SReloc_Const_b0 tag)
     | Reloc_const (Const_univ_instance u) -> push (SReloc_Const_univ_instance u)

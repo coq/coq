@@ -304,7 +304,7 @@ and slot_for_fv env sigma fv envcache table =
       begin match nv with
       | None ->
         let v = match env |> lookup_named id |> NamedDecl.get_value with
-          | None -> val_of_named id
+          | None -> assert false (* handled specifically in Vmbytegen *)
           | Some c -> val_of_constr env sigma c envcache table
         in
         cache_named envcache id v; v

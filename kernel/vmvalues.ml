@@ -50,6 +50,7 @@ shared without reallocating a more structured representation. *)
 type structured_constant =
   | Const_sort of Sorts.t
   | Const_ind of inductive
+  | Const_var of Id.t
   | Const_evar of Evar.t
   | Const_b0 of tag
   | Const_univ_instance of UVars.Instance.t
@@ -102,6 +103,8 @@ let eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sort _, _ -> false
 | Const_ind i1, Const_ind i2 -> Ind.UserOrd.equal i1 i2
 | Const_ind _, _ -> false
+| Const_var id1, Const_var id2 -> Id.equal id1 id2
+| Const_var _, _ -> false
 | Const_evar e1, Const_evar e2 -> Evar.equal e1 e2
 | Const_evar _, _ -> false
 | Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
@@ -122,13 +125,14 @@ let hash_structured_constant c =
   match c with
   | Const_sort s -> combinesmall 1 (Sorts.hash s)
   | Const_ind i -> combinesmall 2 (Ind.UserOrd.hash i)
-  | Const_evar e -> combinesmall 3 (Evar.hash e)
-  | Const_b0 t -> combinesmall 4 (Int.hash t)
-  | Const_univ_instance u -> combinesmall 5 (UVars.Instance.hash u)
-  | Const_val v -> combinesmall 6 (hash_structured_values v)
-  | Const_uint i -> combinesmall 7 (Uint63.hash i)
-  | Const_float f -> combinesmall 8 (Float64.hash f)
-  | Const_string s -> combinesmall 9 (Pstring.hash s)
+  | Const_var id -> combinesmall 3 (Id.hash id)
+  | Const_evar e -> combinesmall 4 (Evar.hash e)
+  | Const_b0 t -> combinesmall 5 (Int.hash t)
+  | Const_univ_instance u -> combinesmall 6 (UVars.Instance.hash u)
+  | Const_val v -> combinesmall 7 (hash_structured_values v)
+  | Const_uint i -> combinesmall 8 (Uint63.hash i)
+  | Const_float f -> combinesmall 9 (Float64.hash f)
+  | Const_string s -> combinesmall 10 (Pstring.hash s)
 
 let eq_annot_switch asw1 asw2 =
   let eq_rlc (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2 in
@@ -145,6 +149,7 @@ let hash_annot_switch asw =
 let pp_struct_const = function
   | Const_sort s -> Sorts.raw_pr s
   | Const_ind (mind, i) -> Pp.(MutInd.print mind ++ str"#" ++ int i)
+  | Const_var id -> Pp.(str "Var(" ++ Id.print id ++ str ")")
   | Const_evar e -> Pp.( str "Evar(" ++ int (Evar.repr e) ++ str ")")
   | Const_b0 i -> Pp.int i
   | Const_univ_instance u -> UVars.Instance.pr Sorts.raw_printer u
@@ -398,6 +403,7 @@ let obj_of_str_const str =
   match str with
   | Const_sort s -> obj_of_atom (Asort s)
   | Const_ind ind -> obj_of_atom (Aind ind)
+  | Const_var id -> obj_of_atom (Aid (VarKey id))
   | Const_evar e -> obj_of_atom (Aid (EvarKey e))
   | Const_b0 tag -> Obj.repr tag
   | Const_univ_instance u -> Obj.repr u

@@ -579,7 +579,11 @@ let rec compile_lam env cenv lam sz cont =
   | Lproj (p,arg) ->
      compile_lam env cenv arg sz (Kproj (Projection.Repr.arg p) :: cont)
 
-  | Lvar id -> pos_named id cenv :: cont
+  | Lvar id ->
+    begin match Environ.named_body id env.env with
+    | None -> compile_structured_constant cenv (Const_var id) sz cont
+    | Some _ -> pos_named id cenv :: cont
+    end
 
   | Levar (evk, args) ->
       if Array.is_empty args then
