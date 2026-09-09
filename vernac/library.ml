@@ -370,11 +370,7 @@ let register_library m =
   let l = m.library_data in
   Declaremods.Interp.register_library
     m.library_name
-    l.md_compiled
-    l.md_objects
-    m.library_digests
-    m.library_vm
-  ;
+    l.md_objects;
   register_native_library m.library_name
 
 let register_library_syntax (root, m) =
@@ -389,7 +385,7 @@ let register_library_syntax (root, m) =
      the module or module type
    - not called from a library (i.e. a module identified with a file) *)
 let load_require _ needed =
-  List.iter register_library needed
+  register_library needed
 
   (* [needed] is the ordered list of libraries not already loaded *)
 let cache_require o =
@@ -399,7 +395,7 @@ let discharge_require o = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 
-type require_obj = library_t list
+type require_obj = library_t
 
 let in_require : require_obj -> obj =
   declare_object
@@ -411,7 +407,7 @@ let in_require : require_obj -> obj =
      classify_function = (fun o -> Anticipate) }
 
 let load_require_syntax _ needed =
-  List.iter register_library_syntax needed
+  register_library_syntax needed
 
 let cache_require_syntax o =
   load_require_syntax 1 o
@@ -420,8 +416,7 @@ let discharge_require_syntax o = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 
-type require_obj_syntax = (bool * library_t) list
-
+type require_obj_syntax = bool * library_t
 let in_require_syntax : require_obj_syntax -> obj =
   declare_object
     {(default_object "REQUIRE-SYNTAX") with
@@ -440,14 +435,29 @@ let warn_require_in_module =
     (fun () -> strbrk "Use of “Require” inside a module is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
+let kernel_load_require m =
+  let l = m.library_data in
+  let mp' = Global.import l.md_compiled m.library_vm m.library_digests in
+  if not (ModPath.equal (MPfile m.library_name) mp') then
+    anomaly (Pp.str "Unexpected disk module name.")
+
 let require_library_from_dirpath needed =
   if Lib.is_module_or_modtype () then warn_require_in_module ();
-  Lib.add_leaf (in_require needed)
+  (* Note that putting the list in the libobject would need to split the iter
+     (ie do [List.iter kernel_load_require needed; List.iter add_leaf needed])
+     which changes behaviour because libobjects can change kernel flags
+     (eg Global Unset Universe Checking).
+     TBH I'm not sure how much we care about preserving such behaviours
+     if it ever becomes inconvenient though. *)
+  List.iter (fun m ->
+      kernel_load_require m;
+      Lib.add_leaf (in_require m))
+    needed
 
 let require_library_syntax_from_dirpath ~intern modrefl =
   let needed, contents = List.fold_left (rec_intern_library ~intern) ([], DirPath.Map.empty) modrefl in
   let needed = List.rev_map (fun (root, dir) -> root, DirPath.Map.find dir contents) needed in
-  Lib.add_leaf (in_require_syntax needed);
+  List.iter (fun m -> Lib.add_leaf (in_require_syntax m)) needed;
   List.map snd needed
 
 (************************************************************************)
