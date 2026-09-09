@@ -23,13 +23,17 @@ open Constr
     parameter. All of them map names to other names; they differ in the
     inlining information they may carry.
 
-    - Resolvers from module bodies. They contains no inlining data.
+    - Resolvers from module bodies. They contain no inlining data.
     - Resolvers from module types. They may contain inlining declarations, i.e.
       the level of a [Parameter Inline]. Only a module type may declare
       parameters, hence only a module type resolver may carry such information.
     - Resolvers from module substitutions. They may contain inlining payloads,
       which are terms inserted in lieu of the original constant when
-      applying the substitution. *)
+      applying the substitution.
+
+    Since a name and the way a field is to be inlined are independent
+    statements, casting between flavours drops the latter and preserves the
+    former in full. *)
 type 'a delta_resolver
 
 type mod_body = [ `ModBody ]
