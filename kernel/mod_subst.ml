@@ -20,10 +20,17 @@ open Util
 open Names
 open Constr
 
+(* The modpath part of a resolver holds two kinds of statements.
+   - [p ↦ MPequiv q] states that [q] is the canonical name of [p].
+   - [p ↦ MPlift] states that [p] is a bound name that should be left untouched
+     by substitution. *)
+type mp_hint =
+| MPequiv of ModPath.t  (** the canonical form of the key *)
+| MPlift                (** the prefix rule stops here *)
+
 (* For Inline, the int is an inlining level, and the constr (if present)
    is the term into which we should inline.
    Equiv gives the canonical name in the given context. *)
-
 type delta_hint =
   | Inline of int * constr UVars.univ_abstracted option
   | Equiv of KerName.t
@@ -35,7 +42,7 @@ module Deltamap = struct
   type t = {
     root : ModPath.t;
     (** Common root of all keys in the deltamap *)
-    mmap : ModPath.t ModPath.Map.t;
+    mmap : mp_hint ModPath.Map.t;
     (** All bindings [mp ↦ _] must satisfy [mp ⊆ root] *)
     kmap : delta_hint KerName.Map.t;
     (** All bindings [kn ↦ _] must satisfy [modpath(kn) ⊆ root] *)
@@ -53,16 +60,19 @@ module Deltamap = struct
     let () = assert (ModPath.subpath reso.root (KerName.modpath kn)) in
     { reso with kmap = KerName.Map.add kn hint reso.kmap }
 
-  let add_mp mp mp' reso =
+  let add_mp_hint mp hint reso =
     let () = assert (ModPath.subpath reso.root mp) in
-    { reso with mmap = ModPath.Map.add mp mp' reso.mmap }
+    { reso with mmap = ModPath.Map.add mp hint reso.mmap }
 
-  let find_mp mp reso = ModPath.Map.find mp reso.mmap
+  let add_mp mp mp' reso = add_mp_hint mp (MPequiv mp') reso
+  let lift_mp mp reso = add_mp_hint mp MPlift reso
+
+  let find_mp_opt mp reso = ModPath.Map.find_opt mp reso.mmap
   let find_kn kn reso = KerName.Map.find kn reso.kmap
   let fold_kn f reso i = KerName.Map.fold f reso.kmap i
   let fold fmp fkn reso accu =
     ModPath.Map.fold fmp reso.mmap (KerName.Map.fold fkn reso.kmap accu)
-  let join map1 map2 = fold add_mp add_kn map1 map2
+  let join map1 map2 = fold add_mp_hint add_kn map1 map2
 
   (** if mp0 ⊆ root, we can see a resolver on root as a resolver on mp *)
   let upcast mp0 reso =
@@ -87,8 +97,8 @@ module Deltamap = struct
             path in mm above root, as find_prefix will always return this one
             without considering the less precise ones. *)
           let glb = match glb with
-          | None -> Some mp
-          | Some glb -> if ModPath.subpath glb mp then Some mp else Some glb
+          | None -> Some (mp, data)
+          | Some (g, _) as old -> if ModPath.subpath g mp then Some (mp, data) else old
           in
           glb, accu
         else
@@ -98,21 +108,23 @@ module Deltamap = struct
       let glb, mm' = ModPath.Map.fold fold_mp mm (None, ModPath.Map.empty) in
       let mm' = match glb with
       | None -> mm'
-      | Some glb ->
+      | Some (glb, data) ->
         if ModPath.Map.mem root mm then mm'
         else
           (* Add root to the resolver and map it to what find_prefix would have
             returned on root *)
-          let rec diff accu mp =
-            if ModPath.equal mp glb then accu
-            else match mp with
-            | MPdot (mp, l) -> diff (l :: accu) mp
-            | MPbound _ | MPfile _ -> assert false
-          in
-          let diff = diff [] root in
-          let data = ModPath.Map.get glb mm in
-          let data' = List.fold_left (fun accu l -> MPdot (accu, l)) data diff in
-          ModPath.Map.add root data' mm'
+          match data with
+          | MPlift -> ModPath.Map.add root MPlift mm'
+          | MPequiv data ->
+            let rec diff accu mp =
+              if ModPath.equal mp glb then accu
+              else match mp with
+              | MPdot (mp, l) -> diff (l :: accu) mp
+              | MPbound _ | MPfile _ -> assert false
+            in
+            let diff = diff [] root in
+            let data' = List.fold_left (fun accu l -> MPdot (accu, l)) data diff in
+            ModPath.Map.add root (MPequiv data') mm'
       in
       (* filter the kernames *)
       let filter_kn kn _ = ModPath.subpath root (KerName.modpath kn) in
@@ -166,12 +178,16 @@ let string_of_hint pr = function
   | Inline (lvl, None) -> str "inline[" ++ int lvl ++ str "]"
   | Equiv kn -> str "equiv(" ++ KerName.print kn ++ str ")"
 
+let debug_pr_mp_hint = function
+| MPequiv mp -> ModPath.print mp
+| MPlift -> str "<lift>"
+
 let debug_pr_delta pr resolve =
   let kn_to_string kn hint l =
     hov 2 (KerName.print kn ++ str " =>" ++ spc() ++ string_of_hint pr hint) :: l
   in
-  let mp_to_string mp mp' l =
-    hov 2 (ModPath.print mp ++ str " =>" ++ spc() ++ ModPath.print mp') :: l
+  let mp_to_string mp hint l =
+    hov 2 (ModPath.print mp ++ str " =>" ++ spc() ++ debug_pr_mp_hint hint) :: l
   in
   let l = Deltamap.fold mp_to_string kn_to_string resolve [] in
   v 0 @@ prlist_with_sep pr_comma (fun p -> p) (List.rev l)
@@ -207,7 +223,11 @@ let add_kn_delta_resolver kn kn' =
   assert (Id.equal (KerName.label kn) (KerName.label kn'));
   Deltamap.add_kn kn (Equiv kn')
 
-let add_mp_delta_resolver mp1 mp2 = Deltamap.add_mp mp1 mp2
+let add_mp_delta_resolver mp1 mp2 =
+  let () = assert (not (ModPath.equal mp1 mp2)) in
+  Deltamap.add_mp mp1 mp2
+
+let lift_mp_delta_resolver mp = Deltamap.lift_mp mp
 
 (** Extending a [substitution] without sequential composition *)
 
@@ -223,13 +243,19 @@ let map_mbid mbid mp resolve =
 let map_mp mp1 mp2 resolve = add_mp mp1 mp2 resolve empty_subst
 
 let find_prefix resolve mp =
-  let rec sub_mp = function
-    | MPdot(mp,l) as mp_sup ->
-        (try Deltamap.find_mp mp_sup resolve
-         with Not_found -> MPdot(sub_mp mp,l))
-    | p -> Deltamap.find_mp p resolve
+  let rec sub_mp mp = match Deltamap.find_mp_opt mp resolve with
+  | Some (MPequiv mp') -> mp'
+  | Some MPlift -> mp
+  | None ->
+    match mp with
+    | MPdot (mp1, l) ->
+      (* Preserving sharing is not an optimisation: [progress] in [subst_con0]
+         and [subst_mind] tests with [!=]. This should be fixed at some point. *)
+      let mp1' = sub_mp mp1 in
+      if mp1' == mp1 then mp else MPdot (mp1', l)
+    | MPbound _ | MPfile _ -> mp
   in
-  try sub_mp mp with Not_found -> mp
+  sub_mp mp
 
 (* TODO: remove the indirection at some point *)
 let mp_of_delta = find_prefix
@@ -543,8 +569,8 @@ let replace_mp_in_kn mpfrom mpto kn =
 let mp_in_mp = ModPath.subpath
 
 let subset_prefixed_by mp resolver =
-  let mp_prefix mkey mequ rslv =
-    if mp_in_mp mp mkey then Deltamap.add_mp mkey mequ rslv else rslv
+  let mp_prefix mkey hint rslv =
+    if mp_in_mp mp mkey then Deltamap.add_mp_hint mkey hint rslv else rslv
   in
   let kn_prefix kn hint rslv =
     match hint with
@@ -557,8 +583,8 @@ let subset_prefixed_by mp resolver =
 let subst_dom_delta_resolver mp_from mp_to resolver =
   let () = assert (ModPath.equal mp_from resolver.Deltamap.root) in
   let subst = map_mp mp_from mp_to (empty_delta_resolver mp_to) in
-  let mp_apply_subst mkey mequ rslv =
-    Deltamap.add_mp (subst_mp subst mkey) mequ rslv
+  let mp_apply_subst mkey hint rslv =
+    Deltamap.add_mp_hint (subst_mp subst mkey) hint rslv
   in
   let kn_apply_subst kkey hint rslv =
     Deltamap.add_kn (subst_kn subst kkey) hint rslv
@@ -594,10 +620,13 @@ let subst_mp_delta subst mp mkey =
       reso, mp1
 
 let gen_subst_delta_resolver dom subst resolver =
-  let mp_apply_subst mkey mequ rslv =
+  let mp_apply_subst mkey hint rslv =
     let mkey' = if dom then subst_mp subst mkey else mkey in
-    let rslv',mequ' = subst_mp_delta subst mequ mkey' in
-    Deltamap.join rslv' (Deltamap.add_mp mkey' mequ' rslv)
+    match hint with
+    | MPlift -> Deltamap.add_mp_hint mkey' MPlift rslv
+    | MPequiv mequ ->
+      let rslv', mequ' = subst_mp_delta subst mequ mkey' in
+      Deltamap.join rslv' (Deltamap.add_mp_hint mkey' (MPequiv mequ') rslv)
   in
   let kn_apply_subst kkey hint rslv =
     let kkey' = if dom then subst_kn subst kkey else kkey in
@@ -615,8 +644,10 @@ let subst_codom_delta_resolver = gen_subst_delta_resolver false
 let subst_dom_codom_delta_resolver = gen_subst_delta_resolver true
 
 let update_delta_resolver resolver1 resolver2 =
-  let mp_apply_rslv mkey mequ rslv =
-    Deltamap.add_mp mkey (find_prefix resolver2 mequ) rslv
+  let mp_apply_rslv mkey hint rslv = match hint with
+    | MPlift -> Deltamap.add_mp_hint mkey MPlift rslv
+    | MPequiv mequ ->
+      Deltamap.add_mp_hint mkey (MPequiv (find_prefix resolver2 mequ)) rslv
   in
   let kn_apply_rslv kkey hint1 rslv =
     let hint = match hint1 with

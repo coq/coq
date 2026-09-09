@@ -300,9 +300,11 @@ let v_univ_abstracted v = v_tuple "univ_abstracted" [|v;v_abs_context|]
 let v_delta_hint =
   v_sum "delta_hint" 0 [|[|v_int; v_opt (v_univ_abstracted v_constr)|];[|v_kn|]|]
 
+let v_mp_hint = v_sum "mp_hint" 1 [|[|v_mp|]|]
+
 let v_resolver =
   v_tuple "delta_resolver"
-    [|v_mp; v_map v_mp v_mp;
+    [|v_mp; v_map v_mp v_mp_hint;
       v_hmap v_kn v_delta_hint|]
 
 let v_subst =

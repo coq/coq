@@ -25,9 +25,15 @@ val empty_delta_resolver : ModPath.t -> delta_resolver
 
 val has_root_delta_resolver : ModPath.t -> delta_resolver -> bool
 
-(** [add_mp_delta_resolver mp v reso] assumes that root(reso) ⊆ mp. *)
+(** [add_mp_delta_resolver mp v reso] assumes that root(reso) ⊆ mp and mp ≠ v. *)
 val add_mp_delta_resolver :
   ModPath.t -> ModPath.t -> delta_resolver -> delta_resolver
+
+(** [lift_mp_delta_resolver mp reso] marks [mp] as being a bound name that must
+    be left untouched by substitution. This is the semantics of delayed
+    resolvers for functors and module types. Assumes that root(reso) ⊆ mp. *)
+val lift_mp_delta_resolver :
+  ModPath.t -> delta_resolver -> delta_resolver
 
 (** [add_kn_delta_resolver kn v reso] assumes that root(reso) ⊆ modpath(kn). *)
 val add_kn_delta_resolver :
