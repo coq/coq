@@ -110,7 +110,8 @@ let define ~poly ~cumulative ?loc name sigma c types =
 (* Boolean equality *)
 
 let declare_beq_scheme_gen ?locmap names kn =
-  ignore (define_mutual_scheme ?locmap beq_scheme_kind names kn)
+  let poly = UnivOptions.poly_for_ind (Global.lookup_mind kn) in
+  ignore (define_mutual_scheme ?locmap ~poly beq_scheme_kind names kn)
 
 let debug = CDebug.create ~name:"indschemes" ()
 
@@ -215,8 +216,9 @@ let declare_one_case_analysis_scheme ?loc ind =
       Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
   in
   let kelim = Inductiveops.elim_sort (mib,mip) in
+  let poly = UnivOptions.poly_for_ind mib in
   if Inductive.raw_eliminates_to (UnivGen.QualityOrSet.quality kelim) Sorts.Quality.qtype then
-    define_individual_scheme ?loc dep id ind
+    define_individual_scheme ?loc ~poly dep id ind
 
 (* Induction/recursion schemes *)
 
@@ -257,7 +259,7 @@ let declare_one_induction_scheme ?loc ind =
           (* the auto generated eliminator may be called "rect" instead of eg "rect_dep" *)
           Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
       in
-      define_individual_scheme ?loc kind id ind)
+      define_individual_scheme ?loc ~poly:(UnivOptions.poly_for_ind mib) kind id ind)
          elims
 
 let declare_induction_schemes ?(locmap=Locmap.default None) kn =
@@ -274,7 +276,8 @@ let declare_induction_schemes ?(locmap=Locmap.default None) kn =
 let declare_eq_decidability_gen ?locmap names kn =
   let mib = Global.lookup_mind kn in
   if mib.mind_finite <> Declarations.CoFinite then
-    define_mutual_scheme ?locmap eq_dec_scheme_kind names kn
+    let poly = UnivOptions.poly_for_ind mib in
+    define_mutual_scheme ?locmap ~poly eq_dec_scheme_kind names kn
 
 let eq_dec_scheme_msg ind = (* TODO: mutual inductive case *)
   str "Decidable equality on " ++ quote (Printer.pr_inductive (Global.env()) ind)
@@ -295,19 +298,20 @@ let ignore_error f x =
 let declare_rewriting_schemes ?loc ind =
   if Hipattern.is_inductive_equality (Global.env ()) ind then begin
     (* Expect the equality to be symmetric *)
-    ignore_error (define_individual_scheme ?loc sym_scheme_kind None) ind;
-    define_individual_scheme ?loc rew_r2l_scheme_kind None ind;
-    define_individual_scheme ?loc rew_r2l_dep_scheme_kind None ind;
-    define_individual_scheme ?loc rew_r2l_forward_dep_scheme_kind None ind;
+    let poly = UnivOptions.poly_for_ind (Global.lookup_mind (fst ind)) in
+    ignore_error (define_individual_scheme ?loc ~poly sym_scheme_kind None) ind;
+    define_individual_scheme ?loc ~poly rew_r2l_scheme_kind None ind;
+    define_individual_scheme ?loc ~poly rew_r2l_dep_scheme_kind None ind;
+    define_individual_scheme ?loc ~poly rew_r2l_forward_dep_scheme_kind None ind;
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
-    ignore_error (define_individual_scheme rew_l2r_scheme_kind None) ind;
+    ignore_error (define_individual_scheme ~poly rew_l2r_scheme_kind None) ind;
     ignore_error
-      (define_individual_scheme ?loc sym_involutive_scheme_kind None) ind;
+      (define_individual_scheme ?loc ~poly sym_involutive_scheme_kind None) ind;
     ignore_error
-      (define_individual_scheme ?loc rew_l2r_dep_scheme_kind None) ind;
+      (define_individual_scheme ?loc ~poly rew_l2r_dep_scheme_kind None) ind;
     ignore_error
-      (define_individual_scheme ?loc rew_l2r_forward_dep_scheme_kind None) ind
+      (define_individual_scheme ?loc ~poly rew_l2r_forward_dep_scheme_kind None) ind
   end
 
 let warn_cannot_build_congruence =
@@ -319,7 +323,9 @@ let declare_congr_scheme ?loc ind =
   let env = Global.env () in
   if Hipattern.is_inductive_equality env ind then begin
     match Rocqlib.lib_ref_opt "core.eq.type" with
-    | Some _ -> define_individual_scheme ?loc congr_scheme_kind None ind
+    | Some _ ->
+      let poly = UnivOptions.poly_for_ind (Global.lookup_mind (fst ind)) in
+      define_individual_scheme ?loc ~poly congr_scheme_kind None ind
     | None -> warn_cannot_build_congruence ()
   end
 

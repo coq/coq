@@ -183,7 +183,7 @@ let set_debug pos = debug := pos
 let get_debug () = if Flags.async_proofs_is_worker () then DebugOff else !debug
 
 let get_poly () =
-  PolyFlags.of_univ_poly (Attributes.is_universe_polymorphism ())
+  PolyFlags.of_univ_poly (UnivOptions.is_universe_polymorphism ())
 
 let log_trace = ref false
 

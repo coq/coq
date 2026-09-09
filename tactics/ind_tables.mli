@@ -66,7 +66,7 @@ val scheme_kind_name : _ scheme_kind -> string
 
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
-val define_individual_scheme : ?loc:Loc.t -> individual scheme_kind ->
+val define_individual_scheme : ?loc:Loc.t -> poly:PolyFlags.t -> individual scheme_kind ->
   Id.t option -> inductive -> unit
 
 module Locmap : sig
@@ -81,7 +81,7 @@ module Locmap : sig
   val lookup : locmap:t -> Names.inductive -> Loc.t option
 end
 
-val define_mutual_scheme : ?locmap:Locmap.t -> mutual scheme_kind ->
+val define_mutual_scheme : ?locmap:Locmap.t -> poly:PolyFlags.t -> mutual scheme_kind ->
   (int * Id.t) list -> MutInd.t -> unit
 
 (** Main function to retrieve a scheme in the cache *)

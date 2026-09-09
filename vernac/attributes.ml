@@ -274,37 +274,13 @@ let locality =
     ("global", single_key_parser ~name ~key:"global" false);
   ]
 
+open UnivOptions
 let ukey = "universes"
-
-let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]
-let is_universe_polymorphism =
-  let b = ref false in
-  let () = let open Goptions in
-    declare_bool_option
-      { optstage = Summary.Stage.Synterp;
-        optdepr  = None;
-        optkey   = universe_polymorphism_option_name;
-        optread  = (fun () -> !b);
-        optwrite = (:=) b }
-  in
-  fun () -> !b
 
 let polymorphic =
   qualify_attribute ukey (bool_attribute ~name:"polymorphic") >>= function
   | Some b -> return b
   | None -> return (is_universe_polymorphism())
-
-let { Goptions.get = is_polymorphic_inductive_cumulativity } =
-  Goptions.declare_bool_option_and_ref ~key:["Polymorphic"; "Inductive"; "Cumulativity"] ~value:true ()
-
-let { Goptions.get = is_polymorphic_definitions_cumulativity } =
-  Goptions.declare_bool_option_and_ref ~key:["Polymorphic"; "Definitions"; "Cumulativity"] ~value:true ()
-
-let { Goptions.get = is_polymorphic_assumptions_cumulativity } =
-  Goptions.declare_bool_option_and_ref ~key:["Polymorphic"; "Assumptions"; "Cumulativity"] ~value:false ()
-
-let { Goptions.get = should_collapse_sort_variables  } =
-  Goptions.declare_bool_option_and_ref ~key:["Collapse"; "Sorts"; "ToType"] ~value:true ()
 
 let collapse_sort_variables =
   let name = "collapse_sort_variables" in
@@ -313,14 +289,7 @@ let collapse_sort_variables =
 let cumulative kind =
   qualify_attribute ukey (bool_attribute ~name:"cumulative") >>= function
   | Some b -> return b
-  | None ->
-     match kind with
-     | PolyFlags.Inductive ->
-        return (is_polymorphic_inductive_cumulativity())
-     | PolyFlags.Assumption ->
-        return (is_polymorphic_assumptions_cumulativity())
-     | PolyFlags.Definition ->
-        return (is_polymorphic_definitions_cumulativity())
+  | None -> return (is_cumulative kind)
 
 let poly kind =
   (polymorphic ++ collapse_sort_variables) >>= fun (univ_poly, collapse_sort_variables) ->

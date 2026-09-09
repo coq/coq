@@ -43,7 +43,7 @@ let idents_of_name : Names.Name.t -> Names.Id.t list =
 let stm_allow_nested_proofs_option_name = ["Nested";"Proofs";"Allowed"]
 
 let options_affecting_stm_scheduling =
-  [ Attributes.universe_polymorphism_option_name;
+  [ UnivOptions.universe_polymorphism_option_name;
     stm_allow_nested_proofs_option_name;
     Pvernac.proof_mode_opt_name;
     Attributes.program_mode_option_name;

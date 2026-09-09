@@ -581,7 +581,7 @@ let template_univ_entry sigma udecl ~template_univs pseudo_sort_poly =
 let should_template ~user_template ~poly =
 match user_template, PolyFlags.univ_poly poly with
 | Some true, true ->
-  user_err Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
+  MaybeTemplate { force_template = true; }
 | Some false, _ | None, true ->
   NotTemplate
 | Some true, false ->
@@ -740,6 +740,14 @@ let interp_mutual_inductive_gen env0 ~flags udecl (uparamsl,paramsl,indl) notati
 
   let indnames = List.map (fun ind -> ind.ind_name) indl in
   let ninds = List.length indl in
+
+  let flags =
+    match flags.template with
+    | Some true ->
+      { flags with poly = PolyFlags.make ~univ_poly:false ~cumulative:false ~collapse_sort_variables:true }
+    | _ -> flags
+  in
+  (* Feedback.msg_debug (PolyFlags.pr flags.poly ++ str"template = " ++ pr_opt bool template); *)
 
   (* In case of template polymorphism, we need to compute more constraints *)
   let unconstrained_sorts = not (PolyFlags.univ_poly flags.poly) in
