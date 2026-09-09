@@ -309,7 +309,7 @@ let v_modtype_delta_hint =
 
 let v_modsubs_delta_hint =
   v_sum "delta_hint" 0
-    [|[|v_kn|]; [|v_fail "inline"|]; [|v_univ_abstracted v_constr|]|]
+    [|[|v_kn|]; [|v_fail "inline"|]; [|v_opt v_kn; v_univ_abstracted v_constr|]|]
 
 let v_modbody_resolver =
   v_tuple "delta_resolver"

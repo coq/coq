@@ -41,7 +41,7 @@ type mod_subst = [ `ModSubst ]
 type _ delta_hint =
 | Equiv : KerName.t -> 'a delta_hint
 | Inline : int -> mod_type delta_hint
-| InlineBody : constr UVars.univ_abstracted -> mod_subst delta_hint
+| InlineBody : KerName.t option * constr UVars.univ_abstracted -> mod_subst delta_hint
 
 (* NB: earlier constructor Prefix_equiv of ModPath.t
    is now stored in a separate table, see Deltamap.t below *)
@@ -60,7 +60,8 @@ module Deltamap = struct
     let fold kn (hint : a delta_hint) accu : b delta_hint KerName.Map.t = match hint with
     | Equiv kn' -> KerName.Map.add kn (Equiv kn') accu
     | Inline _ -> accu
-    | InlineBody _ -> accu
+    | InlineBody (None, _) -> accu
+    | InlineBody (Some kn', _) -> KerName.Map.add kn (Equiv kn') accu
     in
     { root = reso.root; mmap = reso.mmap;
       kmap = KerName.Map.fold fold reso.kmap KerName.Map.empty }
@@ -86,6 +87,7 @@ module Deltamap = struct
 
   let find_mp_opt mp reso = ModPath.Map.find_opt mp reso.mmap
   let find_kn kn reso = KerName.Map.find kn reso.kmap
+  let mem_kn kn reso = KerName.Map.mem kn reso.kmap
   let fold_kn f reso i = KerName.Map.fold f reso.kmap i
   let fold fmp fkn reso accu =
     ModPath.Map.fold fmp reso.mmap (KerName.Map.fold fkn reso.kmap accu)
@@ -195,7 +197,8 @@ let is_empty_subst = Umap.is_empty
 
 let string_of_hint (type a) pr (hint : a delta_hint) =
   match hint with
-  | InlineBody c -> str "inline(" ++ pr c ++ str ")"
+  | InlineBody (kn, c) ->
+    str "inline(" ++ pr_opt KerName.print kn ++ str " := " ++ pr c ++ str ")"
   | Inline lvl -> str "inline[" ++ int lvl ++ str "]"
   | Equiv kn -> str "equiv(" ++ KerName.print kn ++ str ")"
 
@@ -238,9 +241,9 @@ let debug_pr_subst subst =
 
 (** Extending a [delta_resolver] *)
 
-let add_inline_delta_resolver kn lev = Deltamap.add_kn kn (Inline lev)
-
-let add_inline_body_delta_resolver kn c = Deltamap.add_kn kn (InlineBody c)
+let add_inline_delta_resolver kn lev reso =
+  let () = assert (not (Deltamap.mem_kn kn reso)) in
+  Deltamap.add_kn kn (Inline lev) reso
 
 let add_kn_delta_resolver kn kn' =
   assert (Id.equal (KerName.label kn) (KerName.label kn'));
@@ -296,8 +299,16 @@ let kn_of_delta (type a) (resolve : a delta_resolver) kn =
   match Deltamap.find_kn kn resolve with
   | Equiv kn1 -> kn1
   | Inline _ -> by_prefix ()
-  | InlineBody _ -> by_prefix ()
+  | InlineBody (None, _) -> by_prefix ()
+  | InlineBody (Some kn1, _) ->
+    (* Beware of preserving sharing, see [find_prefix] above! *)
+    if KerName.equal kn1 kn then by_prefix () else kn1
   | exception Not_found -> by_prefix ()
+
+let add_inline_body_delta_resolver kn c resolve =
+  let kn' = kn_of_delta resolve kn in
+  let alias = if KerName.equal kn' kn then None else Some kn' in
+  Deltamap.add_kn kn (InlineBody (alias, c)) resolve
 
 let constant_of_delta_kn resolve kn =
   Constant.make kn (kn_of_delta resolve kn)
@@ -307,7 +318,7 @@ let mind_of_delta_kn resolve kn =
 
 let fold_inline_body_delta_resolver f resolver accu =
   let fold kn hint accu = match hint with
-  | InlineBody c -> f kn c accu
+  | InlineBody (_, c) -> f kn c accu
   | Equiv _ -> accu
   in
   Deltamap.fold_kn fold resolver accu
@@ -325,7 +336,7 @@ let inline_of_delta inline resolver =
 
 let search_delta_inline resolve kn1 kn2 =
   let find kn = match Deltamap.find_kn kn resolve with
-    | InlineBody o -> Some o
+    | InlineBody (_, o) -> Some o
     | Equiv _ -> raise Not_found
   in
   try find kn1
@@ -364,7 +375,12 @@ let subst_kn_hint_subst subst kn : mod_subst delta_hint =
   | Some (mp', resolve) ->
     let kn' = KerName.make mp' l in
     match Deltamap.find_kn kn' resolve with
-    | InlineBody _ as hint -> hint
+    | InlineBody (_, body) ->
+      (* Keep the body, but pair it with the canonical name of the key we are
+         building, not the one the entry we found happens to carry. *)
+      let kn'' = kn_of_delta resolve kn' in
+      let alias = if KerName.equal kn'' kn' then None else Some kn'' in
+      InlineBody (alias, body)
     | Equiv _ -> Equiv (kn_of_delta resolve kn')
     | exception Not_found -> Equiv (kn_of_delta resolve kn')
 
@@ -648,12 +664,15 @@ let subst_mp_delta (type a) subst mp mkey : a delta_resolver * ModPath.t =
              under [mp1]. The latter are typically absent so we must not drop
              the former to preserve canonicity of the names. *)
           let subst' = map_mp mp' mkey (empty_delta_resolver mkey) in
-          let transfer kn (hint : mod_subst delta_hint) accu : a delta_resolver = match hint with
-          | InlineBody _ -> accu
-          | Equiv kn' ->
-            if mp_in_mp mp' (KerName.modpath kn) then
+          let transfer kn (hint : mod_subst delta_hint) accu : a delta_resolver =
+            let kn' = match hint with
+            | InlineBody (alias, _) -> alias
+            | Equiv kn' -> Some kn'
+            in
+            match kn' with
+            | Some kn' when mp_in_mp mp' (KerName.modpath kn) ->
               Deltamap.add_kn (subst_kn subst' kn) (Equiv kn') accu
-            else accu
+            | _ -> accu
           in
           Deltamap.fold_kn transfer resolve reso
       in
@@ -680,7 +699,9 @@ let gen_subst_delta_resolver (type a) (handler : a inline_handler) dom subst (re
       | InlineDrop -> Equiv (subst_kn_delta subst kequ)
       | InlineKeep -> subst_kn_hint_subst subst kequ
       end
-    | InlineBody t -> InlineBody (UVars.map_univ_abstracted (subst_mps subst) t)
+    | InlineBody (kn', t) ->
+      InlineBody (Option.map (fun kn -> subst_kn_delta subst kn) kn',
+                  UVars.map_univ_abstracted (subst_mps subst) t)
     | Inline lev -> Inline lev
     in
     Deltamap.add_kn kkey' hint' rslv
@@ -710,7 +731,7 @@ let update_delta_resolver (type a) resolver1 resolver2 : a delta_resolver =
     a delta_resolver = fun kkey hint1 rslv ->
     let hint : a delta_hint = match hint1 with
       | Equiv kequ -> Equiv (kn_of_delta resolver2 kequ)
-      | InlineBody _ -> hint1
+      | InlineBody (kn', t) -> InlineBody (Option.map (fun kn -> kn_of_delta resolver2 kn) kn', t)
       | Inline _ ->
         (try Deltamap.find_kn kkey resolver2 with Not_found -> hint1)
     in
