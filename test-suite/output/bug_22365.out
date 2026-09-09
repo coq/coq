@@ -1,0 +1,8 @@
+File "./output/bug_22365.v", line 5, characters 0-17:
+Warning: The following axiom must be realized in the extracted code:
+ array.
+ [extraction-axiom-to-realize,extraction,default]
+(** val a3lit : nat array **)
+
+let a3lit =
+  (ExtrNative.of_array [|O; (S O); (S (S O))|] (S (S (S (S O)))))
