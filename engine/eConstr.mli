@@ -76,6 +76,7 @@ sig
 
   val make : UVars.Instance.t -> t
   val kind : Evd.evar_map -> t -> UVars.Instance.t
+  val equal : Evd.evar_map -> t -> t -> bool
   val empty : t
   val is_empty : t -> bool
   val length : t -> int * int
