@@ -185,6 +185,7 @@ sig
   (** True if at least one cumulativity variance is not [Invariant] *)
   val cumulative : t -> bool
 
+  val is_empty : t -> bool
 end
 
 type variances = Variances.t

@@ -486,6 +486,7 @@ struct
     in
     Array.exists not_cumul_invariant variances
 
+  let is_empty = Array.is_empty
 end
 
 type variances = Variances.t
