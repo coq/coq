@@ -316,6 +316,50 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
                Anyway [check_conv] will handle that afterwards. *)
             check_conv (NotConvertibleBodyField (Some (env, c1, c2))) cst poly CONV env c1 c2))
 
+let check_constant_alias env cst cb =
+  let user = Constant.user cst in
+  let canonical = Constant.canonical cst in
+  if KerName.equal user canonical then ()
+  else
+    let target = Constant.make1 canonical in
+    let target_body = Environ.lookup_constant target env in
+    let target_body =
+      match target_body.const_body, cb.const_body with
+      | (Undef _ | OpaqueDef _), Def _ ->
+        let instance =
+          make_abstract_instance (constant_polymorphic_context target_body)
+        in
+        { target_body with const_body = Def (mkConstU (target, instance)) }
+      | _ -> target_body
+    in
+    let state = Environ.universes env, Conversion.checked_universes in
+    let _ =
+      check_constant state [] env (KerName.label user) (Constant target_body) cb
+        empty_subst empty_subst
+    in
+    ()
+
+let check_inductive_alias env mind mib =
+  let user = MutInd.user mind in
+  let canonical = MutInd.canonical mind in
+  if KerName.equal user canonical then ()
+  else
+    let target = MutInd.make1 canonical in
+    let target_body = Environ.lookup_mind target env in
+    let target_mp, target_label = KerName.repr canonical in
+    let user_mp = KerName.modpath user in
+    let target_resolver = empty_delta_resolver target_mp in
+    let user_resolver =
+      add_kn_delta_resolver user canonical (empty_delta_resolver user_mp)
+    in
+    let state = Environ.universes env, Conversion.checked_universes in
+    let _ =
+      check_inductive state [] env target_mp target_label
+        (IndType ((target, 0), target_body)) user_mp mib empty_subst empty_subst
+        target_resolver user_resolver
+    in
+    ()
+
 let rec check_modules state trace env mp1 msb1 mp2 msb2 subst1 subst2 =
   let mty1 = module_type_of_module msb1 in
   let mty2 = module_type_of_module msb2 in

@@ -103,6 +103,7 @@ let check_constant_declaration env opac kn cb opacify =
     let opac = { opac with st_retro = (ind_retro, Cmap_env.remove kn cst_retro) } in
     Some retro, opac
   in
+  let () = Subtyping.check_constant_alias env kn cb in
   match body with
   | Some body when opacify -> retro, register_opacified_constant env opac kn body
   | Some _ | None -> retro, opac
@@ -339,7 +340,9 @@ and check_structure_field env opac mp lab res opacify = function
         let opac = { opac with st_retro = (Mindmap_env.remove kn ind_retro, cst_retro) } in
         opac
       in
-      CheckInductive.check_inductive env kn mib retro, opac
+      let env' = CheckInductive.check_inductive env kn mib retro in
+      let () = Subtyping.check_inductive_alias env kn mib in
+      env', opac
   | SFBmodule msb ->
       let mp = MPdot(mp, lab) in
       let opac = check_module env opac mp msb opacify in
