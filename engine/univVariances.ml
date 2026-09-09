@@ -287,15 +287,18 @@ let register_universe_variances_of_partial_proofs env sigma proofs =
 
 let register_universe_variances_of_named_context env sigma ~as_types ?(cumul_pb=Conv) ctx =
   let status = init_status env sigma in
-  let fold_binder i binder status =
+  let fold_binder i binder (env, status) =
     let open Context.Named.Declaration in
-    if as_types then
-      let status = compute_variances_type env sigma status (get_type binder) in
-      Option.fold_left (compute_variances_body env sigma) status (get_value binder)
-    else
-      let status = compute_variances env sigma status (InBinder i) (Conv, cumul_pb) (get_type binder) in
-      Option.cata (compute_variances env sigma status (InBinder i) (Conv, cumul_pb)) status (get_value binder)
+    let status = 
+      if as_types then
+        let status = compute_variances_type env sigma status (get_type binder) in
+        Option.fold_left (compute_variances_body env sigma) status (get_value binder)
+      else
+        let status = compute_variances env sigma status (InBinder i) (Conv, cumul_pb) (get_type binder) in
+        Option.cata (compute_variances env sigma status (InBinder i) (Conv, cumul_pb)) status (get_value binder)
+    in
+    (EConstr.push_named Environ.ProofVar binder env, status)
   in
-  let status = CList.fold_right_i fold_binder 0 ctx status in
+  let _env, status = CList.fold_right_i fold_binder 0 ctx (env, status) in
   debug Pp.(fun () -> str"Variances in named context: " ++ Inf.pr (Termops.pr_evd_level sigma) status);
   finalize sigma status

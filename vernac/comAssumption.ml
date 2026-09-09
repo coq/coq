@@ -202,6 +202,7 @@ let find_binding_kind id impls =
 
 let interp_context_gen scope ~program_mode ~poly ~kind ~autoimp_enable ~coercions env sigma l =
   let initial = sigma in
+  let env0 = env in
   let sigma, (ienv, ((env, ctx), impls, locs)) = interp_named_context_evars ~program_mode ~poly ~autoimp_enable env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env ~initial sigma in
@@ -211,7 +212,7 @@ let interp_context_gen scope ~program_mode ~poly ~kind ~autoimp_enable ~coercion
       | Locality.Discharge -> false, InferCumulativity.Conv
       | Locality.Global _ -> true, InferCumulativity.Conv
     in
-    UnivVariances.register_universe_variances_of_named_context env sigma ~as_types ~cumul_pb ctx in
+    UnivVariances.register_universe_variances_of_named_context env0 sigma ~as_types ~cumul_pb ctx in
   let sigma, ctx = Evarutil.finalize ~poly ~partial:true sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in
