@@ -55,7 +55,8 @@ let l_sr x y =
 
     (* arithmetic shift (for sint63) *)
 let a_sr x y =
-  if 0 <= y && y < 63 then x asr y else 0
+  if 0 <= y && y < 63 then x asr y
+  else if 0 <= x || y < 0 then 0 else -1
 
 let l_and x y = x land y
 [@@ocaml.inline always]

@@ -65,11 +65,14 @@
     accu = uint63_zero(); \
   }while(0)
 #define Uint63_asr(x,y) do{ \
+    value uint63_asr_x__ = (x); \
     value uint63_asr_y__ = (y); \
-    if (uint63_asr_y__ < (uint64_t) 127) \
+    if (uint63_asr_y__ < (uint64_t) 127)  /* 0 <= y < 63 */ \
       accu = (value)(((int64_t)(x) >> uint63_of_value(uint63_asr_y__)) | 1); \
-    else \
+    else if ((int64_t)uint63_asr_x__ >= 0 || (int64_t)uint63_asr_y__ < 0) \
       accu = uint63_zero(); \
+    else \
+      accu = (value)(int64_t)(-1); \
   }while(0)
 
 /* addmuldiv(p,x,y) = x * 2^p + y / 2 ^ (63 - p) */

@@ -94,6 +94,7 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [incompatibility axiom of choice and excluded-middle with elimination of large singletons to Set](#incompatibility-axiom-of-choice-and-excluded-middle-with-elimination-of-large-singletons-to-set)
       - [Incorrect specification of PrimFloat.leb](#incorrect-specification-of-primfloatleb)
       - [Incorrect implementation of SFclassify.](#incorrect-implementation-of-sfclassify)
+      - [Incorrect implementation of PrimInt.asr](#incorrect-implementation-of-primintasr)
       - [nativenorm reading back closures as arbitrary floating-point values](#nativenorm-reading-back-closures-as-arbitrary-floating-point-values)
       - [guard condition issue made it inconsistent with propositional extensionality in library Sets](#guard-condition-issue-made-it-inconsistent-with-propositional-extensionality-in-library-sets)
     - [Deserialization](#deserialization)
@@ -1153,6 +1154,17 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - exploit: test-suite/bugs/bug_16096.v
 - GH_issue_number: rocq-prover/rocq#16096
 - risk: proof of false when using the axioms in Floats.Axioms.
+
+#### Incorrect implementation of PrimInt.asr
+
+- component: primitive integers library
+- introduced: 8.14
+- impacted released versions: 8.14.0-9.2.0
+- fixed by fixing the implementation: rocq-prover/rocq#22464
+- found by: Xiaotian Zhou
+- exploit: https://github.com/rocq-prover/rocq/issues/22462
+- GH_issue_number: rocq-prover/rocq#22462
+- risk: proof of false when using the axioms in Sint63Axioms.
 
 #### nativenorm reading back closures as arbitrary floating-point values
 

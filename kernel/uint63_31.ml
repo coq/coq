@@ -72,7 +72,7 @@ let l_sr x y =
 let a_sr x y =
   if les 0L y && lts y 63L then
     mask63 (Int64.shift_right (Int64.shift_left x 1) ((Int64.to_int y) + 1))
-  else 0L
+  else if les 0L x || lts y 0L then 0L else maxuint63  (* -1 *)
 
 let l_and x y = Int64.logand x y
 let l_or x y = Int64.logor x y

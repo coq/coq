@@ -39,3 +39,21 @@ Check (eq_refl 0 <: asr 73 (-2)%sint63 = 0).
 Check (eq_refl 0 <<: asr 73 (-2)%sint63 = 0).
 Definition compute6 := Eval compute in asr 73 (-2)%sint63.
 Check (eq_refl compute6 : 0 = 0).
+
+Check (eq_refl : asr (-13)%sint63 62 = -1).
+Check (eq_refl (-1) <: asr (-13)%sint63 62 = -1).
+Check (eq_refl (-1) <<: asr (-13)%sint63 62 = -1).
+Definition compute7 := Eval compute in asr (-13)%sint63 62.
+Check (eq_refl compute7 : -1 = -1).
+
+Check (eq_refl : asr (-13)%sint63 63 = -1).
+Check (eq_refl (-1) <: asr (-13)%sint63 63 = -1).
+Check (eq_refl (-1) <<: asr (-13)%sint63 63 = -1).
+Definition compute8 := Eval compute in asr (-13)%sint63 63.
+Check (eq_refl compute8 : -1 = -1).
+
+Check (eq_refl : asr (-13)%sint63 64 = -1).
+Check (eq_refl (-1) <: asr (-13)%sint63 64 = -1).
+Check (eq_refl (-1) <<: asr (-13)%sint63 64 = -1).
+Definition compute9 := Eval compute in asr (-13)%sint63 64.
+Check (eq_refl compute9 : -1 = -1).
