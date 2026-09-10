@@ -268,42 +268,47 @@ let map_mbid mbid mp resolve =
   add_mbid mbid mp resolve empty_subst
 let map_mp mp1 mp2 resolve = add_mp mp1 mp2 resolve empty_subst
 
-let find_prefix resolve mp =
+let find_prefix_opt resolve mp =
   let rec sub_mp mp = match Deltamap.find_mp_opt mp resolve with
-  | Some (MPequiv mp') -> mp'
-  | Some MPlift -> mp
+  | Some (MPequiv mp') -> Some mp'
+  | Some MPlift -> None
   | None ->
     match mp with
     | MPdot (mp1, l) ->
-      (* Preserving sharing is not an optimisation: [progress] in [subst_con0]
-         and [subst_mind] tests with [!=]. This should be fixed at some point. *)
-      let mp1' = sub_mp mp1 in
-      if mp1' == mp1 then mp else MPdot (mp1', l)
-    | MPbound _ | MPfile _ -> mp
+      begin match sub_mp mp1 with
+      | Some mp1' -> Some (MPdot (mp1', l))
+      | None -> None
+      end
+    | MPbound _ | MPfile _ -> None
   in
   sub_mp mp
 
-(* TODO: remove the indirection at some point *)
-let mp_of_delta = find_prefix
+let mp_of_delta resolve mp = match find_prefix_opt resolve mp with
+| Some mp' -> mp'
+| None -> mp
 
-let mp_is_alias resolve mp = not (ModPath.equal mp (find_prefix resolve mp))
+let mp_is_alias resolve mp = not (ModPath.equal mp (mp_of_delta resolve mp))
 
 (** Applying a resolver to a kernel name *)
 
-let kn_of_delta (type a) (resolve : a delta_resolver) kn =
+let kn_of_delta_opt (type a) (resolve : a delta_resolver) kn =
+  let answer kn' = if KerName.equal kn kn' then None else Some kn' in
   let by_prefix () =
-    let mp,l = KerName.repr kn in
-    let new_mp = find_prefix resolve mp in
-    if mp == new_mp then kn else KerName.make new_mp l
+    let mp, l = KerName.repr kn in
+    match find_prefix_opt resolve mp with
+    | Some mp' -> answer (KerName.make mp' l)
+    | None -> None
   in
   match Deltamap.find_kn kn resolve with
-  | Equiv kn1 -> kn1
+  | Equiv kn1 -> answer kn1
   | Inline _ -> by_prefix ()
   | InlineBody (None, _) -> by_prefix ()
-  | InlineBody (Some kn1, _) ->
-    (* Beware of preserving sharing, see [find_prefix] above! *)
-    if KerName.equal kn1 kn then by_prefix () else kn1
+  | InlineBody (Some kn1, _) -> answer kn1
   | exception Not_found -> by_prefix ()
+
+let kn_of_delta resolve kn = match kn_of_delta_opt resolve kn with
+| Some kn' -> kn'
+| None -> kn
 
 let add_inline_body_delta_resolver kn c resolve =
   let kn' = kn_of_delta resolve kn in
@@ -411,10 +416,6 @@ let subst_dual_mp subst mp1 mp2 =
     | None, Some (mp2',resolve) -> mp1, mp2', resolve, false
     | Some (mp1',_), Some (mp2',resolve) -> mp1', mp2', resolve, false
 
-let progress f x ~orelse =
-  let y = f x in
-  if y != x then y else orelse
-
 let subst_mind subst mind =
   let mpu,l = KerName.repr (MutInd.user mind) in
   let mpc = KerName.modpath (MutInd.canonical mind) in
@@ -422,8 +423,9 @@ let subst_mind subst mind =
     let mpu,mpc,resolve,user = subst_dual_mp subst mpu mpc in
     let knu = KerName.make mpu l in
     let knc = if mpu == mpc then knu else KerName.make mpc l in
-    let knc' =
-      progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
+    let knc' = match kn_of_delta_opt resolve (if user then knu else knc) with
+    | Some kn -> kn
+    | None -> knc
     in
     MutInd.make knu knc'
   with No_subst -> mind
@@ -446,8 +448,10 @@ let subst_con0 subst cst =
   let mpu,mpc,resolve,user = subst_dual_mp subst mpu mpc in
   let knu = KerName.make mpu l in
   let knc = if mpu == mpc then knu else KerName.make mpc l in
-  let knc' =
-    progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc in
+  let knc' = match kn_of_delta_opt resolve (if user then knu else knc) with
+  | Some kn -> kn
+  | None -> knc
+  in
   let cst' = Constant.make knu knc' in
   cst', search_delta_inline resolve knu knc
 
@@ -653,7 +657,7 @@ let subst_mp_delta (type a) subst mp mkey : a delta_resolver * ModPath.t =
     None -> empty_delta_resolver mp, mp
   | Some (mp',resolve) ->
     (* root(resolve) ⊆ mp' *)
-      let mp1 = find_prefix resolve mp' in
+      let mp1 = mp_of_delta resolve mp' in
       let resolve1 = subset_prefixed_by mp1 resolve in
       let reso = subst_dom_delta_resolver mp1 mkey resolve1 in
       let reso =
@@ -725,7 +729,7 @@ let update_delta_resolver (type a) resolver1 resolver2 : a delta_resolver =
   let mp_apply_rslv mkey hint rslv = match hint with
     | MPlift -> Deltamap.add_mp_hint mkey MPlift rslv
     | MPequiv mequ ->
-      Deltamap.add_mp_hint mkey (MPequiv (find_prefix resolver2 mequ)) rslv
+      Deltamap.add_mp_hint mkey (MPequiv (mp_of_delta resolver2 mequ)) rslv
   in
   let kn_apply_rslv : KerName.t -> a delta_hint -> a delta_resolver ->
     a delta_resolver = fun kkey hint1 rslv ->
