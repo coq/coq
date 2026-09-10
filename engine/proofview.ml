@@ -898,8 +898,11 @@ let give_up =
 
 module Progress = struct
 
+  let eq_evar : (evd:Evd.evar_map -> extended_evd:Evd.evar_map -> goal -> goal -> bool) ref =
+    ref (fun ~evd:_ ~extended_evd:_ _ _ -> assert false)
+
   let eq_constr evd extended_evd =
-    Evarutil.eq_constr_univs_test ~evd ~extended_evd
+    Evarutil.eq_constr_univs_test ~evd ~extended_evd ~eq_evar:(!eq_evar ~evd ~extended_evd)
 
   (** equality function on hypothesis contexts *)
   let eq_named_context_val sigma1 sigma2 ctx1 ctx2 =
@@ -938,7 +941,7 @@ module Progress = struct
 
   let eq_evar_info sigma1 sigma2 ei1 ei2 =
     eq_evar_concl sigma1 sigma2 ei1 ei2 &&
-    eq_named_context_val sigma1 sigma2 (Evd.evar_hyps ei1) (Evd.evar_hyps ei2) &&
+    eq_named_context_val sigma1 sigma2 (Evd.evar_filtered_hyps ei1) (Evd.evar_filtered_hyps ei2) &&
     eq_evar_body sigma1 sigma2 (Evd.evar_body ei1) (Evd.evar_body ei2)
 
   let fast_eq_evar_body (type a1 a2) (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
@@ -969,10 +972,12 @@ module Progress = struct
   let goal_equal ~evd ~extended_evd evar extended_evar =
     let EvarInfo evi = Evd.find evd evar in
     let EvarInfo extended_evi = Evd.find extended_evd extended_evar in
+    if not (Evar.equal evar extended_evar) && Evd.mem evd extended_evar then false else
     if fast_eq_evar_info evi extended_evi then
       eq_evar_info evd extended_evd evi extended_evi
     else false
 
+  let () = eq_evar := goal_equal
 end
 
 let tclPROGRESS t =

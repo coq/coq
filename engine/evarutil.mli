@@ -149,14 +149,16 @@ val finalize : ?abort_on_undefined_evars:bool -> ?poly:PolyFlags.t -> evar_map -
 val kind_of_term_upto : evar_map -> Constr.constr ->
   (Constr.constr, Constr.types, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term
 
-(** [eq_constr_univs_test ~evd ~extended_evd t u] tests equality of
+(** [eq_constr_univs_test ~evd ~extended_evd ~eq_evar t u] tests equality of
     [t] and [u] up to existential variable instantiation and
     equalisable universes. The term [t] is interpreted in [evd] while
     [u] is interpreted in [extended_evd]. The universe constraints in
-    [extended_evd] are assumed to be an extension of those in [evd]. *)
+    [extended_evd] are assumed to be an extension of those in [evd].
+    Undefined evars are compared upto [eq_evar] *)
 val eq_constr_univs_test :
     evd:Evd.evar_map ->
     extended_evd:Evd.evar_map ->
+    eq_evar:(Evar.t -> Evar.t -> bool) ->
     constr ->
     constr ->
     bool
