@@ -297,34 +297,31 @@ let v_section_ctxt = v_enum "emptylist" 1
 
 let v_univ_abstracted v = v_tuple "univ_abstracted" [|v;v_abs_context|]
 
-let v_modbody_delta_hint =
-  v_sum "delta_hint" 0
-    [|[|v_kn|]; [|v_fail "inline"|]; [|v_fail "inline"|]|]
-
 let v_mp_hint = v_sum "mp_hint" 1 [|[|v_mp|]|]
 
-let v_modtype_delta_hint =
-  v_sum "delta_hint" 0
-    [|[|v_kn|]; [|v_int|]; [|v_fail "inline"|]|]
+let v_modbody_inlining =
+  v_fail "inline"
 
-let v_modsubs_delta_hint =
-  v_sum "delta_hint" 0
-    [|[|v_kn|]; [|v_fail "inline"|]; [|v_opt v_kn; v_univ_abstracted v_constr|]|]
+let v_modtype_inlining =
+  v_sum "inlining" 0 [|[|v_int|]; [|v_fail "inline"|]|]
+
+let v_modsubs_inlining =
+  v_sum "inlining" 0 [|[|v_fail "inline"|]; [|v_univ_abstracted v_constr|]|]
 
 let v_modbody_resolver =
   v_tuple "delta_resolver"
     [|v_mp; v_map v_mp v_mp_hint;
-      v_hmap v_kn v_modbody_delta_hint|]
+      v_hmap v_kn v_kn; v_hmap v_kn v_modbody_inlining|]
 
 let v_modtype_resolver =
   v_tuple "delta_resolver"
     [|v_mp; v_map v_mp v_mp_hint;
-      v_hmap v_kn v_modtype_delta_hint|]
+      v_hmap v_kn v_kn; v_hmap v_kn v_modtype_inlining|]
 
 let v_modsubs_resolver =
   v_tuple "delta_resolver"
     [|v_mp; v_map v_mp v_mp_hint;
-      v_hmap v_kn v_modsubs_delta_hint|]
+      v_hmap v_kn v_kn; v_hmap v_kn v_modsubs_inlining|]
 
 let v_subst =
   v_annot_c ("substitution", v_map v_mp v_modsubs_resolver)
