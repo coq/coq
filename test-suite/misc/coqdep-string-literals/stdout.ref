@@ -1,0 +1,6 @@
+Lib.vo Lib.glob Lib.v.beautified Lib.required_vo: Lib.v @ROCQWORKER@
+dot_in_notation.vo dot_in_notation.glob dot_in_notation.v.beautified dot_in_notation.required_vo: dot_in_notation.v @ROCQWORKER@
+dot_in_string.vo dot_in_string.glob dot_in_string.v.beautified dot_in_string.required_vo: dot_in_string.v @ROCQWORKER@
+escaped_quote_in_string.vo escaped_quote_in_string.glob escaped_quote_in_string.v.beautified escaped_quote_in_string.required_vo: escaped_quote_in_string.v @ROCQWORKER@
+paren_in_string.vo paren_in_string.glob paren_in_string.v.beautified paren_in_string.required_vo: paren_in_string.v @ROCQWORKER@
+require_after_string.vo require_after_string.glob require_after_string.v.beautified require_after_string.required_vo: require_after_string.v Lib.vo @ROCQWORKER@

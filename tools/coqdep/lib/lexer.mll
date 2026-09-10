@@ -70,7 +70,7 @@
     let rec ignore_to_dot curr len buf =
       if len <= curr then curr
       else match Bytes.unsafe_get buf curr with
-      | '.' -> curr
+      | '.' | '"' -> curr
       | '(' ->
         if curr + 1 < len && Bytes.unsafe_get buf (curr + 1) != '*' then
           ignore_to_dot (curr + 1) len buf
@@ -251,9 +251,23 @@ and skip_to_dot = parse
 and slow_skip_to_dot = parse
   | "(*"
       { comment lexbuf; skip_to_dot lexbuf }
+  | '"'
+      { skip_string lexbuf; skip_to_dot lexbuf }
   | dot { () }
   | eof { syntax_error lexbuf }
   | _   { skip_to_dot lexbuf }
+
+(* Skip the body of a string literal, whose opening quote has already been
+   consumed.  A doubled quote is an escaped quote, as in the Rocq lexer. *)
+and skip_string = parse
+  | "\"\""
+      { skip_string lexbuf }
+  | '"'
+      { () }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { skip_string lexbuf }
 
 and parse_dot = parse
   | dot { () }

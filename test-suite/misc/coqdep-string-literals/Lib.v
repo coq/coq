@@ -1,0 +1,1 @@
+Definition n := 0.
