@@ -326,7 +326,7 @@ let rec pp_expr table par env args =
         str "(" ++ str (Pstring.compile s) ++ str ")"
     | MLparray(t,def) ->
       assert (args=[]);
-      let tuple = pp_array (pp_expr table true env []) (Array.to_list t) in
+      let tuple = prlist_with_sep pr_semicolon (pp_expr table true env []) (Array.to_list t) in
       let def = pp_expr table true env [] def in
       str "(ExtrNative.of_array [|" ++ tuple ++ str "|]" ++ spc () ++ def ++ str")"
 
