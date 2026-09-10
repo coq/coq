@@ -806,9 +806,14 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
     if Sorts.equal s1 s2 then true
     else Sorts.equal (EConstr.ESorts.(kind sigma (make s1))) (EConstr.ESorts.(kind sigma (make s2)))
   in
-  let eq_existential eq e1 e2 =
-    let eq c1 c2 = eq 0 (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
-    EConstr.eq_existential evd eq (EConstr.of_existential e1) (EConstr.of_existential e2)
+  let eq_existential eq (e1:existential) (e2:existential) =
+    let t = mkEvar e1 in
+    match kind_of_term_upto extended_evd t with
+    | Evar e1' ->
+      let eq c1 c2 = eq 0 (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
+      (* the evar map is only used to expand the skip list if Evar.equal e1' e2 *)
+      EConstr.eq_existential extended_evd eq (EConstr.of_existential e1') (EConstr.of_existential e2)
+    | _ -> false
   in
   let kind1 = kind_of_term_upto evd in
   let kind2 = kind_of_term_upto extended_evd in
