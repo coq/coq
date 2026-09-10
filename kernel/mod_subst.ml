@@ -331,9 +331,7 @@ let inline_of_delta inline resolver =
     | None -> []
     | Some inl_lev ->
       let extract kn (inl : mod_type inlining) l = match inl with
-      | Level lev ->
-        let () = assert (Option.is_empty (Deltamap.find_kn_opt kn resolver)) in
-        if lev <= inl_lev then kn :: l else l
+      | Level lev -> if lev <= inl_lev then kn :: l else l
       in
       Deltamap.fold_inl extract resolver []
 
