@@ -179,8 +179,15 @@ let lookup_modtype kn = Environ.lookup_modtype kn (env())
 
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
+type uncooked_proofterm = {
+  uncooked_body : Constr.t;
+  uncooked_bound : Names.Id.Set.t;
+  uncooked_context : Constr.rel_context;
+}
+
 type indirect_accessor = {
   access_proof : Opaqueproof.opaque -> Opaqueproof.opaque_proofterm option;
+  access_uncooked_proof : Opaqueproof.opaque -> uncooked_proofterm option;
 }
 
 let force_proof access o = match access.access_proof o with

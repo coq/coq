@@ -640,6 +640,9 @@ val hcons : constr Hashcons.f
 val hasheq_kind : (_ kind_of_term as 'k) -> 'k -> bool
 (** Checks physical equality of every immediate element (goes inside tuples and arrays) *)
 
+val hash_bounded : constr -> int
+(** A hash of the top of the term, computed by looking a bounded distance into it *)
+
 val debug_print : constr -> Pp.t
 val debug_print_fix : ('a -> Pp.t) -> ('a, 'a, 'r) pfixpoint -> Pp.t
 

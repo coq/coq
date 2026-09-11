@@ -322,6 +322,9 @@ let make_cooking_info ~recursive expand_info hyps uctx =
   in
   info, abstr_inst_info
 
+let discharges_inductive info =
+  not (Mindmap_env.is_empty (snd info.expand_info))
+
 let names_info info =
   let fold accu id = Id.Set.add (NamedDecl.get_id id) accu in
   List.fold_left fold Id.Set.empty info.abstr_info.abstr_ctx

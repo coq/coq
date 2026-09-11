@@ -48,6 +48,8 @@ val make_cooking_info : recursive:MutInd.t option -> expand_info ->
 
 val names_info : cooking_info -> Id.Set.t
 
+val discharges_inductive : cooking_info -> bool
+
 val universe_context_of_cooking_info : cooking_info -> UVars.AbstractContext.t
 
 val instance_of_cooking_info : cooking_info -> Constr.t array

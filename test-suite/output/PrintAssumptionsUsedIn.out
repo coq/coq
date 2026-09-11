@@ -1,0 +1,36 @@
+Axioms:
+bad : False
+used in two_types to prove
+ bool
+used in two_types to prove
+ nat
+Axioms:
+bad : False
+used in second to prove
+ nat
+used in first to prove
+ nat
+Axioms:
+bad : False
+used in twice to prove
+ nat
+used in twice to prove
+ nat
+Axioms:
+bad : False
+used in contexts to prove
+ y
+used in contexts to prove
+ x
+Axioms:
+bad : False
+used in admitted_thrice to prove
+ True
+used in admitted_thrice to prove
+ True
+used in admitted_thrice to prove
+ True
+Axioms:
+foo : nat
+Axioms:
+bad : False

@@ -208,24 +208,47 @@ let access_table what tables dp i =
   in
   Opaques.get_opaque_disk i t
 
+let stored_opaque o =
+  let (_sub, _ci, dp, i) = Opaqueproof.repr o in
+  if DirPath.equal dp (Global.current_dirpath ()) then
+    Opaques.get_current_opaque i
+  else
+    access_table "opaque proofs" opaque_tables dp i
+
 let access_opaque_table o =
-  let (sub, ci, dp, i) = Opaqueproof.repr o in
-  let ans =
-    if DirPath.equal dp (Global.current_dirpath ()) then
-      Opaques.get_current_opaque i
-    else
-      let what = "opaque proofs" in
-      access_table what opaque_tables dp i
-  in
-  match ans with
+  let (sub, ci, _, _) = Opaqueproof.repr o in
+  match stored_opaque o with
   | None -> None
   | Some (c, ctx) ->
     let (c, ctx) = Discharge.cook_opaque_proofterm ci (c, ctx) in
     let c = Mod_subst.subst_mps_list sub c in
     Some (c, ctx)
 
+(* The same term, with the module substitutions applied but not the section
+   discharge, plus what the discharge would have done.  [None] when the
+   discharge generalizes an inductive of the section, since a [Case]
+   node of the stored term then has fewer parameters than the discharged
+   inductive declares. *)
+let uncooked_opaque_table o =
+  let (sub, ci, _, _) = Opaqueproof.repr o in
+  if List.exists Cooking.discharges_inductive ci then None
+  else match stored_opaque o with
+  | None -> None
+  | Some (c, _) ->
+    let subst = Mod_subst.subst_mps_list sub in
+    let fold info (bound, ctx) =
+      let cache = Cooking.create_cache info in
+      (Id.Set.union bound (Cooking.names_info info),
+       Context.Rel.map subst (Cooking.rel_context_of_cooking_cache cache) @ ctx)
+    in
+    let (bound, context) = List.fold_right fold ci (Id.Set.empty, []) in
+    Some { Global.uncooked_body = subst c;
+           Global.uncooked_bound = bound;
+           Global.uncooked_context = context }
+
 let indirect_accessor = {
   Global.access_proof = access_opaque_table;
+  Global.access_uncooked_proof = uncooked_opaque_table;
 }
 
 (************************************************************************)

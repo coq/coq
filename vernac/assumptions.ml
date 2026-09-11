@@ -199,22 +199,110 @@ let fold_with_full_binders g f n acc c =
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
 
+(** A body to walk: a term, plus what the section discharge would have done to
+    it if we had paid for it (nothing, for a body that comes out of the
+    environment already discharged). *)
+
+let no_discharge c =
+  { Global.uncooked_body = c;
+    Global.uncooked_bound = Id.Set.empty;
+    Global.uncooked_context = [] }
+
 let get_constant_body access kn =
   let cb = lookup_constant kn in
   match cb.const_body with
   | Undef _ | Primitive _ | Symbol _ -> None
-  | Def c -> Some c
+  | Def c -> Some (no_discharge c)
   | OpaqueDef o ->
-    match Global.force_proof access o with
-    | c, _ -> Some c
-    | exception e when CErrors.noncritical e -> None (* missing delayed body, e.g. in vok mode *)
+    match access.Global.access_uncooked_proof o with
+    | Some _ as ans -> ans
+    | None ->
+      (* either there is no body -- [force_proof] then fails and we report the
+         constant as an axiom, as before -- or the discharge cannot be left
+         undone, and we pay for it *)
+      match Global.force_proof access o with
+      | c, _ -> Some (no_discharge c)
+      | exception e when CErrors.noncritical e -> None (* missing delayed body, e.g. in vok mode *)
 
-let rec traverse access (current:GlobRef.t) ctx accu t =
+(** The nodes already walked in the term being traversed.
+
+    A proof term as stored in a .vo file is hash-consed, so the same subterm
+    can be reachable along many paths, and walking it once per path costs
+    the size of the term's TREE unfolding rather than of its DAG.
+
+    Skipping a node already walked IN THIS TERM leaves the answer alone:
+    [traverse] only ever adds to [data] and [ax2ty]; everything the node
+    contains was added to [data] when it was first walked; the [contents] set
+    that the second walk would have grown is read by [assumptions] only
+    through [Option.has_some]; and a node that added to [ax2ty] is put back to
+    unseen, below, so it is never skipped.
+
+    A fixed-size, direct-mapped, LOSSY cache rather than a hash table: the key
+    would have to be physical identity, and a hash of a term that is itself
+    O(1) can only look at the term's top few layers -- of which a proof term
+    has very many that agree, so they would all land in one bucket.  This
+    cache has no buckets and cannot degenerate: one array read and one pointer
+    comparison.  Being lossy costs nothing but time, since a miss only leads
+    to the walk that would have happened anyway. *)
+
+let cache_bits = 18
+let cache_size = 1 lsl cache_bits
+let cache_key = ref [||]
+let cache_gen = ref [||]
+let gen_count = ref 0
+
+let cache_init () =
+  cache_key := Array.make cache_size Constr.mkProp;
+  cache_gen := Array.make cache_size (-1);
+  gen_count := 0
+
+let cache_clear () = cache_key := [||]; cache_gen := [||]
+
+let fresh_gen () = incr gen_count; !gen_count
+
+let seen gen c =
+  let i = Constr.hash_bounded c land (cache_size - 1) in
+  let keys = !cache_key and gens = !cache_gen in
+  if Int.equal (Array.unsafe_get gens i) gen && Array.unsafe_get keys i == c
+  then true
+  else begin
+    Array.unsafe_set gens i gen;
+    Array.unsafe_set keys i c;
+    false
+  end
+
+(* Undo a [seen]: walk the node again if it is met again. *)
+let unsee gen c =
+  let i = Constr.hash_bounded c land (cache_size - 1) in
+  let keys = !cache_key and gens = !cache_gen in
+  if Int.equal (Array.unsafe_get gens i) gen && Array.unsafe_get keys i == c
+  then Array.unsafe_set gens i (-1)
+
+let rec traverse access gen bound (current:GlobRef.t) ctx accu t =
+  match Constr.kind t with
+  | Constr.Rel _ | Constr.Meta _ | Constr.Sort _ | Constr.Int _
+  | Constr.Float _ | Constr.String _ | Constr.Evar _ ->
+    (* nothing to save: no subterms and no dependencies *)
+    traverse_node access gen bound current ctx accu t
+  | _ ->
+    if seen gen t then accu
+    else
+      let (_, _, ax2ty) = accu in
+      let ans = traverse_node access gen bound current ctx accu t in
+      let (_, _, ax2ty') = ans in
+      let () = if ax2ty' != ax2ty then unsee gen t in
+      ans
+
+and traverse_node access gen bound (current:GlobRef.t) ctx accu t =
   let open GlobRef in
   let open Constr in
   match Constr.kind t with
+| Var id when Id.Set.mem id bound ->
+  (* a section variable the discharge binds: not an assumption *)
+  accu
 | Var id ->
-  let body () = id |> Global.lookup_named |> NamedDecl.get_value in
+  let body () =
+    Option.map no_discharge (id |> Global.lookup_named |> NamedDecl.get_value) in
   traverse_object access accu body (VarRef id)
 | Const (kn, _) ->
   let body () = get_constant_body access kn in
@@ -239,10 +327,10 @@ let rec traverse access (current:GlobRef.t) ctx accu t =
       (GlobRef.Set_env.add obj curr, data, ax2ty)
     | _ ->
         fold_with_full_binders
-          Context.Rel.add (traverse access current) ctx accu t
+          Context.Rel.add (traverse access gen bound current) ctx accu t
     end
 | _ -> fold_with_full_binders
-          Context.Rel.add (traverse access current) ctx accu t
+          Context.Rel.add (traverse access gen bound current) ctx accu t
 
 and traverse_object access (curr, data, ax2ty) body obj =
   let data, ax2ty =
@@ -257,7 +345,7 @@ and traverse_object access (curr, data, ax2ty) body obj =
         let cb = lookup_constant kn in
         let typ = cb.Declarations.const_type in
         let _, data, ax2ty =
-          traverse access obj Context.Rel.empty
+          traverse access (fresh_gen ()) Id.Set.empty obj Context.Rel.empty
                    (GlobRef.Set_env.empty, data, ax2ty) typ in
         data, ax2ty
       (* VarRef, IndRef and ConstructRef don't need recursive type traversal.
@@ -265,16 +353,26 @@ and traverse_object access (curr, data, ax2ty) body obj =
          For IndRef and ConstructRef, dependencies are handled by traverse_inductive *)
       | GlobRef.VarRef _ | GlobRef.IndRef _ | GlobRef.ConstructRef _ -> data, ax2ty end
     | Some body ->
+      let bound = body.Global.uncooked_bound in
+      (* a fresh number for this term, so that a node is only ever skipped
+         under the [bound] it was walked with *)
+      let gen = fresh_gen () in
+      let accu = (GlobRef.Set_env.empty,data,ax2ty) in
+      (* the context the discharge abstracts over becomes the binders of the
+         cooked term, so its declarations are dependencies too *)
+      let accu =
+        traverse_context access gen bound obj Context.Rel.empty accu
+          body.Global.uncooked_context in
       let contents,data,ax2ty =
-        traverse access obj Context.Rel.empty
-                 (GlobRef.Set_env.empty,data,ax2ty) body in
+        traverse access gen bound obj Context.Rel.empty accu
+          body.Global.uncooked_body in
       (* Also traverse the type of globals, which may mention unrelated
          references depending on axioms even if they convert to something else. *)
       let contents,data,ax2ty = match obj with
         | GlobRef.ConstRef kn ->
           let cb = lookup_constant kn in
           let typ = cb.Declarations.const_type in
-          traverse access obj Context.Rel.empty
+          traverse access (fresh_gen ()) Id.Set.empty obj Context.Rel.empty
                    (contents,data,ax2ty) typ
         | _ -> (contents,data,ax2ty)
       in
@@ -304,7 +402,10 @@ and traverse_inductive access (curr, data, ax2ty) mind obj =
      (* Collects references of parameters *)
      let param_ctx = mib.mind_params_ctxt in
      let nparam = List.length param_ctx in
-     let accu = traverse_context access obj Context.Rel.empty accu param_ctx in
+     let gen = fresh_gen () in
+     let accu =
+       traverse_context access gen Id.Set.empty obj Context.Rel.empty accu
+         param_ctx in
      (* For each inductive, collects references in their arity and in the type
         of constructors*)
      let (contents, data, ax2ty) = Array.fold_left (fun accu oib ->
@@ -313,11 +414,11 @@ and traverse_inductive access (curr, data, ax2ty) mind obj =
          in
          let accu =
            traverse_context
-             access obj param_ctx accu arity_wo_param
+             access gen Id.Set.empty obj param_ctx accu arity_wo_param
          in
          Array.fold_left (fun accu cst_typ ->
             let param_ctx, cst_typ_wo_param = Term.decompose_prod_n_decls nparam cst_typ in
-            traverse access obj param_ctx accu cst_typ_wo_param)
+            traverse access gen Id.Set.empty obj param_ctx accu cst_typ_wo_param)
           accu oib.mind_user_lc)
        accu mib.mind_packets
      in
@@ -336,25 +437,29 @@ and traverse_inductive access (curr, data, ax2ty) mind obj =
   (GlobRef.Set_env.add obj curr, data, ax2ty)
 
 (** Collects references in a rel_context. *)
-and traverse_context access current ctx accu ctxt =
+and traverse_context access gen bound current ctx accu ctxt =
   snd (Context.Rel.fold_outside (fun decl (ctx, accu) ->
     match decl with
      | Context.Rel.Declaration.LocalDef (_,c,t) ->
-          let accu = traverse access current ctx (traverse access current ctx accu t) c in
+          let accu = traverse access gen bound current ctx
+              (traverse access gen bound current ctx accu t) c in
           let ctx = Context.Rel.add decl ctx in
           ctx, accu
      | Context.Rel.Declaration.LocalAssum (_,t) ->
-          let accu = traverse access current ctx accu t in
+          let accu = traverse access gen bound current ctx accu t in
           let ctx = Context.Rel.add decl ctx in
            ctx, accu) ctxt ~init:(ctx, accu))
 
 let traverse access grs =
   let () = modcache := ModPath.Map.empty in
+  let () = cache_init () in
   let env = Global.env () in
-  List.fold_left (fun accu gr ->
+  let ans = List.fold_left (fun accu gr ->
     let t, _ = UnivGen.fresh_global_instance env gr in
-    traverse access gr Context.Rel.empty accu t
-  ) (GlobRef.Set_env.empty, GlobRef.Map_env.empty, GlobRef.Map_env.empty) grs
+    traverse access (fresh_gen ()) Id.Set.empty gr Context.Rel.empty accu t
+  ) (GlobRef.Set_env.empty, GlobRef.Map_env.empty, GlobRef.Map_env.empty) grs in
+  let () = cache_clear () in
+  ans
 
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when

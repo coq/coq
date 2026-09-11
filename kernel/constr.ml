@@ -1115,6 +1115,39 @@ let hasheq_kind t1 t2 =
 
 let hasheq t1 t2 = hasheq_kind (kind t1) (kind t2)
 
+let rec hash_bounded_gen n c =
+  let open Hashset.Combine in
+  let sub c = if n <= 1 then 0 else hash_bounded_gen (n - 1) c in
+  match kind c with
+  | Const (kn, _) -> combinesmall 1 (Constant.UserOrd.hash kn)
+  | Ind ((mi, i), _) -> combinesmall 2 (combine (MutInd.UserOrd.hash mi) i)
+  | Construct (((mi, i), j), _) ->
+    combinesmall 3 (combine3 (MutInd.UserOrd.hash mi) i j)
+  | Var id -> combinesmall 4 (Id.hash id)
+  | Rel i -> combinesmall 5 i
+  | App (f, args) ->
+    let k = Array.length args in
+    combinesmall 6
+      (combine3 (sub f) k (if Int.equal k 0 then 0 else sub args.(k - 1)))
+  | Lambda (_, t, b) -> combinesmall 7 (combine (sub t) (sub b))
+  | Prod (_, t, b) -> combinesmall 8 (combine (sub t) (sub b))
+  | LetIn (_, b, t, c) -> combinesmall 9 (combine3 (sub b) (sub t) (sub c))
+  | Proj (p, _, c) -> combinesmall 10 (combine (Projection.CanOrd.hash p) (sub c))
+  | Case (ci, _, _, _, _, c, br) ->
+    combinesmall 11 (combine3 (Ind.UserOrd.hash ci.ci_ind) (Array.length br) (sub c))
+  | Cast (c, _, _) -> combinesmall 12 (sub c)
+  | Fix (_, (_, tl, _)) -> combinesmall 13 (Array.length tl)
+  | CoFix (_, (_, tl, _)) -> combinesmall 14 (Array.length tl)
+  | Array (_, t, _, _) -> combinesmall 15 (Array.length t)
+  | Int i -> combinesmall 16 (Uint63.hash i)
+  | Float _ -> 17
+  | String _ -> 18
+  | Sort _ -> 19
+  | Meta i -> combinesmall 20 i
+  | Evar _ -> 21
+
+let hash_bounded c = hash_bounded_gen 3 c
+
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
 
