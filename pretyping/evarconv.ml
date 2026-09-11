@@ -299,6 +299,18 @@ let apply_hooks env sigma proj pat =
     try CString.Map.get name !all_hooks env sigma proj pat
     with e when CErrors.noncritical e -> anomaly Pp.(str "CS hook " ++ str name ++ str " exploded")) (Summary.Ref.get active_hooks)
 
+let pr_cs_constr env sigma c = Pp.hov 1 (Termops.Internal.print_constr_env env sigma c)
+
+let pr_cs_constr_list env sigma l =
+  Pp.(hov 1 (str "[" ++ prlist_with_sep (fun () -> str ";" ++ spc ()) (pr_cs_constr env sigma) l ++ str "]"))
+
+let pr_cs_stack env sigma sk = Pp.hov 1 (Stack.pr (pr_cs_constr env sigma) sk)
+
+let pr_cs_field label pp = Pp.(hov 2 (str label ++ str ":" ++ spc () ++ pp))
+
+let debug_canonical_unification pp =
+  Structures.debug_canonical_structures (fun () -> Pp.(v 0 (str "unification:" ++ fnl () ++ pp ())))
+
 let decompose_proj ?metas env sigma (t1, sk1) =
    (* I only recognize ConstRef projections since these are the only ones for which
       I know how to obtain the number of parameters. *)
@@ -355,33 +367,115 @@ let decompose_proj ?metas env sigma (t1, sk1) =
    projection would have been reduced) *)
 
 let check_conv_record env sigma ((proji, u), (params1, c1, extra_args1)) (t2,sk2) =
+  let () =
+    debug_canonical_unification Pp.(fun () ->
+      v 0 (str "try canonical projection" ++
+        fnl () ++ pr_cs_field "projection" (Nametab.pr_global_env Id.Set.empty (Names.GlobRef.ConstRef proji)) ++
+        fnl () ++ pr_cs_field "record argument" (pr_cs_constr env sigma c1) ++
+        fnl () ++ pr_cs_field "rhs head" (pr_cs_constr env sigma t2) ++
+        fnl () ++ pr_cs_field "rhs stack" (pr_cs_stack env sigma sk2)))
+  in
   let h2, sk2' = decompose_app sigma (shrink_eta sigma t2) in
   let sk2 = Stack.append_app sk2' sk2 in
   let k = Reductionops.Stack.args_size sk2 - Reductionops.Stack.args_size extra_args1 in
   (* Knowing the shape of extra_args1, I can cut sk2 into pieces, extracting extra_args2 from it. *)
   let args2, extra_args2 =
     if k = 0 then [], sk2
-    else if k < 0 then raise Not_found
+    else if k < 0 then begin
+      let () =
+        debug_canonical_unification Pp.(fun () ->
+          str "reject canonical projection: rhs has fewer arguments than projection context")
+      in
+      raise Not_found
+    end
     else match Reductionops.Stack.strip_n_app (k-1) sk2 with
-    | None -> raise Not_found
+    | None ->
+      let () =
+        debug_canonical_unification Pp.(fun () ->
+          str "reject canonical projection: cannot split rhs application stack")
+      in
+      raise Not_found
     | Some (l',el,s') -> ((Option.get @@ Reductionops.Stack.list_of_app_stack l') @ [el], s') in
   let (pat, _, args2') = try ValuePattern.of_constr sigma h2 with | DestKO -> (Default_cs, None, []) in
+  let observed = k + List.length args2' in
+  let () =
+    debug_canonical_unification Pp.(fun () ->
+      v 0 (str "canonical projection rhs key" ++
+        fnl () ++ pr_cs_field "key" (ValuePattern.print pat) ++
+        fnl () ++ pr_cs_field "key args" (pr_cs_constr_list env sigma args2') ++
+        fnl () ++ pr_cs_field "available rhs args" (int observed)))
+  in
+  let find_solution pat =
+    match CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, pat) with
+    | exception Not_found ->
+      let () =
+        debug_canonical_unification Pp.(fun () ->
+          str "no canonical entry for key " ++ ValuePattern.print pat)
+      in
+      None
+    | sigma, solution -> Some (sigma, solution)
+  in
+  let accept_solution ~default pat ((sigma, (solution : CanonicalSolution.t)) as r) effective_args =
+    let expected = List.length solution.cvalue_arguments in
+    if (default && expected = 0) || ((not default) && expected = observed) then
+      let () =
+        debug_canonical_unification Pp.(fun () ->
+          v 0 (str "selected canonical entry" ++
+            fnl () ++ pr_cs_field "key" (ValuePattern.print pat) ++
+            fnl () ++ pr_cs_field "instance" (pr_cs_constr env sigma solution.constant) ++
+            fnl () ++ pr_cs_field "registered body" (pr_cs_constr env sigma solution.body) ++
+            fnl () ++ pr_cs_field "stored key args" (pr_cs_constr_list env sigma solution.cvalue_arguments) ++
+            fnl () ++ pr_cs_field "matched rhs args" (pr_cs_constr_list env sigma effective_args)))
+      in
+      Some (r, effective_args)
+    else
+      let () =
+        debug_canonical_unification Pp.(fun () ->
+          v 0 (str "reject canonical entry" ++
+            fnl () ++ pr_cs_field "key" (ValuePattern.print pat) ++
+            fnl () ++ pr_cs_field "instance" (pr_cs_constr env sigma solution.constant) ++
+            fnl () ++ pr_cs_field "expected stored key args" (int expected) ++
+            fnl () ++ pr_cs_field "observed rhs args" (int observed)))
+      in
+      None
+  in
+  let try_hooks () =
+    let () =
+      debug_canonical_unification Pp.(fun () ->
+        str "no canonical entry selected; trying hooks")
+    in
+    match (apply_hooks env sigma ((proji, u), params1, c1) (t2, args2)) with
+    | Some r ->
+      let () =
+        debug_canonical_unification Pp.(fun () ->
+          str "canonical hook selected an entry")
+      in
+      r, args2' @ args2
+    | None ->
+      let () =
+        debug_canonical_unification Pp.(fun () ->
+          str "no canonical hook selected an entry")
+      in
+      raise Not_found
+  in
   let (sigma, solution), sk2_effective =
      (* N.B. In the `Proj` case, the subject needs to be added in args2. *)
-    try begin
-      try
-         let () = if pat = Default_cs then raise Not_found else () in
-         let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, pat) in
-         if List.length solution.cvalue_arguments = k + (List.length args2') then (sigma, solution), args2' @ args2 else raise Not_found
-       with | Not_found ->
-         let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, Default_cs) in
-         (* We have to drop the arguments args2 because the default solution does not have them. *)
-         if List.length solution.cvalue_arguments = 0 then (sigma, solution), [] else raise Not_found
+    match
+      if pat = Default_cs then None
+      else Option.bind (find_solution pat)
+        (fun solution -> accept_solution ~default:false pat solution (args2' @ args2))
+    with
+    | Some r -> r
+    | None ->
+      begin match find_solution Default_cs with
+      | Some solution ->
+        (* We have to drop the arguments args2 because the default solution does not have them. *)
+        begin match accept_solution ~default:true Default_cs solution [] with
+        | Some r -> r
+        | None -> try_hooks ()
+        end
+      | None -> try_hooks ()
       end
-    with | Not_found -> (* If we find no solution, we ask the hook if it has any. *)
-      match (apply_hooks env sigma ((proji, u), params1, c1) (t2, args2)) with
-      | Some r -> r, args2' @ args2
-      | None -> raise Not_found
   in
   let t2 = Stack.zip sigma (h2, (Stack.append_app_list args2 Stack.empty)) in
   let h, _ = decompose_app sigma solution.body in
@@ -1425,7 +1519,19 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | LetIn _, _ -> assert false
       end
 
-and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c1,(n,t2)) =
+and conv_record flags env (evd,(h1,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c1,(n,t2)) =
+  let () =
+    debug_canonical_unification Pp.(fun () ->
+      v 0 (str "solve canonical projection" ++
+        fnl () ++ pr_cs_field "instance" (pr_cs_constr env evd c) ++
+        fnl () ++ pr_cs_field "registered head" (pr_cs_constr env evd h1) ++
+        fnl () ++ pr_cs_field "rhs head" (pr_cs_constr env evd h2) ++
+        fnl () ++ pr_cs_field "stored key args" (pr_cs_constr_list env evd us) ++
+        fnl () ++ pr_cs_field "matched rhs args" (pr_cs_constr_list env evd us2) ++
+        fnl () ++ pr_cs_field "projection stack" (pr_cs_stack env evd sk1) ++
+        fnl () ++ pr_cs_field "rhs stack" (pr_cs_stack env evd sk2)))
+  in
+  let result =
   (* Tries to unify the states
 
         (proji params1 c1 | sk1)   =   (proji params2 (c (?xs:bs)) | sk2)
@@ -1483,8 +1589,16 @@ and conv_record flags env (evd,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c
        (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2);
        test;
        (fun i -> evar_conv_x flags env i CONV h2
-         (fst (decompose_app i (substl ks h))))])
+         (fst (decompose_app i (substl ks h1))))])
   else UnifFailure(evd,(*dummy*)NotSameHead)
+  in
+  let () =
+    debug_canonical_unification Pp.(fun () ->
+      match result with
+      | Success _ -> str "canonical projection solved"
+      | UnifFailure _ -> str "canonical projection failed")
+  in
+  result
 
 and eta_constructor flags env evd ((ind, i), u) sk1 (term2,sk2) =
   (* reduces an equation <Construct(ind,i)|sk1> == <term2|sk2> to the
