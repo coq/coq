@@ -170,6 +170,7 @@ DELETE: [
 | test_leftsquarebracket_equal
 | test_old_sort_qvar
 | test_sort_qvar
+| test_sort_anon_qvar
 | test_ltac2_ident
 | test_doublepipe_univ_decl
 | test_doublepipe_cumul_univ_decl

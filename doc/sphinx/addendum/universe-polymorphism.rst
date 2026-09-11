@@ -1033,6 +1033,21 @@ It means that `s` and `s'` can respectively be instantiated to e.g., `Type` and 
    become at the end of the definition unless it is unified with
    another rigid quality).
 
+.. flag:: Printing Unnamed Universes Anonymously
+
+   When this :term:`flag` is on (it is off by default), universe levels
+   and sort quality variables that cannot be referred to by name are
+   printed as ``_`` (which, when parsed back, denotes a fresh level or
+   quality variable) instead of their raw representation — a library
+   name followed by a number such as ``Lib.23``, or ``α`` followed by a
+   number — which cannot be parsed back. Levels and quality variables
+   that have a name (such as the ``s`` and ``u`` of a ``@{s;u}``
+   universe declaration, in contexts where they are bound, or the
+   ``foo.u0`` of a monomorphic definition ``foo``) are printed by name
+   as usual. Since ``_`` cannot appear as one component of a ``max``,
+   a sort whose universe involves an unnamed level prints as
+   ``Type@{_}`` as a whole.
+
 Explicit Sorts
 ---------------
 

@@ -290,6 +290,7 @@ sort: [
 | "Type"
 | "Type" "@{" "_" "}"
 | "Type" "@{" OPT [ qualid [ "|" | ";" ] ] universe "}"
+| "Type" "@{" "_" ";" universe "}"
 ]
 
 universe: [
