@@ -41,6 +41,8 @@ val compare_full_path : full_path -> full_path -> int
 (** Constructors of [full_path] *)
 val make_path : DirPath.t -> Id.t -> full_path
 
+val make_path0 : DirPath.t -> full_path
+
 val add_path_suffix : full_path -> Id.t -> full_path
 
 val append_path : full_path -> DirPath.t -> full_path

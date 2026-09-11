@@ -375,6 +375,7 @@ type synterp_vernac_expr =
   | VernacDeclareCustomEntry of Id.t
   | VernacBeginSection of lident
   | VernacEndSegment of lident
+  | VernacSafeRequire of qualid option * qualid list
   | VernacRequire of
       qualid option * export_with_cats option * (qualid * import_filter_expr) list
   | VernacImport of export_with_cats * (qualid * import_filter_expr) list

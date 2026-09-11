@@ -690,6 +690,12 @@ let starredidentreflist_to_expr l =
   | [] -> SsEmpty
   | x :: xs -> List.fold_right (fun i acc -> SsUnion(i,acc)) xs x
 
+let test_unsafe_require =
+  let open Procq.Lookahead in
+  (* Require is either followed by "(safe)" or by ident (including "Import"/"Export"),
+     ident is the "unsafe" case *)
+  to_entry "test_unsafe_require" lk_ident
+
 let warn_deprecated_include_type =
   CWarnings.create ~name:"deprecated-include-type" ~category:Deprecation.Version.v8_3
          (fun () -> strbrk "Include Type is deprecated; use Include instead")
@@ -734,11 +740,19 @@ GRAMMAR EXTEND Gram
           { VernacSynterp (VernacExtraDependency (ns, f, Option.map Id.of_string id)) }
 
       (* Requiring an already compiled module *)
-      | IDENT "Require"; export = export_token; qidl = LIST1 filtered_import ->
+      | IDENT "Require"; "("; IDENT "safe"; ")"; qidl = LIST1 qualid ->
+          { VernacSynterp (VernacSafeRequire (None, qidl)) }
+      | IDENT "From" ; ns = global ; IDENT "Require"; "("; IDENT "safe"; ")";
+        qidl = LIST1 qualid ->
+        { VernacSynterp (VernacSafeRequire (Some ns, qidl)) }
+
+      (* Requiring an already compiled module *)
+      | IDENT "Require"; test_unsafe_require; export = export_token; qidl = LIST1 filtered_import ->
           { VernacSynterp (VernacRequire (None, export, qidl)) }
-      | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
+      | IDENT "From" ; ns = global ; IDENT "Require"; test_unsafe_require; export = export_token
         ; qidl = LIST1 filtered_import ->
         { VernacSynterp (VernacRequire (Some ns, export, qidl)) }
+
       | IDENT "Import"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
         { VernacSynterp (VernacImport ((Import,cats),qidl)) }
       | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->

@@ -175,6 +175,7 @@ DELETE: [
 | test_doublepipe_cumul_univ_decl
 | test_semicolon_cumul_univ_decl
 | test_univ_cst
+| test_unsafe_require
 ]
 
 (* additional nts to be spliced *)
@@ -765,6 +766,10 @@ gallina_ext: [
 | DELETE "Require" export_token LIST1 filtered_import
 | REPLACE "From" global "Require" export_token LIST1 filtered_import
 | WITH OPT [ "From" dirpath ] "Require" export_token LIST1 filtered_import
+
+| DELETE "Require" "(" "safe" ")" LIST1 qualid
+| REPLACE "From" global "Require" "(" "safe" ")" LIST1 qualid
+| WITH OPT [ "From" dirpath ] "Require" "(" "safe" ")" LIST1 qualid
 
 | REPLACE "From" global "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
 | WITH "From" dirpath "Extra" "Dependency" ne_string OPT [ "as" IDENT ]

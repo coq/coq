@@ -742,6 +742,47 @@ file is a particular case of a module called a *library file*.
 
       .. seealso:: Chapter :ref:`therocqcommands`
 
+.. cmd:: {? From @dirpath } Require ( safe ) {+ @qualid }
+   :name: Require (safe); From … Require (safe)
+
+   Like :cmd:`Require`, but loads only what the kernel needs to typecheck
+   terms using the libraries, i.e. only the extensions to the :term:`global environment`.
+   Non-kernel data is not loaded, for instance implicit argument information
+   is not loaded and references are treated as though all arguments are explicit.
+   In particular this means plugins are not loaded.
+
+   Names are accessible as after a plain :cmd:`Require` not followed by
+   :cmd:`Import` — qualified at least by the name of the file that defines
+   them — and cannot be shortened further, since :cmd:`Import` and
+   :cmd:`Export` are not supported for safe-required libraries.
+
+   .. rocqtop:: reset all
+
+      Require (safe) Corelib.Classes.CRelationClasses.
+      Check CRelationClasses.flip.
+      Fail Check flip.
+
+   The intended use is processing untrusted compiled files: validate the
+   file with ``rocqchk`` (see :ref:`therocqcommands`), then load it with
+   ``Require (safe)``, which is designed to consume only data that
+   ``rocqchk`` checks.  This correspondence has not been fully audited; in
+   particular ``rocqchk`` does not validate compiled VM and native-compute
+   data, so disable the VM and native compilers with `-bytecode-compiler no -native-compiler no`.
+
+   Safe-requiring an already safe-required library is a no-op;
+   safe-requiring an already fully loaded library uses the fully loaded
+   version.  The converse is not supported:
+
+   .. exn:: Cannot unsafe-require library @qualid because it was previously required with (safe).
+
+      A plain :cmd:`Require` was used on a library previously loaded with
+      ``Require (safe)``, directly or as a dependency.
+
+   Safe requiring a library also safe requires its dependencies.
+   Full require on a library which has dependencies loaded by safe require
+   will not fully require those dependencies
+   (unless they are also fully required by another library in the same Require command).
+
 .. cmd:: Print Libraries
 
    This command displays the list of library files loaded in the
