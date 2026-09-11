@@ -1,3 +1,4 @@
+Unset Universe Polymorphism.
 
 (* When doing Module Foo with Definition bar := ..., bar must be
    generated with the same polymorphism as Foo.bar. *)
@@ -9,9 +10,10 @@ Module Mono.
 
   Module Type F(A:T). End F.
 
-  Set Universe Polymorphism.
-  Module M : T with Definition foo := Type.
-    Monomorphic Definition foo := Type.
+  Unset Universe Polymorphism.
+  Universe i.
+  Module M : T with Definition foo := Type@{i}.
+    Monomorphic Definition foo := Type@{i}.
   End M.
 End Mono.
 
