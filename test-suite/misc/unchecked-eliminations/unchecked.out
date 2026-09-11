@@ -1,0 +1,22 @@
+Closed under the global context
+check_guarded: true
+check_positive: true
+check_universes: true
+check_eliminations: false
+definitional uip: false
+Axioms:
+unchecked_r relies on unchecked sort eliminations.
+unchecked_l relies on unchecked sort eliminations.
+unchecked_or relies on unchecked sort eliminations.
+unchecked_large relies on unchecked sort eliminations.
+Axioms:
+unchecked_r relies on unchecked sort eliminations.
+unchecked_l relies on unchecked sort eliminations.
+unchecked_or relies on unchecked sort eliminations.
+unchecked_large relies on unchecked sort eliminations.
+Theory:
+Sort elimination constraints are not checked (logic is inconsistent)
+check_guarded: true
+check_positive: true
+check_universes: true
+definitional uip: false

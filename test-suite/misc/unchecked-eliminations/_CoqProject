@@ -1,0 +1,9 @@
+src/META.coq-test-suite
+-Q theories UncheckedElim
+-I src
+
+src/elimFlag.mlg
+src/elimFlagImpl.ml
+src/elimFlagImpl.mli
+src/elim_flag_plugin.mlpack
+theories/unchecked.v
