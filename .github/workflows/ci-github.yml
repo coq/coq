@@ -17,7 +17,7 @@ jobs:
         include:
           - name: macOS
             os: macos-latest
-            ocaml: 4.14
+            ocaml: 5.4
             test_disabled:
             # We exclude the coq-core package
             packages: ./rocq*.opam
@@ -71,6 +71,10 @@ jobs:
 
       - name: 🐫🐪🐫 Get Rocq dependencies
         run: opam install --deps-only ${{ matrix.packages }}
+
+      - name: Enable native
+        if: matrix.os == 'macos-latest'
+        run: opam exec -- ./configure -relocatable -native-compiler yes
 
       - name: 🧱 Build Rocq
         run: opam exec -- make world
