@@ -356,15 +356,11 @@ type evar_flags =
     rewrite_rule_evars : Evar.Set.t;
   }
 
-type side_effect_role =
-| Schema of inductive * string
-
 type side_effects = {
   seff_safeenv : Safe_typing.safe_environment option;
   (* If seff_safeenv = Some senv, then senv = Global.safe_env + seff_private *)
   seff_labels : Id.Set.t;
   seff_private : Safe_typing.private_constants;
-  seff_roles : side_effect_role Cmap_env.t;
   seff_univs : UState.named_universes_entry Cmap_env.t;
 }
 
@@ -876,7 +872,6 @@ let empty_side_effects = {
   seff_safeenv = None;
   seff_labels = Id.Set.empty;
   seff_private = Safe_typing.empty_private_constants;
-  seff_roles = Cmap_env.empty;
   seff_univs = Cmap_env.empty;
 }
 
@@ -1263,7 +1258,6 @@ let concat_side_effects eff1 eff2 = {
   seff_safeenv = None;
   seff_labels = Id.Set.fold Id.Set.add eff1.seff_labels eff2.seff_labels;
   seff_private = Safe_typing.concat_private eff1.seff_private eff2.seff_private;
-  seff_roles = Cmap_env.fold Cmap_env.add eff1.seff_roles eff2.seff_roles;
   seff_univs = Cmap_env.fold Cmap_env.add eff1.seff_univs eff2.seff_univs;
 }
 
@@ -1279,7 +1273,7 @@ let set_side_effects eff evd =
 
 let eval_side_effects evd = evd.effects
 
-let push_side_effects ?role ?ts name de ctx effs =
+let push_side_effects ?ts name de ctx effs =
   let senv = get_senv_side_effects effs in
   let senv = match ts with
   | None -> senv
@@ -1291,14 +1285,9 @@ let push_side_effects ?role ?ts name de ctx effs =
     else
       Cmap_env.add kn (UState.Monomorphic_entry ctx, UnivNames.empty_binders) effs.seff_univs
   in
-  let seff_roles = match role with
-  | None -> effs.seff_roles
-  | Some r -> Cmap_env.add kn r effs.seff_roles
-  in
   let effs = {
     seff_private = Safe_typing.concat_private prv effs.seff_private;
     seff_labels = Id.Set.add (Constant.label kn) effs.seff_labels;
-    seff_roles = seff_roles;
     seff_univs = seff_univs;
     seff_safeenv = Some senv;
   } in
@@ -1313,7 +1302,6 @@ let seff_mem_label id effs =
   Id.Set.mem id effs.seff_labels
 
 let seff_private eff = eff.seff_private
-let seff_roles effs = effs.seff_roles
 let seff_univs effs = effs.seff_univs
 
 (* Future goals *)

@@ -24,12 +24,21 @@ open Util
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
-type handle = Evd.side_effects
+type side_effect_role =
+| Schema of inductive * string
+
+type schemes = {
+  sch_eff : Evd.side_effects;
+  sch_roles : side_effect_role Cmap_env.t;
+  sch_reg : (Id.t * Constant.t * Loc.t option * UState.named_universes_entry) list;
+}
+
+type handle = schemes
 
 let push_handle eff =
   let open Proofview.Notations in
   Proofview.tclEVARMAP >>= fun sigma ->
-  let sigma = Evd.emit_side_effects eff sigma in
+  let sigma = Evd.emit_side_effects eff.sch_eff sigma in
   Proofview.Unsafe.tclEVARS sigma
 
 type mutual_scheme_object_function =
@@ -97,7 +106,7 @@ let compute_name internal id avoid =
     Namegen.next_ident_away_from (add_prefix "internal_" id) visible
   else id
 
-let declare_definition_scheme = ref (fun ~univs ~role ~name ~effs c ->
+let declare_definition_scheme = ref (fun ~univs ~name ~effs c ->
     CErrors.anomaly (Pp.str "scheme declaration not registered"))
 
 let register_definition_scheme = ref (fun ~internal ~name ~const ~univs ?loc () ->
@@ -106,19 +115,15 @@ let register_definition_scheme = ref (fun ~internal ~name ~const ~univs ?loc () 
 let lookup_scheme kind ind =
   try Some (DeclareScheme.lookup_scheme kind (GlobRef.IndRef ind)) with Not_found -> None
 
-type schemes = {
-  sch_eff : Evd.side_effects;
-  sch_reg : (Id.t * Constant.t * Loc.t option * UState.named_universes_entry) list;
-}
-
 let empty_schemes eff = {
   sch_eff = eff;
   sch_reg = [];
+  sch_roles = Cmap_env.empty;
 }
 
-let redeclare_schemes { sch_eff = eff } =
+let redeclare_schemes { sch_eff = eff; sch_roles = roles } =
   let fold c role accu = match role with
-  | Evd.Schema (ind, kind) ->
+  | Schema (ind, kind) ->
     try
       let _ = DeclareScheme.lookup_scheme kind (GlobRef.IndRef ind) in
       accu
@@ -126,23 +131,24 @@ let redeclare_schemes { sch_eff = eff } =
       let old = try String.Map.find kind accu with Not_found -> [] in
       String.Map.add kind ((GlobRef.IndRef ind, GlobRef.ConstRef c) :: old) accu
   in
-  let schemes = Cmap_env.fold fold (Evd.seff_roles eff) String.Map.empty in
+  let schemes = Cmap_env.fold fold roles String.Map.empty in
   let iter kind defs = List.iter (DeclareScheme.declare_scheme SuperGlobal kind) defs in
   String.Map.iter iter schemes
 
-let local_lookup_scheme eff kind ind = match lookup_scheme kind ind with
+let local_lookup_scheme { sch_roles = roles } kind ind =
+  match lookup_scheme kind ind with
 | Some _ as ans -> ans
 | None ->
   let exception Found of Constant.t in
   let iter c role = match role with
-  | Evd.Schema (i, k) ->
+  | Schema (i, k) ->
     if String.equal k kind && Ind.UserOrd.equal i ind then raise (Found c)
   in
   (* Inefficient O(n), but the number of locally declared schemes is small and
      this is very rarely called *)
-  try let _ = Cmap_env.iter iter (Evd.seff_roles eff) in None with Found c -> Some (GlobRef.ConstRef c)
+  try let _ = Cmap_env.iter iter roles in None with Found c -> Some (GlobRef.ConstRef c)
 
-let local_check_scheme kind ind { sch_eff = eff } =
+let local_check_scheme kind ind eff =
   Option.has_some (local_lookup_scheme eff kind ind)
 
 let define ?loc internal role id c poly uctx sch =
@@ -156,9 +162,10 @@ let define ?loc internal role id c poly uctx sch =
   let uctx = UState.restrict uctx (Vars.universes_of_constr c) in
   let univs = UState.univ_entry ~poly uctx in
   let effs = sch.sch_eff in
-  let cst, effs = !declare_definition_scheme ~univs ~role ~name:id ~effs c in
+  let cst, effs = !declare_definition_scheme ~univs ~name:id ~effs c in
   let reg = (id, cst, loc, univs) :: sch.sch_reg in
-  cst, { sch_eff = effs; sch_reg = reg }
+  let roles = Cmap_env.add cst role sch.sch_roles in
+  cst, { sch_eff = effs; sch_reg = reg; sch_roles = roles  }
 
 module Locmap : sig
 
@@ -209,12 +216,12 @@ let globally_declare_schemes sch =
 (* Assumes that dependencies are already defined *)
 let rec define_individual_scheme_base ?loc kind suff f ~internal idopt (mind,i as ind) eff =
   let env = get_env eff in
-  let (c, ctx) = f env eff.sch_eff ind in
+  let (c, ctx) = f env eff ind in
   let mib = Environ.lookup_mind mind env in
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename ("_"^suff) in
-  let role = Evd.Schema (ind, kind) in
+  let role = Schema (ind, kind) in
   let poly, cumulative = Declareops.inductive_is_polymorphic mib, Declareops.inductive_is_cumulative mib in
   let poly = PolyFlags.make ~univ_poly:poly ~cumulative ~collapse_sort_variables:true in
   let const, eff = define ?loc internal role id c poly ctx eff in
@@ -233,13 +240,13 @@ and define_individual_scheme ?loc kind ~internal names (mind,i as ind) eff =
 (* Assumes that dependencies are already defined *)
 and define_mutual_scheme_base ?(locmap=Locmap.default None) kind suff f ~internal names mind eff =
   let env = get_env eff in
-  let (cl, ctx) = f env eff.sch_eff mind in
+  let (cl, ctx) = f env eff mind in
   let mib = Environ.lookup_mind mind env in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename ("_"^suff)) in
   let fold i effs id cl =
-    let role = Evd.Schema ((mind, i), kind)in
+    let role = Schema ((mind, i), kind)in
     let loc = Locmap.lookup ~locmap (mind,i) in
     (* FIXME cumulativity not supported? *)
     let poly = PolyFlags.of_univ_poly (Declareops.inductive_is_polymorphic mib) in
@@ -267,44 +274,6 @@ match sd with
 | SchemeMutualDep (mind, kind) ->
   if local_check_scheme kind (mind, 0) eff then eff
   else define_mutual_scheme kind ~internal:true [] mind eff
-
-let find_scheme kind (mind,i as ind) =
-  let open Proofview.Notations in
-  Proofview.tclEVARMAP >>= fun sigma ->
-  let s = local_lookup_scheme (Evd.eval_side_effects sigma) kind ind in
-  Proofview.tclUNIT s
-
-let force_find_scheme kind (mind,i as ind) =
-  let open Proofview.Notations in
-  Proofview.tclEVARMAP >>= fun sigma ->
-  let eff = Evd.eval_side_effects sigma in
-  match local_lookup_scheme eff kind ind with
-  | Some s ->
-    Proofview.tclUNIT s
-  | None ->
-    let senv = Evd.get_senv_side_effects eff in
-    try
-      let eff, ans = match Hashtbl.find scheme_object_table kind with
-      | s,IndividualSchemeFunction (f, deps) ->
-        let env = Safe_typing.env_of_safe_env senv in
-        let deps = match deps with None -> [] | Some deps -> deps env ind in
-        let sch = empty_schemes eff in
-        let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) sch deps in
-        let c, eff = define_individual_scheme_base kind s f ~internal:true None ind eff in
-        eff, c
-      | s,MutualSchemeFunction (f, deps) ->
-        let env = Safe_typing.env_of_safe_env senv in
-        let deps = match deps with None -> [] | Some deps -> deps env mind in
-        let sch = empty_schemes eff in
-        let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) sch deps in
-        let ca, eff = define_mutual_scheme_base kind s f ~internal:true [] mind eff in
-        eff, ca.(i)
-      in
-      let sigma = Evd.emit_side_effects eff.sch_eff sigma in
-      Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT (GlobRef.ConstRef ans)
-    with Rocqlib.NotFoundRef _ as e ->
-      let e, info = Exninfo.capture e in
-      Proofview.tclZERO ~info e
 
 let register_schemes sch =
   let iter (id, kn, loc, univs) =

@@ -117,13 +117,13 @@ sig
   val make : Evd.side_effects -> t
   val concat : t -> t -> t
   val get : t -> Safe_typing.private_constants
-  val obj : t -> (Evd.side_effect_role option * UState.named_universes_entry option) Cmap_env.t
+  val obj : t -> (UState.named_universes_entry option) Cmap_env.t
 end =
 struct
 
 type t = {
   priv : Safe_typing.private_constants;
-  data : (Evd.side_effect_role option * UState.named_universes_entry option) Cmap_env.t;
+  data : (UState.named_universes_entry option) Cmap_env.t;
 }
 
 let empty = {
@@ -133,9 +133,8 @@ let empty = {
 
 let make eff =
   let fold accu c =
-    let role = try Some (Cmap_env.find c (Evd.seff_roles eff)) with Not_found -> None in
     let univs = try Some (Cmap_env.find c (Evd.seff_univs eff)) with Not_found -> None in
-    Cmap_env.add c (role, univs) accu
+    Cmap_env.add c univs accu
   in
   let priv = Evd.seff_private eff in
   let data = List.fold_left fold Cmap_env.empty (Safe_typing.constants_of_private priv) in
@@ -476,7 +475,7 @@ let register_constant loc cst kind ?user_warns local =
   Impargs.declare_constant_implicits cst;
   Notation.declare_ref_arguments_scope (GlobRef.ConstRef cst)
 
-let register_side_effect (c, body, role, univs) =
+let register_side_effect (c, body, univs) =
   (* Register the body in the opaque table *)
   let () = match body with
   | None -> ()
@@ -488,15 +487,13 @@ let register_side_effect (c, body, role, univs) =
   | None -> ()
   | Some univs -> DeclareUniv.declare_univ_binders (ConstRef c) univs
   in
-  match role with
-  | None -> ()
-  | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme SuperGlobal kind (GlobRef.IndRef ind, GlobRef.ConstRef c)
+  ()
 
-let get_roles export eff =
+let get_univs export eff =
   let eff = SideEff.obj eff in
   let map (c, body) =
-    let role, univs = try (Cmap_env.find c eff) with Not_found -> None, None in
-    (c, body, role, univs)
+    let univs = try (Cmap_env.find c eff) with Not_found -> None in
+    (c, body, univs)
   in
   List.map map export
 
@@ -504,7 +501,7 @@ let get_roles export eff =
    libobjects. *)
 let export_side_effects eff =
   let export = Global.export_private_constants (SideEff.get eff) in
-  let export = get_roles export eff in
+  let export = get_univs export eff in
   List.iter register_side_effect export
 
 (* This is different from [export_side_effects] as the former properly declares
@@ -695,7 +692,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn
 
-let declare_private_constant ?role ?ts ~name ~opaque de effs =
+let declare_private_constant ?ts ~name ~opaque de effs =
   let de, ctx =
     if not opaque then
       let de, ctx = cast_pure_proof_entry de in
@@ -705,7 +702,7 @@ let declare_private_constant ?role ?ts ~name ~opaque de effs =
       OpaqueEff de, ctx
 
   in
-  Evd.push_side_effects ?role ?ts name de ctx effs
+  Evd.push_side_effects ?ts name de ctx effs
 
 let inline_private_constants ~uctx env (body, eff) =
   let body, ctx = Safe_typing.inline_private_constants env (body, SideEff.get eff) in
@@ -908,9 +905,9 @@ let process_proof ~info:Info.({ udecl; poly }) ?(is_telescope=false) = function
                ((body, uctx), eff)) in
            (delayed_definition_entry ?using ~univs ~types:initial_typ ~feedback_id body, initial_euctx))
 
-let declare_definition_scheme ~univs ~role ~name ~effs c =
+let declare_definition_scheme ~univs ~name ~effs c =
   let entry = pure_definition_entry ~univs c in
-  declare_private_constant ~role ~name ~opaque:false entry effs
+  declare_private_constant ~name ~opaque:false entry effs
 
 let register_definition_scheme ~internal ~name ~const:kn ~univs ?loc () =
   let kind = Decls.(IsDefinition Scheme) in

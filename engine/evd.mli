@@ -396,9 +396,6 @@ val dependent_evar_ident : Evar.t -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
 
-type side_effect_role =
-| Schema of inductive * string
-
 type side_effects
 
 val empty_side_effects : side_effects
@@ -415,7 +412,7 @@ val eval_side_effects : evar_map -> side_effects
 (** Return the effects contained in the evar map. *)
 
 val push_side_effects :
-  ?role:side_effect_role -> ?ts:Conv_oracle.oracle ->
+  ?ts:Conv_oracle.oracle ->
   Id.t -> Safe_typing.side_effect_declaration -> Univ.ContextSet.t ->
   side_effects -> Constant.t * side_effects
 
@@ -425,7 +422,6 @@ val avoid_side_effect_label : Id.t -> evar_map -> evar_map
 
 val seff_mem_label : Id.t -> side_effects -> bool
 val seff_private : side_effects -> Safe_typing.private_constants
-val seff_roles : side_effects -> side_effect_role Cmap_env.t
 val seff_univs : side_effects -> UState.named_universes_entry Names.Cmap_env.t
 
 (** {5 Future goals} *)

@@ -175,8 +175,7 @@ Proof.
   exact I.
 Qed.
 
-(* test that "try rewrite" / "rewrite ?h" catches the error from mssing-scheme *)
-Set Warnings "+missing-scheme".
+(* test that "try rewrite" / "rewrite ?h" catches the error from missing-scheme *)
 
 Inductive myeq A x : A -> Prop := myrefl : myeq A x x.
 
