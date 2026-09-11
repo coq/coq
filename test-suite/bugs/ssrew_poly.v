@@ -1,9 +1,9 @@
 From Corelib Require Import ssreflect.
 Set Universe Polymorphism.
-Axiom foo@{i} : unit.
+Axiom foo@{i} : nat.
 Set Printing Universes.
 
-Definition lemma@{i} : foo@{i} nat = 0 := eq_refl.
+Axiom lemma@{i} : foo@{i} = 0. 
 
 Monomorphic Universes i j.
 Monomorphic Constraint i < j.
