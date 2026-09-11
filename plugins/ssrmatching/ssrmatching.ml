@@ -1223,7 +1223,7 @@ let thin id sigma goal =
       Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps sigma ~relevance concl
     in
     let sigma = Evd.remove_future_goal sigma evk in
-    let sigma = Evd.transfer_name goal evk sigma in
+    let sigma = Evd.transfer goal evk sigma in
     let proof = EConstr.mkEvar (evk, Evd.evar_identity_subst @@ Evd.find_undefined sigma evk) in
     Evd.define goal proof sigma
 

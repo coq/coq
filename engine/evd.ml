@@ -581,12 +581,6 @@ let expand_existential0 = expand_existential
 
 (*** Lifting primitive from Evar.Map. ***)
 
-let add_name evk basename ?parent evd =
-  { evd with evar_names = Evarnames.add basename evk ?parent evd.evar_names }
-
-let transfer_name evk evk' evd =
-  { evd with evar_names = Evarnames.transfer_name evk evk' evd.evar_names }
-
 let add_with_name (type a) ?name ?parent ~typeclass_candidate ~rrpat d e (i : a evar_info) = match i.evar_body with
 | Evar_empty ->
   let evar_names =
@@ -701,6 +695,16 @@ let remove_evar_flags evk evar_flags =
     (* Cannot be a rewrite rule evar *)
     rewrite_rule_evars = evar_flags.rewrite_rule_evars
   }
+
+(** Evar names *)
+
+let add_name evk basename ?parent evd =
+  { evd with evar_names = Evarnames.add basename evk ?parent evd.evar_names }
+
+let transfer evk evk' evd =
+  let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
+  let evar_names = Evarnames.transfer_name evk evk' evd.evar_names in
+  { evd with evar_flags; evar_names }
 
 (** New evars *)
 

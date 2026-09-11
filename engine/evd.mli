@@ -388,7 +388,8 @@ val evar_has_unambiguous_name : Evar.t -> evar_map -> bool
 
 val add_name : Evar.t -> Id.t -> ?parent:Evar.t -> evar_map -> evar_map
 
-val transfer_name : Evar.t -> Evar.t -> evar_map -> evar_map
+(** Transfer (copy) flags and names of the first evar to the second one *)
+val transfer : Evar.t -> Evar.t -> evar_map -> evar_map
 
 val evar_key : Libnames.qualid -> evar_map -> Evar.t
 
