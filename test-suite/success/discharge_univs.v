@@ -1,3 +1,4 @@
+Set Universe Polymorphism.
 Set Printing Universes.
 Module boxtop.
   Inductive box@{u} (A : Type@{u}) : Type@{u+1} := b : A -> box A.

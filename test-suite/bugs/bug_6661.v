@@ -5,7 +5,6 @@
     from commit 391bb5e196901a3a9426295125b8d1c700ab6992
  *)
 
-
 Require Export Corelib.Init.Notations.
 Require Export Corelib.Init.Ltac.
 Notation "'∏'  x .. y , P" := (forall x, .. (forall y, P) ..)
@@ -217,7 +216,7 @@ Section isweqcontrtounit.
   Lemma isweqcontrtounit@{} {T : Type@{i}} (isc : iscontr@{i} T) : isweq@{i} (λ _:T, tt).
   Proof.
     intros. intro y. induction y.
-    induction is as [c h].
+    induction isc as [c h].
     split with (hfiberpair@{i i} _ c (idpath tt)).
     intros ha.
     induction ha as [x e].
