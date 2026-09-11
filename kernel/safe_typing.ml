@@ -871,6 +871,7 @@ let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 type exported_opaque = {
   exp_handle : Opaqueproof.opaque_handle;
   exp_body : Constr.t;
+  exp_uses_impredicative_set : bool;
   exp_univs : (int * int) option;
   (* Minimal amount of data needed to rebuild the private universes. We enforce
      in the API that private constants have no internal constraints. *)
@@ -882,7 +883,7 @@ let repr_exported_opaque o =
   | None -> Opaqueproof.PrivateMonomorphic ()
   | Some _ -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
   in
-  (o.exp_handle, (o.exp_body, priv))
+  (o.exp_handle, (o.exp_body, priv, o.exp_uses_impredicative_set))
 
 let set_vm_library lib senv =
   { senv with env = Environ.set_vm_library lib senv.env }
@@ -1093,10 +1094,11 @@ let infer_direct_opaque ~sec_univs env ce =
   let cb, ctx = Constant_typing.infer_opaque ~sec_univs env ce in
   let body = ce.Entries.opaque_entry_body, Univ.ContextSet.empty in
   let handle _env c () = (c, Univ.ContextSet.empty, 0) in
-  let (hbody, c, u) = Constant_typing.check_delayed handle ctx (body, ()) in
+  let (hbody, c, u, uses) = Constant_typing.check_delayed_usage handle ctx (body, ()) in
   (* No constraints can be generated, we set it empty everywhere *)
   let () = assert (is_empty_private u) in
-  hbody, { cb with const_body = OpaqueDef c }
+  hbody, { cb with const_body = OpaqueDef c;
+                   const_uses_impredicative_set = cb.const_uses_impredicative_set || uses }
 
 let export_side_effects senv eff =
   let sec_univs = Option.map Section.all_poly_univs senv.sections in
@@ -1165,7 +1167,8 @@ let export_private_constants eff senv =
       let () = assert (HConstr.self hbody == body) in
       HConstr.hcons hbody
     in
-    let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in
+    let opaque = { exp_body = body; exp_handle = h; exp_univs = univs;
+                   exp_uses_impredicative_set = c.const_uses_impredicative_set } in
     senv, (kn, { c with const_body = OpaqueDef o }, Some opaque, None)
   | Def _ | Undef _ | Primitive _ | Symbol _ as body ->
     (* Hashconsing is handled by {!add_constant_aux}, propagate hbody *)
@@ -1214,6 +1217,7 @@ let add_constant ?typing_flags l decl senv =
 
 type opaque_certificate = {
   opq_body : Constr.t;
+  opq_uses_impredicative_set : bool;
   opq_univs : Univ.ContextSet.t Opaqueproof.delayed_universes;
   opq_handle : Opaqueproof.opaque_handle;
   opq_nonce : Nonce.t;
@@ -1234,7 +1238,7 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
     in
     body, uctx, trusted
   in
-  let (hbody, c, ctx) = Constant_typing.check_delayed handle ty_ctx pf in
+  let (hbody, c, ctx, uses) = Constant_typing.check_delayed_usage handle ty_ctx pf in
   let _, c = match hbody with
     | Some hbody -> assert (c == HConstr.self hbody); HConstr.hcons hbody
     | None -> Constr.hcons c
@@ -1245,7 +1249,7 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
   | Opaqueproof.PrivatePolymorphic u ->
     Opaqueproof.PrivatePolymorphic (snd @@ Univ.ContextSet.hcons u)
   in
-  { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
+  { opq_body = c; opq_uses_impredicative_set = uses; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
 
 let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
   let () = if not @@ HandleMap.mem i senv.future_cst then
@@ -1271,6 +1275,9 @@ let is_filled_opaque i senv =
 
 let repr_certificate { opq_body = body; opq_univs = ctx; _ } =
   body, ctx
+
+let repr_certificate_usage { opq_body = body; opq_univs = ctx; opq_uses_impredicative_set = uses; _ } =
+  body, ctx, uses
 
 let check_constraints uctx = function
 | Entries.Polymorphic_entry _ -> Univ.ContextSet.is_empty uctx

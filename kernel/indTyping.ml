@@ -81,6 +81,7 @@ type univ_info =
   ; ind_template : bool
   ; ind_univ : Sorts.t
   ; missing : Sorts.t list (* missing u <= ind_univ constraints *)
+  ; uses_impredicative_set : bool
   }
 
 let add_squash q info =
@@ -116,7 +117,10 @@ let compute_elim_squash ?(is_real_arg=false) env u info =
   let indu = info.ind_univ in
 
   if not @@ UGraph.check_leq (universes env) (Sorts.univ_of_sort u) (Sorts.univ_of_sort indu) then
-    if Environ.is_impredicative_sort env indu then add_squash (Sorts.quality u) info
+    if Environ.is_impredicative_sort env indu then
+      let info = add_squash (Sorts.quality u) info in
+      if Sorts.is_set indu then { info with uses_impredicative_set = true }
+      else info
     else { info with missing = u :: info.missing }
   else if Inductive.eliminates_to (Environ.qualities env) (Sorts.quality indu) (Sorts.quality u) then
     info
@@ -168,6 +172,7 @@ let check_arity ~template env_params env_ar (na, arity) =
     ind_template = template;
     ind_univ=ind_sort;
     missing=[];
+    uses_impredicative_set=false;
   }
   in
   (* We do not need to generate the universe of the arity with params;
@@ -182,6 +187,58 @@ let check_arity ~template env_params env_ar (na, arity) =
 let check_constructor_univs env_ar_par info (args,_) =
   (* We ignore the output, positivity will check that it's the expected inductive type *)
   check_context_univs ~ctor:true env_ar_par info args
+
+(* Detect reliance on impredicative [Set] beyond what the main analysis
+   already recorded in [univ_info.uses_impredicative_set] (a constructor
+   argument fitting its [Set]-sorted inductive only impredicatively):
+   - the arity or the types of the constructors may fail to typecheck at
+     all in a predicative environment (e.g. when a subterm needs to fit
+     in [Set]);
+   - the squashing/elimination analysis may differ in a predicative
+     environment. *)
+let check_uses_impredicative_set env_ar_par isrecord params indices arity lc splayed_lc univ_info =
+  if not (Environ.is_impredicative_set env_ar_par)
+     || univ_info.uses_impredicative_set
+  then univ_info
+  else
+    let env_pred = Environ.set_impredicative_set false env_ar_par in
+    let fresh_info = { univ_info with ind_squashed = None; missing = []; uses_impredicative_set = false } in
+    let analyze env =
+      let info =
+        if isrecord then fresh_info
+        else match Array.length splayed_lc with
+        | 0 -> compute_elim_squash env Sorts.sprop fresh_info
+        | 1 ->
+          if (Environ.typing_flags env).allow_uip
+               && fst (splayed_lc.(0)) = []
+               && List.for_all Context.Rel.Declaration.is_local_assum params
+               && List.for_all Context.Rel.Declaration.is_local_assum indices
+               && Sorts.is_sprop fresh_info.ind_univ
+          then fresh_info
+          else compute_elim_squash env Sorts.prop fresh_info
+        | _ -> compute_elim_squash env Sorts.set fresh_info
+      in
+      Array.fold_left (check_constructor_univs env) info splayed_lc
+    in
+    match
+      (* The full arity re-binds the parameters and indices, so their
+         types are covered here; the constructor types are checked
+         without generalization, in the environment where the
+         parameters and the block's inductives are bound. *)
+      let () = ignore (Typeops.infer_type env_pred arity) in
+      let () = Array.iter (fun c -> ignore (Typeops.infer_type env_pred c)) lc in
+      analyze env_pred
+    with
+    | exception e when CErrors.noncritical e ->
+      { univ_info with uses_impredicative_set = true }
+    | pred_info ->
+      let imp_info = analyze env_ar_par in
+      let differs =
+        not (Option.equal eq_squashed pred_info.ind_squashed imp_info.ind_squashed)
+        || not (List.equal Sorts.equal pred_info.missing imp_info.missing)
+      in
+      if differs then { univ_info with uses_impredicative_set = true }
+      else univ_info
 
 let check_constructors ~env_params ~env_ar_par isrecord params lc (arity,indices,univ_info) =
   let lc = Array.map_of_list (fun c -> (Typeops.infer_type env_ar_par c).utj_val) lc in
@@ -216,6 +273,7 @@ let check_constructors ~env_params ~env_ar_par isrecord params lc (arity,indices
       | Some (SometimesSquashed _) ->
       CErrors.user_err Pp.(str "Cannot handle sometimes squashed template polymorphic type.")
   in
+  let univ_info = check_uses_impredicative_set env_ar_par isrecord params indices arity lc splayed_lc univ_info in
   (* generalize the constructors over the parameters *)
   let lc = Array.map (fun c -> Term.it_mkProd_or_LetIn c params) lc in
   let univ_info, relies_on_indices_not_mattering = check_indices_matter env_params univ_info indices in
@@ -591,7 +649,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let () = List.iter (fun pkt -> check_packet env pkt) data in
   let map ((arity, lc), b, univs, relies_on_indices_not_mattering) =
     let arity = { user_arity = arity; sort = univs.ind_univ } in
-    ((arity, lc), b, univs.ind_squashed, relies_on_indices_not_mattering)
+    ((arity, lc), b, univs.ind_squashed, relies_on_indices_not_mattering, univs.uses_impredicative_set)
   in
   let data = List.map map data in
 

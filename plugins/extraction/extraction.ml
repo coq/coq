@@ -115,7 +115,8 @@ let qmono uctx inst lconstr = match uctx with
   EConstr.of_constr lconstr
 
 let get_opaque uctx inst access c =
-  qmono uctx inst (fst (Global.force_proof access c))
+  let (body, _, _) = Global.force_proof access c in
+  qmono uctx inst body
 
 let applistc c args = EConstr.mkApp (c, Array.of_list args)
 

@@ -1,3 +1,34 @@
 Closed under the global context
+Axioms:
+impred_def relies on Set being impredicative.
+Theory:
+Set is impredicative
+Axioms:
+mk_impred relies on Set being impredicative.
+impred_ind relies on Set being impredicative.
+Theory:
+Set is impredicative
+Closed under the global context
+Closed under the global context
+Closed under the global context
+Axioms:
+impred_def_nested relies on Set being impredicative.
+Theory:
+Set is impredicative
+Axioms:
+mk_nested relies on Set being impredicative.
+impred_ind_nested relies on Set being impredicative.
+Theory:
+Set is impredicative
+Closed under the global context
+Axioms:
+impred_opaque_used relies on Set being impredicative.
+Theory:
+Set is impredicative
+Closed under the global context
+Closed under the global context
+Axioms:
+mk_param_impred relies on Set being impredicative.
+param_impred_ind relies on Set being impredicative.
 Theory:
 Set is impredicative

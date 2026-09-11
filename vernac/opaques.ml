@@ -53,12 +53,12 @@ struct
       if Future.UUIDSet.mem (Future.uuid cert) except then pf
       else
         let cert = Option.get (Future.peek_val cert) in
-        let c, ctx = Safe_typing.repr_certificate cert in
+        let c, ctx, uses = Safe_typing.repr_certificate_usage cert in
         let ctx = match ctx with
         | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
         | Opaqueproof.PrivatePolymorphic _ as ctx -> ctx
         in
-        OpaqueValue (c, ctx)
+        OpaqueValue (c, ctx, uses)
     in
     state := Opaqueproof.HandleMap.mapi map !state
 
@@ -71,12 +71,12 @@ let get_opaque_disk i t =
   let () = assert (0 <= i && i < Array.length t) in
   t.(i)
 
-let set_opaque_disk i (c, priv) t =
+let set_opaque_disk i (c, priv, uses) t =
   let i = Opaqueproof.repr_handle i in
   let () = assert (0 <= i && i < Array.length t) in
   let () = assert (Option.is_empty t.(i)) in
   let _, c = Constr.hcons c in
-  t.(i) <- Some (c, priv)
+  t.(i) <- Some (c, priv, uses)
 
 let current_opaques = Summary.state
 
@@ -113,12 +113,12 @@ let get_current_opaque i =
     match pf with
     | OpaqueValue pf -> Some pf
     | OpaqueCertif cert ->
-      let c, ctx = Safe_typing.repr_certificate (Future.force cert) in
+      let c, ctx, uses = Safe_typing.repr_certificate_usage (Future.force cert) in
       let ctx = match ctx with
       | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
       | Opaqueproof.PrivatePolymorphic _ as ctx -> ctx
       in
-      Some (c, ctx)
+      Some (c, ctx, uses)
   with Not_found -> None
 
 let get_current_constraints i =
@@ -161,12 +161,12 @@ let dump ?(except=Future.UUIDSet.empty) () =
     let c = match proof with
     | None -> None
     | Some cert ->
-      let (c, priv) = Safe_typing.repr_certificate cert in
+      let (c, priv, uses) = Safe_typing.repr_certificate_usage cert in
       let priv = match priv with
       | Opaqueproof.PrivateMonomorphic _ -> Opaqueproof.PrivateMonomorphic ()
       | Opaqueproof.PrivatePolymorphic _ as p -> p
       in
-      Some (c, priv)
+      Some (c, priv, uses)
     in
     let () = opaque_table.(i) <- c in
     f2t_map

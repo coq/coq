@@ -126,6 +126,14 @@ type ('opaque, 'bytecode) pconstant_body = {
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for
                                            type-checking. *)
+    const_uses_impredicative_set : bool;
+    (** Over-approximation of whether type-checking this constant used
+        the impredicativity of [Set] in a load-bearing way.  [false]
+        guarantees that the constant does not rely on
+        [-impredicative-set]; [true] may be a false alarm, since
+        cumulativity may absorb the difference.  For opaque definitions
+        this covers the type only; the bit for the delayed body is
+        stored with the opaque proof term. *)
 }
 
 type constant_body = (Opaqueproof.opaque, Vmlibrary.indirect_code) pconstant_body
@@ -256,6 +264,11 @@ type one_inductive_body = {
     mind_relies_on_indices_not_mattering : bool;
     (** true if this inductive relies on indices not mattering,
         i.e. its behavior would change under -indices-matter. *)
+
+    mind_uses_impredicative_set : bool;
+    (** true if this inductive relies on [Set] being impredicative:
+        without [-impredicative-set] it would fail to typecheck or its
+        elimination constraints would change. *)
 
 (** {8 Datas for bytecode compilation } *)
 

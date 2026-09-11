@@ -127,6 +127,12 @@ val is_filled_opaque : Opaqueproof.opaque_handle -> safe_environment -> bool
 val repr_certificate : opaque_certificate ->
   Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes
 
+(** Same as {!repr_certificate}, also reporting whether the
+    impredicativity of [Set] was used in a load-bearing way when
+    checking the body (cf {!Typeops.infer_usage}). *)
+val repr_certificate_usage : opaque_certificate ->
+  Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes * bool
+
 (** {5 Rewrite rules} *)
 
 (** Add a rewrite rule corresponding to the equality witnessed by the constant. *)

@@ -28,7 +28,10 @@ val empty_opaquetab : opaquetab
 
 val create : DirPath.t -> opaquetab -> opaque * opaquetab
 
-type opaque_proofterm = Constr.t * unit delayed_universes
+type opaque_proofterm = Constr.t * unit delayed_universes * bool
+(** The boolean is an over-approximation of whether checking the proof
+    term used the impredicativity of [Set] in a load-bearing way,
+    cf {!Typeops.infer_usage}. *)
 
 type opaque_handle
 

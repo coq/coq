@@ -645,6 +645,7 @@ type axiom =
   | TypeInType of GlobRef.t
   | UIP of MutInd.t
   | IndicesNotMattering of MutInd.t
+  | ImpredicativeSet of GlobRef.t
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
@@ -667,7 +668,8 @@ struct
     | IndicesNotMattering m1, IndicesNotMattering m2 ->
       MutInd.UserOrd.compare m1 m2
     | Guarded k1 , Guarded k2
-    | TypeInType k1, TypeInType k2 ->
+    | TypeInType k1, TypeInType k2
+    | ImpredicativeSet k1, ImpredicativeSet k2 ->
       GlobRef.UserOrd.compare k1 k2
     | Constant _, _ -> -1
     | _, Constant _ -> 1
@@ -679,6 +681,8 @@ struct
     | _, TypeInType _ -> 1
     | UIP _, _ -> -1
     | _, UIP _ -> 1
+    | IndicesNotMattering _, _ -> -1
+    | _, IndicesNotMattering _ -> 1
 
   let compare x y =
     match x , y with
@@ -711,6 +715,7 @@ let pr_assumptionset ?(flags=current_combined()) env sigma theory_info s =
   let dominated_by_env ax =
     match ax with
     | IndicesNotMattering _ -> not print_all && not (indices_matter env)
+    | ImpredicativeSet _ -> not print_all && not (is_impredicative_set env)
     | _ -> false
   in
   let s = ContextObjectMap.filter (fun k _v -> match k with
@@ -756,7 +761,16 @@ let pr_assumptionset ?(flags=current_combined()) env sigma theory_info s =
     let pr_axiom env ax typ =
       match ax with
       | Constant kn ->
-          hov 2 (safe_pr_constant env kn ++ safe_pr_ltype env sigma typ)
+          (* A symbol for rewrite rules is an axiom too; say so, since
+             its reduction behaviour depends on rules declared elsewhere. *)
+          let is_symbol =
+            try match (lookup_constant kn env).const_body with
+              | Symbol _ -> true
+              | _ -> false
+            with Not_found -> false
+          in
+          hov 2 (safe_pr_constant env kn ++ safe_pr_ltype env sigma typ ++
+                 (if is_symbol then spc () ++ strbrk "(a symbol for rewrite rules)" else mt ()))
       | Positive m ->
           hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is assumed to be positive.")
       | Guarded gr ->
@@ -767,6 +781,8 @@ let pr_assumptionset ?(flags=current_combined()) env sigma theory_info s =
           hov 2 (safe_pr_inductive env mind ++ spc () ++ strbrk"relies on definitional UIP.")
       | IndicesNotMattering mind ->
           hov 2 (safe_pr_inductive env mind ++ spc () ++ strbrk"relies on indices not mattering.")
+      | ImpredicativeSet gr ->
+          hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on Set being impredicative.")
     in
     let fold t typ accu =
       let (v, a, o, u, tr) = accu in

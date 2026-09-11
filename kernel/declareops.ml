@@ -115,7 +115,8 @@ let subst_const_body subst cb =
         const_universes = cb.const_universes;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
-        const_typing_flags = cb.const_typing_flags }
+        const_typing_flags = cb.const_typing_flags;
+        const_uses_impredicative_set = cb.const_uses_impredicative_set }
 
 (** {7 Hash-consing of constants } *)
 
@@ -239,6 +240,7 @@ let subst_mind_packet subst mbp =
     mind_automaton = subst_automaton subst mbp.mind_automaton;
     mind_relevance = mbp.mind_relevance;
     mind_relies_on_indices_not_mattering = mbp.mind_relies_on_indices_not_mattering;
+    mind_uses_impredicative_set = mbp.mind_uses_impredicative_set;
     mind_nb_constant = mbp.mind_nb_constant;
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }

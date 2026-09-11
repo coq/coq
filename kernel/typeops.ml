@@ -302,13 +302,29 @@ let type_of_array env u =
 
 (* Type of product *)
 
-let sort_of_product env domsort rangsort =
-  if is_impredicative_sort env rangsort then rangsort
+(* The boolean records whether the impredicativity of [Set] was used in
+   a load-bearing way: the product was assigned sort [Set] where
+   predicative inference would have assigned a larger sort. *)
+let sort_of_product_usage env domsort rangsort =
+  if is_impredicative_sort env rangsort then
+    let used = match rangsort with
+      | Set ->
+        (* [Set] is impredicative only with [-impredicative-set] *)
+        begin match domsort with
+          | SProp | Prop -> false
+          | _ -> not (UGraph.check_leq (universes env) (univ_of_sort domsort) Universe.type0)
+        end
+      | _ -> false
+    in
+    rangsort, used
   else match domsort with
-    | SProp | Prop -> rangsort
+    | SProp | Prop -> rangsort, false
     | _ ->
     let u1 = univ_of_sort domsort and u2 = univ_of_sort rangsort in
-    Sorts.make (quality rangsort) (Universe.sup u1 u2)
+    Sorts.make (quality rangsort) (Universe.sup u1 u2), false
+
+let sort_of_product env domsort rangsort =
+  fst (sort_of_product_usage env domsort rangsort)
 
 (* [judge_of_product env name (typ1,s1) (typ2,s2)] implements the rule
 
@@ -318,9 +334,10 @@ let sort_of_product env domsort rangsort =
 
   where j.uj_type is convertible to a sort s2
 *)
-let type_of_product env _name s1 s2 =
-  let s = sort_of_product env s1 s2 in
-    mkSort s
+let type_of_product usage env _name s1 s2 =
+  let s, used = sort_of_product_usage env s1 s2 in
+  let () = if used then usage := true in
+  mkSort s
 
 (* Type of a type cast *)
 
@@ -599,17 +616,17 @@ let push_rec_types (lna,typarray,_) env =
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
 (* The typing machine. *)
-let rec execute tbl env cstr =
-  if Int.equal (HConstr.refcount cstr) 1 then execute_aux tbl env cstr
+let rec execute ((tbl, _) as st) env cstr =
+  if Int.equal (HConstr.refcount cstr) 1 then execute_aux st env cstr
   else begin match HConstr.Tbl.find_opt tbl cstr with
     | Some v -> v
     | None ->
-      let v = execute_aux tbl env cstr in
+      let v = execute_aux st env cstr in
       HConstr.Tbl.add tbl cstr v;
       v
   end
 
-and execute_aux tbl env cstr =
+and execute_aux ((_, usage) as tbl) env cstr =
   let open Context.Rel.Declaration in
   let self = HConstr.self in
   match HConstr.kind cstr with
@@ -664,7 +681,7 @@ and execute_aux tbl env cstr =
       let () = check_assum_annot env vars name (self c1) in
       let env1 = push_rel (LocalAssum (name,self c1)) env in
       let vars' = execute_is_type tbl env1 c2 in
-      type_of_product env name vars vars'
+      type_of_product usage env name vars vars'
 
     | LetIn (name,c1,c2,c3) ->
       let c1t = execute tbl env c1 in
@@ -822,8 +839,8 @@ and execute_recdef tbl env (names,lar,vdef) i =
 and execute_array tbl env cs =
   Array.map (fun c -> execute tbl env c) cs
 
-let execute env c =
-  NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create ()) env c) ()
+let execute usage env c =
+  NewProfile.profile "Typeops.execute" (fun () -> execute (HConstr.Tbl.create (), usage) env c) ()
 
 (* Derived functions *)
 
@@ -844,26 +861,34 @@ let check_wellformed_universes env c =
 let check_wellformed_universes env c =
   NewProfile.profile "check-wf-univs" (fun () -> check_wellformed_universes env c) ()
 
-let infer_hconstr env hconstr =
+let infer_hconstr_usage env hconstr =
   let constr = HConstr.self hconstr in
   let () = check_wellformed_universes env constr in
-  let t = execute env hconstr in
-  make_judge constr t
+  let usage = ref false in
+  let t = execute usage env hconstr in
+  make_judge constr t, !usage
 
-let infer env c =
+let infer_hconstr env hconstr = fst (infer_hconstr_usage env hconstr)
+
+let infer_usage env c =
   let c = HConstr.of_constr env c in
-  infer_hconstr env c
+  infer_hconstr_usage env c
+
+let infer env c = fst (infer_usage env c)
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =
   infer_assumption env c t
 
-let infer_type env constr =
+let infer_type_usage env constr =
   let () = check_wellformed_universes env constr in
   let hconstr = HConstr.of_constr env constr in
   let constr = HConstr.self hconstr in
-  let t = execute env hconstr in
+  let usage = ref false in
+  let t = execute usage env hconstr in
   let s = check_type env constr t in
-  {utj_val = constr; utj_type = s}
+  {utj_val = constr; utj_type = s}, !usage
+
+let infer_type env constr = fst (infer_type_usage env constr)
 
 (* Typing of several terms. *)
 

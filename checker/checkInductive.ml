@@ -175,7 +175,8 @@ let check_packet mind ind
     { mind_typename; mind_arity_ctxt; mind_user_arity; mind_record; mind_sort; mind_consnames; mind_user_lc;
       mind_nrealargs; mind_nrealdecls; mind_squashed; mind_nf_lc;
       mind_consnrealargs; mind_consnrealdecls; mind_automaton; mind_relevance;
-      mind_relies_on_indices_not_mattering; mind_nb_constant; mind_nb_args; mind_reloc_tbl } =
+      mind_relies_on_indices_not_mattering; mind_uses_impredicative_set;
+      mind_nb_constant; mind_nb_args; mind_reloc_tbl } =
   let check = check mind in
 
   ignore mind_typename; (* passed through *)
@@ -206,6 +207,7 @@ let check_packet mind ind
      graph has all final constraints, so the check may compute false.
      Accept when the original is conservatively true but re-check computes false. *)
   check "mind_relies_on_indices_not_mattering" (ind.mind_relies_on_indices_not_mattering || not mind_relies_on_indices_not_mattering);
+  check "mind_uses_impredicative_set" (ind.mind_uses_impredicative_set || not mind_uses_impredicative_set);
   check "mind_nb_args" Int.(equal ind.mind_nb_args mind_nb_args);
   check "mind_nb_constant" Int.(equal ind.mind_nb_constant mind_nb_constant);
   check "mind_reloc_tbl" (eq_reloc_tbl ind.mind_reloc_tbl mind_reloc_tbl);

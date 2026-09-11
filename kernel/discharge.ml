@@ -45,10 +45,13 @@ let lift_private_univs info = function
     Opaqueproof.PrivatePolymorphic ctx
 
 let cook_opaque_proofterm info c =
-  let fold info (c, priv) =
+  let fold info (c, priv, uses) =
     let priv = lift_private_univs info priv in
     let c = abstract_as_body (create_cache info) c in
-    (c, priv)
+    (* conservative: the types of the abstracted section hypotheses
+       become part of the proof term *)
+    let uses = uses || not (Id.Set.is_empty (names_info info)) in
+    (c, priv, uses)
   in
   List.fold_right fold info c
 
@@ -81,6 +84,12 @@ let cook_constant _env info cb =
     const_relevance =  lift_relevance info cb.const_relevance;
     const_inline_code = cb.const_inline_code;
     const_typing_flags = cb.const_typing_flags;
+    const_uses_impredicative_set =
+      (* conservative: the types of the abstracted section hypotheses
+         become part of the constant *)
+      cb.const_uses_impredicative_set
+      || (cb.const_typing_flags.impredicative_set
+          && List.exists (fun d -> Id.Set.mem (NamedDecl.get_id d) names) cb.const_hyps);
   }
 
 (********************************)
@@ -158,6 +167,7 @@ let cook_one_ind info cache ~params ~ntypes mip =
     mind_automaton = mip.mind_automaton;
     mind_relevance = lift_relevance info mip.mind_relevance;
     mind_relies_on_indices_not_mattering = mip.mind_relies_on_indices_not_mattering;
+    mind_uses_impredicative_set = mip.mind_uses_impredicative_set;
     mind_nb_constant = mip.mind_nb_constant;
     mind_nb_args = mip.mind_nb_args;
     mind_reloc_tbl = mip.mind_reloc_tbl;

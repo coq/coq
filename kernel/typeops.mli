@@ -26,6 +26,16 @@ val infer      : env -> constr       -> unsafe_judgment
 val infer_hconstr : env -> HConstr.t -> unsafe_judgment
 val infer_type : env -> types        -> unsafe_type_judgment
 
+(** Variants also reporting whether the impredicativity of [Set] was
+    used in a load-bearing way during inference: some product was
+    assigned sort [Set] where predicative inference would have assigned
+    a larger sort.  [false] guarantees that the term does not rely on
+    [-impredicative-set]; [true] may be a false alarm, since
+    cumulativity may absorb the difference. *)
+val infer_usage : env -> constr -> unsafe_judgment * bool
+val infer_hconstr_usage : env -> HConstr.t -> unsafe_judgment * bool
+val infer_type_usage : env -> types -> unsafe_type_judgment * bool
+
 val check_context :
   env -> Constr.rel_context -> env * Constr.rel_context
 
@@ -54,6 +64,7 @@ val type_of_projection : env -> Projection.t -> constr -> types -> Sorts.relevan
 
 (** {6 Type of a product. } *)
 val sort_of_product : env -> Sorts.t -> Sorts.t -> Sorts.t
+val sort_of_product_usage : env -> Sorts.t -> Sorts.t -> Sorts.t * bool
 
 (** {6 Type of a cast. } *)
 val check_cast :
