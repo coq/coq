@@ -398,9 +398,9 @@ let rec fast_test lft1 term1 lft2 term2 = match fterm_of term1, fterm_of term2 w
     compare_under (e1, u1) c1 (e2, u2) c2
   | _ -> false
 
-let assert_reduced_constructor s =
+let assert_reduced_constructor (s:stack) =
   if not @@ CList.is_empty s then
-    CErrors.anomaly Pp.(str "conversion was given unreduced term (FConstruct).")
+    CErrors.anomaly Pp.(str "conversion was given unreduced term (FConstruct or primitive).")
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
@@ -769,16 +769,22 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
         else raise NotConvertible
 
     | FInt i1, FInt i2 ->
-       if Uint63.equal i1 i2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-       else raise NotConvertible
+      let () = assert_reduced_constructor v1 in
+      let () = assert_reduced_constructor v2 in
+      if Uint63.equal i1 i2 then cuniv
+      else raise NotConvertible
 
     | FFloat f1, FFloat f2 ->
-        if Float64.equal f1 f2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-        else raise NotConvertible
+      let () = assert_reduced_constructor v1 in
+      let () = assert_reduced_constructor v2 in
+      if Float64.equal f1 f2 then cuniv
+      else raise NotConvertible
 
     | FString s1, FString s2 ->
-        if Pstring.equal s1 s2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-        else raise NotConvertible
+      let () = assert_reduced_constructor v1 in
+      let () = assert_reduced_constructor v2 in
+      if Pstring.equal s1 s2 then cuniv
+      else raise NotConvertible
 
     | FCaseInvert (ci1,u1,pms1,p1,iv1,_,br1,e1), FCaseInvert (ci2,u2,pms2,p2,iv2,_,br2,e2) ->
       (if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then raise NotConvertible);
@@ -807,6 +813,8 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
       convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
 
     | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
+      let () = assert_reduced_constructor v1 in
+      let () = assert_reduced_constructor v2 in
       let len = Parray.length_int t1 in
       if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
       let cuniv = fail_check infos @@ convert_instances_cumul CONV [|UVars.Variance.Irrelevant|] u1 u2 cuniv in
@@ -814,7 +822,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
       let el2 = el_stack lft2 v2 in
       let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
       let cuniv = Parray.fold_left2 (fun u v1 v2 -> ccnv CONV l2r infos el1 el2 v1 v2 u) cuniv t1 t2 in
-      convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+      cuniv
 
     | (FRel n1, FIrrelevant) ->
       let n1 = reloc_rel n1 (el_stack lft1 v1) in
