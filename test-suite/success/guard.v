@@ -26,3 +26,12 @@ match f with
     | eq_refl => fun (g' : nat -> foo A) => bar A e (g' O)
     end g
 end e.
+
+
+Inductive Loop := loop { deloop : Loop }.
+
+Fixpoint false x : False :=
+match eq_refl loop in _ = t return t = t -> Loop -> False with
+| eq_refl => fun _ => false
+end eq_refl (deloop x).
+(* Test order of the stack vs the filter; failure entails a subtree intersection between eq and Loop *)
