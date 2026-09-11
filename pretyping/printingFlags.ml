@@ -32,7 +32,7 @@ let print_universes = make_flag ["Printing";"Universes"] false
 let { Goptions.get = print_sort_quality } =
   Goptions.declare_bool_option_and_ref
     ~key:["Printing";"Sort";"Qualities"]
-    ~value:true
+    ~value:false
     ()
 
 (* detyping *)

@@ -273,28 +273,33 @@ let detype_quality sigma q =
 let detype_universe sigma u =
   UNamed (List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u))
 
+let detype_universe_if ~universes sigma u =
+  if universes then
+    detype_universe sigma u
+  else
+    UAnonymous {rigid=UState.univ_flexible}
+
 let detype_sort ~universes ~qualities sigma = function
   | SProp -> glob_SProp_sort
   | Prop -> glob_Prop_sort
   | Set -> glob_Set_sort
   | Type u ->
-      (if universes
-       then None, detype_universe sigma u
-       else glob_Type_sort)
+    if universes then
+      None, detype_universe sigma u
+    else glob_Type_sort
   | GSort (q, u) ->
     let q = Some (GQuality (QGlobal q)) in
-    if universes then q, detype_universe sigma u
-    else q, UAnonymous {rigid=UState.univ_flexible}
+    let u = detype_universe_if ~universes sigma u in
+    q, u
   | VSort (q, u) ->
-    if universes then
-      let q = if qualities || Evd.is_rigid_qvar sigma q then
-          Some (detype_qvar sigma q)
-        else None
-      in
-      q, detype_universe sigma u
-    else if Evd.is_rigid_qvar sigma q then
-      Some (detype_qvar sigma q), UAnonymous {rigid=UState.univ_flexible}
-    else glob_Type_sort
+    let q =
+      if qualities || Evd.is_rigid_qvar sigma q then
+        Some (detype_qvar sigma q)
+      else None
+    in
+    if Option.is_empty q && not universes then glob_Type_sort else
+    let u = detype_universe_if ~universes sigma u in
+    q, u
 
 let detype_sort_f ~flags sigma s =
   detype_sort ~universes:flags.flg.universes ~qualities:flags.flg.qualities sigma s
@@ -740,15 +745,21 @@ type binder_kind = BProd | BLambda | BLetIn
 (* Main detyping function                                             *)
 
 let detype_instance ~flags sigma l =
-  if not flags.flg.universes then None
+  if not (flags.flg.qualities || flags.flg.universes) then None else
+
+  let l = EInstance.kind sigma l in
+  if UVars.Instance.is_empty l then None else
+
+  let qs, us = UVars.Instance.to_array l in
+  if not flags.flg.universes && Array.is_empty qs then None else
+
+  let qs = List.map (detype_quality sigma) (Array.to_list qs) in
+  let us = if not flags.flg.universes then
+    Array.map_to_list (fun _ -> UAnonymous {rigid=UState.univ_flexible}) us
   else
-    let l = EInstance.kind sigma l in
-    if UVars.Instance.is_empty l then None
-    else
-      let qs, us = UVars.Instance.to_array l in
-      let qs = List.map (detype_quality sigma) (Array.to_list qs) in
-      let us = List.map (detype_level sigma) (Array.to_list us) in
-      Some (qs, us)
+    List.map (detype_level sigma) (Array.to_list us)
+  in
+  Some (qs, us)
 
 let delay (type a) (d : a delay) (f : a delay -> _ -> _ -> _ -> _ -> _ -> a glob_constr_r) flags env avoid sigma t : a glob_constr_g =
   match d with
