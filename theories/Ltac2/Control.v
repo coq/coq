@@ -131,6 +131,12 @@ Ltac2 @ external hyps : unit -> (ident * constr option * constr) list := "rocq-r
     If there is one, returns the list of hypotheses. In both cases, the
     list is ordered with rightmost values being last introduced. *)
 
+Ltac2 @external is_section_variable : ident -> bool
+  := "rocq-runtime.plugins.ltac2" "is_section_variable".
+(** Return [true] is the given ident is bound as a section variable in
+    the current goal (in the global environment if no goal is focused).
+    Panics if more than one goal is under focus. *)
+
 (** Refinement *)
 
 Ltac2 @ external refine : (unit -> constr) -> unit := "rocq-runtime.plugins.ltac2" "refine".

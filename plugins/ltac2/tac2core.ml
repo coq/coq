@@ -1165,6 +1165,10 @@ let () =
   in
   return (Tac2ffi.of_list map hyps)
 
+let () = define "is_section_variable" (ident @-> tac bool) @@ fun id ->
+  pf_apply @@ fun env sigma ->
+  return (Termops.is_section_variable_env ~check:false env id)
+
 (** (unit -> constr) -> unit *)
 let () =
   define "refine" (thunk constr @-> tac unit) @@ fun c ->
