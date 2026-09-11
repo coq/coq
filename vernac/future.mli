@@ -14,16 +14,17 @@
  * to deal with eventual delegation to a slave process.
  *
  * One difference with lazy_t is that a future computation that produces
- * and exception can be substituted for another computation of the same type.
+ * an exception can be substituted for another computation of the same type.
  * Moreover a future computation can be delegated to another execution entity
  * that will be allowed to set the result.  Finally future computations can
- * always be marshalled: if they were joined before marshalling, they will
- * hold the computed value (assuming it is itself marshallable), otherwise
- * they will become invalid and accessing them raises a private exception.
+ * always be marshalled, but they never carry their value across: a
+ * computation is held behind a CEphemeron.key, and a marshalled key loses its
+ * value, so an unmarshalled computation is invalid and accessing it raises a
+ * private exception.
  *)
 
 (* Each computation has a unique id that is inherited by each offspring
- * computation (chain, split, map...).  Joined computations lose it.  *)
+ * computation (chain, split, map...).  Unmarshalled computations lose it.  *)
 module UUID : sig
   type t
   val invalid : t
