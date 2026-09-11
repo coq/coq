@@ -1,6 +1,5 @@
-
 (* variances other than Invariant are forbidden for non-cumul inductives *)
-Fail Inductive foo@{+u} : Prop := .
+Fail #[universes(cumulative=no)] Inductive foo@{+u} : Prop := .
 (* polymorphism implies cumulativity of inductives by default now *)
 Fail #[universes(polymorphic,cumulative=no)] Inductive foo@{*u} : Prop := .
 Inductive foo@{u} : Prop := .
@@ -31,9 +30,17 @@ Fail Inductive not_covariant@{+u} : Prop := ncov (_ : Type@{u} -> nat).
 
 Inductive must_unfold@{+u *v} : Prop := cmust (_ : @id Type@{v} Type@{u}).
 
-Inductive actually_default_unfold@{u v} : Prop := cnodef (_ : @id Type@{v} Type@{u}).
-Inductive actually_default_unfold_check@{+u *v} : Prop
-  := cnodef_check (_ : actually_default_unfold@{u v}).
+Inductive actually_default_not_unfold@{u v} : Prop := cnodef (_ : @id Type@{v} Type@{u}).
+Fail Inductive actually_default_not_unfold_check@{+u *v} : Prop
+  := cnodef_check (_ : actually_default_not_unfold@{u v}).
+
+Cumulativity Transparent id.
+
+Inductive actually_unfold_if_asked@{u v} : Prop := cnodef' (_ : @id Type@{v} Type@{u}).
+Inductive actually_unfold_if_asked_check@{+u *v} : Prop
+  := cnodef_check' (_ : actually_unfold_if_asked@{u v}).
+
+
 
 
 Inductive irrelevant@{*u} : Prop := .
