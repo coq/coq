@@ -1,0 +1,87 @@
+S
+     : Type@{s ; _}
+T
+     : Type
+S
+     : Type@{s ; _}
+T
+     : Type
+S
+     : Type@{s ; Set}
+T
+     : Type@{T.u0}
+P
+     : Prop
+Q
+     : Set
+R
+     : SProp
+pid
+     : forall A : Type, A -> A
+plist
+     : Type -> Type
+pid
+     : forall A : Type, A -> A
+pid
+     : forall A : Type, A -> A
+plist
+     : Type -> Type
+pnil
+     : forall A : Type, plist A
+pcons
+     : forall A : Type, A -> plist A -> plist A
+pid@{PrintingSorts.39}
+     : forall A : Type@{PrintingSorts.39}, A -> A
+(* {PrintingSorts.39} | 
+Normalized constraints:
+ {PrintingSorts.39} |  *)
+plist@{PrintingSorts.40}
+     : Type@{PrintingSorts.40} -> Type@{max(Set,PrintingSorts.40)}
+(* {PrintingSorts.40} | 
+Normalized constraints:
+ {PrintingSorts.40} |  *)
+spid
+     : forall A : Type, A -> A
+sbox
+     : Type -> Type
+spid@{α12 ; _}
+     : forall A : Type@{α12 ; _}, A -> A
+spid@{α13 ; _}
+     : forall A : Type@{α13 ; _}, A -> A
+sbox@{α14 ; _}
+     : Type@{α14 ; _} -> Type
+spack@{α15 ; _}
+     : forall A : Type@{α15 ; _}, A -> sbox@{α15 ; _} A
+spid@{α16 ; PrintingSorts.56}
+     : forall A : Type@{α16 ; PrintingSorts.56}, A -> A
+(* {α16}; {PrintingSorts.56} | 
+Collapsed sorts:
+ α16 := Type
+Normalized constraints:
+ {PrintingSorts.56} |  *)
+spid@{α17 ; PrintingSorts.57}
+     : forall A : Type@{α17 ; PrintingSorts.57}, A -> A
+(* {α17}; {PrintingSorts.57} | 
+Collapsed sorts:
+ α17 := Type
+Normalized constraints:
+ {PrintingSorts.57} |  *)
+sbox@{α18 ; PrintingSorts.58}
+     : Type@{α18 ; PrintingSorts.58} -> Type@{PrintingSorts.58}
+(* {α18}; {PrintingSorts.58} | 
+Collapsed sorts:
+ α18 := Type
+Normalized constraints:
+ {PrintingSorts.58} |  *)
+spack@{α19 ; PrintingSorts.59}
+     : forall A : Type@{α19 ; PrintingSorts.59},
+       A -> sbox@{α19 ; PrintingSorts.59} A
+(* {α19}; {PrintingSorts.59} | 
+Collapsed sorts:
+ α19 := Type
+Normalized constraints:
+ {PrintingSorts.59} |  *)
+spid@{Prop ; _}
+     : forall A : Prop, A -> A
+spid@{Type ; _}
+     : forall A : Set, A -> A

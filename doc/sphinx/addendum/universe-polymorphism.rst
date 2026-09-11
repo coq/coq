@@ -596,6 +596,18 @@ Printing universes
    terms apparently identical but internally different in the Calculus of Inductive
    Constructions.
 
+.. flag:: Printing Sorts
+
+   Turn this :term:`flag` on to display sort variables that are otherwise
+   hidden, with universe level variables replaced by ``_``.  Sorts without
+   sort variables (:g:`Type`, :g:`SProp`, :g:`Prop`, :g:`Set`) are printed
+   as usual, while sorts at a sort variable are printed like ``Type@{s;_}``
+   (or ``Type@{_}`` when :flag:`Printing Sort Qualities` is off).  Universe
+   instances of polymorphic references are displayed when they contain sort
+   qualities (with ``_`` in place of the universe levels) and stay hidden
+   otherwise.  Compared to :flag:`Printing Universes`, this makes the sort
+   structure visible without exposing internal universe level names.
+
 .. cmd:: Print {? Sorted } Universes {? Subgraph ( {* @debug_univ_name } ) } {? {| With | Without } Constraint Sources } {? @string }
    :name: Print Universes
 
@@ -1032,6 +1044,16 @@ It means that `s` and `s'` can respectively be instantiated to e.g., `Type` and 
    instead print them as though the quality was `Type` (which it will
    become at the end of the definition unless it is unified with
    another rigid quality).
+
+.. flag:: Printing Sort Quality Variables Anonymously
+
+   When this :term:`flag` is on (it is off by default), sort quality
+   variables that cannot be referred to by name are printed as ``_``
+   (which, when parsed back, denotes a fresh quality variable) instead
+   of their raw representation — ``α`` followed by a number — which
+   cannot be parsed back. Quality variables that have a name (such as
+   the ``s`` of a ``@{s;u}`` universe declaration, in contexts where it
+   is bound) are printed by name as usual.
 
 Explicit Sorts
 ---------------

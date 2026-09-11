@@ -92,6 +92,12 @@ let test_sort_qvar =
     lk_ident >> lk_list lk_field >> lk_kw ";"
   end
 
+let test_sort_anon_qvar =
+  let open Procq.Lookahead in
+  to_entry "test_sort_anon_qvar" begin
+    lk_kw "_" >> lk_kw ";"
+  end
+
 let test_record_nowith =
   let open Procq.Lookahead in
   to_entry "test_record_nowith" begin
@@ -164,6 +170,9 @@ GRAMMAR EXTEND Gram
         }
       | "Type"; "@{"; test_sort_qvar; q = reference; ";"; u = universe; "}" -> {
           Some (CQVar q), u
+        }
+      | "Type"; "@{"; test_sort_anon_qvar; "_"; ";"; u = universe; "}" -> {
+          Some (CQAnon (Some loc)), u
         }
       | "Type"; "@{"; u = universe; "}" -> { None, u } ] ]
   ;

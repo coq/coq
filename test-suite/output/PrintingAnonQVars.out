@@ -1,0 +1,30 @@
+idT@{α2 ; PrintingAnonQVars.22}
+     : forall A : Type@{α2 ; PrintingAnonQVars.22}, A -> A
+(* {α2}; {PrintingAnonQVars.22} | 
+Collapsed sorts:
+ α2 := Type
+Normalized constraints:
+ {PrintingAnonQVars.22} |  *)
+idT@{_ ; PrintingAnonQVars.23}
+     : forall A : Type@{_ ; PrintingAnonQVars.23}, A -> A
+(* {α3}; {PrintingAnonQVars.23} | 
+Collapsed sorts:
+ α3 := Type
+Normalized constraints:
+ {PrintingAnonQVars.23} |  *)
+idT@{s ; u} =
+fun (A : Type@{s ; _}) (a : A) => a
+     : forall A : Type@{s ; _}, A -> A
+
+Arguments idT A%_type_scope a
+idT@{s ; u} : forall A : Type@{s ; _}, A -> A
+
+idT is universe polymorphic
+Arguments idT A%_type_scope a
+idT is transparent
+Expands to: Constant PrintingAnonQVars.idT
+Declared in library PrintingAnonQVars, line 5, characters 11-14
+Type
+     : Type
+idT
+     : forall A : Type, A -> A
