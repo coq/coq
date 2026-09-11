@@ -24,6 +24,8 @@ type fconstr
 
 type finvert
 
+type gfix
+
 type evar_repack
 
 type subs_content
@@ -41,7 +43,7 @@ type fterm =
   | FConstruct of pconstructor * fconstr array
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * Sorts.relevance * fconstr
-  | FFix of fixpoint * usubs
+  | FFix of fixpoint * usubs * gfix
   | FCoFix of cofixpoint * usubs
   | FCaseT of case_info * UVars.Instance.t * constr array * case_return * fconstr * case_branch array * usubs (* predicate and branches are closures *)
   | FCaseInvert of case_info * UVars.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * usubs
