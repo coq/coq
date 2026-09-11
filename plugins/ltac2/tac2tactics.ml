@@ -260,13 +260,11 @@ let reduce_in red cl =
   let cl = mk_clause cl in
   Tactics.reduce red cl
 
-let reduce_constr red c =
-  Tac2core.pf_apply begin fun env sigma ->
-    let (redfun, _) = Redexpr.reduction_of_red_expr env red in
-    let (sigma, ans) = redfun env sigma c in
-    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-    Proofview.tclUNIT ans
-  end
+let reduce_constr env sigma red c =
+  let (redfun, _) = Redexpr.reduction_of_red_expr env red in
+  let (sigma, ans) = redfun env sigma c in
+  Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+  Proofview.tclUNIT ans
 
 let simpl flags where =
   Proofview.Monad.map
@@ -393,8 +391,6 @@ let current_transparent_state () =
   Proofview.tclENV >>= fun env ->
   let state = Conv_oracle.get_transp_state (Environ.oracle env) in
   Proofview.tclUNIT state
-
-let evarconv_unify state x y = Tactics.evarconv_unify ~state x y
 
 let with_strategy lvl ql tac =
   Tactics.with_set_strategy [(lvl, ql)] (thaw tac)

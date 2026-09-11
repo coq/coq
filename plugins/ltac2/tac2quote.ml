@@ -58,6 +58,9 @@ let t_ident = rocq_core "ident"
 let t_option = rocq_core "option"
 let t_exn = rocq_core "exn"
 let t_reference = std_core "reference"
+let t_env = std_core "env"
+let t_termj = kername (prefix_gen "Judge") "termj"
+let t_typej = kername (prefix_gen "Judge") "typej"
 
 let t_module = kername (prefix_gen "Module") "t"
 

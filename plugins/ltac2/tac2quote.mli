@@ -46,6 +46,9 @@ module Refs : sig
   val t_ident : type_constant
   val t_exn : type_constant
   val t_reference : type_constant
+  val t_env : type_constant
+  val t_termj : type_constant
+  val t_typej : type_constant
 
   val t_module : type_constant
 

@@ -37,6 +37,20 @@ module ModField = struct
     | Rewrule
 end
 
+type local_env = {
+  local_named : Environ.named_context_val;
+  local_rel : Environ.rel_context_val;
+}
+
+type 'a judge = {
+  env : local_env;
+  term : EConstr.t;
+  typ : 'a;
+}
+
+type termj = EConstr.types judge
+type typej = EConstr.ESorts.t judge
+
 (** Dynamic tags *)
 
 let val_exn = Val.create "exn"
@@ -71,6 +85,9 @@ let val_rewstrategy = Val.create "rewstrategy"
 let val_modpath = Val.create "modpath"
 let val_module_field = Val.create "module_field"
 let val_scheme_kind : string Val.tag = Val.create "scheme_kind"
+let val_local_env = Val.create "local_env"
+let val_termj = Val.create "termj"
+let val_typej = Val.create "typej"
 
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
 match Val.eq tag tag' with
@@ -486,6 +503,17 @@ let of_module_field c = of_ext val_module_field c
 let to_module_field c = to_ext val_module_field c
 let module_field = repr_ext val_module_field
 
+let of_local_env = of_ext val_local_env
+let to_local_env = to_ext val_local_env
+let local_env = repr_ext val_local_env
+
+let of_termj = of_ext val_termj
+let to_termj = to_ext val_termj
+let termj = repr_ext val_termj
+
+let of_typej = of_ext val_typej
+let to_typej = to_ext val_typej
+let typej = repr_ext val_typej
 
 let of_reference = let open Names.GlobRef in function
 | VarRef id -> ValBlk (0, [| of_ident id |])
@@ -521,6 +549,23 @@ let strategy_level = {
   r_to = to_strategy_level;
 }
 
+let of_relevance = function
+  | Sorts.Relevant -> ValInt 0
+  | Sorts.Irrelevant -> ValInt 1
+  | Sorts.RelevanceVar q -> ValBlk (0, [|of_qvar q|])
+
+let to_relevance = function
+  | ValInt 0 -> Sorts.Relevant
+  | ValInt 1 -> Sorts.Irrelevant
+  | ValBlk (0, [|qvar|]) ->
+    let qvar = to_qvar qvar in
+    Sorts.RelevanceVar qvar
+  | _ -> assert false
+
+(* XXX ltac2 exposes relevance internals so breaks ERelevance abstraction
+   ltac2 Constr.Binder.relevance probably needs to be made an abstract type *)
+let relevance = make_repr of_relevance to_relevance
+
 let err_notfocussed =
   LtacError (rocq_core "Not_focussed", [||])
 
@@ -536,5 +581,4 @@ let err_matchfailure =
 let err_division_by_zero =
   LtacError (rocq_core "Division_by_zero", [||])
 
-let err_invalid_arg msg =
-  LtacError (rocq_core "Invalid_argument", [|of_option of_pp (Some msg)|])
+let err_invalid_arg msg = LtacError (rocq_core "Invalid_argument", [|of_option of_pp msg|])

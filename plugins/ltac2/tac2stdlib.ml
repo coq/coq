@@ -358,8 +358,15 @@ let () =
 
 let () =
   define "reduce_constr"
-    (reduction @-> constr @-> tac constr)
-    Tac2tactics.reduce_constr
+    (reduction @-> constr @-> tac constr) @@ fun r c ->
+  Tac2core.pf_apply @@ fun env sigma ->
+  Tac2tactics.reduce_constr env sigma r c
+
+let () =
+  define "reduce_constr_in_env"
+    (local_env @-> reduction @-> constr @-> tac constr) @@ fun ctx r c ->
+  Tac2core.pf_apply_in ctx @@ fun env sigma ->
+  Tac2tactics.reduce_constr env sigma r c
 
 let () = define "red"
     (ret reduction)
@@ -848,10 +855,27 @@ let () =
   | Some sigma -> Proofview.Unsafe.tclEVARS sigma <*> return true
   | None -> return false
 
+let () = define "infer_conv_in_env" (to_conv_pb @--> transparent_state @-> local_env @-> constr @-> constr @-> tac bool) @@ fun pb ts ctx c1 c2 ->
+  Tac2core.pf_apply_in ctx @@ fun env sigma ->
+  match Reductionops.infer_conv ~pb ~ts env sigma c1 c2 with
+  | Some sigma -> Proofview.Unsafe.tclEVARS sigma <*> return true
+  | None -> return false
+
 let () =
   define "evarconv_unify"
-    (transparent_state @-> constr @-> constr @-> tac unit)
-    Tac2tactics.evarconv_unify
+    (transparent_state @-> constr @-> constr @-> tac unit) @@ fun state c1 c2 ->
+  (* XXX pf_apply instead of enter (ie expect focused goal or 0 goals) *)
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    Tactics.evarconv_unify ~state env sigma CONV c1 c2
+  end
+
+let () =
+  define "evarconv_unify_in_env"
+    (to_conv_pb @--> transparent_state @-> local_env @-> constr @-> constr @-> tac unit) @@ fun pb state ctx c1 c2 ->
+  Tac2core.pf_apply_in ctx @@ fun env sigma ->
+  Tactics.evarconv_unify ~state env sigma pb c1 c2
 
 let () =
   define "congruence"

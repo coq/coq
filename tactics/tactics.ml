@@ -3256,18 +3256,14 @@ let unify ?(state=TransparentState.full) x y =
     Proofview.tclZERO ~info (PretypeError (env, sigma, CannotUnify (x, y, None)))
   end
 
-let evarconv_unify ?(state=TransparentState.full) ?(with_ho=true) x y =
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
+let evarconv_unify ?(state=TransparentState.full) ?(with_ho=true) env sigma pb x y =
   try
     let flags = Evarconv.default_flags_of state in
-    let sigma = Evarconv.unify ~flags ~with_ho env sigma Conversion.CONV x y in
+    let sigma = Evarconv.unify ~flags ~with_ho env sigma pb x y in
     Proofview.Unsafe.tclEVARS sigma
   with e when noncritical e ->
     let e, info = Exninfo.capture e in
     Proofview.tclZERO ~info (PretypeError (env, sigma, CannotUnify (x, y, None)))
-  end
 
 let with_set_strategy lvl_ql k =
   let glob_key r =

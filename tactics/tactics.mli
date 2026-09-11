@@ -658,11 +658,14 @@ val constr_eq : strict:bool -> constr -> constr -> unit Proofview.tactic
 (** Legacy unification. Use [evarconv_unify] instead. *)
 val unify : ?state:TransparentState.t -> constr -> constr -> unit Proofview.tactic
 
-(** [evarconv_unify ?state ?with_ho x y] unifies [x] and [y], instantiating evars and adding universe constraints
-    as needed. Fails if [x] and [y] are not unifiable.
+(** [evarconv_unify ?state ?with_ho env sigma pb x y] unifies [x] and [y],
+    instantiating evars and adding universe constraints as needed.
+    Fails if [x] and [y] are not unifiable.
+    - [pb]: infer [x <= y] or [x == y].
     - [state]: transparency state to use (defaults to [TransparentState.full]).
     - [with_ho]: whether to use higher order unification (defaults to [true]). *)
-val evarconv_unify : ?state:TransparentState.t -> ?with_ho:bool -> constr -> constr -> unit Proofview.tactic
+val evarconv_unify : ?state:TransparentState.t -> ?with_ho:bool ->
+  env -> evar_map -> Conversion.conv_pb -> constr -> constr -> unit Proofview.tactic
 
 val specialize_eqs : Id.t -> unit Proofview.tactic
 

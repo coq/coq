@@ -141,6 +141,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Ltac2/Ind.v
     theories/Ltac2/Init.v
     theories/Ltac2/Int.v
+    theories/Ltac2/Judge.v
     theories/Ltac2/Lazy.v
     theories/Ltac2/List.v
     theories/Ltac2/Ltac1.v
@@ -159,6 +160,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Ltac2/Reference.v
     theories/Ltac2/Rewrite.v
     theories/Ltac2/Scheme.v
+    theories/Ltac2/Sort.v
     theories/Ltac2/Std.v
     theories/Ltac2/String.v
     theories/Ltac2/TransparentState.v

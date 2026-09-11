@@ -76,7 +76,7 @@ val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
 
 val reduce_in : Redexpr.red_expr -> clause -> unit tactic
 
-val reduce_constr : Redexpr.red_expr -> constr -> constr tactic
+val reduce_constr : Environ.env -> Evd.evar_map -> Redexpr.red_expr -> constr -> constr tactic
 
 val simpl : Tac2types.red_flag -> Tac2types.red_context -> Redexpr.red_expr tactic
 
@@ -119,8 +119,6 @@ val inversion : Inv.inversion_kind -> destruction_arg -> intro_pattern option ->
 val contradiction : constr_with_bindings option -> unit tactic
 
 val current_transparent_state : unit -> TransparentState.t tactic
-
-val evarconv_unify : TransparentState.t -> constr -> constr -> unit tactic
 
 val with_strategy : Conv_oracle.level -> GlobRef.t list -> 'a thunk -> 'a tactic
 

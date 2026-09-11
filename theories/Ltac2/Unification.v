@@ -64,3 +64,26 @@ Ltac2 unify_with_current_ts : constr -> constr -> unit := fun c1 c2 =>
 (** [solve_constraints ()] solves any delayed unification constraints. *)
 Ltac2 @external solve_constraints : unit -> unit
   := "rocq-runtime.plugins.ltac2" "solve_constraints".
+
+Module UnsafeEnv.
+
+  (** [conv_in_env] returns true if both terms are convertible in the given environment,
+      in which case it updates the proof state with the universes constraints
+      required for the terms to be convertible.
+      It returns false if the terms are not convertible.
+      It fails if there is more than one goal under focus.
+
+      [conv_in_env] is parametrised by:
+      - Unification.conv_flag which controls if conversion is done up to cumulativity or not
+      - TransparentState.t which controls which constants get unfolded during conversion
+   *)
+  Ltac2 @external conv_in_env : Unification.conv_flag -> TransparentState.t -> env -> constr -> constr -> bool
+    := "rocq-runtime.plugins.ltac2" "infer_conv_in_env".
+
+  (** [unify_in_env pb ts ctx c1 c2] unifies [c1] and [c2] in [ctx] (using Evarconv unification),
+      which may have the effect of instantiating evars.
+      If the [c1] and [c2] cannot be unified, an [Internal] exception is raised. *)
+  Ltac2 @external unify_in_env : Unification.conv_flag -> TransparentState.t -> env -> constr -> constr -> unit
+    := "rocq-runtime.plugins.ltac2" "evarconv_unify_in_env".
+
+End UnsafeEnv.

@@ -45,6 +45,24 @@ Ltac2 once_plus (run : unit -> 'a) (handle : exn -> 'a) : 'a :=
   once (fun () => plus run handle).
 (** [once_plus run handle] is [once] applied to [plus run handle]. *)
 
+(** Environments *)
+
+(** Return the global environment (containing section variables and no goal hypotheses). *)
+Ltac2 @external global_env : unit -> env
+  := "rocq-runtime.plugins.ltac2" "global_env".
+
+(** If 1 goal is focused, return the goal environment
+    (containing goal hypotheses, and any section variables which haven't been cleared).
+    Otherwise throw [Not_focussed]. *)
+Ltac2 @external goal_env : unit -> env
+  := "rocq-runtime.plugins.ltac2" "goal_env".
+
+(** If no goals are focused, [global_env].
+    If 1 goal is focused, [goal_env].
+    Otherwise throw [Not_focussed]. *)
+Ltac2 @external current_env : unit -> env
+  := "rocq-runtime.plugins.ltac2" "current_env".
+
 (** Proof state manipulation *)
 
 Ltac2 @ external numgoals : unit -> int := "rocq-runtime.plugins.ltac2" "numgoals".

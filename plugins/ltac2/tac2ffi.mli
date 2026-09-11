@@ -154,6 +154,10 @@ val of_sort : ESorts.t -> valexpr
 val to_sort : valexpr -> ESorts.t
 val sort : ESorts.t repr
 
+val of_relevance : Sorts.relevance -> valexpr
+val to_relevance : valexpr -> Sorts.relevance
+val relevance : Sorts.relevance repr
+
 val of_reduction : Redexpr.red_expr -> valexpr
 val to_reduction : valexpr -> Redexpr.red_expr
 val reduction : Redexpr.red_expr repr
@@ -245,6 +249,32 @@ val of_module_field : ModField.t -> valexpr
 val to_module_field : valexpr -> ModField.t
 val module_field : ModField.t repr
 
+type local_env = {
+  local_named : Environ.named_context_val;
+  local_rel : Environ.rel_context_val;
+}
+
+type 'a judge = {
+  env : local_env;
+  term : EConstr.t;
+  typ : 'a;
+}
+
+type termj = EConstr.types judge
+type typej = EConstr.ESorts.t judge
+
+val of_local_env : local_env -> valexpr
+val to_local_env : valexpr -> local_env
+val local_env : local_env repr
+
+val of_termj : termj -> valexpr
+val to_termj : valexpr -> termj
+val termj : termj repr
+
+val of_typej : typej -> valexpr
+val to_typej : valexpr -> typej
+val typej : typej repr
+
 val of_ext : 'a Val.tag -> 'a -> valexpr
 val to_ext : 'a Val.tag -> valexpr -> 'a
 val repr_ext : 'a Val.tag -> 'a repr
@@ -283,4 +313,4 @@ val err_outofbounds : exn
 val err_notfound : exn
 val err_matchfailure : exn
 val err_division_by_zero : exn
-val err_invalid_arg : Pp.t -> exn
+val err_invalid_arg : Pp.t option -> exn

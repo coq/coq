@@ -396,3 +396,12 @@ Ltac2 @ external simple_congruence : int option -> constr list option -> unit :=
 
 Ltac2 @external f_equal : unit -> unit :=
   "rocq-runtime.plugins.ltac2" "f_equal".
+
+Module UnsafeEnv.
+
+  (** [eval_in_env Γ red c] reduces [c] according to [red] in environment [Γ].
+      Does not check that [c] or [red] are valid in [Γ]. *)
+  Ltac2 @external eval_in_env : env -> Std.Red.t -> constr -> constr
+    := "rocq-runtime.plugins.ltac2" "reduce_constr_in_env".
+
+End UnsafeEnv.
