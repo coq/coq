@@ -77,6 +77,7 @@ GRAMMAR EXTEND Gram
       | IDENT "zeta" -> { [FZeta] }
       | IDENT "delta"; d = delta_flag -> { [d] }
       | IDENT "head" -> { [FHead] }
+      | IDENT "noopaques" -> { [FNoOpaques] }
     ] ]
   ;
   delta_flag:

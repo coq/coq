@@ -76,6 +76,7 @@ let to_red_flag v : Tac2types.red_flag = match Value.to_tuple v with
     rZeta = Value.to_bool zeta;
     rDelta = Value.to_bool delta;
     rConst = Value.to_list Value.to_reference const;
+    rNoOpaques = false;
   }
 | _ -> assert false
 

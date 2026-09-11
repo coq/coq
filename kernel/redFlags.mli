@@ -25,6 +25,7 @@ val fMATCH : red_kind
 val fFIX : red_kind
 val fCOFIX : red_kind
 val fZETA : red_kind
+val fNoOpaques : red_kind
 val fCONST : Names.Constant.t -> red_kind
 val fPROJ : Names.Projection.Repr.t -> red_kind
 val fVAR : Names.Id.t -> red_kind

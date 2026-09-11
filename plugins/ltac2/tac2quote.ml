@@ -444,7 +444,8 @@ let make_red_flag l =
   in
   add_flag
     {rBeta = false; rMatch = false; rFix = false; rCofix = false;
-     rZeta = false; rDelta = false; rConst = []; rStrength = Norm; }
+     rZeta = false; rDelta = false; rConst = []; rStrength = Norm;
+     rNoOpaques = false; }
     l
 
 let of_reference r =

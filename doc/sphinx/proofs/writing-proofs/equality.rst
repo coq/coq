@@ -488,6 +488,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
       reductions ::= {+ @reduction }
       | {? head } @delta_reductions
       reduction ::= head
+      | noopaques
       | beta
       | delta {? @delta_reductions }
       | match

@@ -219,6 +219,7 @@ let make_flag env f =
   let red = if f.rFix then red_add red fFIX else red in
   let red = if f.rCofix then red_add red fCOFIX else red in
   let red = if f.rZeta then red_add red fZETA else red in
+  let red = if f.rNoOpaques then red_add red fNoOpaques else red in
   let red =
     if f.rDelta then (* All but rConst *)
         let red = red_add red fDELTA in

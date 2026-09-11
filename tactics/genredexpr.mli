@@ -21,6 +21,7 @@ type 'a red_atom =
   | FConst of 'a list
   | FDeltaBut of 'a list
   | FHead
+  | FNoOpaques
 
 (** This list of atoms is immediately converted to a [glob_red_flag] *)
 
@@ -35,7 +36,8 @@ type 'a glob_red_flag = {
   rCofix : bool;
   rZeta : bool;
   rDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
-  rConst : 'a list
+  rConst : 'a list;
+  rNoOpaques : bool;
 }
 
 (** Generic kinds of reductions *)

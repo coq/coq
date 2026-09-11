@@ -12,41 +12,46 @@ open Genredexpr
 
 let union_consts l1 l2 = Util.List.union (=) l1 l2 (* FIXME *)
 
-
 let all_flags =
   {rBeta = true; rMatch = true; rFix = true; rCofix = true;
-   rZeta = true; rDelta = true; rConst = []; rStrength = Norm; }
+   rZeta = true; rDelta = true; rConst = []; rStrength = Norm;
+   rNoOpaques = false;
+  }
 
 let make_red_flag l =
-  let rec add_flag red = function
-    | [] -> red
-    | FHead :: lf -> add_flag { red with rStrength = Head } lf
-    | FBeta :: lf -> add_flag { red with rBeta = true } lf
-    | FMatch :: lf -> add_flag { red with rMatch = true } lf
-    | FFix :: lf -> add_flag { red with rFix = true } lf
-    | FCofix :: lf -> add_flag { red with rCofix = true } lf
-    | FZeta :: lf -> add_flag { red with rZeta = true } lf
-    | FConst l :: lf ->
-        if red.rDelta then
-          CErrors.user_err Pp.(str
-            "Cannot set both constants to unfold and constants not to unfold");
-        add_flag { red with rConst = union_consts red.rConst l } lf
-    | FDeltaBut l :: lf ->
-        if red.rConst <> [] && not red.rDelta then
-          CErrors.user_err Pp.(str
-            "Cannot set both constants to unfold and constants not to unfold");
-        add_flag
-          { red with rConst = union_consts red.rConst l; rDelta = true }
-          lf
+  let add_flag red = function
+    | FHead -> { red with rStrength = Head }
+    | FBeta -> { red with rBeta = true }
+    | FMatch -> { red with rMatch = true }
+    | FFix -> { red with rFix = true }
+    | FCofix -> { red with rCofix = true }
+    | FZeta -> { red with rZeta = true }
+    | FConst l ->
+      let () = if red.rDelta then
+          CErrors.user_err
+            Pp.(str "Cannot set both constants to unfold and constants not to unfold")
+      in
+      { red with rConst = union_consts red.rConst l }
+    | FDeltaBut l ->
+      let () = if red.rConst <> [] && not red.rDelta then
+          CErrors.user_err
+            Pp.(str "Cannot set both constants to unfold and constants not to unfold")
+      in
+      { red with rConst = union_consts red.rConst l; rDelta = true }
+    | FNoOpaques -> { red with rNoOpaques = true }
   in
-  add_flag
-    {rBeta = false; rMatch = false; rFix = false; rCofix = false;
-     rZeta = false; rDelta = false; rConst = []; rStrength = Norm; }
+  let base =
+    (* if the flags are just head and/or noopaques, don't disable reduction *)
+    if List.exists (function FHead | FNoOpaques -> false | _ -> true) l then
+      {rBeta = false; rMatch = false; rFix = false; rCofix = false;
+       rZeta = false; rDelta = false; rConst = []; rStrength = Norm;
+       rNoOpaques = false;
+      }
+    else all_flags
+  in
+  List.fold_left add_flag
+    base
     l
-
-let make_red_flag = function
-  | [FHead] -> { all_flags with rStrength = Head }
-  | l -> make_red_flag l
 
 (** Mapping [red_expr_gen] *)
 

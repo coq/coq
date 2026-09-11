@@ -153,14 +153,10 @@ let rec n_x_id ids n =
 let simpl_iter clause =
   reduce
     (Lazy
-       { rBeta = true
-       ; rMatch = true
-       ; rFix = true
-       ; rCofix = true
-       ; rZeta = true
-       ; rDelta = false
-       ; rConst = [EvalConstRef (const_of_ref (delayed_force iter_ref))]
-       ; rStrength = Norm })
+       { Redops.all_flags with
+         rDelta = false;
+         rConst = [EvalConstRef (const_of_ref (delayed_force iter_ref))];
+       })
     clause
 
 (* [value_f ctx ref] build [fun ctx => proj1_sig (ref ctx)] where

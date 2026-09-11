@@ -1987,6 +1987,21 @@ end
 
 type 'a depth = 'a RedPattern.depth
 
+exception EncounteredOpaque of Environ.env * table_key
+
+let encountered_opaque_printer = ref (fun _ -> function
+    | ConstKey (c, _) -> Constant.print c
+    | VarKey id -> Id.print id
+    | RelKey n -> Pp.(str "UNBOUND_REL_" ++ int n))
+
+let () = CErrors.register_handler @@ function
+  | EncounteredOpaque (env, k) ->
+    Some Pp.(str "Encountered opaque " ++ !encountered_opaque_printer env k ++
+             str " in lazy with noopaques flag.")
+  | _ -> None
+
+let set_encountered_opaque_printer f = encountered_opaque_printer := f
+
 (* Computes a weak head normal form from the result of knh. *)
 let rec knr info tab ~pat_state m stk =
   match m.term with
@@ -2007,7 +2022,11 @@ let rec knr info tab ~pat_state m stk =
             knr_ret info tab ~pat_state (m, stk)
         | Symbol (u, b, r) ->
           RedPattern.match_symbol knred info tab ~pat_state fl (u, b, r) stk
-        | Undef _ | OpaqueDef _ -> (set_ntrl m; knr_ret info tab ~pat_state (m,stk)))
+        | Undef _ | OpaqueDef _ ->
+          let () = if red_set info.i_flags fNoOpaques then
+              raise (EncounteredOpaque (info_env info, fl))
+          in
+          (set_ntrl m; knr_ret info tab ~pat_state (m,stk)))
   | FConstruct (c, args) ->
     let use_match = red_set info.i_flags fMATCH in
     let use_fix = red_set info.i_flags fFIX in
@@ -2075,6 +2094,11 @@ let rec knr info tab ~pat_state m stk =
   | FIrrelevant ->
     let stk = skip_irrelevant_stack info stk in
     knr_ret info tab ~pat_state (m, stk)
+  | FFlex fl when red_set info.i_flags fNoOpaques -> raise (EncounteredOpaque (info_env info, fl))
+  | FRel n when red_set info.i_flags fNoOpaques ->
+    (* XXX RelKey is incorrect? the env if the outer env? *)
+    raise (EncounteredOpaque (info_env info, RelKey n))
+  (* XXX also reject FEvar when noopaques? *)
   | FProd _ | FAtom _ | FInd _ (* relevant statically *)
   | FCaseInvert _ | FProj _ | FFix _ | FEvar _ (* relevant because of knh(t) *)
   | FLambda _ | FFlex _ | FRel _ (* irrelevance handled by conversion *)

@@ -1241,7 +1241,8 @@ let tclFULL_BETAIOTA = Goal.enter begin fun gl ->
   let r, _ = Redexpr.reduction_of_red_expr (Goal.env gl)
     Genredexpr.(Lazy {
       rBeta=true; rMatch=true; rFix=true; rCofix=true;
-      rZeta=false; rDelta=false; rConst=[]; rStrength=Norm}) in
+      rZeta=false; rDelta=false; rConst=[]; rStrength=Norm;
+      rNoOpaques=false; }) in
   Tactics.e_reduct_in_concl ~cast:false ~check:false (r,Constr.DEFAULTcast)
 end
 

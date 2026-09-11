@@ -804,6 +804,7 @@ red_flag: [
 | "zeta"
 | "delta" delta_flag
 | "head"
+| "noopaques"
 ]
 
 delta_flag: [

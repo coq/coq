@@ -213,3 +213,5 @@ val get_ref_mask : clos_infos -> clos_tab -> table_key -> bool array
 
 (** Hook for Reduction *)
 val set_conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) -> unit
+
+val set_encountered_opaque_printer : (Environ.env -> table_key -> Pp.t) -> unit

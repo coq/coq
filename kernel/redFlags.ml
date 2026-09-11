@@ -19,12 +19,13 @@ type red_kind =
   | PROJ of Projection.Repr.t
   | VAR of Id.t
 
-let fBETA  = FLAG 0b000001
-let fDELTA = FLAG 0b000010
-let fMATCH = FLAG 0b000100
-let fFIX   = FLAG 0b001000
-let fCOFIX = FLAG 0b010000
-let fZETA  = FLAG 0b100000
+let fBETA      = FLAG 0b0000001
+let fDELTA     = FLAG 0b0000010
+let fMATCH     = FLAG 0b0000100
+let fFIX       = FLAG 0b0001000
+let fCOFIX     = FLAG 0b0010000
+let fZETA      = FLAG 0b0100000
+let fNoOpaques = FLAG 0b1000000
 let fCONST kn = CONST kn
 let fPROJ p = PROJ p
 let fVAR id = VAR id
@@ -38,7 +39,7 @@ let red_add ({flags; ts} as red) = function
   | VAR id -> {red with ts = {ts with tr_var = Id.Pred.add id ts.tr_var}}
 
 let red_sub ({flags; ts} as red) = function
-  | FLAG f -> {red with flags = flags land (0b111111 lxor f)}
+  | FLAG f -> {red with flags = flags land (0b1111111 lxor f)}
   | CONST kn -> {red with ts = {ts with tr_cst = Cpred.remove kn ts.tr_cst}}
   | PROJ p -> {red with ts = {ts with tr_prj = PRpred.remove p ts.tr_prj}}
   | VAR id -> { red with ts = {ts with tr_var = Id.Pred.remove id ts.tr_var}}
