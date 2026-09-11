@@ -648,3 +648,133 @@ let is_matching_appsubterm ?(closed=true) env sigma pat c =
   let pat = (Id.Set.empty,pat) in
   let results = sub_match ~closed env sigma pat c in
   not (IStream.is_empty results)
+
+let cache_size = 1 lsl 18
+
+type subterm_cache_entry = {
+  term: Evd.econstr;
+  result: bool;
+}
+type subterm_cache = subterm_cache_entry option array ref
+
+let make_subterm_cache () = ref (Array.make cache_size None)
+
+(* A bounded hash of the top of the term.  Any function of a term agrees with
+   [==]; what this one has to be is O(1), where [Constr.hash] walks the whole
+   term.  Every name hash it uses is a memoized field. *)
+let rec hash_top n sigma c =
+  let open Hashset.Combine in
+  let open EConstr in
+  let sub c = if n <= 1 then 0 else hash_top (n - 1) sigma c in
+  match kind sigma c with
+  | Const (kn, _) -> combinesmall 1 (Constant.UserOrd.hash kn)
+  | Ind ((mi, i), _) -> combinesmall 2 (combine (MutInd.UserOrd.hash mi) i)
+  | Construct (((mi, i), j), _) ->
+    combinesmall 3 (combine3 (MutInd.UserOrd.hash mi) i j)
+  | Var id -> combinesmall 4 (Id.hash id)
+  | Rel i -> combinesmall 5 i
+  | App (f, args) ->
+    let k = Array.length args in
+    combinesmall 6
+      (combine3 (sub f) k (if Int.equal k 0 then 0 else sub args.(k - 1)))
+  | Lambda (_, t, b) -> combinesmall 7 (combine (sub t) (sub b))
+  | Prod (_, t, b) -> combinesmall 8 (combine (sub t) (sub b))
+  | LetIn (_, b, t, c) -> combinesmall 9 (combine3 (sub b) (sub t) (sub c))
+  | Proj (p, _, c) ->
+    combinesmall 10 (combine (Projection.CanOrd.hash p) (sub c))
+  | Case (ci, _, _, _, _, c, br) ->
+    combinesmall 11 (combine3 (Ind.UserOrd.hash ci.Constr.ci_ind)
+                       (Array.length br) (sub c))
+  | Cast (c, _, _) -> combinesmall 12 (sub c)
+  | Fix (_, (_, tl, _)) -> combinesmall 13 (Array.length tl)
+  | CoFix (_, (_, tl, _)) -> combinesmall 14 (Array.length tl)
+  | Array (_, t, _, _) -> combinesmall 15 (Array.length t)
+  | Int i -> combinesmall 16 (Uint63.hash i)
+  | Float _ -> 17
+  | String _ -> 18
+  | Sort _ -> 19
+  | Meta i -> combinesmall 20 i
+  | Evar _ -> 21
+
+let hash_top sigma c = hash_top 3 sigma c
+
+let sub_match_cached cache env sigma pat c =
+  let open EConstr in
+  let rec aux env c =
+  let hash = hash_top sigma c land (cache_size - 1) in
+  let keys = !cache in
+  let (cache_hit, cached_result) = (match Array.unsafe_get keys hash with
+  | Some {term; result} -> (term == c, result)
+  | None -> (false, false)) in
+  if cache_hit then cached_result
+  else begin
+    let here = (try
+      let _ = matches_core_closed env sigma pat c in true
+    with PatternMatchingFailure -> false)
+    in
+    let next () = match EConstr.kind sigma c with
+    | Cast (c1,k,c2) -> try_aux [env, c1]
+    | Lambda (x,c1,c2) ->
+        let env' = EConstr.push_rel (LocalAssum (x,c1)) env in
+        try_aux [(env, c1); (env', c2)]
+    | Prod (x,c1,c2) ->
+        let env' = EConstr.push_rel (LocalAssum (x,c1)) env in
+        try_aux [(env, c1); (env', c2)]
+    | LetIn (x,c1,t,c2) ->
+        let env' = EConstr.push_rel (LocalDef (x,c1,t)) env in
+        try_aux [(env, c1); (env', c2)]
+    | App (c1,lc) ->
+      let lc1 = Array.sub lc 0 (Array.length lc - 1) in
+      let app = mkApp (c1,lc1) in
+      try_aux [(env, app); (env, Array.last lc)]
+    | Case (ci,u,pms,hd0,iv,c1,lc0) ->
+        let (mib, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
+        let (_, (hd,hdr), _, _, br) = expand_case env sigma (ci, u, pms, hd0, iv, c1, lc0) in
+        let hd =
+          let (ctx, hd) = decompose_lambda_decls sigma hd in
+          (push_rel_context ctx env, hd)
+        in
+        let map i br =
+          let decls = mip.Declarations.mind_consnrealdecls.(i) in
+          let (ctx, c) = decompose_lambda_n_decls sigma decls br in
+          (push_rel_context ctx env, c)
+        in
+        let lc = Array.to_list (Array.mapi map br) in
+        let sub = (env, c1) :: Array.fold_right (fun c accu -> (env, c) :: accu) pms (hd :: lc) in
+        try_aux sub
+    | Fix (indx,(names,types,bodies as recdefs)) ->
+      let env' = push_rec_types recdefs env in
+      let sub = subargs env types @ subargs env' bodies in
+      try_aux sub
+    | CoFix (i,(names,types,bodies as recdefs)) ->
+      let env' = push_rec_types recdefs env in
+      let sub = subargs env types @ subargs env' bodies in
+      try_aux sub
+    | Proj (p,_,c') ->
+      begin match Retyping.expand_projection env sigma p c' [] with
+      | term -> aux env term
+      | exception Retyping.RetypeError _ -> false
+      end
+    | Array(u, t, def, ty) ->
+      let sub = (env,def) :: (env,ty) :: subargs env t in
+      try_aux sub
+    | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _|String _ -> false
+    in
+    let result = here || next() in
+    Array.unsafe_set keys hash (Some {term = c; result}); (* add result to the cache *)
+    result
+  end
+
+  (* Tries [sub_match] for all terms in the list *)
+  and try_aux lc =
+    let rec try_sub_match_rec lc =
+      match lc with
+      | [] -> false
+      | (env, c) :: tl -> aux env c || try_sub_match_rec tl
+    in
+    try_sub_match_rec lc in
+  aux env c
+
+let is_matching_appsubterm_cached cache env sigma pat c =
+  let pat = (Id.Set.empty,pat) in
+  sub_match_cached cache env sigma pat c

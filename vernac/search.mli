@@ -16,11 +16,12 @@ open Vernacexpr
 
 (** {6 Search facilities. } *)
 
-type glob_search_item =
-  | GlobSearchSubPattern of glob_search_where * bool * constr_pattern
-  | GlobSearchString of string
-  | GlobSearchKind of (Vernacexpr.discharge * Decls.logical_kind)
-  | GlobSearchFilter of (GlobRef.t -> bool)
+type glob_search_item
+
+val make_search_item_sub_pattern : glob_search_where -> bool -> constr_pattern -> glob_search_item
+val make_search_item_string : string -> glob_search_item
+val make_search_item_kind : (Vernacexpr.discharge * Decls.logical_kind) -> glob_search_item
+val make_search_item_filter : (GlobRef.t -> bool) -> glob_search_item
 
 type glob_search_request =
   | GlobSearchLiteral of glob_search_item
