@@ -143,6 +143,17 @@ val unfocused : t -> bool
 (** Unfocus everything (fail if no allowed). *)
 val unfocus_all : t -> t
 
+(** Brackets "{" and "}" *)
+
+type subproof_select =
+  | SubproofNth of int
+  | SubproofId of Libnames.qualid
+  | SubproofAbstract
+
+val start_subproof : subproof_select -> t -> t
+
+val end_subproof : t -> t
+
 (* [get_at_focus k] gets the information stored at the closest focus point
     of kind [k].
     Raises [NoSuchFocus] if there is no focus point of kind [k]. *)
@@ -219,3 +230,5 @@ val set_used_variables : Environ.env -> kept:Names.Id.Set.t -> t -> t
 (** Exposed for printing *)
 exception ProofUsingClearDependency of
     Environ.env * Evd.evar_map * Names.Id.t * Evarutil.clear_dependency_error * Names.GlobRef.t option
+
+val abstract_hook : (unit Proofview.tactic -> unit Proofview.tactic) Hook.t
