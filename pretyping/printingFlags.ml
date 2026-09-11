@@ -39,9 +39,9 @@ let { Goptions.get = print_sort_quality } =
     ()
 
 (* extern *)
-let { Goptions.get = print_anonymous_qvars } =
+let { Goptions.get = print_anonymous_univs } =
   Goptions.declare_bool_option_and_ref
-    ~key:["Printing";"Sort";"Quality";"Variables";"Anonymously"]
+    ~key:["Printing";"Unnamed";"Universes";"Anonymously"]
     ~value:false
     ()
 
@@ -354,7 +354,7 @@ module Extern = struct
     notations : bool;
     (* Print sort quality variables that have no name as "_" instead of
        their raw (unparsable) α-names *)
-    anonymous_qvars : bool;
+    anonymous_univs : bool;
     raw_literals : bool;
     projections : bool;
     float : bool;
@@ -371,7 +371,7 @@ module Extern = struct
     coercions = !print_coercions;
     parentheses = !print_parentheses;
     notations = not !print_no_symbol;
-    anonymous_qvars = print_anonymous_qvars();
+    anonymous_univs = print_anonymous_univs();
     raw_literals = !print_raw_literal;
     projections = !print_projections;
     float = print_float();
@@ -388,7 +388,7 @@ module Extern = struct
     coercions = true;
     raw_literals = true;
     notations = false;
-    anonymous_qvars = false;
+    anonymous_univs = false;
     projections = false;
     factorize_eqns = FactorizeEqns.make_raw flags.factorize_eqns;
   }
