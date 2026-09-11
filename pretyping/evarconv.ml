@@ -1773,7 +1773,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
     | _, _, [] -> []
     | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.")
   in
-  let rec set_holes env_rhs evd fixed rhs = function
+  let rec set_holes evd fixed rhs = function
   | (id,idty,c,cty,evsref,filter,occs)::subst ->
      let c = nf_evar evd c in
      debug_ho_unification (fun () ->
@@ -1793,7 +1793,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
           if Locusops.is_selected oc occs then evd, fixed, mkVar id.binder_name
           else evd, fixed, inst
        | Unspecified prefer_abstraction ->
-          let evd, fixed, evty = set_holes env_rhs evd fixed cty subst in
+          let evd, fixed, evty = set_holes evd fixed cty subst in
           let evty = nf_evar evd evty in
           debug_ho_unification (fun () ->
             Pp.(str"abstracting one occurrence " ++ prc env_rhs evd inst ++
@@ -1820,13 +1820,12 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      debug_ho_unification (fun () ->
        Pp.(str"abstracted: " ++ prc env_rhs evd rhs'));
      let () = check_selected_occs env_rhs evd c !occ occs in
-     let env_rhs' = push_named ProofVar (NamedDecl.LocalAssum (id,idty)) env_rhs in
-     set_holes env_rhs' evd fixed rhs' subst
+     set_holes evd fixed rhs' subst
   | [] -> evd, fixed, rhs in
 
   let subst = make_subst 0 (ctxt,args,argoccs) in
 
-  let evd, _, rhs' = set_holes env_rhs evd Evar.Set.empty rhs subst in
+  let evd, _, rhs' = set_holes evd Evar.Set.empty rhs subst in
   let rhs' = nf_evar evd rhs' in
   (* Thin evars making the term typable in env_evar *)
   let evd, rhs' = thin_evars env_evar evd ctxt rhs' in
