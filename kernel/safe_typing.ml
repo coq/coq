@@ -1584,7 +1584,7 @@ let add_include me is_module inl senv =
   let mp_sup = senv.modpath in
   let state = check_state senv in
   let vmstate = vm_state senv in
-  let sign,(),resolver, _, vmtab =
+  let sign, origin, resolver, _, vmtab =
     translate_mse_include is_module state vmstate senv.env mp_sup inl me
   in
   let senv = set_vm_library vmtab senv in
@@ -1610,6 +1610,20 @@ let add_include me is_module inl senv =
     | NoFunctor str -> resolver, str
   in
   let resolver, str = compute_sign sign resolver in
+  (* [Include Self]: [translate_mse_include] handed the functor back at its own
+     path rather than renaming it onto [mp_sup], which must not become the key
+     of an equivalence. Its parameters are instantiated by now, so copy the
+     fields over. A module declares no inlinable parameter, hence the round trip
+     through the module body kind loses nothing. *)
+  let resolver, str = match origin with
+  | None -> resolver, str
+  | Some mp_f ->
+    let str, reso =
+      Modops.include_applied_structure mp_f str
+        (Mod_subst.forget_inline_delta_resolver resolver) mp_sup
+    in
+    Mod_subst.of_body_delta_resolver reso, str
+  in
   let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv in
   let add senv ((l,elem) as field) =
     let new_name = match elem with

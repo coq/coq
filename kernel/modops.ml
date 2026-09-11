@@ -332,6 +332,23 @@ let strengthen mtb mp = match mod_type mtb with
     strengthen_module_type struc' reso' mtb
 | MoreFunctor _ -> mtb
 
+(** Aliasing of a module depending on the nature of the target.
+
+    [Module M := P] makes [M] another name for [P], so the resolver records the
+    full equivalence [M ↦ P].
+
+    [Include P] within a module [M] must never record an equivalence keyed on
+    [M]. [M] is not [P], it receives the fields of [P] but may be extended with
+    further fields later on which should not be aliased with [M] at the risk
+    of inconsistency. We must further refine the situation in two cases.
+    If [P] is a ground module, paths [P.l] are valid and aliasing can refer to
+    them. If [P] is a functor application, it is a transient object which does
+    not exist in the environment. Aliasing cannot refer to the source fields,
+    i.e. we adopt a generative semantics. *)
+type aliasing =
+| AliasDef (** Case [Module M := P] *)
+| AliasIncl of bool (** Case [Include P], the boolean is true when [P] ground *)
+
 (** {6 Strengthening a module for [Module M := M'] or [Include M] } *)
 
 let rec strengthen_and_subst_module mb subst mp_from mp_to =
@@ -344,7 +361,7 @@ let rec strengthen_and_subst_module mb subst mp_from mp_to =
     else
       let reso',struc' =
         strengthen_and_subst_struct struc subst
-          mp_from mp_to false false delta_mb
+          mp_from mp_to false AliasDef delta_mb
       in
       (* Don't forget to add the original resolver up to substitution *)
       let reso' = add_delta_resolver (subst_dom_delta_resolver mp_from mp_to delta_mb) (add_mp_delta_resolver mp_to mp_from reso') in
@@ -354,6 +371,29 @@ let rec strengthen_and_subst_module mb subst mp_from mp_to =
     subst_module subst_dom_codom subst mp_from mb
 
 and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
+  (* Relate the field [l] of the copy to the field of the source. *)
+  let include_field accu l = match incl with
+  | AliasDef ->
+    (* Already a consequence of the alias [mp_from ↦ mp_to] *)
+    accu
+  | AliasIncl ground ->
+    (* Add per-field aliases as the parent module doesn't have the global one *)
+    let kn_from = KerName.make mp_from l in
+    let kn_to = KerName.make mp_to l in
+    let kn_canonical = kn_of_delta reso kn_from in
+    if ground then
+      (* Pick the canonical name of the actual object [kn_from]. *)
+      if KerName.equal kn_to kn_canonical then
+        (* This only happens for Include Self and will fail later with a duplicate label error. *)
+        accu
+      else add_kn_delta_resolver kn_to kn_canonical accu
+    else
+      (* [kn_from] is a transient name that only exists locally *)
+      let kn_canonical = subst_kn subst kn_canonical in
+      (* TODO: we should have a more robust check *)
+      if KerName.equal kn_to kn_canonical then accu
+      else add_kn_delta_resolver kn_to kn_canonical accu
+  in
   let strengthen_and_subst_field reso' item = match item with
     | (l,SFBconst cb) ->
         let cb' = subst_const_body subst cb in
@@ -362,41 +402,17 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
           else strengthen_const mp_from l cb' reso
         in
         let item' = if cb' == cb then item else (l, SFBconst cb') in
-        if incl then
-          (* If we are performing an inclusion we need to add
-             the fact that the constant mp_to.l is \Delta-equivalent
-             to reso(mp_from.l) *)
-          let kn_from = KerName.make mp_from l in
-          let kn_to = KerName.make mp_to l in
-          let kn_canonical = kn_of_delta reso kn_from in
-          add_kn_delta_resolver kn_to kn_canonical reso', item'
-        else
-          (* In this case the fact that the constant mp_to.l is
-             \Delta-equivalent to resolver(mp_from.l) is already known
-             because reso' contains mp_to maps to reso(mp_from) *)
-          reso', item'
+        include_field reso' l, item'
     | (l,SFBmind mib) ->
         let mib' = subst_mind_body subst mib in
         let item' = if mib' == mib then item else (l, SFBmind mib') in
         (* Same as constant *)
-        if incl then
-          let kn_from = KerName.make mp_from l in
-          let kn_to = KerName.make mp_to l in
-          let kn_canonical = kn_of_delta reso kn_from in
-          add_kn_delta_resolver kn_to kn_canonical reso', item'
-        else
-          reso', item'
+        include_field reso' l, item'
     | (l, SFBrules rrb) ->
         let rrb' = subst_rewrite_rules subst rrb in
         let item' = if rrb' == rrb then item else (l, SFBrules rrb') in
         (* Same as constant *)
-        if incl then
-          let kn_from = KerName.make mp_from l in
-          let kn_to = KerName.make mp_to l in
-          let kn_canonical = kn_of_delta reso kn_from in
-          add_kn_delta_resolver kn_to kn_canonical reso', item'
-        else
-          reso', item'
+        include_field reso' l, item'
     | (l,SFBmodule mb) ->
         let mp_from' = MPdot (mp_from,l) in
         let mp_to' = MPdot (mp_to,l) in
@@ -426,52 +442,24 @@ and strengthen_and_subst_struct struc subst mp_from mp_to alias incl reso =
   in
   List.Smart.fold_left_map strengthen_and_subst_field (empty_delta_resolver mp_to) struc
 
-(** Delta-resolver of the inclusion of an application.
-
-    An inclusion must not add an equivalence for the includer itself: the
-    module it is included into will typically receive further fields, and such
-    an equivalence is applied to every label under the includer, so those fields
-    would silently be identified with unrelated ones of the included module.
-
-    The non-functor case of [strengthen_and_subst_module_body] already avoids
-    it, by building the resolver field by field and dropping [new_resolver]
-    when [include_b] is set. The functor case cannot: [mod_delta] of a functor
-    whose body is one of its arguments, e.g. [Module F (X : T) := X.], has a
-    binding for the functor path itself, and [subst_module] keeps it. We
-    therefore expand that binding into the per-field equivalences it stands for,
-    and drop it. Doing so before the functor is applied also prevents
-    [Mod_subst.subst_mp_delta] from later injecting the whole resolver of the
-    argument under the includer's path. *)
-
-let expand_self_delta mp sign reso =
-  if not (mp_is_alias reso mp) then reso
-  else
-    let rec struct_of_signature = function
-    | NoFunctor struc -> struc
-    | MoreFunctor (_, _, sign) -> struct_of_signature sign
-    in
-    let self = mp_of_delta reso mp in
-    (* [mp] is only equivalent to itself, it stops the prefix rule from reaching
-       the fields the includer will get later. *)
-    let reso0 = lift_mp_delta_resolver mp reso in
-    let expand accu (l, item) = match item with
-    | SFBconst _ | SFBmind _ | SFBrules _ ->
-      let kn = KerName.make mp l in
-      let kn' = kn_of_delta reso kn in
-      if KerName.equal kn kn' then accu else add_kn_delta_resolver kn kn' accu
-    | SFBmodule _ ->
-      let mp' = MPdot (mp, l) in
-      (* a more precise equivalence takes precedence and is already there *)
-      if mp_is_alias reso0 mp' then accu
-      else
-        let mp'' = MPdot (self, l) in
-        if ModPath.equal mp' mp'' then accu else add_mp_delta_resolver mp' mp'' accu
-    | SFBmodtype _ ->
-      (* as in [strengthen_and_subst_struct], module types are only equivalent
-         to themselves *)
-      lift_mp_delta_resolver (MPdot (mp, l)) accu
-    in
-    List.fold_left expand reso0 (struct_of_signature sign)
+(** [include_applied_structure mp_from struc reso mp] includes into [mp] the
+    result of a functor application, which {!Mod_typing} has elaborated at the
+    functor's own path [mp_from]. Nothing is strengthened, as there is no module
+    at [mp_from]. *)
+let include_applied_structure mp_from struc reso mp =
+  (* [reso] may record an equivalence for [mp_from], saying where the fields of
+     the application really live -- that is how [Module F (X : T) := X] reports
+     that applying [F] yields the argument. α-renamed onto [mp] it is what gives
+     the copied names their canonical form, so it belongs in the substitution;
+     it must not reach the resolver we return, which is [mp]'s. *)
+  let subst =
+    map_mp mp_from mp
+      (of_body_delta_resolver (subst_dom_delta_resolver mp_from mp reso))
+  in
+  let reso', struc' =
+    strengthen_and_subst_struct struc subst mp_from mp true (AliasIncl false) reso
+  in
+  struc', reso'
 
 (** Let P be a module path when we write:
      "Module M:=P." or "Module M. Include P. End M."
@@ -497,23 +485,24 @@ let strengthen_and_subst_module_body mp_from mb mp include_b = match mod_type mb
        (i.e. it is already done)*)
     let mp_alias = mp_of_delta delta_mb mp_from in
     let new_resolver =
-      add_mp_delta_resolver mp mp_alias
-        (subst_dom_delta_resolver mp_from mp delta_mb)
+      let dom = subst_dom_delta_resolver mp_from mp delta_mb in
+      if ModPath.equal mp mp_alias then
+        (* This only happens for Include Self and will fail later with a duplicate label error. *)
+        dom
+      else add_mp_delta_resolver mp mp_alias dom
     in
     let subst = map_mp mp_from mp (of_body_delta_resolver new_resolver) in
     let reso',struc' =
       strengthen_and_subst_struct struc subst
-        mp_from mp mb_is_an_alias include_b delta_mb
+        mp_from mp mb_is_an_alias (if include_b then AliasIncl true else AliasDef) delta_mb
     in
     let reso' = if include_b then reso' else add_delta_resolver new_resolver reso' in
     strengthen_module_body ~src:mp_from (NoFunctor struc') reso' mb
   | MoreFunctor _ ->
+    (* Functor inclusion is handled by [Mod_typing]. *)
+    let () = assert (not include_b) in
     let subst = map_mp mp_from mp (empty_delta_resolver mp) in
-    let mb = Mod_declarations.subst_module subst_dom_codom subst mp_from mb in
-    if include_b then
-      Mod_declarations.set_delta
-        (expand_self_delta mp (mod_type mb) (mod_delta mb)) mb
-    else mb
+    Mod_declarations.subst_module subst_dom_codom subst mp_from mb
 
 (* [mp_from] is the ambient modpath of [sign] *)
 let subst_modtype_signature_and_resolver mp_from mp_to sign reso =

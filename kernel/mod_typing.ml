@@ -428,16 +428,35 @@ let rec forbid_incl_signed_functor env = function
       forbid_incl_signed_functor env me
     | _ -> ()
 
-let rec translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl = function
+(* An [Include] must never make the includer the key of a delta-equivalence,
+   it is not the module it includes. *)
+let translate_mse_include_module (cst, ustate) (vm, _vmstate) env mp inl = function
   | MEident mp1 ->
-    let mb = strengthen_and_subst_module_body mp1 (lookup_module mp1 env) mp true in
-    let sign = clean_bounded_mod_expr (mod_type mb) in
-    sign, (), of_body_delta_resolver (mod_delta mb), cst, vm
+    let mb = lookup_module mp1 env in
+    begin match mod_type mb with
+    | NoFunctor _ ->
+      (* A module of the environment: strengthen it and copy its fields. *)
+      let mb = strengthen_and_subst_module_body mp1 mb mp true in
+      let sign = clean_bounded_mod_expr (mod_type mb) in
+      sign, None, of_body_delta_resolver (mod_delta mb), cst, vm
+    | MoreFunctor _ ->
+      (* [Include Self]: the parameters of [mp1] are instantiated with the
+         module being built, which only that module's own declaration can do.
+         We let the caller copy the fields once it has instantiated them. *)
+      let sign = clean_bounded_mod_expr (mod_type mb) in
+      sign, Some mp1, of_body_delta_resolver (mod_delta mb), cst, vm
+    end
   | MEapply _ as me ->
     let fe, args = decompose_apply [] me in
-    let (sign, (), reso, cst, vm) = translate_mse_include_module (cst, ustate) (vm, vmstate) env mp inl fe in
-    let (sign, reso, cst) = translate_apply ustate env inl mp empty_subst (sign, reso, cst) args in
-    (sign, (), reso, cst, vm)
+    let mp_f = mp_from_mexpr fe in
+    let mb_f = lookup_module mp_f env in
+    let reso = of_body_delta_resolver (mod_delta mb_f) in
+    let (sign, reso, cst) =
+      translate_apply ustate env inl mp_f empty_subst (mod_type mb_f, reso, cst) args
+    in
+    (* The application stays at [mp_f]. *)
+    let sign = clean_bounded_mod_expr sign in
+    sign, Some mp_f, reso, cst, vm
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
 let translate_mse_include is_mod (cst, ustate) (vm, vmstate) env mp inl me =
@@ -447,4 +466,4 @@ let translate_mse_include is_mod (cst, ustate) (vm, vmstate) env mp inl me =
   else
     let mtb, cst, vm = translate_modtype (cst, ustate) (vm, vmstate) env mp inl ([],me) in
     let sign = clean_bounded_mod_expr (mod_type mtb) in
-    sign, (), mod_delta mtb, cst, vm
+    sign, None, mod_delta mtb, cst, vm
