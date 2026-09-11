@@ -59,7 +59,7 @@ Section Tests.
 
   Lemma push_atomic_spec (x: val) :
     WPre (InjR (of_val x)).
-  Proof.
+  Proof using All.
 (* This works. *)
 eapply tac_wp_alloc with _.
 match goal with

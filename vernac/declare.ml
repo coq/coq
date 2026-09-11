@@ -1987,7 +1987,7 @@ let definition_scope ps = ps.pinfo.info.scope
 
 let { Goptions.get = auto_clear } =
   Goptions.declare_bool_option_and_ref ~key:["Proof";"Using";"Clear";"Unused"]
-    ~value:false
+    ~value:true
     ()
 
 let set_used_variables ps ~using =
