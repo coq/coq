@@ -1181,10 +1181,8 @@ let lift1_stack = lift_stack 1
    information through Cases).} *)
 
 let check_inductive_codomain ?evars env p =
-  let absctx, ar = whd_decompose_lambda_decls ?evars env p in
-  let env = push_rel_context absctx env in
-  let arctx, s = whd_decompose_prod_decls ?evars env ar in
-  let env = push_rel_context arctx env in
+  let pctx, s = whd_decompose_prod_decls ?evars env p in
+  let env = push_rel_context pctx env in
   let i,_l' = decompose_app (whd_all ?evars env s) in
   isInd i
 
@@ -1287,26 +1285,17 @@ let rec subterm_specif ?evars renv stack t =
          furthermore when f is applied to a term which is strictly less than
          n, one may assume that x itself is strictly less than n
       *)
-    if not (check_inductive_codomain ?evars renv.env typarray.(i)) then Subterm.not_subterm
-    else
-      let (ctxt,clfix) = whd_decompose_prod ?evars renv.env typarray.(i) in
-      let oind =
-        let env' = push_rel_context ctxt renv.env in
-          try Some(fst (find_inductive ?evars env' clfix))
-          with Not_found -> None in
-        (match oind with
-        | None -> Subterm.not_subterm (* happens if fix is polymorphic *)
-        | Some (ind, _) ->
+      if not (check_inductive_codomain ?evars renv.env typarray.(i)) then
+        (* This is really a shortcut: if the return type is not an inductive,
+           this cannot be meaningfully part of a subterm from typing already. *)
+        Subterm.not_subterm
+      else
         let stack = push_stack_closures renv l stack in
         let nbfix = Array.length typarray in
-        let recargs = WfPaths.lookup_subterms renv.env ind in
                    (* pushing the fixpoints *)
         let renv = push_fix_renv renv recdef in
-        let renv =
-                     (* Why Strict here ? To be general, it could also be
-                        Large... *)
-          assign_var_spec renv
-          (nbfix-i, lazy (Subterm.strict_subterm recargs)) in
+        let renv = assign_var_spec renv (nbfix-i, lazy Subterm.dead_code) in
+        (* This is the neutral element for subterm levels under intersection *)
         let decrArg = recindxs.(i) in
         let theBody = bodies.(i)   in
         let sign, strippedBody = split_struct_arg ?evars renv.env decrArg theBody in
@@ -1319,7 +1308,7 @@ let rec subterm_specif ?evars renv stack t =
             let arg_spec = stack_element_specif ?evars decrArg in
             assign_var_spec renv (1, arg_spec)
         in
-        subterm_specif ?evars renv [] strippedBody)
+        subterm_specif ?evars renv [] strippedBody
 
     | Lambda (x,a,b) ->
       let () = assert (List.is_empty l) in
