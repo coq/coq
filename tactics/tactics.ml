@@ -2840,7 +2840,7 @@ let specialize (c,lbind) ipat =
           let rels = lift (Int.Set.remove 1 rels) in
           let rels = RelDecl.fold_constr (fun c accu -> Int.Set.union accu (free_rels sigma c)) decl rels in
           mkLambda_or_LetIn decl c, mkProd_or_LetIn decl ty, rels
-        else subst1 mkProp (* dummy *) c, subst1 mkProp ty, lift rels
+        else subst1 dummy c, subst1 dummy ty, lift rels
       in
       rebuild rels ctx c ty
     in

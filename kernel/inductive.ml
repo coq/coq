@@ -565,7 +565,7 @@ let contract_case env (ci, (p,rp), iv, c, br) =
     let () = assert (QInd.equal env ind ci.ci_ind) in
     let pms = Array.sub args 0 mib.mind_nparams in
     (** Unlift the parameters from under the index binders *)
-    let dummy = List.make mip.mind_nrealdecls mkProp in
+    let dummy = List.make mip.mind_nrealdecls dummy in
     let pms = Array.map (fun c -> Vars.substl dummy c) pms in
     (u, pms)
   | _ -> assert false

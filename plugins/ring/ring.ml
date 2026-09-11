@@ -230,7 +230,7 @@ let exec_tactic env sigma n f args =
   let get_res = CAst.make (TacML (get_res, [TacGeneric (None, n)])) in
   let getter = Tacexp (CAst.make (TacFun (List.map (fun n -> Name n) lid, get_res))) in
   (* Evaluate the whole result *)
-  let _, pv = Proofview.init sigma [env, EConstr.mkProp] in
+  let _, pv = Proofview.init sigma [env, EConstr.dummy] in
   let tac = Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter])) in
   let ((), pv, _, _, _) = Proofview.apply ~name:(Id.of_string "ring") ~poly:ist.Tacinterp.poly (Global.env ()) tac pv in
   let sigma = Evd.minimize_universes (Proofview.return pv) in

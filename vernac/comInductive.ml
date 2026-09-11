@@ -410,7 +410,7 @@ let non_template_levels sigma ~params ~arity ~constructors =
     | LocalAssum (_, t) ->
       match get_template_binding_arity sigma t with
       | None -> add_levels t levels
-      | Some (decls, _, _) -> add_levels (EConstr.it_mkProd_or_LetIn EConstr.mkProp decls) levels
+      | Some (decls, _, _) -> add_levels (EConstr.it_mkProd_or_LetIn EConstr.dummy decls) levels
   in
   (* Levels in LocalDef params, on the left of the context in LocalAssum params,
      in the indices and in the constructor types are not allowed to be template.
@@ -748,7 +748,7 @@ let interp_mutual_inductive_gen env0 ~flags udecl (uparamsl,paramsl,indl) notati
   let arities, relevances, template_syntax, indimpls = List.split4 arities in
 
   let lift_ctx n ctx =
-    let t = EConstr.it_mkProd_or_LetIn EConstr.mkProp ctx in
+    let t = EConstr.it_mkProd_or_LetIn EConstr.dummy ctx in
     let t = EConstr.Vars.lift n t in
     let ctx, _ = EConstr.decompose_prod_decls sigma t in
     ctx

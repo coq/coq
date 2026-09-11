@@ -1782,7 +1782,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
         let sigma, res = refresh_universes (Some false) !!env !evdref ty in
         evdref := sigma; res
       in
-      let dummy_subst = List.init k (fun _ -> mkProp) in
+      let dummy_subst = List.init k (fun _ -> dummy) in
       let ty = substl dummy_subst (aux x ty) in
       let sigma = !evdref in
       let depvl = free_rels sigma ty in

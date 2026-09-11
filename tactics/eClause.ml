@@ -80,7 +80,7 @@ let make_evar_clause env sigma ?len t =
       let inst, ctx, args, subst = match inst with
       | None ->
         (* Dummy type *)
-        let ctx, _, args, subst = push_rel_context_to_named_context env sigma mkProp in
+        let ctx, _, args, subst = push_rel_context_to_named_context env sigma dummy in
         Some (ctx, args, subst), ctx, args, subst
       | Some (ctx, args, subst) -> inst, ctx, args, subst
       in

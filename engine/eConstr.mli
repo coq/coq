@@ -154,6 +154,7 @@ val of_constr : Constr.t -> t
 
 (** {6 Constructors} *)
 
+val dummy : t
 val mkRel : int -> t
 val mkVar : Id.t -> t
 val mkMeta : metavariable -> t

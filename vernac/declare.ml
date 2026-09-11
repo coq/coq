@@ -1264,7 +1264,7 @@ let it_mkLambda_or_LetIn_or_clean t ctx =
   let open Context.Rel.Declaration in
   let fold t decl =
     if is_local_assum decl then Term.mkLambda_or_LetIn decl t
-    else if Vars.noccurn 1 t then Vars.subst1 mkProp t
+    else if Vars.noccurn 1 t then Vars.subst1 dummy t
     else Term.mkLambda_or_LetIn decl t
   in
   Context.Rel.fold_inside fold ctx ~init:t
@@ -1308,7 +1308,7 @@ let shrink_body c ty =
     List.fold_left
       (fun (b, ty, i, args) decl ->
         if Vars.noccurn 1 b && Option.cata (Vars.noccurn 1) true ty then
-          (Vars.subst1 mkProp b, Option.map (Vars.subst1 mkProp) ty, succ i, args)
+          (Vars.subst1 dummy b, Option.map (Vars.subst1 dummy) ty, succ i, args)
         else
           let open Context.Rel.Declaration in
           let args = if is_local_assum decl then mkRel i :: args else args in

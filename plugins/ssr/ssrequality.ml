@@ -718,10 +718,10 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
   let interp_rpattern env sigma gc =
     try interp_rpattern env sigma gc
     with e when CErrors.noncritical e && snd mult = May ->
-      fail := true; { pat_sigma = sigma; pat_pat = T EConstr.mkProp } in
+      fail := true; { pat_sigma = sigma; pat_pat = T EConstr.dummy } in
   let interp env sigma gc =
     try interp_term env sigma ist gc
-    with e when CErrors.noncritical e && snd mult = May -> fail := true; (sigma, EConstr.mkProp) in
+    with e when CErrors.noncritical e && snd mult = May -> fail := true; (sigma, EConstr.dummy) in
   let rwtac =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in

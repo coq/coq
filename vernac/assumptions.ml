@@ -232,7 +232,7 @@ let rec traverse access (current:GlobRef.t) ctx accu t =
       let obj = ConstRef kn in
       let already_in = GlobRef.Map_env.mem obj data in
       let data = if not already_in then GlobRef.Map_env.add obj None data else data in
-      let ty = (current, ctx, Vars.subst1 mkProp oty) in
+      let ty = (current, ctx, Vars.subst1 dummy oty) in
       let ax2ty =
         try let l = GlobRef.Map_env.find obj ax2ty in GlobRef.Map_env.add obj (ty::l) ax2ty
         with Not_found -> GlobRef.Map_env.add obj [ty] ax2ty in
@@ -399,13 +399,13 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
         if cb.const_typing_flags.check_guarded then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (Guarded obj, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (Guarded obj, l)) Constr.dummy accu
       in
       let accu =
         if cb.const_typing_flags.check_universes then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.dummy accu
       in
     if not (Option.has_some contents) then
       let t = type_of_constant cb in
@@ -426,31 +426,31 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
         if mind.mind_typing_flags.check_positive then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (Positive m, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (Positive m, l)) Constr.dummy accu
       in
       let accu =
         if mind.mind_typing_flags.check_guarded then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (Guarded obj, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (Guarded obj, l)) Constr.dummy accu
       in
       let accu =
         if mind.mind_typing_flags.check_universes then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.dummy accu
       in
       let accu =
         if not (uses_uip mind) then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (UIP m, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (UIP m, l)) Constr.dummy accu
       in
       let accu =
         if not (Array.exists (fun mip -> mip.mind_relies_on_indices_not_mattering) mind.mind_packets) then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (IndicesNotMattering m, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (IndicesNotMattering m, l)) Constr.dummy accu
       in
       accu
   in

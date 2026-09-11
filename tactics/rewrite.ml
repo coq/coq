@@ -180,7 +180,7 @@ let decompose_app_rel env evd t =
   match Reductionops.splay_arity env evd ty with
   | [_, ty2; _, ty1], concl ->
     if noccurn evd 1 ty2 then
-      Some (rel, ty1, subst1 mkProp ty2, concl, t1, t2)
+      Some (rel, ty1, subst1 dummy ty2, concl, t1, t2)
     else None
   | _ -> assert false
 
@@ -313,7 +313,7 @@ end) = struct
           let b = Reductionops.nf_betaiota env (goalevars evars) b in
           if noccurn (goalevars evars) 1 b (* non-dependent product *) then
             let ty = Reductionops.nf_betaiota env (goalevars evars) ty in
-            let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
+            let (evars, b', arg, cstrs) = aux env evars (subst1 dummy b) cstrs in
             let evars, relty = mk_relty evars env ty obj in
             let evars', b' = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
               (Some false) env (fst evars) b' in
@@ -1051,7 +1051,7 @@ let fold_match ?(force=false) env sigma c =
     let sortc = Retyping.get_sort_quality_of env sigma cty in
     let dep = not (noccurn sigma 1 body) in
     let pred = if dep then p else
-        it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
+        it_mkProd_or_LetIn (subst1 dummy body) (List.tl ctx)
     in
     let sk =
       (* not sure how correct this is *)
@@ -1228,7 +1228,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
         state, res
 
       | Prod (n, x, b) when noccurn (goalevars evars) 1 b ->
-          let b = subst1 mkProp b in
+          let b = subst1 dummy b in
           let evars, tx = get_type_of_refresh env evars x in
           let evars, tb = get_type_of_refresh env evars b in
           let arr = if prop then PropGlobal.arrow_morphism

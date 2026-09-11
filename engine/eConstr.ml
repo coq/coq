@@ -183,6 +183,7 @@ type 'a puniverses = 'a * EInstance.t
 
 let in_punivs a = (a, EInstance.empty)
 
+let dummy = of_kind (Var (Id.of_string "_DUMMY_"))
 let mkSProp = of_kind (Sort (ESorts.make Sorts.sprop))
 let mkProp = of_kind (Sort (ESorts.make Sorts.prop))
 let mkSet = of_kind (Sort (ESorts.make Sorts.set))
@@ -679,7 +680,7 @@ let contract_case env sigma (ci, (p,rp), iv, c, br) =
     let (ind, u) = destInd sigma ind in
     let () = assert (Environ.QInd.equal env ind ci.ci_ind) in
     let pms = Array.sub args 0 mib.mind_nparams in
-    let dummy = List.make mip.mind_nrealdecls Constr.mkProp in
+    let dummy = List.make mip.mind_nrealdecls Constr.dummy in
     let pms = Array.map (fun c -> of_constr (CVars.substl dummy (unsafe_to_constr c))) pms in
     (u, pms)
   | _ -> assert false

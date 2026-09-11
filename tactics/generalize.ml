@@ -113,7 +113,7 @@ let generalized_name env sigma c t ids cl = function
 let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let open Context.Rel.Declaration in
   let decls,cl = decompose_prod_n_decls sigma i cl in
-  let dummy_prod = it_mkProd_or_LetIn mkProp decls in
+  let dummy_prod = it_mkProd_or_LetIn dummy decls in
   let newdecls,_ =
     let arity = Array.length (snd (EConstr.decompose_app sigma c)) in
     let cache = ref Int.Map.empty in

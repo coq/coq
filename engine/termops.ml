@@ -1138,7 +1138,7 @@ let rec eta_reduce_head sigma c =
 
 let eta_expand_instantiation ?evars env inst ctxt =
   let open Context.Rel.Declaration in
-  let eta_inst = Array.make (Array.length inst) mkProp in
+  let eta_inst = Array.make (Array.length inst) dummy in
   let rec fold subst i = function
   | [] -> assert (Array.length inst = i)
   | LocalAssum (_, ty) :: ctx ->

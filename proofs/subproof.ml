@@ -84,8 +84,8 @@ let rec shrink ctx sign c t accu =
   | [], [] -> (c, t, accu)
   | p :: ctx, decl :: sign ->
     if noccurn 1 c && noccurn 1 t then
-      let c = subst1 mkProp c in
-      let t = subst1 mkProp t in
+      let c = subst1 dummy c in
+      let t = subst1 dummy t in
       shrink ctx sign c t accu
     else
       let c = Term.mkLambda_or_LetIn p c in

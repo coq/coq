@@ -1441,7 +1441,7 @@ let inject_at_positions env sigma l2r eq posns tac =
       let args = Array.map mk [|t; resty; injfun; t1; t2|] in
       let sigma, pf = Typing.judge_of_apply env sigma (mk congr) args in
       let { Environ.uj_val = pf; Environ.uj_type = pf_typ } = pf in
-      let pf_typ = Vars.subst1 mkProp (pi3 @@ destProd sigma pf_typ) in
+      let pf_typ = Vars.subst1 dummy (pi3 @@ destProd sigma pf_typ) in
       let pf = mkApp (pf, [| v |]) in
       let ty = simplify_args env sigma pf_typ in
         evdref := sigma;

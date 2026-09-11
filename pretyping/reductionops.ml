@@ -445,7 +445,6 @@ struct
     (List.skipn (n+1) kargs, strip_n_app n stk)
 
   let expand_case env sigma ((ci, u, pms, t, iv, br) : case_stk) =
-    let dummy = mkProp in
     let (ci, u, pms, t, _, _, br) = EConstr.annotate_case env sigma (ci, u, pms, t, iv, dummy, br) in
     (ci, u, pms, t, br)
 
@@ -795,7 +794,6 @@ and apply_rule whrec env sigma ctx psubst es stk =
       apply_rule whrec env sigma ctx psubst e s
   | Declarations.PECase (pind, pret, pbrs) :: e, Stack.Case (ci, u, pms, p, iv, brs) :: s ->
       if not @@ QInd.equal env pind ci.ci_ind then raise PatternFailure;
-      let dummy = mkProp in
       let (_, _, _, ((ntys_ret, ret), _), _, _, brs) = EConstr.annotate_case env sigma (ci, u, pms, p, NoInvert, dummy, brs) in
       let psubst = match_arg_pattern whrec env sigma (ntys_ret @ ctx) psubst pret ret in
       let psubst = Array.fold_left2 (fun psubst pat (ctx', br) -> match_arg_pattern whrec env sigma (ctx' @ ctx) psubst pat br) psubst pbrs brs in

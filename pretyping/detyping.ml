@@ -94,7 +94,7 @@ let return_clause env sigma ind u params ((nas, p),_) =
     let realdecls = instantiate_context u paramsubst nas realdecls in
     List.map EConstr.of_rel_decl realdecls, p
   with e when CErrors.noncritical e ->
-    let dummy na = LocalAssum (na, EConstr.mkProp) in
+    let dummy na = LocalAssum (na, EConstr.dummy) in
     List.rev (Array.map_to_list dummy nas), p
 
 let branch env sigma (ind, i) u params (nas, br) =
@@ -115,7 +115,7 @@ let branch env sigma (ind, i) u params (nas, br) =
     let ctx = instantiate_context u paramsubst nas ctx in
     List.map EConstr.of_rel_decl ctx, br
   with e when CErrors.noncritical e ->
-    let dummy na = LocalAssum (na, EConstr.mkProp) in
+    let dummy na = LocalAssum (na, EConstr.dummy) in
     List.rev (Array.map_to_list dummy nas), br
 
 end
@@ -1043,7 +1043,7 @@ let detype_closed_glob ~flags ?isgoal ?avoid env sigma t =
           (* spiwack: I'm not sure it is the right thing to do,
              but I'm computing the detyping environment like
              [Printer.pr_constr_under_binders_env] does. *)
-          let assums = List.map (fun id -> LocalAssum (make_annot (Name id) ERelevance.relevant,(* dummy *) mkProp)) b in
+          let assums = List.map (fun id -> LocalAssum (make_annot (Name id) ERelevance.relevant, dummy)) b in
           let env = push_rel_context assums env in
           DAst.get (detype Now ~flags ?isgoal ?avoid env sigma c)
         (* if [id] is bound to a [closed_glob_constr]. *)

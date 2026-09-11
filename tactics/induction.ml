@@ -699,7 +699,7 @@ type elim_scheme = {
 
 let empty_scheme =
   {
-    elimt = mkProp;
+    elimt = dummy;
     indref = None;
     params = [];
     nparams = 0;
@@ -710,7 +710,7 @@ let empty_scheme =
     args = [];
     nargs = 0;
     indarg = None;
-    concl = mkProp;
+    concl = dummy;
     indarg_in_concl = false;
     farg_in_concl = false;
   }
@@ -960,7 +960,7 @@ let compute_case_signature env mind dep names_info =
       if dep then Array.append indices (Context.Rel.instance Constr.mkRel 0 argctx)
       else indices
     in
-    let base = Constr.mkApp (Constr.mkProp, base) in (* only used for noccurn *)
+    let base = Constr.mkApp (Constr.dummy, base) in (* only used for noccurn *)
     let lchck_brch = check_branch (Term.it_mkProd_or_LetIn base argctx) in
     let n = List.count (fun (b, _, _) -> b == RecArg) lchck_brch in
     let recvarname, hyprecname, avoid = make_up_names n (Some indref) names_info in

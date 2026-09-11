@@ -330,6 +330,8 @@ let decompose_app c =
 (*********************)
 
 (* Constructs a de Bruijn index with number n *)
+let dummy = T (Var (Id.of_string "_DUMMY_"))
+
 let rels = Array.init 17 (fun i -> T (Rel i))
 
 let mkRel n = if 0<=n && n<=16 then rels.(n) else T (Rel n)

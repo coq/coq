@@ -89,10 +89,10 @@ let cook_constant _env info cb =
 let cook_rel_context cache ctx =
   (* Dealing with substitutions between contexts is too annoying, so
      we reify [ctx] into a big [forall] term and work on that. *)
-  let t = it_mkProd_or_LetIn mkProp ctx in
+  let t = it_mkProd_or_LetIn dummy ctx in
   let t = abstract_as_type cache t in
   let ctx, t = decompose_prod_decls t in
-  assert (Constr.equal t mkProp);
+  assert (Constr.equal t dummy);
   ctx
 
 let cook_lc cache ~ntypes t =
@@ -104,7 +104,7 @@ let cook_lc cache ~ntypes t =
   abstract_as_type cache t
 
 let cook_projection cache ~params t =
-  let t = mkArrowR mkProp t in (* dummy type standing in for the inductive *)
+  let t = mkArrowR dummy t in (* dummy type standing in for the inductive *)
   let t = it_mkProd_or_LetIn t params in
   let t = abstract_as_type cache t in
   let nrels = Context.Rel.nhyps (rel_context_of_cooking_cache cache) in

@@ -64,6 +64,9 @@ type types = constr
 
 (** {6 Term constructors. } *)
 
+(** A dummy term *)
+val dummy : constr
+
 (** Constructs a de Bruijn index (DB indices begin at 1) *)
 val mkRel : int -> constr
 

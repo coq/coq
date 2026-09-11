@@ -289,7 +289,7 @@ and unif_FO_skip_impl env ise metas p c =
         failure_FO ()
     end
   | _ ->
-    let kludge v = EConstr.mkLambda (make_annot Anonymous EConstr.ERelevance.relevant, EConstr.mkProp, v) in
+    let kludge v = EConstr.mkLambda (make_annot Anonymous EConstr.ERelevance.relevant, EConstr.dummy, v) in
     Unification.w_unify ~metas env ise Conversion.CONV ~flags:(flags_FO env) (kludge p) (kludge c)
 and unif_FO_skip_impl3 env ise metas args1 args2 imp =
   match args1, args2, imp with
@@ -450,7 +450,7 @@ let pr_econstr_pat env sigma c0 =
   let rec wipe_evar c = let open EConstr in
     if isEvar sigma c then ehole_var else map sigma wipe_evar c in
   let dummy_decl =
-    let dummy_prod = mkProd (make_annot Anonymous Sorts.Relevant,mkProp,mkProp) in
+    let dummy_prod = mkProd (make_annot Anonymous Sorts.Relevant,dummy,dummy) in
     let na = make_annot (EConstr.destVar sigma ehole_var) Sorts.Relevant in
     Context.Named.Declaration.(LocalAssum (na, dummy_prod)) in
   let env = Environ.push_named ProofVar dummy_decl env in
@@ -643,7 +643,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
          if skip || not (EConstr.Vars.closed0 ise c') then () else try
            let () = match u.up_k with
            | KpatFlex ->
-             let kludge v = mkLambda (make_annot Anonymous ERelevance.relevant, mkProp, v) in
+             let kludge v = mkLambda (make_annot Anonymous ERelevance.relevant, dummy, v) in
              let (metas, p_FO) = u.up_FO in
              unif_FO env ise metas (kludge p_FO) (kludge c')
            | KpatLet ->

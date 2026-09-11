@@ -83,7 +83,7 @@ let pr_constr_under_binders_env_gen pr ?flags env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
   (* we also need to preserve the actual names of the patterns *)
   (* So what to do? *)
-  let assums = List.map (fun id -> (make_annot (Name id) Sorts.Relevant,(* dummy *) mkProp)) ids in
+  let assums = List.map (fun id -> (make_annot (Name id) Sorts.Relevant, dummy)) ids in
   pr ?inctx:None ?scope:None ?flags (Termops.push_rels_assum assums env) sigma c
 
 let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env

@@ -25,7 +25,7 @@ let is_rec_info sigma scheme_info =
     acc
     ||
     let new_branche =
-      it_mkProd_or_LetIn mkProp
+      it_mkProd_or_LetIn dummy
         (fst (decompose_prod_decls sigma (RelDecl.get_type decl)))
     in
     let free_rels_in_br = Termops.free_rels sigma new_branche in

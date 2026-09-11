@@ -822,7 +822,7 @@ let apply_branch env sigma (ind, i) args subs (ci, u, pms, iv, r, lf) =
       List.fold_left (fun subst arg -> Esubst.subs_cons arg subst) subs args
     else
       let pms = Array.Fun1.map CbnClos.force_constr subs pms in
-      let ctx = expand_branch env sigma u pms (ind, i) (fst br, mkProp) in
+      let ctx = expand_branch env sigma u pms (ind, i) (fst br, dummy) in
       cbn_subst_of_rel_context_instance_list ctx args subs
   in
   CbnClos.mk_clos subs body
@@ -920,7 +920,6 @@ and apply_rule whrec env sigma ctx psubst es stk =
       apply_rule whrec env sigma ctx psubst e s
   | Declarations.PECase (pind, pret, pbrs) :: e, Stack.Case (subs,(ci, _, _, _, _, _ as case), cst_l) :: s ->
       if not @@ QInd.equal env pind ci.ci_ind then raise PatternFailure;
-      let dummy = mkProp in
       let (ci, u, pms, p, iv, brs) = CbnClos.force_case subs case in
       let (_, _, _, ((ntys_ret, ret), _), _, _, brs) = EConstr.annotate_case env sigma (ci, u, pms, p, iv, dummy, brs) in
       let psubst = match_arg_pattern whrec env sigma (ntys_ret @ ctx) psubst pret (CbnClos.inject ret) in

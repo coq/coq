@@ -120,7 +120,7 @@ let rec build_lambda sigma vars ctx m = match vars with
   let keep, shift = List.fold_left fold (0, []) clear in
   let shift = List.rev shift in
   let map = function
-  | None -> mkProp (* dummy term *)
+  | None -> dummy
   | Some i -> mkRel (i + 1)
   in
   (* [x1 ... xn y z1 ... zm] -> [x1 ... xn f(z1) ... f(zm) y] *)
@@ -166,15 +166,13 @@ let rec extract_bound_aux k accu frels ctx = match ctx with
 let extract_bound_vars frels ctx =
   extract_bound_aux 1 Id.Set.empty frels ctx
 
-let dummy_constr = EConstr.mkProp
-
 let make_renaming ids = function
 | (Name id, _, _) ->
   begin
     try EConstr.mkRel (List.index Id.equal id ids)
-    with Not_found -> dummy_constr
+    with Not_found -> EConstr.dummy
   end
-| _ -> dummy_constr
+| _ -> EConstr.dummy
 
 let push_binder na1 na2 t ctx =
   let id2 = map_annot (function
