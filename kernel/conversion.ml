@@ -200,6 +200,7 @@ type 'e conv_tab = {
   lft_tab : clos_tab;
   rgt_tab : clos_tab;
   err_ret : 'e -> payload;
+  cnv_cache : ConvCache.t option;
 }
 (** Invariant: for any tl ∈ lft_tab and tr ∈ rgt_tab, there is no mutable memory
     location contained both in tl and in tr. *)
@@ -407,7 +408,21 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   let fast = fast_test lft1 term1 lft2 term2 in
   if fast then cuniv
   else
-    eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+    match infos.cnv_cache with
+    | None ->
+      eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+    | Some cache ->
+      let cumul = match cv_pb with CONV -> false | CUMUL -> true in
+      match ConvCache.probe cache ~cumul lft1 term1 lft2 term2 with
+      | Some true -> cuniv
+      | Some false -> raise NotConvertible
+      | None ->
+        match eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv with
+        | cuniv ->
+          ConvCache.record cache ~cumul lft1 term1 lft2 term2 true; cuniv
+        | exception NotConvertible ->
+          ConvCache.record cache ~cumul lft1 term1 lft2 term2 false;
+          raise NotConvertible
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
@@ -984,18 +999,20 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
   convert_list l2r infos lft1 lft2 v1 v2 cuniv
 | _, _ -> raise NotConvertible
 
-let clos_gen_conv (type err) ~typed trans cv_pb l2r evars env graph univs t1 t2 =
+let clos_gen_conv (type err) ~typed ~use_cache trans cv_pb l2r evars env graph univs t1 t2 =
   NewProfile.profile "Conversion" begin fun () ->
       let reds = RedFlags.red_add_transparent RedFlags.betaiotazeta trans in
       let infos = create_conv_infos ~univs:graph ~evars reds env in
       let module Error = struct type payload += Error of err end in
       let box e = Error.Error e in
+      let cache = if use_cache then ConvCache.create () else None in
       let infos = {
         cnv_inf = infos;
         cnv_typ = typed;
         lft_tab = create_tab ();
         rgt_tab = create_tab ();
         err_ret = box;
+        cnv_cache = cache;
       } in
       try Result.Ok (ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs)
       with
@@ -1044,7 +1061,7 @@ let () =
       let box = Empty.abort in
       let state = info_univs infos in
       let qual_equal q1 q2 = CClosure.eq_quality infos q1 q2 in
-      let infos = { cnv_inf = infos; cnv_typ = true; lft_tab = tab; rgt_tab = tab; err_ret = box; } in
+      let infos = { cnv_inf = infos; cnv_typ = true; lft_tab = tab; rgt_tab = tab; err_ret = box; cnv_cache = None; } in
       let state', _ = ccnv CONV false infos el_id el_id a b (state, checked_universes_gen qual_equal) in
       assert (state==state');
       true
@@ -1062,7 +1079,7 @@ let gen_conv ~typed cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars
     else eq_constr_univs univs t1 t2
   in
     if b then Result.Ok ()
-    else match clos_gen_conv ~typed reds cv_pb l2r evars env univs (state, checked_universes) t1 t2 with
+    else match clos_gen_conv ~typed ~use_cache:true reds cv_pb l2r evars env univs (state, checked_universes) t1 t2 with
     | Result.Ok (_ : 'a * ('a, Empty.t) universe_compare)-> Result.Ok ()
     | Result.Error None -> Result.Error ()
     | Result.Error (Some e) -> Empty.abort e
@@ -1072,7 +1089,7 @@ let conv_leq = gen_conv ~typed:false CUMUL
 
 let generic_conv cv_pb ~l2r reds env ?(evars=default_evar_handler env) state t1 t2 =
   let graph = Environ.universes env in
-  match clos_gen_conv ~typed:false reds cv_pb l2r evars env graph state t1 t2 with
+  match clos_gen_conv ~typed:false ~use_cache:false reds cv_pb l2r evars env graph state t1 t2 with
   | Result.Ok (s, _) -> Result.Ok s
   | Result.Error e -> Result.Error e
 
