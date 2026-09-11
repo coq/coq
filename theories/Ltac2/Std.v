@@ -307,7 +307,7 @@ Ltac2 @ external eassumption : unit -> unit := "rocq-runtime.plugins.ltac2" "tac
 
 Ltac2 @ external transitivity : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_transitivity".
 
-Ltac2 @ external etransitivity : unit -> unit := "rocq-runtime.plugins.ltac2" "tac_etransitivity".
+Ltac2 @ external etransitivity : constr option -> unit := "rocq-runtime.plugins.ltac2" "tac_etransitivity".
 
 Ltac2 @ external cut : constr -> unit := "rocq-runtime.plugins.ltac2" "tac_cut".
 

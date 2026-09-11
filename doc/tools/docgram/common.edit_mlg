@@ -1119,6 +1119,9 @@ simple_tactic: [
 | DELETE "setoid_symmetry"
 | REPLACE "setoid_symmetry" "in" hyp
 | WITH "setoid_symmetry" OPT ( "in" hyp )
+| DELETE "setoid_etransitivity"
+| REPLACE "setoid_etransitivity" open_constr
+| WITH "setoid_etransitivity" OPT open_constr
 | REPLACE "rewrite_strat" rewstrategy2 "in" hyp
 | WITH "rewrite_strat" rewstrategy2 OPT ( "in" hyp )
 | DELETE "rewrite_strat" rewstrategy2
@@ -1155,6 +1158,9 @@ simple_tactic: [
 | DELETE "eright"
 | REPLACE "eright" "with" bindings
 | WITH "eright" OPT ( "with" bindings )
+| DELETE "etransitivity"
+| REPLACE "etransitivity" open_constr
+| WITH "etransitivity" OPT open_constr
 | DELETE "finish_timing" OPT string
 | REPLACE "finish_timing" "(" string ")" OPT string
 | WITH "finish_timing" OPT ( "(" string ")" ) OPT string

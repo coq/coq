@@ -326,8 +326,9 @@ TACTIC EXTEND setoid_reflexivity
 END
 
 TACTIC EXTEND setoid_transitivity
-| [ "setoid_transitivity" constr(t) ] -> { setoid_transitivity (Some t) }
-| [ "setoid_etransitivity" ] -> { setoid_transitivity None }
+| [ "setoid_transitivity" constr(t) ] -> { setoid_transitivity (Closed t) }
+| [ "setoid_etransitivity" ] -> { setoid_transitivity (Open None) }
+| [ "setoid_etransitivity" open_constr(t) ] -> { setoid_transitivity (Open (Some t)) }
 END
 
 VERNAC COMMAND EXTEND PrintRewriteHintDb CLASSIFIED AS QUERY

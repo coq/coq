@@ -1754,10 +1754,6 @@ let apply c = apply_with_bindings_gen false false [None,(CAst.make (c,NoBindings
 let eapply ?with_classes c =
   apply_with_bindings_gen ?with_classes false true [None,(CAst.make (c,NoBindings))]
 
-let apply_list = function
-  | c::l -> apply_with_bindings (c,ImplicitBindings l)
-  | _ -> assert false
-
 (* [apply_in hyp c] replaces
 
    hyp : forall y1, ti -> t             hyp : rho(u)
@@ -3146,6 +3142,8 @@ let intros_symmetry =
    --Eduardo (19/8/97)
 *)
 
+type transitivity_arg = Closed of constr | Open of constr option
+
 let (forward_setoid_transitivity, setoid_transitivity) = Hook.make ()
 
 
@@ -3183,15 +3181,17 @@ let transitivity_red allowred t =
   | Some eq_data,_,_ ->
       Tacticals.tclTHEN
         (convert_concl ~cast:false ~check:false concl DEFAULTcast)
-        (match t with
-          | None -> Tacticals.pf_constr_of_global eq_data.trans >>= eapply
-          | Some t -> Tacticals.pf_constr_of_global eq_data.trans >>= fun trans -> apply_list [trans; t])
+        (Tacticals.pf_constr_of_global eq_data.trans >>= fun trans ->
+          match t with
+          | Open None -> eapply trans
+          | Open (Some t) -> eapply_with_bindings (trans, ImplicitBindings [t])
+          | Closed t -> apply_with_bindings (trans, ImplicitBindings [t]))
    | None,eq,eq_kind ->
       match t with
-      | None ->
+      | Open _ ->
         let info = Exninfo.reify () in
         Tacticals.tclZEROMSG ~info (str"etransitivity not supported for this relation.")
-      | Some t -> prove_transitivity eq eq_kind t
+      | Closed t -> prove_transitivity eq eq_kind t
   end
 
 let transitivity_gen t =
@@ -3202,8 +3202,8 @@ let transitivity_gen t =
       | e -> Proofview.tclZERO ~info e
     end
 
-let etransitivity = transitivity_gen None
-let transitivity t = transitivity_gen (Some t)
+let etransitivity t = transitivity_gen (Open t)
+let transitivity t = transitivity_gen (Closed t)
 
 let intros_transitivity  n  = Tacticals.tclTHEN intros (transitivity_gen n)
 

@@ -1708,6 +1708,7 @@ simple_tactic: [
 | "exact" uconstr
 | "assumption"
 | "etransitivity"
+| "etransitivity" open_constr
 | "cut" constr
 | "exact_no_check" constr
 | "vm_cast_no_check" constr
@@ -1900,6 +1901,7 @@ simple_tactic: [
 | "setoid_reflexivity"
 | "setoid_transitivity" constr
 | "setoid_etransitivity"
+| "setoid_etransitivity" open_constr
 | "intros" ne_intropatterns
 | "intros"
 | "eintros" ne_intropatterns

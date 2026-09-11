@@ -597,7 +597,7 @@ pass additional arguments such as ``using relation``.
 .. tacn:: setoid_reflexivity
           setoid_symmetry {? in @ident }
           setoid_transitivity @one_term
-          setoid_etransitivity
+          setoid_etransitivity {? @one_term }
           setoid_rewrite {? {| -> | <- } } @one_term_with_bindings {? at @rewrite_occs } {? in @ident }
           setoid_rewrite {? {| -> | <- } } @one_term_with_bindings in @ident at @rewrite_occs
           setoid_replace @one_term with @one_term {? using relation @one_term } {? in @ident } {? at {+ @int_or_var } } {? by @ltac_expr3 }

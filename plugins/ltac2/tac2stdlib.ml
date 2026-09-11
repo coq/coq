@@ -603,11 +603,11 @@ let () =
 
 let () =
   define "tac_transitivity" (constr @-> tac unit)
-    (fun c -> Tactics.intros_transitivity (Some c))
+    (fun c -> Tactics.intros_transitivity (Closed c))
 
 let () =
-  define "tac_etransitivity" (unit @-> tac unit)
-    (fun _ -> Tactics.intros_transitivity None)
+  define "tac_etransitivity" (option constr @-> tac unit)
+    (fun o -> Tactics.intros_transitivity (Open o))
 
 let () =
   define "tac_cut" (constr @-> tac unit) Tactics.cut

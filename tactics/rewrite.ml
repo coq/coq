@@ -2076,8 +2076,9 @@ let setoid_transitivity c =
       tac_open (poly_proof PropGlobal.get_transitive_proof TypeGlobal.get_transitive_proof
            env evm car rel)
         (fun proof -> match c with
-        | None -> eapply proof
-        | Some c -> apply_with_bindings (proof,ImplicitBindings [ c ])))
+        | Open None -> eapply proof
+        | Open Some c -> eapply_with_bindings (proof,ImplicitBindings [ c ])
+        | Closed c -> apply_with_bindings (proof,ImplicitBindings [ c ])))
     (transitivity_red true c)
 
 let setoid_symmetry_in id =

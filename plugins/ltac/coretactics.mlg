@@ -39,7 +39,8 @@ TACTIC EXTEND assumption
 END
 
 TACTIC EXTEND etransitivity
-| [ "etransitivity" ] -> { Tactics.intros_transitivity None }
+| [ "etransitivity" ] -> { Tactics.intros_transitivity (Open None) }
+| [ "etransitivity" open_constr(c) ] -> { Tactics.intros_transitivity (Open (Some c)) }
 END
 
 TACTIC EXTEND cut
@@ -67,7 +68,7 @@ TACTIC EXTEND lapply
 END
 
 TACTIC EXTEND transitivity
-| [ "transitivity" constr(c) ] -> { Tactics.intros_transitivity (Some c) }
+| [ "transitivity" constr(c) ] -> { Tactics.intros_transitivity (Closed c) }
 END
 
 (** Left *)

@@ -678,6 +678,8 @@ Entry simple_tactic is
   | IDENT "right"; "with"; bindings
   | IDENT "eleft"; "with"; bindings
   | IDENT "left"; "with"; bindings
+  | IDENT "etransitivity"; open_constr
+  | IDENT "etransitivity"
   | IDENT "exact"; uconstr
   | IDENT "with_strategy"; strategy_level_or_var; "["; LIST1 smart_global;
     "]"; ltac_expr LEVEL "3"
@@ -766,6 +768,7 @@ Entry simple_tactic is
   | IDENT "decide"; IDENT "equality"
   | IDENT "decide"; constr; "with"; constr
   | IDENT "setoid_transitivity"; constr
+  | IDENT "setoid_etransitivity"; open_constr
   | IDENT "setoid_etransitivity"
   | IDENT "setoid_symmetry"; "in"; hyp
   | IDENT "setoid_symmetry"

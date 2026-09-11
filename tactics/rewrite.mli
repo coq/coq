@@ -61,7 +61,7 @@ val setoid_symmetry_in : Id.t -> unit Proofview.tactic
 
 val setoid_reflexivity : unit Proofview.tactic
 
-val setoid_transitivity : constr option -> unit Proofview.tactic
+val setoid_transitivity : Tactics.transitivity_arg -> unit Proofview.tactic
 
 module Strategies :
 sig
