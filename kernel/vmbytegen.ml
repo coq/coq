@@ -430,10 +430,12 @@ let rec add_pop n = function
   | cont -> if Int.equal n 0 then cont else Kpop n :: cont
 
 let add_grab arity lbl cont =
+  assert (arity >= 1);
   if Int.equal arity 1 then Klabel lbl :: cont
   else Krestart :: Klabel lbl :: Kgrab (arity - 1) :: cont
 
 let add_grabrec rec_arg arity lbl cont =
+  assert (arity >= 1);
   if Int.equal arity 1 && rec_arg < arity then
     Klabel lbl :: Kgrabrec 0 :: Krestart :: cont
   else
