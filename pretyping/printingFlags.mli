@@ -85,7 +85,7 @@ module Extern : sig
     notations : bool;
     (** Print sort quality variables that have no name as ["_"] instead
         of their raw (unparsable) α-names. *)
-    anonymous_qvars : bool;
+    anonymous_univs : bool;
     (* primitive tokens, like strings *)
     raw_literals : bool;
     (* This governs printing of projections using the dot notation symbols *)
