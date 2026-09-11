@@ -34,11 +34,20 @@ module Counters : sig
   val print : t -> Pp.t
 end
 
-val profile : string -> ?args:(unit -> (string * MiniJson.t) list) -> (unit -> 'a) -> unit -> 'a
+val profile : string ->
+  ?args:(unit -> (string * MiniJson.t) list) ->
+  ?post_args:(('a, Exninfo.iexn) result -> (string * MiniJson.t) list) ->
+  ?gc_boundaries:bool ->
+  (unit -> 'a) -> unit -> 'a
 (** Profile the given function.
 
     [args] is called only if profiling is active, it is used to
     produce additional annotations.
+    [post_args] is called only if the profiling is active and is passed the
+    result of the given function. Its output is annotated to the closing span.
+    When [gc_boundaries] is true, cumulative major and minor collection counts,
+    cumulative major words, and, when available, absolute instruction counts at
+    the start and stop of the function are annotated to the closing span.
 *)
 
 val is_profiling : unit -> bool

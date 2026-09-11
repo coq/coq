@@ -15,5 +15,9 @@ val output : out_channel -> vname:string ->
 val max_data_count : int
 (** Max length supported for the inner [data array]. *)
 
-val raw_output : out_channel -> min_diff:Q.t ->
+type selection =
+| Instr of { min_diff: int }
+| Time of { min_diff: Q.t; }
+
+val raw_output : out_channel -> selection:selection ->
   (BenchUtil.source_loc * BenchUtil.data array) array -> unit

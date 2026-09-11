@@ -110,49 +110,62 @@ let load_vernac_core ~beautify ~check ~state ?source file =
 
   let rec loop state =
     let tstart = System.get_time () in
-    match
-      NewProfile.profile "parse_command" (fun () ->
-          Stm.parse_sentence
-            ~doc:state.doc ~entry:Pvernac.main_entry state.sid in_pa)
+
+    let result = NewProfile.profile "command"
+        ~gc_boundaries:false
+        ~post_args:(function
+          | Error _ | Ok None -> [("skip", `Intlit "1")]
+          | Ok (Some (ast, _)) ->
+            let lnum = match ast.CAst.loc with
+              | None -> "unknown"
+              | Some loc -> string_of_int loc.line_nb
+            in
+            [("cmd", `String (Pp.string_of_ppcmds (Topfmt.pr_cmd_header ast)));
+             ("line", `String lnum)]
+          )
+        (fun () ->
+           match
+             NewProfile.profile "parse_command" (fun () ->
+                 Stm.parse_sentence
+                   ~doc:state.doc ~entry:Pvernac.main_entry state.sid in_pa)
+               ()
+           with
+           | None ->
+             let () = beautify |> Option.iter @@ fun beautify ->
+               (* print end of file comments if any *)
+               Pp.pp_with beautify (comment (List.map snd @@ Procq.Parsable.comments in_pa))
+             in
+             input_cleanup ();
+             None
+           | Some ast ->
+             let () = beautify |> Option.iter @@ fun beautify ->
+               vernac_beautify beautify ast (Procq.Parsable.comments in_pa);
+               Procq.Parsable.drop_comments in_pa
+             in
+
+             checknav ast;
+
+             let state =
+               try_finally
+                 (fun () ->
+                    NewProfile.profile "run_command"
+                      (fun () ->
+                         Flags.silently (interp_vernac ~check ~state) ast) ())
+                 ()
+                 (fun () ->
+                    let tend = System.get_time () in
+                    (* The -time option is only supported from console-based clients
+                       due to the way it prints. *)
+                    emit_time state ast tstart tend)
+                 ()
+             in
+             Some (ast, state)
+        )
         ()
-    with
-    | None ->
-      let () = beautify |> Option.iter @@ fun beautify ->
-        (* print end of file comments if any *)
-        Pp.pp_with beautify (comment (List.map snd @@ Procq.Parsable.comments in_pa))
-      in
-      input_cleanup ();
-      state
-    | Some ast ->
-      let () = beautify |> Option.iter @@ fun beautify ->
-        vernac_beautify beautify ast (Procq.Parsable.comments in_pa);
-        Procq.Parsable.drop_comments in_pa
-      in
-
-      checknav ast;
-
-      let state =
-        try_finally
-          (fun () ->
-             NewProfile.profile "command"
-               ~args:(fun () ->
-                   let lnum = match ast.loc with
-                     | None -> "unknown"
-                     | Some loc -> string_of_int loc.line_nb
-                   in
-                   [("cmd", `String (Pp.string_of_ppcmds (Topfmt.pr_cmd_header ast)));
-                    ("line", `String lnum)])
-               (fun () ->
-             Flags.silently (interp_vernac ~check ~state) ast) ())
-          ()
-          (fun () ->
-             let tend = System.get_time () in
-             (* The -time option is only supported from console-based clients
-                due to the way it prints. *)
-             emit_time state ast tstart tend)
-          ()
-      in
-
+    in
+    match result with
+    | None -> state
+    | Some (_, state) ->
       (loop [@ocaml.tailcall]) state
   in
   try loop state

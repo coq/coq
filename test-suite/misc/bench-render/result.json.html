@@ -45,11 +45,12 @@ code::before {
 <body>
 <h1>Timings for foo.v</h1>
 <ol>
-<li style="background-color: #F08080">foo.v.time1 (total time: 3s)</li>
-<li style="background-color: #EEE8AA">foo.v.time2 (total time: 2.5s)</li>
+<li style="background-color: #F08080">foo.v.json (total instructions: 0.0157G, total time: 0.00165s)</li>
+<li style="background-color: #EEE8AA">foo.v.2.json (total instructions: 0.0501G, total time: 0.00165s)</li>
 </ol>
 <input type="radio" name="mode" id="instructions" checked><label for="instructions">Instructions</label>
 <input type="radio" name="mode" id="time"><label for="time">Time</label>
+<input type="radio" name="mode" id="memory"><label for="memory">Memory</label>
 <pre><div class="code" title="File: foo.v
 Line: 1
 
@@ -66,23 +67,23 @@ Time2: 0s
 </div><div class="code" title="File: foo.v
 Line: 9
 
-Time1: 2.s
-Time2: 0.s
-"><div class="measure1 time" style="width: 100.000000%"></div><div class="measure2 time" style="width: 0.000000%"></div><code id="L9" data-line="9">Definition a := 1.</code>
+Time1: 0.000709s, 4_242_359 instr (6.16E+05 w max heap size)
+Time2: 0.000709s, 4_242_359 instr (6.16E+05 w max heap size)
+"><div class="measure1 instructions" style="width: 11.110154%"></div><div class="measure1 time" style="width: 100.000000%"></div><div class="measure1 memory" style="width: 100.000000%"></div><div class="measure2 instructions" style="width: 11.110154%"></div><div class="measure2 time" style="width: 100.000000%"></div><div class="measure2 memory" style="width: 100.000000%"></div><code id="L9" data-line="9">Definition a := 1.</code>
 </div><div class="code" title="File: foo.v
 Line: 10
 
-Time1: 1.s
-Time2: 1.s
-"><div class="measure1 time" style="width: 50.000000%"></div><div class="measure2 time" style="width: 50.000000%"></div><code id="L10" data-line="10"></code>
+Time1: 0.000301s, 3_771_507 instr (6.16E+05 w max heap size)
+Time2: 0.000301s, 3_771_507 instr (6.16E+05 w max heap size)
+"><div class="measure1 instructions" style="width: 9.877058%"></div><div class="measure1 time" style="width: 42.454161%"></div><div class="measure1 memory" style="width: 100.000000%"></div><div class="measure2 instructions" style="width: 9.877058%"></div><div class="measure2 time" style="width: 42.454161%"></div><div class="measure2 memory" style="width: 100.000000%"></div><code id="L10" data-line="10"></code>
 <code id="L11" data-line="11">Definition b :=</code>
 <code id="L12" data-line="12">  2.</code>
 </div><div class="code" title="File: foo.v
 Line: 13
 
-Time1: 0.s
-Time2: 1.5s
-"><div class="measure1 time" style="width: 0.000000%"></div><div class="measure2 time" style="width: 75.000000%"></div><code id="L13" data-line="13"></code>
+Time1: 0.000353s, 3_818_452 instr (6.16E+05 w max heap size)
+Time2: 0.000353s, 38_184_520 instr (6.16E+05 w max heap size)
+"><div class="measure1 instructions" style="width: 10.000000%"></div><div class="measure1 time" style="width: 49.788434%"></div><div class="measure1 memory" style="width: 100.000000%"></div><div class="measure2 instructions" style="width: 100.000000%"></div><div class="measure2 time" style="width: 49.788434%"></div><div class="measure2 memory" style="width: 100.000000%"></div><code id="L13" data-line="13"></code>
 <code id="L14" data-line="14">Definition c := 3.</code>
 </div><div class="code" title="File: foo.v
 Line: 14
@@ -93,9 +94,9 @@ Time2: 0s
 </div><div class="code" title="File: foo.v
 Line: 14
 
-Time1: 0.s
-Time2: 0.s
-"><div class="measure1 time" style="width: 0.000000%"></div><div class="measure2 time" style="width: 0.000000%"></div><code data-line="14"> Definition d := 4.</code>
+Time1: 0.000287s, 3_857_416 instr (6.16E+05 w max heap size)
+Time2: 0.000287s, 3_857_416 instr (6.16E+05 w max heap size)
+"><div class="measure1 instructions" style="width: 10.102041%"></div><div class="measure1 time" style="width: 40.479549%"></div><div class="measure1 memory" style="width: 100.000000%"></div><div class="measure2 instructions" style="width: 10.102041%"></div><div class="measure2 time" style="width: 40.479549%"></div><div class="measure2 memory" style="width: 100.000000%"></div><code data-line="14"> Definition d := 4.</code>
 </div><div class="code" title="File: foo.v
 Line: 15
 

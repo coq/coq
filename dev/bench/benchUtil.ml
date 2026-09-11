@@ -35,13 +35,33 @@ type memory = {
   heap_words : int option;
 }
 
+type instruction_interval = {
+  start : int;
+  stop : int;
+}
+
+type gc_gap = {
+  major : int;
+  minor : int;
+  major_words : int option;
+  instructions : instruction_interval option;
+}
+
 type data = {
   time : measure;
   memory : memory option;
   instructions : int option;
+  gc_before : gc_gap option;
+  gc_after : gc_gap option;
 }
 
-let dummy_data = { time = dummy_measure; memory = None; instructions = None }
+let dummy_data = {
+  time = dummy_measure;
+  memory = None;
+  instructions = None;
+  gc_before = None;
+  gc_after = None;
+}
 
 let combine_related_data data =
   let nvals = Array.length (snd (data.(0))) in

@@ -32,10 +32,37 @@ type memory = {
   heap_words : int option;
 }
 
+type instruction_interval = {
+  start : int;
+  stop : int;
+}
+(** Absolute instruction-counter readings delimiting a gap. The number of
+    instructions executed in the gap is [stop - start]. *)
+
+type gc_gap = {
+  major : int;
+  minor : int;
+  major_words : int option;
+  (** Change in cumulative major words across the gap. On runtimes which update
+      this counter at major slices, a positive value detects slices without a
+      completed major collection. [None] means the profile predates this data. *)
+  instructions : instruction_interval option;
+  (** Absolute instruction-counter readings at the two ends of the gap, when
+      instruction counting was available. *)
+}
+
 type data = {
   time : measure;
   memory : memory option;
   instructions : int option;
+  gc_before : gc_gap option;
+  (** GC activity and instruction readings between the preceding command and
+      this command. [None] means there is no preceding command or the profile
+      has no boundary data. *)
+  gc_after : gc_gap option;
+  (** GC activity and instruction readings between this command and the
+      following command. [None] means there is no following command or the
+      profile has no boundary data. *)
 }
 
 val dummy_data : data

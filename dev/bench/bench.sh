@@ -587,7 +587,7 @@ $coq_opam_package (dependency install failed in $RUNNER)"
         for iteration in $(seq $num_of_iterations); do
             export COQ_ITERATION=$iteration
             _RES=0
-            timeout "$timeout" opam install -y -v -b -j 1 $coq_opam_package \
+            timeout "$timeout" opam install -y -v -b -j "$number_of_processors" $coq_opam_package \
                  3>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stdout.log 1>&3 \
                  4>$log_dir/$coq_opam_package.$RUNNER.opam_install.$iteration.stderr.log 2>&4 || \
                 _RES=$?
@@ -706,7 +706,7 @@ $skipped_packages"
           mkdir -p "$working_dir/html/$coq_opam_package/$(dirname "$vo")/"
           $timelog2html \
             "-o" "$working_dir/html/$coq_opam_package/${vo%%o}.html" \
-            "-raw-o" "$working_dir/html/$coq_opam_package/${vo%%o}.rocq-timediff" \
+            "-raw-instr-o" "$working_dir/html/$coq_opam_package/${vo%%o}.rocq-timediff" \
             "$new_base_path/${vo%%o}" \
             "$old_data" \
             "$new_data" \
@@ -755,7 +755,7 @@ mkdir -p $timings
 # Print line by line slow downs and speed ups
 if [ -d "$working_dir/html" ]; then # might not exist if all jobs failed
 cd "$working_dir/html"
-$render_line_results
+$render_line_results instr
 # Move line timing files to timings folder (they will become artifacts)
 mv fast_table slow_table timings_table $timings
 

@@ -15,12 +15,17 @@
 
 (library
  (name benchlib)
- (modules :standard \ render_results render_line_results rocqtimelog2html table)
+ (modules :standard \ render_results render_line_results rocqtimelog2html profparser_test table)
  (libraries unix str clib zarith yojson camlzip))
 
 (executable
  (name rocqtimelog2html)
  (modules rocqtimelog2html)
+ (libraries benchlib))
+
+(test
+ (name profparser_test)
+ (modules profparser_test)
  (libraries benchlib))
 
 (install

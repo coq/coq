@@ -604,6 +604,14 @@ Events are annotated with additional information in the `args` field
   (including subcomponents which do not appear in
   `ROCQ_PROFILE_COMPONENTS`).
 
+- `gc_boundaries` on `command` events contains the cumulative major and minor
+  collection counts and cumulative major words at the start and stop of the
+  command measurement. A change in major words can expose incremental major GC
+  work even when no complete major collection is observed. When instruction
+  counting is available, the record also contains absolute instruction counts.
+  Differences between one command's stop values and the following command's
+  start values identify GC activity and instructions executed between commands.
+
 - for the `command` event, `cmd` displays the precise location of the
   command and a compressed representation of it (like the `-time` header),
   and `line` is the start line of the command.

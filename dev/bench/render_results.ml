@@ -23,14 +23,14 @@ let _ = Printexc.record_backtrace true
 
 type ('a,'b) pkg_timings = {
   user_time  : 'a;
-  num_instr  : 'b;
+  num_instr  : 'a;
   num_mem    : 'b;
 }
 ;;
 
 let reduce_pkg_timings (m_f : 'a list -> 'c) (m_a : 'b list -> 'd) (t : ('a,'b) pkg_timings list) : ('c,'d) pkg_timings =
   { user_time  = m_f @@ CList.map (fun x -> x.user_time)  t
-  ; num_instr  = m_a @@ CList.map (fun x -> x.num_instr)  t
+  ; num_instr  = m_f @@ CList.map (fun x -> x.num_instr)  t
   ; num_mem    = m_a @@ CList.map (fun x -> x.num_mem)    t
   }
 ;;
@@ -69,6 +69,7 @@ let ( %> ) f g x = g (f x)
 let run = run_and_read %> snd
 
 module Float = struct
+  include Float
   let nan = nan
 end
 
@@ -131,7 +132,7 @@ end
 
 let add_timings a b =
   { user_time = a.user_time +. b.user_time;
-    num_instr = a.num_instr + b.num_instr;
+    num_instr = a.num_instr +. b.num_instr;
     num_mem = a.num_mem + b.num_mem;
   }
 
@@ -148,8 +149,8 @@ let mk_pkg_timings work_dir pkg_name suffix iteration =
       (* Perf can indeed be not supported in some systems, so we must fail gracefully *)
       ; num_instr =
           (try command_prefix ^ ".perf | grep instructions:u | awk '{print $1}' | sed 's/,//g'" |>
-               run |> String.rchop ~n:1 |> int_of_string
-           with Failure _ -> 0)
+               run |> String.rchop ~n:1 |> int_of_string |> fun i -> Float.(of_int i /. 1_000_000_000.0)
+           with Failure _ -> 0.0)
       ; num_mem = time_command_output |> nth 1 |> int_of_string
       })
   in
@@ -211,7 +212,7 @@ coq_opam_packages
      (fun (package_name, new_t, old_t) ->
        package_name, new_t, old_t,
        { user_time  = (new_t.user_time -. old_t.user_time) /. old_t.user_time *. 100.0
-       ; num_instr  = proportional_difference_of_integers new_t.num_instr  old_t.num_instr
+       ; num_instr  = (new_t.num_instr -. old_t.num_instr) /. old_t.num_instr *. 100.0
        ; num_mem    = proportional_difference_of_integers new_t.num_mem    old_t.num_mem
        })
 
@@ -243,9 +244,9 @@ coq_opam_packages
 
   [
     [ package_name ];
-    [ prf new_t.user_time; prf old_t.user_time; prf perc.user_time ];
-    [ pri new_t.num_instr; pri old_t.num_instr; prf perc.num_instr ];
+    [ prf new_t.num_instr; prf old_t.num_instr; prf perc.num_instr ];
     [ pri new_t.num_mem; pri old_t.num_mem; prf perc.num_mem ];
+    [ prf new_t.user_time; prf old_t.user_time; prf perc.user_time ];
   ]
 
   end
@@ -254,9 +255,9 @@ coq_opam_packages
 
     let headers = [
       "";
-      "user time [s]";
-      "CPU instructions";
+      "CPU instructions [G]";
       "max resident mem [KB]";
+      "user time [s]";
     ] in
 
     let descr = ["NEW"; "OLD"; "PDIFF"] in

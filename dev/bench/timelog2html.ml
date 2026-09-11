@@ -18,8 +18,14 @@ let usage () = die "Usage: rocq timelog2html [options] VFILE DATAFILES\n\n%a\n%s
      \n\
      \nOptions:\
      \n  -o FILE: output to FILE (default is - meaning stdout)\
-     \n  -raw-o FILE: output machine readable data to FILE (default off, - means stdout)\
-     \n               (only supported with 2 data files)\
+     \n  -raw-time-o FILE: output machine readable timing data to FILE\
+     \n                    (default off, - means stdout)\
+     \n                    (only supported with 2 data files; cannot be combined with\
+     \n                     -raw-instr-o)\
+     \n  -raw-instr-o FILE: output machine readable instruction data to FILE\
+     \n                     (default off, - means stdout)\
+     \n                     (only supported with 2 data files; cannot be combined with\
+     \n                      -raw-time-o)\
      \n  -min-diff DIFF: in -raw-o, only output lines with time diff greater than DIFF\
      \n                  (DIFF in OCaml float format, default 1e-4)"
 
@@ -36,13 +42,15 @@ type output = Stdout | File of string
 
 type opts = {
   output : output;
-  raw_output : output option;
+  raw_time_output : output option;
+  raw_instr_output : output option;
   min_diff : Q.t;
 }
 
 let defaults = {
   output = Stdout;
-  raw_output = None;
+  raw_time_output = None;
+  raw_instr_output = None;
   min_diff = Q.(one / of_int 10_000);
 }
 
@@ -63,7 +71,11 @@ let parse_min_diff d =
 
 let rec parse_args opts = function
   | "-o" :: f :: args -> parse_args { opts with output = parse_output f } args
-  | "-raw-o" :: f :: args -> parse_args { opts with raw_output = Some (parse_output f) } args
+  | ("-raw-time-o" :: f :: args
+     | "-raw-instr-o" :: f :: args) when opts.raw_time_output != None ->
+    die "Cannot use -raw-time-o and -raw-instr-o together"
+  | "-raw-time-o" :: f :: args -> parse_args { opts with raw_time_output = Some (parse_output f) } args
+  | "-raw-instr-o" :: f :: args -> parse_args { opts with raw_instr_output = Some (parse_output f) } args
   | "-min-diff" :: d :: args -> parse_args { opts with min_diff = parse_min_diff d } args
   | ["-o"|"-raw-o"|"-min-diff"] -> usage()
   | args -> opts, parse_files args
@@ -91,8 +103,15 @@ let main args =
 
   let vname = Filename.basename vfile in
 
-  let () = opts.raw_output |> Option.iter @@ with_output @@ fun ch ->
-    Htmloutput.raw_output ch ~min_diff:opts.min_diff all_data
+  let () = opts.raw_time_output |> Option.iter @@ with_output @@ fun ch ->
+    let selection = Htmloutput.(Time {min_diff=opts.min_diff}) in
+    Htmloutput.raw_output ch ~selection all_data
+  in
+  let () = opts.raw_instr_output |> Option.iter @@ with_output @@ fun ch ->
+    (* we roughly convert the specified minimal time to a minimal instruction count *)
+    let min_diff =  Q.(to_int (opts.min_diff * of_int 6_000_000_000)) in
+    let selection = Htmloutput.(Instr {min_diff}) in
+    Htmloutput.raw_output ch ~selection all_data
   in
   let () =  opts.output |> with_output @@ fun ch ->
     Htmloutput.output ch ~vname ~data_files all_data
