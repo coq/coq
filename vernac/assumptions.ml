@@ -201,8 +201,9 @@ let fold_with_full_binders g f n acc c =
 
 let warn_unreachable_opaque_body =
   CWarnings.create ~name:"unreachable-opaque-body" ~category:CWarnings.CoreCategories.vernacular
-    (fun kn -> Pp.(str "Cannot access the opaque body of " ++ Constant.print kn
-                   ++ str ", its assumptions are unknown."))
+    Pp.(fun kn -> str "Cannot access the opaque body of "
+                  ++ Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef kn)
+                  ++ str ", its assumptions are unknown.")
 
 (* Answers [None] both for a constant which has no body and for an opaque
    constant whose body could not be read, for instance a delayed proof
