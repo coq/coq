@@ -799,10 +799,7 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
   let eq_universes _ u1 u2 =
     EConstr.EInstance.(equal extended_evd (make u1) (make u2))
   in
-  let eq_sorts s1 s2 =
-    if Sorts.equal s1 s2 then true
-    else EConstr.ESorts.(equal extended_evd (make s1) (make s2))
-  in
+  let eq_sorts s1 s2 = EConstr.ESorts.(equal extended_evd (make s1) (make s2)) in
   let eq_existential eq e1 e2 =
     let eq c1 c2 = eq 0 (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
     EConstr.eq_existential evd eq (EConstr.of_existential e1) (EConstr.of_existential e2)
