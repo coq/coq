@@ -150,13 +150,13 @@ let pr_cases_pattern ?(flags=current_extern()) t =
   pr_cases_pattern_expr ~flags:ppflags
     (extern_cases_pattern ~flags Names.Id.Set.empty t)
 
-let pr_sort ?universes ?qualities ?anonymous_qvars sigma s =
+let pr_sort ?universes ?qualities ?anonymous_univs sigma s =
   let flags = PrintingFlags.Detype.current() in
   let universes = Option.default flags.universes universes in
   let qualities = Option.default flags.qualities qualities in
-  let anonymous_qvars =
-    Option.default (current_extern()).PrintingFlags.Extern.anonymous_qvars anonymous_qvars in
-  pr_sort_expr (extern_sort ~universes ~qualities ~anonymous_qvars sigma s)
+  let anonymous_univs =
+    Option.default (current_extern()).PrintingFlags.Extern.anonymous_univs anonymous_univs in
+  pr_sort_expr (extern_sort ~universes ~qualities ~anonymous_univs sigma s)
 
 let () = Termops.Internal.set_print_constr
   (fun env sigma t -> pr_leconstr_env ~flags:(current_combined()) env sigma t)
