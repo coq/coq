@@ -216,9 +216,10 @@ let shelve_dependencies gls =
 
 let hintmap_of env sigma hdc secvars concl =
   match hdc with
-  | None -> fun db -> ModeMatch (NoMode, Hint_db.map_none ~secvars db)
+  | None ->
+    fun db -> Some (None, Hint_db.map_none ~secvars db)
   | Some hdc ->
-    fun db -> Hint_db.map_eauto env sigma ~secvars hdc concl db
+    fun db -> Hint_db.map_eauto_modes env sigma ~secvars hdc concl db
 
 type hint_v = {
   hint_tac : unit Proofview.tactic;
@@ -274,7 +275,18 @@ and e_my_find_search db_list local_db secvars hdc complete env sigma concl0 =
       end
     | _ -> None
   in
-  let tac_of_hint (flags,h) =
+  let protect_frozen_evars frozen_evars tac =
+    if Evar.Set.is_empty frozen_evars then tac
+    else
+      Proofview.tclBIND tac (fun () ->
+        Proofview.tclEVARMAP >>= fun sigma ->
+        if Evar.Set.for_all (Evd.is_undefined sigma) frozen_evars then
+          Proofview.tclUNIT ()
+        else
+          Tacticals.tclZEROMSG
+            (str "Hint Extern instantiated an evar frozen by Hint Mode ="))
+  in
+  let tac_of_hint (flags, frozen_evars, h) =
     let name = FullHint.name h in
     let tac = function
       | Res_pf h ->
@@ -296,7 +308,8 @@ and e_my_find_search db_list local_db secvars hdc complete env sigma concl0 =
         Tacticals.tclTHEN fst snd
       | Unfold_nth c ->
         Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
-      | Extern (p, tacast) -> conclPattern concl0 p tacast
+      | Extern (p, tacast) ->
+        protect_frozen_evars frozen_evars (conclPattern concl0 p tacast)
     in
     let tac = FullHint.run h tac in
     let tac = if complete then Tacticals.tclCOMPLETE tac else tac in
@@ -313,8 +326,8 @@ and e_my_find_search db_list local_db secvars hdc complete env sigma concl0 =
   in
   let hint_of_db = hintmap_of env sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with
-      | ModeMatch (m, l) -> Some (db, m, l)
-      | ModeMismatch -> None)
+      | Some (modes, hints) -> Some (db, modes, hints)
+      | None -> None)
       (local_db :: db_list)
   in
   (* In case there is a mode mismatch in all the databases we get stuck.
@@ -324,22 +337,45 @@ and e_my_find_search db_list local_db secvars hdc complete env sigma concl0 =
   else
     let hintl =
       CList.map
-        (fun (db, m, tacs) ->
+        (fun (db, modes, tacs) ->
            let all = Evarsolve.AllowedEvars.all in
-           let allowed_evars = match allowed_evars, m with
-             | _, NoMode -> Option.default all allowed_evars
+           let allowed_evars = match allowed_evars, modes with
+             | _, None -> NeList.singleton @@ Option.default all allowed_evars
              (* [allowed_evars] from [Strict Resolution] take precedence over
-                the (necessarily less restrictive) set of allowed evars from
+                the (necessarily less restrictive) sets of allowed evars from
                 [Hint Mode =] *)
-             | Some allowed_evars, WithMode _ -> allowed_evars
-             | None, WithMode evars -> evars
+             | Some allowed_evars, _ -> NeList.singleton @@ allowed_evars
+             | None, Some modes ->
+               NeList.map (function {mode_match} -> mode_match) modes
            in
-          let flags = auto_unif_flags ~allowed_evars (Hint_db.transparent_state db) in
-          m, List.map (fun x -> tac_of_hint (flags, x)) tacs)
+           let map_hint hint =
+             let make_tac allowed_evars frozen_evars =
+               let flags = auto_unif_flags ~allowed_evars (Hint_db.transparent_state db) in
+               tac_of_hint (flags, frozen_evars, hint)
+             in
+             match FullHint.repr hint, allowed_evars with
+             | Extern _, _ ->
+               (* Extern tactics do not use the unification flags, but each
+                  matching mode imposes its own frozen-evar postcondition. *)
+               NeList.map (make_tac all) @@
+               Option.cata
+                 (NeList.map (fun { mode_frozen_evars } -> mode_frozen_evars))
+                 (NeList.singleton Evar.Set.empty)
+                 modes
+             (* Unfold hints do not instantiate evars, so mode alternatives
+                would produce identical tactics. *)
+             | Unfold_nth _, _ ->
+               NeList.singleton @@ make_tac (NeList.head allowed_evars) Evar.Set.empty
+             | _ ->
+               NeList.map
+                 (fun allowed_evars -> make_tac allowed_evars Evar.Set.empty)
+                 allowed_evars
+           in
+           modes, List.concat_map (fun tac -> NeList.to_list @@ map_hint tac) tacs)
         hintl
     in
     let modes, hintl = List.split hintl in
-    let all_mode_match = List.for_all (fun m -> m != NoMode) modes in
+    let all_mode_match = List.for_all Option.has_some modes in
     let hintl = match hintl with
       (* Optim: only sort if multiple hint sources were involved *)
       | [hintl] -> hintl

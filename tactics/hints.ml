@@ -596,12 +596,15 @@ let rec subst_hints_path subst hp =
       if p' == p && q' == q then hp else PathOr (p', q')
   | _ -> hp
 
-type mode_match =
-  | NoMode
-  | WithMode of Evarsolve.AllowedEvars.t
+type mode_match = Evarsolve.AllowedEvars.t
+
+type mode_restriction = {
+  mode_match : mode_match;
+  mode_frozen_evars : Evar.Set.t;
+}
 
 type 'a with_mode =
-  | ModeMatch of mode_match * 'a
+  | ModeMatch of mode_match option * 'a
   | ModeMismatch
 
 module Hint_db :
@@ -612,6 +615,9 @@ val map_none : secvars:Id.Pred.t -> t -> full_hint list
 val map_all : Environ.env -> secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 val map_eauto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                 (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
+val map_eauto_modes : Environ.env -> evar_map -> secvars:Id.Pred.t ->
+                (GlobRef.t * constr array) -> constr -> t ->
+                (mode_restriction NeList.t option * full_hint list) option
 val map_auto : Environ.env -> evar_map -> secvars:Id.Pred.t ->
                (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val add_list : env -> evar_map -> hint_entry list -> t -> t
@@ -688,41 +694,46 @@ struct
     in
     hrec c
 
-  let match_mode sigma m arg =
-    match m with
-    | ModeInput -> not (occur_existential sigma arg)
-    | ModeNoHeadEvar -> has_no_head_evar sigma arg
-    | ModeOutput -> true
-    | _ -> assert false
-
   let matches_mode sigma args mode =
     if Array.length mode == Array.length args then
-      (* we don't need to compute evar sets if there's no ModeInput *)
-      if Array.exists (fun m -> m = ModeFrozen) mode then
-        let exception Mismatch in
-        begin try
-          (* forbid all evars appearing in arguments with [ModeFrozen],
-             unconditionally, even when they appear in other arguments. *)
-          let f forbid m arg =
-            match m with
-            | ModeNoHeadEvar when not (has_no_head_evar sigma arg) -> raise Mismatch
-            | ModeInput when occur_existential sigma arg -> raise Mismatch
-            | ModeFrozen -> Evar.Set.union forbid (Evd.evars_of_term sigma arg)
-            | ModeNoHeadEvar | ModeInput | ModeOutput -> forbid
-          in
-          let forbid = Array.fold_left2 f Evar.Set.empty mode args in
-          Some (Evarsolve.AllowedEvars.except forbid)
-        with Mismatch -> None
-        end
-      else if Array.for_all2 (match_mode sigma) mode args
-      then Some Evarsolve.AllowedEvars.all
-      else None
+      let exception Mismatch in
+      begin try
+        (* Forbid all evars appearing in arguments with [ModeFrozen],
+           unconditionally, even when they appear in other arguments. *)
+        let f forbid m arg =
+          match m with
+          | ModeNoHeadEvar when not (has_no_head_evar sigma arg) -> raise Mismatch
+          | ModeInput when occur_existential sigma arg -> raise Mismatch
+          | ModeFrozen -> Evar.Set.union forbid (Evd.evars_of_term sigma arg)
+          | ModeNoHeadEvar | ModeInput | ModeOutput -> forbid
+        in
+        Some (Array.fold_left2 f Evar.Set.empty mode args)
+      with Mismatch -> None
+      end
     else None
 
   let matches_modes sigma args modes =
-    if List.is_empty modes then Some NoMode
-    else
-      Option.map (fun x -> WithMode x) (List.find_map (matches_mode sigma args) modes)
+    (* Modes are alternatives. Keep their restrictions separate: merging the
+        sets of allowed evars could permit an application that satisfies none
+        of the declared modes. *)
+    let rec aux forbids = function
+      | [] ->
+        let to_restriction forbid =
+          let allowed =
+            if Evar.Set.is_empty forbid then Evarsolve.AllowedEvars.all
+            else Evarsolve.AllowedEvars.except forbid
+          in
+          { mode_match = allowed; mode_frozen_evars = forbid }
+        in
+        List.rev_map to_restriction forbids
+      | mode :: modes ->
+        match matches_mode sigma args mode with
+        | None -> aux forbids modes
+        | Some forbid ->
+          if List.exists (Evar.Set.equal forbid) forbids then aux forbids modes
+          else aux (forbid :: forbids) modes
+    in
+    aux [] modes
 
   let merge_entry secvars db nopat pat =
     let fold uid accu = UID.Map.get uid db.hintdb_data :: accu in
@@ -750,13 +761,27 @@ struct
     merge_entry secvars db [] pat
 
   (* [c] contains an existential *)
-  let map_eauto env sigma ~secvars (k,args) concl db =
+  let map_eauto_modes env sigma ~secvars (k,args) concl db =
     let se = find env k db in
-      match matches_modes sigma args se.sentry_mode with
-      | Some m ->
+    match se.sentry_mode with
+    | [] ->
+      let pat = lookup_tacs env sigma concl db.hintdb_data se in
+      let mode_matches = None in
+      Some (mode_matches, merge_entry secvars db [] pat)
+    | modes ->
+      match matches_modes sigma args modes with
+      | [] -> None
+      | m :: ms ->
         let pat = lookup_tacs env sigma concl db.hintdb_data se in
-        ModeMatch (m, merge_entry secvars db [] pat)
-      | None -> ModeMismatch
+        let mode_matches = Some (NeList.of_repr (m, ms)) in
+        Some (mode_matches, merge_entry secvars db [] pat)
+
+  let map_eauto env sigma ~secvars hdc concl db =
+    match map_eauto_modes env sigma ~secvars hdc concl db with
+    | Some (mode_matches, hints) ->
+      let mode_match = Option.map (fun ms -> (NeList.head ms).mode_match) mode_matches in
+      ModeMatch (mode_match, hints)
+    | None -> ModeMismatch
 
   let is_exact = function
     | Give_exact _ -> true

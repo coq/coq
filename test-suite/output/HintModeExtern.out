@@ -1,0 +1,20 @@
+File "./output/HintModeExtern.v", line 10, characters 7-24:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
+extern called
+extern called
+File "./output/HintModeExtern.v", line 20, characters 7-24:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
+guarded extern called
+File "./output/HintModeExtern.v", line 33, characters 7-24:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
+deduplicated extern called
+File "./output/HintModeExtern.v", line 49, characters 7-24:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
+post-unfold extern called
+File "./output/HintModeExtern.v", line 65, characters 7-60:
+The command has indeed failed with message:
+Tactic failure: Proof search failed.
