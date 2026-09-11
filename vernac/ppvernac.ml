@@ -741,6 +741,11 @@ let pr_printable = function
     keyword "Print Notation" ++ spc() ++ str ntn_key
   | PrintNotation (Constrexpr.InCustomEntry ent, ntn_key) ->
     keyword "Print Notation" ++ spc() ++ pr_qualid ent ++ str ntn_key
+  | PrintCapturedOutput -> keyword "Print Captured Output"
+
+let pr_assert_captured_output_flag = let open AssertCapturedOutputFlags in function
+  | NoDrop -> str "no drop"
+  | PrintingWidth w -> str "printing width " ++ int w
 
 let pr_using e =
   let rec aux = function
@@ -1328,6 +1333,14 @@ let pr_synpure_vernac_expr v =
         (keyword "Attributes" ++ spc () ++
          pr_vernac_attributes attrs)
     )
+  | VernacDropCapturedOutput -> return (keyword "Drop Captured Output")
+  | VernacAssertCapturedOutput (flags, {CAst.v=s}) ->
+    return (
+      hov 2
+        (keyword "Assert Captured Output" ++ spc() ++
+         (if List.is_empty flags then mt() else
+            surround (prlist_with_sep spc (fun f -> pr_assert_captured_output_flag f.v) flags) ++ spc()) ++
+         qstring s))
   | VernacProof (None, None) ->
     return (keyword "Proof")
   | VernacProof (None, Some e) ->
@@ -1479,6 +1492,7 @@ let pr_control_flag (p : control_flag) =
     | ControlAllocLimit n -> keyword "AllocLimit " ++ int64 Int64.(div n.kilowords 1000L)
     | ControlFail -> keyword "Fail"
     | ControlSucceed -> keyword "Succeed"
+    | ControlCaptureOutput -> keyword "Capture Output"
   in
   w ++ spc ()
 

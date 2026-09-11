@@ -189,7 +189,11 @@ let classify_vernac e =
     | VernacSchemeEquality _
     | VernacSchemeAll _
     | VernacAddRewRule _
-    | VernacDeclareInstance _ -> VtSideff ([], VtLater)
+    | VernacDeclareInstance _
+    | VernacDropCapturedOutput
+    | VernacAssertCapturedOutput _
+      -> VtSideff ([], VtLater)
+
     (* Who knows *)
     | VernacOpenCloseScope _ | VernacDeclareScope _
     | VernacDelimiters _ | VernacBindScope _

@@ -214,8 +214,9 @@ let suggest_variable env id =
 
 let value = ref None
 
+let section_subset_expr = Procq.Entry.make "section_subset_expr"
 let using_to_string us = Pp.string_of_ppcmds (Ppvernac.pr_using us)
-let entry = Procq.eoi_entry G_vernac.section_subset_expr
+let entry = Procq.eoi_entry section_subset_expr
 let using_from_string us = Procq.Entry.parse entry
     (Procq.Parsable.make (Gramlib.Stream.of_string ("( "^us^" )")))
 

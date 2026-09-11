@@ -1,0 +1,72 @@
+0
+     : nat
+1
+     : nat
+2
+     : nat
+File "./output/captured_output.v", line 7, characters 21-24:
+Warning: hello [warn-reference,user-warn,default]
+bar
+     : nat
+File "./output/captured_output.v", line 9, characters 26-29:
+The command has indeed failed with message:
+Illegal application (Non-functional construction): 
+The expression "0" of type "nat" cannot be applied to the term
+ "0" : "nat"
+File "./output/captured_output.v", line 11, characters 26-29:
+The command has indeed failed with message:
+Illegal application (Non-functional construction): 
+The expression "1" of type "nat" cannot be applied to the term
+ "1" : "nat"
+4
+     : nat
+File "./output/captured_output.v", line 16, characters 36-39:
+Warning: hello [warn-reference,user-warn,default]
+bar
+     : nat
+File "./output/captured_output.v", line 19, characters 0-52:
+Warning: Postfix notations (i.e. starting with a nonterminal symbol and
+ending with a terminal symbol) should usually be at level 1 (default).
+[postfix-notation-not-level-1,parsing,default]
+Captured output:
+0
+     : nat
+2
+     : nat
+hello
+[warn-reference,user-warn,default]
+bar
+     : nat
+The command has indeed failed with message:
+Illegal application (Non-functional construction): 
+The expression "0" of type "nat"
+cannot be applied to the term
+ "0" : "nat"
+hello [warn-reference,user-warn,default]
+bar
+     : nat
+hello [warn-reference,user-warn,default]
+bar
+     : nat
+Postfix notations (i.e. starting with a nonterminal symbol and ending with a
+terminal symbol) should usually be at level 1 (default).
+[postfix-notation-not-level-1,parsing,default]
+5
+     : nat
+Captured output:
+5
+     : nat
+File "./output/captured_output.v", line 31, characters 49-58:
+The command has indeed failed with message:
+Not OK: expected
+"5
+     : nat"
+Quickfix:
+Replace File "./output/captured_output.v", line 31, characters 49-58 with "5
+     : nat"
+File "./output/captured_output.v", line 34, characters 0-14:
+Output OK.
+File "./output/captured_output.v", line 38, characters 0-14:
+Output OK.
+File "./output/captured_output.v", line 41, characters 44-46:
+Output OK.

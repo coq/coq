@@ -55,7 +55,7 @@ let decl_notations = Entry.make "decl_notations"
 let record_field = Entry.make "record_field"
 let of_type = Entry.make "of_type"
 let of_type_inst = Entry.make "of_type_inst"
-let section_subset_expr = Entry.make "section_subset_expr"
+let section_subset_expr = Proof_using.section_subset_expr
 let syntax_modifiers = Entry.make "syntax_modifiers"
 let goal_selector = Entry.make "goal_selector"
 let toplevel_selector = Entry.make "toplevel_selector"
@@ -104,6 +104,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc (ControlAllocLimit { kilowords = Int64.(mul (of_int n) mult) }) }
       | IDENT "Fail" -> { CAst.make ~loc ControlFail }
       | IDENT "Succeed" -> { CAst.make ~loc ControlSucceed }
+      | IDENT "Capture"; IDENT "Output" -> { CAst.make ~loc ControlCaptureOutput }
     ] ]
   ;
   decorated_vernac:
@@ -1144,7 +1145,14 @@ GRAMMAR EXTEND Gram
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 table_value
         -> { VernacSynPure (VernacRemoveOption ([table;field], v)) }
       | IDENT "Remove"; table = IDENT; v = LIST1 table_value ->
-          { VernacSynPure (VernacRemoveOption ([table], v)) } ]]
+          { VernacSynPure (VernacRemoveOption ([table], v)) }
+      | IDENT "Drop"; IDENT "Captured"; IDENT "Output" ->
+        { VernacSynPure VernacDropCapturedOutput }
+      | IDENT "Assert"; IDENT "Captured"; IDENT "Output";
+        flags = OPT [ "("; flags = LIST0 captured_output_flag SEP ","; ")" -> { flags } ];
+        s = lstring ->
+        { VernacSynPure (VernacAssertCapturedOutput (Option.default [] flags, s)) }
+  ]]
   ;
   query_command:
     [ [ IDENT "Eval"; r = red_expr; "in"; c = lconstr; "." ->
@@ -1225,6 +1233,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Strategies" -> { PrintStrategy None }
       | IDENT "Registered" -> { PrintRegistered }
       | IDENT "Registered"; IDENT "Schemes" -> { PrintRegisteredSchemes }
+      | IDENT "Captured"; IDENT "Output" -> { PrintCapturedOutput }
     ] ]
   ;
   debug_univ_name:
@@ -1329,6 +1338,13 @@ GRAMMAR EXTEND Gram
   ;
   univ_name_list:
     [ [  "@{" ; l = LIST0 name; l' = OPT [ ";" ; l = LIST0 name -> { l } ] ; "}" -> { match l' with None -> [], l | Some l' -> l, l' } ] ]
+  ;
+  captured_output_flag:
+    [ [ IDENT "no"; IDENT "drop" ->
+        { CAst.make ~loc AssertCapturedOutputFlags.NoDrop }
+      | IDENT "printing"; IDENT "width"; w = natural ->
+        { CAst.make ~loc @@ AssertCapturedOutputFlags.PrintingWidth w }
+    ] ]
   ;
 END
 

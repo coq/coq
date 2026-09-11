@@ -813,6 +813,7 @@ command: [
 | "Print" "Strategies"
 | "Print" "Registered"
 | "Print" "Registered" "Schemes"
+| "Print" "Captured" "Output"
 | "Print" OPT "Term" LIST1 [ reference OPT univ_name_list ] SEP ","
 | "Print" "Module" "Type" qualid
 | "Print" "Module" qualid
@@ -828,6 +829,8 @@ command: [
 | "Debug" [ "On" | "Off" ]
 | "Declare" "Reduction" ident ":=" red_expr
 | "Declare" "Custom" "Entry" ident
+| "Drop" "Captured" "Output"
+| "Assert" "Captured" "Output" OPT [ "(" LIST0 captured_output_flag SEP "," ")" ] string
 | "Derive" open_binders "SuchThat" type "As" ident
 | "Derive" open_binders "in" type "as" ident
 | "Extraction" qualid      (* extraction plugin *)
@@ -1059,6 +1062,7 @@ command: [
 | "AllocLimit" natural [ "Mw" | "kw" ] sentence
 | "Fail" sentence
 | "Succeed" sentence
+| "Capture" "Output" sentence
 | "Drop"
 | "Quit"
 | "BackTo" natural
@@ -1117,6 +1121,11 @@ logical_kind: [
 
 univ_name_list: [
 | "@{" LIST0 name OPT [ ";" LIST0 name ] "}"
+]
+
+captured_output_flag: [
+| "no" "drop"
+| "printing" "width" natural
 ]
 
 enable_notation_flag: [

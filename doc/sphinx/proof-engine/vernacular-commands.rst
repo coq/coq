@@ -1362,6 +1362,34 @@ Controlling Typing Flags
 
 Typing flags may not be changed while inside sections.
 
+Output testing
+--------------
+
+.. cmd:: Capture Output @sentence
+
+   If :n:`@sentence` succeeds, copies the messages it printed to the
+   "captured output" internal state.
+
+.. cmd:: Assert Captured Output {? ( {*, @captured_output_flag } ) } @string
+
+   .. insertprodn captured_output_flag captured_output_flag
+
+   .. prodn::
+      captured_output_flag ::= no drop
+      | printing width @natural
+
+   Fails if the current captured output is not equal to the given string.
+   Printing width is currently required.
+   Unless `no drop` is specified, the captured output state is cleared.
+
+.. cmd:: Drop Captured Output
+
+   Deletes the contents of the "captured output" internal state.
+
+.. cmd:: Print Captured Output
+
+   Print the current contents of the "captured output" internal state.
+
 .. _internal-registration-commands:
 
 Internal registration commands

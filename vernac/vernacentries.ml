@@ -2270,6 +2270,11 @@ let vernac_print_debug_delta qid =
   in
   Mod_subst.debug_pr_delta prc delta
 
+let print_captured_output captured =
+  let pr_one (CapturedOutput.Message (_,msg)) = msg in
+  str "Captured output:" ++ fnl() ++
+  prlist_with_sep fnl pr_one (List.rev captured)
+
 let vernac_print =
   let no_state f =
     Vernactypes.(typed_vernac_gen ignore_state (fun _ -> no_state, f ()))
@@ -2291,6 +2296,11 @@ let vernac_print =
       no_state, f ~opaque_access env sigma
     in
     typed_vernac_gen { ignore_state with proof = ReadOpt; opaque_access = Access } f
+  in
+  let with_captured_output f =
+    let open Vernactypes in
+    let f {captured} = no_state, f captured in
+    typed_vernac_gen { ignore_state with captured = Read } f
   in
   function
   | PrintTypingFlags -> with_proof_env @@ fun env _sigma -> pr_typing_flags (Environ.typing_flags env)
@@ -2370,6 +2380,7 @@ let vernac_print =
   | PrintStrategy r -> no_state @@ fun () -> print_strategy r
   | PrintRegistered -> no_state print_registered
   | PrintRegisteredSchemes -> no_state print_registered_schemes
+  | PrintCapturedOutput -> with_captured_output print_captured_output
 
 let vernac_search ~pstate ~atts s gopt r =
   let open ComSearch in
@@ -3011,6 +3022,21 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacAttributes atts ->
     vtdefault(fun () ->
         vernac_library_attributes atts)
+
+  | VernacDropCapturedOutput ->
+    vtconsumecapturedoutput (fun ~captured -> ())
+
+  | VernacAssertCapturedOutput (flags, s) ->
+    let f ~captured = CapturedOutput.(vernac_assert (from_rev_list captured) flags s) in
+    let nodrop =
+      List.exists (function
+            {CAst.v=AssertCapturedOutputFlags.NoDrop} -> true
+          | _ -> false)
+        flags
+    in
+    if nodrop then
+      vtreadcapturedoutput f
+    else vtconsumecapturedoutput f
 
   (* Proof management *)
   | VernacFocus n ->

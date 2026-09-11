@@ -57,6 +57,8 @@ module Interp : sig
     (** program mode table. One per open module/section including the toplevel module. *)
     ; opaques : Opaques.Summary.t
     (** qed-terminated proofs *)
+    ; captured_output : CapturedOutput.output list
+    (** output is in reverse chronological order *)
     }
 
   val freeze_interp_state : unit -> t
@@ -74,6 +76,16 @@ type t =
 
 val freeze_full_state : unit -> t
 val unfreeze_full_state : t -> unit
+
+(** States which are mostly handled functionally. *)
+type explicit_state = {
+  proof : LemmaStack.t option;
+  prog : Declare.OblState.t NeList.t;
+  captured_output : CapturedOutput.output list;
+}
+
+val explicit_from_frozen : Interp.t -> explicit_state
+val set_explicit_in_frozen : Interp.t -> explicit_state -> Interp.t
 
 (** STM-specific state handling *)
 module Stm : sig
@@ -133,7 +145,7 @@ module Declare : sig
 
   (* Low-level stuff *)
   val get_program : unit -> Declare.OblState.t NeList.t
-  val set : LemmaStack.t option * Declare.OblState.t NeList.t -> unit
+  val set : explicit_state -> unit
 
   val get_pstate : unit -> Declare.Proof.t option
 

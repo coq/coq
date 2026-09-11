@@ -581,6 +581,8 @@ command: [
 | "Test" setting_name
 | "Remove" IDENT IDENT LIST1 table_value
 | "Remove" IDENT LIST1 table_value
+| "Drop" "Captured" "Output"
+| "Assert" "Captured" "Output" OPT [ "(" LIST0 captured_output_flag SEP "," ")" ] lstring
 | "Reset" "Initial"
 | "Reset" identref
 | "Back"
@@ -846,6 +848,7 @@ control_flag: [
 | "AllocLimit" natural [ "Mw" | "kw" ]
 | "Fail"
 | "Succeed"
+| "Capture" "Output"
 ]
 
 decorated_vernac: [
@@ -1463,6 +1466,7 @@ printable: [
 | "Strategies"
 | "Registered"
 | "Registered" "Schemes"
+| "Captured" "Output"
 ]
 
 debug_univ_name: [
@@ -1575,6 +1579,11 @@ search_queries: [
 
 univ_name_list: [
 | "@{" LIST0 name OPT [ ";" LIST0 name ] "}"
+]
+
+captured_output_flag: [
+| "no" "drop"
+| "printing" "width" natural
 ]
 
 syntax: [

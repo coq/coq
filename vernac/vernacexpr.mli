@@ -78,6 +78,7 @@ type printable =
   | PrintRegistered
   | PrintRegisteredSchemes
   | PrintNotation of qualid Constrexpr.notation_entry_gen * string
+  | PrintCapturedOutput
 
 type glob_search_where = InHyp | InConcl | Anywhere
 
@@ -365,6 +366,12 @@ type hints_expr =
   | HintsConstructors of Libnames.qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Gentactic.raw_generic_tactic
 
+module AssertCapturedOutputFlags : sig
+  type t =
+    | NoDrop
+    | PrintingWidth of int
+end
+
 (** [synterp_vernac_expr] describes the AST of commands which have effects on
     parsing or parsing extensions *)
 type synterp_vernac_expr =
@@ -492,6 +499,8 @@ type nonrec synpure_vernac_expr =
   | VernacPrimitive of ident_decl * CPrimitives.op_or_type * constr_expr option
   | VernacComments of comment list
   | VernacAttributes of Attributes.vernac_flags
+  | VernacDropCapturedOutput
+  | VernacAssertCapturedOutput of AssertCapturedOutputFlags.t CAst.t list * lstring
 
   (* Proof management *)
   | VernacAbort
@@ -531,6 +540,7 @@ type control_flag_r =
   | ControlAllocLimit of Control.kilowords
   | ControlFail
   | ControlSucceed
+  | ControlCaptureOutput
 
 type control_flag = control_flag_r CAst.t
 

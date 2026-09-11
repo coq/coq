@@ -1589,6 +1589,8 @@ control_flag: [
 | WITH "Fail" sentence
 | REPLACE "Succeed"
 | WITH "Succeed" sentence
+| REPLACE "Capture" "Output"
+| WITH "Capture" "Output" sentence
 ]
 
 vernac_control: [

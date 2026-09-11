@@ -47,6 +47,8 @@ type 'state control_entry =
   | ControlAllocLimit of { remaining : Control.kilowords; allocated : Control.kilowords }
   | ControlFail of { st : 'state }
   | ControlSucceed of { st : 'state }
+  | ControlCaptureOutput of { captured : CapturedOutput.output list; }
+  (** [captured] is in reverse chronological order. *)
 
 type 'state control_entries = 'state control_entry list
 
@@ -214,6 +216,23 @@ let with_succeed ~with_local_state st0 f =
   let transient_st, v = with_local_state.with_local_state st0 f in
   Some (ControlSucceed { st = transient_st }, v)
 
+(* XXX very naive capture means Flags.quiet is going to change results
+   also test_mode for Fail (but only affects loc if not Flags.quiet) *)
+let with_capture ?loc:default_loc ~captured f =
+  let captured = ref captured in
+  let feeder (fb:Feedback.feedback) = match fb.contents with
+    | Message (lvl,_loc,_qf,msg) ->
+      captured := CapturedOutput.Message (lvl,msg) :: !captured
+    | _ -> ()
+  in
+  let acquire () = Feedback.add_feeder feeder in
+  let scope _ =
+    let v = f () in
+    !captured, v
+  in
+  let release = Feedback.del_feeder in
+  Memprof_coq.Masking.with_resource ~acquire () ~scope ~release
+
 let under_one_control ~loc ~with_local_state control f =
   match control with
   | ControlTime { duration } ->
@@ -238,6 +257,9 @@ let under_one_control ~loc ~with_local_state control f =
   | ControlAllocLimit {remaining; allocated} -> with_alloc_limit ~limit:remaining ~allocated f
   | ControlFail {st} -> with_fail ~loc ~with_local_state st f
   | ControlSucceed {st} -> with_succeed ~with_local_state st f
+  | ControlCaptureOutput {captured} ->
+    let captured, v = with_capture ?loc ~captured f in
+    Some (ControlCaptureOutput {captured}, v)
 
 let rec under_control ~loc ~with_local_state controls ~noop f =
   match controls with
@@ -248,33 +270,37 @@ let rec under_control ~loc ~with_local_state controls ~noop f =
     | Some (control, (rest,v)) -> control :: rest, v
     | None -> [], noop
 
-let ignore_state = { with_local_state = fun _ f -> (), f () }
+let finish push v = function
+  | ControlTime {duration} ->
+    Feedback.msg_notice @@ System.fmt_transaction_result (Ok ((),duration));
+    Some v
+  | ControlInstructions {instructions} ->
+    Feedback.msg_notice @@ System.fmt_instructions_result (Ok ((),instructions));
+    Some v
+  | ControlProfile {to_file; profstate} ->
+    Feedback.msg_notice @@ fmt_profile to_file (Ok ((),profstate));
+    Some v
+  | ControlRedirect _ -> Some v
+  | ControlTimeout _ -> Some v
+  | ControlAllocLimit { remaining = _; allocated } ->
+    Feedback.msg_notice @@ fmt_allocated allocated;
+    Some v
+  | ControlFail _ -> CErrors.user_err Pp.(str "The command has not failed!")
+  | ControlSucceed _ -> None
+  | ControlCaptureOutput {captured} -> Some (push captured v)
 
-let rec after_last_phase ~loc = function
-  | [] -> false
+let rec last_under_control ~loc ~with_local_state ~push_captured controls ~noop f =
+  match controls with
+  | [] -> f()
   | control :: rest ->
-    (* don't match on [control] before processing [rest]: correctly handle eg [Fail Fail]. *)
-    let rest () = after_last_phase ~loc rest in
-    match under_one_control ~loc ~with_local_state:ignore_state control rest with
-    | None -> true
-    | Some (control,noop) ->
-      match control with
-      | ControlTime {duration} ->
-        Feedback.msg_notice @@ System.fmt_transaction_result (Ok ((),duration));
-        noop
-      | ControlInstructions {instructions} ->
-        Feedback.msg_notice @@ System.fmt_instructions_result (Ok ((),instructions));
-        noop
-      | ControlProfile {to_file; profstate} ->
-        Feedback.msg_notice @@ fmt_profile to_file (Ok ((),profstate));
-        noop
-      | ControlRedirect _ -> noop
-      | ControlTimeout _ -> noop
-      | ControlAllocLimit { remaining = _; allocated } ->
-        Feedback.msg_notice @@ fmt_allocated allocated;
-        noop
-      | ControlFail _ -> CErrors.user_err Pp.(str "The command has not failed!")
-      | ControlSucceed _ -> true
+    let f () = last_under_control ~loc ~with_local_state ~push_captured rest ~noop f in
+    match under_one_control ~loc ~with_local_state control f with
+    | Some (control, v) ->
+      begin match finish push_captured v control with
+      | None -> noop
+      | Some v -> v
+      end
+    | None -> noop
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it. *)
@@ -315,5 +341,6 @@ let from_syntax_one : Vernacexpr.control_flag -> unit control_entry = fun flag -
   | ControlAllocLimit limit -> ControlAllocLimit { remaining = limit; allocated = { kilowords = 0L } }
   | ControlFail -> ControlFail { st = () }
   | ControlSucceed -> ControlSucceed { st = () }
+  | ControlCaptureOutput -> ControlCaptureOutput { captured = [] }
 
 let from_syntax control = List.map from_syntax_one (add_default_timeout control)
