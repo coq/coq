@@ -40,18 +40,61 @@ let pr_axioms env opac =
   let csts = List.map Constant.to_string opac in
   pr_assumptions "Axioms" csts
 
+(* A module operation records the checks it skipped on the module it produced,
+   because they belong to no declaration: the constant an inlined body came
+   from is gone, and a subtyping check is not a declaration at all. So the
+   flags a declaration is subject to are its own, weakened by those of every
+   module it sits in (#12155, #16646). *)
+let effective_flags env =
+  let cache = ref ModPath.Map.empty in
+  let rec modpath_flags mp =
+    match ModPath.Map.find_opt mp !cache with
+    | Some flags -> flags
+    | None ->
+      let flags = match mp with
+      | MPfile _ | MPbound _ -> Declareops.safe_flags Conv_oracle.empty
+      | MPdot (mp', _) ->
+        let outer = modpath_flags mp' in
+        match Environ.lookup_module mp env with
+        | mb -> Declareops.weaken_checks ~weak:(Mod_declarations.mod_typing_flags mb) outer
+        | exception Not_found -> outer
+      in
+      let () = cache := ModPath.Map.add mp flags !cache in
+      flags
+  in
+  fun mp flags -> Declareops.weaken_checks ~weak:(modpath_flags mp) flags
+
+let fold_flagged env f acc =
+  let eff = effective_flags env in
+  let acc =
+    fold_constants (fun c cb acc ->
+        f (Constant.to_string c) (eff (Constant.modpath c) cb.const_typing_flags) acc)
+      env acc
+  in
+  fold_inductives (fun c cb acc ->
+      f (MutInd.to_string c) (eff (MutInd.modpath c) cb.mind_typing_flags) acc)
+    env acc
+
+let pr_flagged env name test =
+  pr_assumptions name
+    (fold_flagged env (fun s flags acc -> if test flags then s :: acc else acc) [])
+
 let pr_type_in_type env =
-  let csts = fold_constants (fun c cb acc -> if not cb.const_typing_flags.check_universes then Constant.to_string c :: acc else acc) env [] in
-  let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_universes then MutInd.to_string c :: acc else acc) env csts in
-  pr_assumptions "Constants/Inductives relying on type-in-type" csts
+  pr_flagged env "Constants/Inductives relying on type-in-type"
+    (fun flags -> not flags.check_universes)
 
 let pr_unguarded env =
-  let csts = fold_constants (fun c cb acc -> if not cb.const_typing_flags.check_guarded then Constant.to_string c :: acc else acc) env [] in
-  let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_guarded then MutInd.to_string c :: acc else acc) env csts in
-  pr_assumptions "Constants/Inductives relying on unsafe (co)fixpoints" csts
+  pr_flagged env "Constants/Inductives relying on unsafe (co)fixpoints"
+    (fun flags -> not flags.check_guarded)
 
 let pr_nonpositive env =
-  let inds = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_positive then MutInd.to_string c :: acc else acc) env [] in
+  let eff = effective_flags env in
+  let inds =
+    fold_inductives (fun c cb acc ->
+        if not (eff (MutInd.modpath c) cb.mind_typing_flags).check_positive
+        then MutInd.to_string c :: acc else acc)
+      env []
+  in
   pr_assumptions "Inductives whose positivity is assumed" inds
 
 let pr_indices_matter env =

@@ -146,14 +146,51 @@ let lookup_constant_in_impl cst fallback =
           Pp.(str "Print Assumption: unknown constant "
             ++ Constant.print cst ++ str ".")
 
+(** A module operation may have skipped checks that no declaration it produced
+    records: the body it inlined for [Parameter Inline] no longer points at the
+    constant that knew, and its own subtyping checks belong to no declaration
+    at all. The module records them instead, so we walk up from the constant
+    (#12155, #16646). We follow the user name: for a sealed module it is the
+    sealing that skipped the check, not the implementation. *)
+
+let modpath_flags_cache = ref (ModPath.Map.empty : typing_flags ModPath.Map.t)
+
+let rec modpath_flags mp =
+  match ModPath.Map.find_opt mp !modpath_flags_cache with
+  | Some flags -> flags
+  | None ->
+    let flags = match mp with
+    | MPfile _ | MPbound _ -> Declareops.safe_flags Conv_oracle.empty
+    | MPdot (mp', _) ->
+      let outer = modpath_flags mp' in
+      match lookup_module_in_impl mp with
+      | mb -> Declareops.weaken_checks ~weak:(mod_typing_flags mb) outer
+      | exception Not_found -> outer
+    in
+    let () = modpath_flags_cache := ModPath.Map.add mp flags !modpath_flags_cache in
+    flags
+
+let weaken_constant mp cb =
+  let flags = Declareops.weaken_checks ~weak:(modpath_flags mp) cb.const_typing_flags in
+  if flags == cb.const_typing_flags then cb
+  else { cb with const_typing_flags = flags }
+
+let weaken_mind mp mib =
+  let flags = Declareops.weaken_checks ~weak:(modpath_flags mp) mib.mind_typing_flags in
+  if flags == mib.mind_typing_flags then mib
+  else { mib with mind_typing_flags = flags }
+
 let lookup_constant cst =
   let env = Global.env() in
-  if not (Environ.mem_constant cst env)
-  then lookup_constant_in_impl cst None
-  else
-    let cb = Environ.lookup_constant cst env in
-    if Declareops.constant_has_body cb then cb
-    else lookup_constant_in_impl cst (Some cb)
+  let cb =
+    if not (Environ.mem_constant cst env)
+    then lookup_constant_in_impl cst None
+    else
+      let cb = Environ.lookup_constant cst env in
+      if Declareops.constant_has_body cb then cb
+      else lookup_constant_in_impl cst (Some cb)
+  in
+  weaken_constant (Constant.modpath cst) cb
 
 let lookup_mind_in_impl mind =
   try
@@ -167,8 +204,11 @@ let lookup_mind_in_impl mind =
 
 let lookup_mind mind =
   let env = Global.env() in
-  if Environ.mem_mind mind env then Environ.lookup_mind mind env
-  else lookup_mind_in_impl mind
+  let mib =
+    if Environ.mem_mind mind env then Environ.lookup_mind mind env
+    else lookup_mind_in_impl mind
+  in
+  weaken_mind (MutInd.modpath mind) mib
 
 (** Graph traversal of an object, collecting on the way the dependencies of
     traversed objects *)
@@ -350,6 +390,7 @@ and traverse_context access current ctx accu ctxt =
 
 let traverse access grs =
   let () = modcache := ModPath.Map.empty in
+  let () = modpath_flags_cache := ModPath.Map.empty in
   let env = Global.env () in
   List.fold_left (fun accu gr ->
     let t, _ = UnivGen.fresh_global_instance env gr in

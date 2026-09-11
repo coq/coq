@@ -81,9 +81,11 @@ val subst_modtype_signature_and_resolver : ModPath.t -> ModPath.t ->
 
 (** {6 Building map of constants to inline } *)
 
+(** Also returns the flags the inlined bodies were checked with, for the
+    caller to record on the module they end up in. *)
 val inline_delta_resolver :
   env -> inline -> ModPath.t -> MBId.t -> module_type_body ->
-  'a delta_resolver -> mod_subst delta_resolver
+  'a delta_resolver -> mod_subst delta_resolver * typing_flags
 (** Enrich the resolver of the module being passed as a functor argument with
     the bodies of the fields the parameter type declared [Inline]. The result
     carries inlined bodies, hence is a substitution resolver. *)
