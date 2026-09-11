@@ -118,18 +118,18 @@ File "./output/sort_poly_elab.v", line 73, characters 13-20:
 The command has indeed failed with message:
 The term
  "@eq_refl
-    (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab.54} nat)
-    (t1@{Type Type ; sort_poly_elab.54} nat)"
+    (forall (_ : nat) (_ : nat), Box@{Type α28 ; sort_poly_elab.54} nat)
+    (t1@{Type α28 ; sort_poly_elab.54} nat)"
 has type
- "@eq (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab.54} nat)
-    (t1@{Type Type ; sort_poly_elab.54} nat)
-    (t1@{Type Type ; sort_poly_elab.54} nat)"
+ "@eq (forall (_ : nat) (_ : nat), Box@{Type α28 ; sort_poly_elab.54} nat)
+    (t1@{Type α28 ; sort_poly_elab.54} nat)
+    (t1@{Type α28 ; sort_poly_elab.54} nat)"
 while it is expected to have type
- "@eq (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab.54} nat)
-    (t1@{Type Type ; sort_poly_elab.54} nat)
-    (t2@{Type Type ; sort_poly_elab.54} nat)"
-(cannot unify "t1@{Type Type ; sort_poly_elab.54} nat" and
-"t2@{Type Type ; sort_poly_elab.54} nat").
+ "@eq (forall (_ : nat) (_ : nat), Box@{Type α28 ; sort_poly_elab.54} nat)
+    (t1@{Type α28 ; sort_poly_elab.54} nat)
+    (t2@{Type α28 ; sort_poly_elab.54} nat)"
+(cannot unify "t1@{Type α28 ; sort_poly_elab.54} nat" and
+"t2@{Type α28 ; sort_poly_elab.54} nat").
 File "./output/sort_poly_elab.v", line 74, characters 13-20:
 The command has indeed failed with message:
 The term
@@ -919,18 +919,18 @@ A : Prop
 x : R6@{α382 ; } A
 y : R6@{α385 ; } A
 The term
- "@eq_refl (Conversion.Box@{α380 Type ; sort_poly_elab.369} A)
-    (Conversion.box@{α380 Type ; sort_poly_elab.369} A (R6f1 _ x))"
+ "@eq_refl (Conversion.Box@{α380 α381 ; sort_poly_elab.369} A)
+    (Conversion.box@{α380 α381 ; sort_poly_elab.369} A (R6f1 _ x))"
 has type
- "@eq (Conversion.Box@{α380 Type ; sort_poly_elab.369} A)
-    (Conversion.box@{α380 Type ; sort_poly_elab.369} A (R6f1 _ x))
-    (Conversion.box@{α380 Type ; sort_poly_elab.369} A (R6f1 _ x))"
+ "@eq (Conversion.Box@{α380 α381 ; sort_poly_elab.369} A)
+    (Conversion.box@{α380 α381 ; sort_poly_elab.369} A (R6f1 _ x))
+    (Conversion.box@{α380 α381 ; sort_poly_elab.369} A (R6f1 _ x))"
 while it is expected to have type
- "@eq (Conversion.Box@{α380 Type ; sort_poly_elab.369} A)
-    (Conversion.box@{α380 Type ; sort_poly_elab.369} A (R6f1 _ x))
-    (Conversion.box@{α380 Type ; sort_poly_elab.369} A (R6f1 _ y))"
-(cannot unify "Conversion.box@{α380 Type ; sort_poly_elab.369} A (R6f1 _ x)"
-and "Conversion.box@{α380 Type ; sort_poly_elab.369} A (R6f1 _ y)").
+ "@eq (Conversion.Box@{α380 α381 ; sort_poly_elab.369} A)
+    (Conversion.box@{α380 α381 ; sort_poly_elab.369} A (R6f1 _ x))
+    (Conversion.box@{α380 α381 ; sort_poly_elab.369} A (R6f1 _ y))"
+(cannot unify "Conversion.box@{α380 α381 ; sort_poly_elab.369} A (R6f1 _ x)"
+and "Conversion.box@{α380 α381 ; sort_poly_elab.369} A (R6f1 _ y)").
 File "./output/sort_poly_elab.v", line 579, characters 10-17:
 The command has indeed failed with message:
 In environment
@@ -938,18 +938,18 @@ A : SProp
 x : R6@{SProp ; } A
 y : R6@{SProp ; } A
 The term
- "@eq_refl (Conversion.Box@{Type Type ; sort_poly_elab.373} nat)
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x))"
+ "@eq_refl (Conversion.Box@{Type α389 ; sort_poly_elab.373} nat)
+    (Conversion.box@{Type α389 ; sort_poly_elab.373} nat (R6f2 _ x))"
 has type
- "@eq (Conversion.Box@{Type Type ; sort_poly_elab.373} nat)
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x))
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x))"
+ "@eq (Conversion.Box@{Type α389 ; sort_poly_elab.373} nat)
+    (Conversion.box@{Type α389 ; sort_poly_elab.373} nat (R6f2 _ x))
+    (Conversion.box@{Type α389 ; sort_poly_elab.373} nat (R6f2 _ x))"
 while it is expected to have type
- "@eq (Conversion.Box@{Type Type ; sort_poly_elab.373} nat)
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x))
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ y))"
-(cannot unify "Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x)"
-and "Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ y)").
+ "@eq (Conversion.Box@{Type α389 ; sort_poly_elab.373} nat)
+    (Conversion.box@{Type α389 ; sort_poly_elab.373} nat (R6f2 _ x))
+    (Conversion.box@{Type α389 ; sort_poly_elab.373} nat (R6f2 _ y))"
+(cannot unify "Conversion.box@{Type α389 ; sort_poly_elab.373} nat (R6f2 _ x)"
+and "Conversion.box@{Type α389 ; sort_poly_elab.373} nat (R6f2 _ y)").
 R7@{α α0 ; u} :
 forall _ : Type@{α ; u}, Type@{α0 ; max(Set,u)}
 (* α α0 ; u |  *)

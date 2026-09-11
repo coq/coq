@@ -103,7 +103,6 @@ module QState : sig
   val repr : elt -> t -> Quality.t
   val is_rigid : t -> QVar.t -> bool
   val is_above_prop : t -> QVar.t -> bool
-  val set_above_prop : QVar.t -> above_prop -> t -> t option
   val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val undefined : t -> QVar.Set.t
   val collapse : ?except:QVar.Set.t -> only_above_prop:bool -> t -> t
@@ -243,7 +242,11 @@ let unify_quality ~fail c q1 q2 local = match q1, q2 with
       | Some local -> local
       | None -> fail ()
   end
-(* TODO BelowType *)
+| QVar q, QConstant QType when c == CUMUL ->
+  begin match set_above_prop q BelowType local with
+  | Some local -> local
+  | None -> fail ()
+  end
 | QVar q, (QConstant (QType | QProp | QSProp) | QGlobal _ as qv)
 | (QConstant (QType | QProp | QSProp) | QGlobal _ as qv), QVar q ->
   begin match set q qv local with
@@ -898,7 +901,7 @@ let process_constraints uctx cstrs =
       let r = normalize_sort local.local_sorts r in
       begin match classify r with
       | UAlgebraic _ | UMax _ ->
-        if UGraph.check_leq_sort Sorts.Quality.equal univs l r then local
+        if UGraph.check_leq univs (Sorts.univ_of_sort l) (Sorts.univ_of_sort r) then local
         else
           univ_inconsistency Le l r
             ~explain:(Pp.str "(cannot handle algebraic on the right)")
@@ -912,7 +915,7 @@ let process_constraints uctx cstrs =
           (* l contains a +1 and r=r' small so l <= r impossible *)
           univ_inconsistency Le l r
         | USmall l' ->
-          if UGraph.check_leq_sort Sorts.Quality.equal univs l r then local
+          if UGraph.check_leq univs (Sorts.univ_of_sort l) (Sorts.univ_of_sort r) then local
           else univ_inconsistency Le l r
         | ULevel l' ->
           if is_uset r' && is_local l' then
@@ -1002,16 +1005,12 @@ let add_constraints ?src uctx cstrs =
     minim_extra = extra; }
 
 let set_above_prop q above uctx =
+  (* we use add_constraints instead of directly QState.set_above_prop to get more uniform errors *)
   match above with
   | AboveProp ->
     add_constraints uctx (UnivProblem.Set.singleton (QLeq (QConstant QProp, QVar q)))
   | BelowType ->
-    match QState.set_above_prop q BelowType uctx.sort_variables with
-    | Some sort_variables -> { uctx with sort_variables }
-    | None ->
-      (* TODO handle BelowType in unify_quality and use
-         add_constraints here for more uniform erroring? *)
-      CErrors.user_err Pp.(str "Could not enforce " ++ pr_uctx_qvar uctx q ++ str " <= Type.")
+    add_constraints uctx (UnivProblem.Set.singleton (QLeq (QVar q, QConstant QType)))
 
 let problem_of_univ_constraints cstrs =
   UnivConstraints.fold (fun (l,d,r) acc ->
