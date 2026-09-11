@@ -28,6 +28,9 @@ let raw_print = make_flag ["Printing";"All"] false
 (* XXX why does extern look at this flag? *)
 let print_universes = make_flag ["Printing";"Universes"] false
 
+(* detyping: like Printing Universes but anonymizes universe variables *)
+let print_sorts = make_flag ["Printing";"Sorts"] false
+
 (* detyping *)
 let { Goptions.get = print_sort_quality } =
   Goptions.declare_bool_option_and_ref
@@ -229,6 +232,7 @@ module PrintingConstructor = Goptions.MakeRefTable(PrintingRecordConstructor)
 module Detype = struct
   type t = {
     universes : bool;
+    sorts : bool;
     qualities : bool;
     relevances : bool;
     evar_instances : bool;
@@ -246,6 +250,7 @@ module Detype = struct
 
   let current_ignore_raw () = {
     universes = !print_universes;
+    sorts = !print_sorts;
     qualities = print_sort_quality();
     relevances = print_relevances();
     evar_instances = !print_evar_arguments;

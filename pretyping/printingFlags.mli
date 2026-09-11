@@ -11,6 +11,7 @@
 module Detype : sig
   type t = {
     universes : bool;
+    sorts : bool;
     (** Should we print hidden sort quality variables? *)
     qualities : bool;
     relevances : bool;
@@ -112,8 +113,9 @@ val current : unit -> t
 
 val current_ignore_raw : unit -> t
 
-(** The following flag is still accessed directly, but not when printing constr. *)
+(** The following flags are still accessed directly, but not when printing constr. *)
 val print_universes : bool ref
+val print_sorts : bool ref
 
 module PrintingInductiveMake (_ : sig
     val encode : Environ.env -> Libnames.qualid -> Names.inductive
