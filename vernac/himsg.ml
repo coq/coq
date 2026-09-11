@@ -339,6 +339,16 @@ let explain_number_branches env sigma cj expn =
   str "of type" ++ brk(1,1) ++ pct ++ spc () ++
   str "expects " ++  int expn ++ str " branches."
 
+let explain_lettuple_arity env sigma cj expn given =
+  let env = make_all_name_different env sigma in
+  let pc = pr_leconstr_env env sigma cj.uj_val in
+  let pct = pr_leconstr_env env sigma cj.uj_type in
+  str "Destructing let on term" ++ brk(1,1) ++ pc ++ spc () ++
+  str "of type" ++ brk(1,1) ++ pct ++ spc () ++
+  str "expects " ++ int expn ++ str (String.plural expn " variable") ++
+  str ", but " ++ int given ++
+  str (if Int.equal given 1 then " was" else " were") ++ str " given."
+
 let explain_ill_formed_case_params env sigma =
   str "Ill formed case parameters (bugged tactic?)."
 
@@ -1147,6 +1157,7 @@ let rec explain_pretype_error env sigma err =
   let env = make_all_name_different env sigma in
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c
+  | LetTupleArity (cj, expn, given) -> explain_lettuple_arity env sigma cj expn given
   | ActualTypeNotCoercible (j,t,e) ->
     let {uj_val = c; uj_type = actty} = j in
     let (env, c, actty, expty), e = contract3' env sigma c actty t e in

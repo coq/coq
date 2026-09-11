@@ -1328,8 +1328,7 @@ struct
         str " with one constructor.");
     let cs = cstrs.(0) in
     if not (Int.equal (List.length nal) cs.cs_nargs) then
-      user_err ?loc:loc (str "Destructing let on this type expects " ++
-        int cs.cs_nargs ++ str " variables.");
+      error_lettuple_arity ?loc !!env sigma cj cs.cs_nargs (List.length nal);
     let fsign, record =
       match Environ.get_projections !!env ind with
       | None ->

@@ -46,6 +46,11 @@ type pretype_error =
   | CantFindCaseType of constr
   (** Old Case *)
 
+  | LetTupleArity of unsafe_judgment * int * int
+  (** Destructuring let with the wrong number of variables: judgment of the
+      destructured term, number of variables expected by the constructor,
+      number of variables given *)
+
   | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (** Type inference unification *)
 
@@ -100,6 +105,8 @@ val error_case_not_inductive : ?loc:Loc.t -> env -> evar_map -> unsafe_judgment 
 val error_ill_formed_branch : ?loc:Loc.t -> env -> evar_map -> constr -> pconstructor -> constr -> constr -> 'b
 
 val error_number_branches : ?loc:Loc.t -> env -> evar_map -> unsafe_judgment -> int -> 'b
+
+val error_lettuple_arity : ?loc:Loc.t -> env -> evar_map -> unsafe_judgment -> int -> int -> 'b
 
 val error_ill_typed_rec_body : ?loc:Loc.t -> env -> evar_map -> int ->
       Name.t binder_annot array -> unsafe_judgment array -> types array -> 'b
