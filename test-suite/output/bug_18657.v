@@ -23,7 +23,8 @@ Module A.
 End A.
 
 Module Type HasFoo.
-  Parameter t : Type.
+  Monomorphic Universe u.
+  Parameter t@{} : Type@{u}.
   Parameter foo : t.
 End HasFoo.
 
