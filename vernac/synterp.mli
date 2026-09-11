@@ -32,9 +32,9 @@ type synterp_entry =
   | EVernacNotation of { local : bool; decl : Metasyntax.notation_interpretation_decl }
   | EVernacBeginSection of Names.lident
   | EVernacEndSegment of Names.lident
-  | EVernacSafeRequire of Library.library_t list * DirPath.t list * qualid list
+  | EVernacSafeRequire of Library.interp_data * DirPath.t list * qualid list
   | EVernacRequire of
-      Library.library_t list * DirPath.t list * Vernacexpr.export_with_cats option * (qualid * Vernacexpr.import_filter_expr) list
+      Library.interp_data * DirPath.t list * Vernacexpr.export_with_cats option * (qualid * Vernacexpr.import_filter_expr) list
   | EVernacImport of (Vernacexpr.export_flag * Libobject.open_filter) *
       (Names.ModPath.t CAst.t * Vernacexpr.import_filter_expr) list
   | EVernacDeclareMLModule of Mltop.interp_fun
@@ -74,7 +74,7 @@ val synterp_require :
   Libnames.qualid option ->
   Vernacexpr.export_with_cats option ->
   (Libnames.qualid * Vernacexpr.import_filter_expr) list ->
-  Library.library_t list * DirPath.t list
+  Library.interp_data * DirPath.t list
 
 (** [synterp_control] is the main entry point of the syntactic interpretation phase *)
 val synterp_control :

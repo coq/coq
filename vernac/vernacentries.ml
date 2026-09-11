@@ -1672,7 +1672,7 @@ if Lib.sections_are_opened () then warn_require_in_section ();
   if Dumpglob.dump () then
     List.iter2 (fun {CAst.loc} dp -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
   Coq_config.gc_ramp_up @@ fun () ->
-  Library.safe_require_interp needed
+  Library.require_library needed
 
 let vernac_require_interp needed modrefl export qidl =
   if Lib.sections_are_opened () then warn_require_in_section ();

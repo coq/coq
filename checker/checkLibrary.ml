@@ -53,12 +53,14 @@ type compilation_unit_name = DirPath.t
 
 type seg_proofs = Opaqueproof.opaque_proofterm option array
 
+type load_status
+
 type library_t = {
   library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
   library_compiled : Safe_typing.compiled_library;
   library_opaques : seg_proofs;
-  library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+  library_deps : (load_status * compilation_unit_name * Safe_typing.vodigest) array;
   library_digest : Safe_typing.vodigest;
 }
 
@@ -281,7 +283,7 @@ type library_info
 
 type summary_disk = {
   md_name : compilation_unit_name;
-  md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+  md_deps : (load_status * compilation_unit_name * Safe_typing.vodigest) array;
   md_ocaml : string;
   md_info : library_info;
 }
@@ -395,7 +397,7 @@ let rec intern_library ~intern_mode ~validated seen (dir, f) needed =
     let m = intern_from_file ~intern_mode ~validated (dir,f) in
     let seen' = LibrarySet.add dir seen in
     let deps =
-      Array.map (fun (d,_) -> try_locate_absolute_library d) m.library_deps
+      Array.map (fun (_,d,_) -> try_locate_absolute_library d) m.library_deps
     in
     let intern_mode = match intern_mode with Rec -> Rec | Root | Dep -> Dep in
     (dir,m) :: Array.fold_right (intern_library ~intern_mode ~validated seen') deps needed
@@ -410,7 +412,7 @@ let rec fold_deps seen ff (dir,f) (s,acc) =
       | None ->
         CErrors.anomaly Pp.(str "missing dep when computing closure (" ++ DirPath.print dir ++ str ")")
     in
-    let deps = Array.map (fun (d,_) -> try_locate_absolute_library d) deps in
+    let deps = Array.map (fun (_,d,_) -> try_locate_absolute_library d) deps in
     let seen' = LibrarySet.add dir seen in
     let (s',acc') = Array.fold_right (fold_deps seen' ff) deps (s,acc) in
     (LibrarySet.add dir s', ff dir acc')

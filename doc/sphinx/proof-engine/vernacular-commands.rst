@@ -778,6 +778,11 @@ file is a particular case of a module called a *library file*.
       A plain :cmd:`Require` was used on a library previously loaded with
       ``Require (safe)``, directly or as a dependency.
 
+   Safe requiring a library also safe requires its dependencies.
+   Full require on a library which has dependencies loaded by safe require
+   will not fully require those dependencies
+   (unless they are also fully required by another library in the same Require command).
+
 .. cmd:: Print Libraries
 
    This command displays the list of library files loaded in the

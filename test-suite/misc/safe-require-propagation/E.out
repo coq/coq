@@ -1,0 +1,4 @@
+File "./E.v", line 2, characters 0-15:
+The command has indeed failed with message:
+Cannot unsafe-require library Corelib.Classes.CRelationClasses
+because it was previously required with (safe).

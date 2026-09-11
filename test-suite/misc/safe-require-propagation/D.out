@@ -1,0 +1,9 @@
+CRelationClasses.flip@{u u0 u1} :
+forall {A B C : Type}, (A -> B -> C) -> B -> A -> C
+
+CRelationClasses.flip is universe polymorphic
+Arguments CRelationClasses.flip {A B C}%_type_scope f%_function_scope x y
+CRelationClasses.flip is transparent
+Expands to: Constant Corelib.Classes.CRelationClasses.flip
+Declared in
+library Corelib.Classes.CRelationClasses, line 32, characters 11-15

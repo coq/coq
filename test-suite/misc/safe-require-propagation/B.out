@@ -1,0 +1,13 @@
+CRelationClasses.flip
+     : forall A B C : Type, (A -> B -> C) -> B -> A -> C
+CRelationClasses.flip@{u u0 u1} :
+forall A B C : Type, (A -> B -> C) -> B -> A -> C
+
+CRelationClasses.flip is universe polymorphic
+Arguments CRelationClasses.flip A B C f x y
+CRelationClasses.flip is transparent
+Expands to: Constant Corelib.Classes.CRelationClasses.flip
+File "./B.v", line 8, characters 0-46:
+The command has indeed failed with message:
+Cannot unsafe-require library Corelib.Classes.CRelationClasses
+because it was previously required with (safe).
