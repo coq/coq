@@ -55,6 +55,25 @@ let check_separator ?loc = function
 | None -> ()
 | Some _ -> user_err ?loc (str "Separator is only for arguments with suffix _list_sep.")
 
+let parse_entry_w_level entry min max =
+  let entry_len = String.length entry in
+  fun ?loc sep s ->
+    if String.is_prefix entry s then
+      let s_len = String.length s in
+      let level = String.sub s entry_len (s_len - entry_len) in
+      try
+        let level = int_of_string level in
+        if level < min || level > max then raise (Failure "out of range");
+        check_separator ?loc sep;
+        Some (Uentryl(entry,level))
+      with Failure _ -> None
+    else None
+
+let parse_tactic = parse_entry_w_level "tactic" 0 5
+let parse_constr = parse_entry_w_level "constr" 0 200
+let parse_open_constr = parse_entry_w_level "open_constr" 0 200
+let parse_uconstr = parse_entry_w_level "uconstr" 0 200
+
 let rec parse_user_entry ?loc s sep =
   let open CString in
   let matches pre suf s =
@@ -65,7 +84,6 @@ let rec parse_user_entry ?loc s sep =
     let plen = String.length pre in
     String.sub s plen (String.length s - (plen + String.length suf))
   in
-  let tactic_len = String.length "tactic" in
   if matches "ne_" "_list" s then
     let entry = parse_user_entry ?loc (basename "ne_" "_list" s) None in
     check_separator ?loc sep;
@@ -84,14 +102,16 @@ let rec parse_user_entry ?loc s sep =
     let entry = parse_user_entry ?loc (basename "" "_opt" s) None in
     check_separator ?loc sep;
     Uopt entry
-  else if String.length s = tactic_len + 1 && is_prefix "tactic" s
-      && '5' >= s.[tactic_len] && s.[tactic_len] >= '0' then
-    let n = Char.code s.[tactic_len] - Char.code '0' in
-    check_separator ?loc sep;
-    Uentryl ("tactic", n)
   else
-    let _ = check_separator ?loc sep in
-    Uentry s
+    let rec first = function
+      | [] ->
+        let _ = check_separator ?loc sep in
+        Uentry s
+      | f :: fs ->
+        match f ?loc sep s with
+        | Some x -> x
+        | None -> first fs in
+    first [parse_tactic; parse_constr; parse_open_constr; parse_uconstr]
 
 let interp_entry_name interp symb =
   let rec eval = function
@@ -150,10 +170,17 @@ let rec prod_item_of_symbol lev = function
   let ArgT.Any tag = arg in
   let wit = ExtraArg tag in
   EntryName (Rawwit wit, Procq.Symbol.nterm (genarg_grammar wit))
-| Extend.Uentryl (s, n) ->
-  let ArgT.Any tag = s in
-  assert (CString.is_suffix "tactic" (ArgT.repr tag));
+| Extend.Uentryl (ArgT.Any tag, n) when CString.equal "tactic" (ArgT.repr tag) ->
   get_tacentry n lev
+| Extend.Uentryl (ArgT.Any tag, n) when CString.equal "open_constr" (ArgT.repr tag) ->
+  EntryName (rawwit Stdarg.wit_open_constr, Procq.Symbol.nterml Procq.Constr.term (string_of_int n))
+| Extend.Uentryl (ArgT.Any tag, n) when CString.equal "uconstr" (ArgT.repr tag) ->
+  EntryName (rawwit Stdarg.wit_uconstr, Procq.Symbol.nterml Procq.Constr.term (string_of_int n))
+| Extend.Uentryl (ArgT.Any tag, n) when CString.equal "constr" (ArgT.repr tag) ->
+  EntryName (rawwit Stdarg.wit_constr, Procq.Symbol.nterml Procq.Constr.term (string_of_int n))
+| Extend.Uentryl (ArgT.Any tag,n) ->
+  CErrors.anomaly (Pp.str @@ Printf.sprintf "Unsupported Uentryl: %s%d" (ArgT.repr tag) n)
+
 
 (** Tactic grammar extensions *)
 
@@ -218,11 +245,21 @@ let interp_prod_item = function
       | Some arg -> arg
       end
     | Some n ->
-      (* FIXME: do better someday *)
-      assert (String.equal s "tactic");
-      begin match Tacarg.wit_tactic with
-      | ExtraArg tag -> ArgT.Any tag
-      end
+      (* do better one day *)
+      assert(s = "tactic" || s = "constr" || s = "open_constr" || s = "uconstr");
+      if s = "tactic" then
+        match Tacarg.wit_tactic with
+        | ExtraArg tag -> ArgT.Any tag
+      else if s = "constr" then
+        match Stdarg.wit_constr with
+        | ExtraArg tag -> ArgT.Any tag
+      else if s = "open_constr" then
+        match Stdarg.wit_open_constr with
+        | ExtraArg tag -> ArgT.Any tag
+      else if s = "uconstr" then
+        match Stdarg.wit_uconstr with
+        | ExtraArg tag -> ArgT.Any tag
+      else assert false
     in
     let symbol = interp_entry_name interp symbol in
     TacNonTerm (loc, (symbol, ido))
