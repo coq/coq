@@ -469,64 +469,92 @@ let call_on_evar env sigma tac e =
 open Pp
 module Intset = Evar.Set
 
-let abs_evars_pirrel env sigma0 (sigma, c0) =
-  let c0 = Evarutil.nf_evar sigma c0 in
+type old_evar_installer = EConstr.t list -> Evd.evar_map -> Evd.evar_map
+
+type abs_evars_pirrel_result = {
+  abs_n : int;
+  abs_term : EConstr.t;
+  abs_src : Evd.evar_map;
+  install_old_evars : old_evar_installer;
+}
+
+let no_old_evar_installer _ sigma = sigma
+
+let abs_evars_pirrel env ~src dst c0 =
+  let old_defs0 =
+    Evd.fold_undefined begin fun ev _ acc ->
+      match Evd.find_defined src ev with
+      | None -> acc
+      | Some evi ->
+        let body = match Evd.evar_body evi with Evar_defined body -> body in
+        (ev, body) :: acc
+    end dst []
+  in
+  let c0 = Evarutil.nf_evar src c0 in
+  let old_defs0 =
+    List.map (fun (ev, body) -> ev, Evarutil.nf_evar src body) old_defs0
+  in
   let nenv = env_size env in
   let abs_evar n k =
     let open EConstr in
-    let evi = Evd.find_undefined sigma k in
+    let evi = Evd.find_undefined src k in
     let concl = Evd.evar_concl evi in
     let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
-    | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn sigma x b t (mkArrow t x.binder_relevance c)
-    | NamedDecl.LocalAssum (x,t) -> mkNamedProd sigma x t c in
+    | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn src x b t (mkArrow t x.binder_relevance c)
+    | NamedDecl.LocalAssum (x,t) -> mkNamedProd src x t c in
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
-    Evarutil.nf_evar sigma t
+    Evarutil.nf_evar src t
   in
-  let rec put evlist c = match EConstr.kind sigma c with
+  let rec put evlist c = match EConstr.kind src c with
   | Evar (k, a) ->
-    if List.mem_assoc k evlist || Evd.mem sigma0 k then evlist else
+    if List.mem_assoc k evlist || Evd.mem dst k then evlist else
     let n = max 0 (SList.length a - nenv) in
-    let evi = Evd.find_undefined sigma k in
+    let evi = Evd.find_undefined src k in
     (* FIXME? this is not the right environment in general *)
-    let k_ty = Retyping.get_sort_quality_of env sigma (Evd.evar_concl evi) in
+    let k_ty = Retyping.get_sort_quality_of env src (Evd.evar_concl evi) in
     let is_prop = Sorts.Quality.is_qprop k_ty in
     let t = abs_evar n k in
     (k, (n, t, is_prop, Evd.evar_relevance evi)) :: put evlist t
-  | _ -> EConstr.fold sigma put evlist c in
-  let evlist = put [] c0 in
-  if evlist = [] then 0, c0 else
+  | _ -> EConstr.fold src put evlist c in
+  let roots = c0 :: List.map snd old_defs0 in
+  let evlist = List.fold_left put [] roots in
   let evplist =
     let depev = List.fold_left (fun evs (_,(_,t,_,_)) ->
-        Intset.union evs (Evarutil.undefined_evars_of_term sigma t)) Intset.empty evlist in
+        Intset.union evs (Evarutil.undefined_evars_of_term src t)) Intset.empty evlist in
     List.filter (fun (i,(_,_,b,_)) -> b && Intset.mem i depev) evlist in
-  let evlist, evplist, sigma =
-    if evplist = [] then evlist, [], sigma else
-    List.fold_left (fun (ev, evp, sigma) (i, (_,t,_,_) as p) ->
+  let evlist, evplist, src =
+    if evplist = [] then evlist, [], src else
+    List.fold_left (fun (ev, evp, src) (i, (_,t,_,_) as p) ->
       try
-        let sigma = call_on_evar env sigma !ssrautoprop_tac i in
-        List.filter (fun (j,_) -> j <> i) ev, evp, sigma
-      with e when CErrors.noncritical e -> ev, p::evp, sigma) (evlist, [], sigma) (List.rev evplist) in
-  let c0 = Evarutil.nf_evar sigma c0 in
-  let nf (k, (n, t, p, r)) = (k, (n, Evarutil.nf_evar sigma t, p, r)) in
+        let src = call_on_evar env src !ssrautoprop_tac i in
+        List.filter (fun (j,_) -> j <> i) ev, evp, src
+      with e when CErrors.noncritical e -> ev, p::evp, src) (evlist, [], src) (List.rev evplist) in
+  (* Keep the old ssrautoprop behavior: renormalize, but do not recompute the
+     abstraction closure to a fixed point after solved Prop evars disappear. *)
+  let c0 = Evarutil.nf_evar src c0 in
+  let old_defs =
+    List.map (fun (ev, body) -> ev, Evarutil.nf_evar src body) old_defs0
+  in
+  let nf (k, (n, t, p, r)) = (k, (n, Evarutil.nf_evar src t, p, r)) in
   let evlist = List.map nf evlist in
   let evplist = List.map nf evplist in
   let rec lookup k i = function
     | [] -> 0, 0
     | (k', (n,_,_,_)) :: evl -> if k = k' then i,n else lookup k (i + 1) evl in
   let open EConstr in
-  let rec get evlist i c = match EConstr.kind sigma c with
+  let rec get evlist i c = match EConstr.kind src c with
   | Evar (ev, a) ->
     let j, n = lookup ev i evlist in
-    if j = 0 then EConstr.map sigma (get evlist i) c else if n = 0 then mkRel j else
-    let a = Array.of_list @@ Evd.expand_existential sigma (ev, a) in
+    if j = 0 then EConstr.map src (get evlist i) c else if n = 0 then mkRel j else
+    let a = Array.of_list @@ Evd.expand_existential src (ev, a) in
     mkApp (mkRel j, Array.init n (fun k -> get evlist i a.(n - 1 - k)))
-  | _ -> EConstr.map_with_binders sigma ((+) 1) (get evlist) i c in
-  let rec app extra_args i c = match decompose_app_list sigma c with
-  | hd, args when isRel sigma hd && destRel sigma hd = i ->
-      let j = destRel sigma hd in
-      mkApp (mkRel j, Array.of_list (List.map (Vars.lift (i-1)) extra_args @ args))
-  | _ -> EConstr.map_with_binders sigma ((+) 1) (app extra_args) i c in
+  | _ -> EConstr.map_with_binders src ((+) 1) (get evlist) i c in
+  let rec app_rel target extra_args depth c = match decompose_app_list src c with
+  | hd, args when isRel src hd && destRel src hd = target + depth ->
+      let j = destRel src hd in
+      mkApp (mkRel j, Array.of_list (List.map (Vars.lift depth) extra_args @ args))
+  | _ -> EConstr.map_with_binders src ((+) 1) (app_rel target extra_args) depth c in
   let rec loopP evlist accu i = function
   | [] -> List.rev accu
   | (_, (n, t, _, r)) :: evl ->
@@ -534,19 +562,46 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     let n = Name (Id.of_string (ssr_anon_hyp ^ string_of_int n)) in
     loopP evlist (RelDecl.LocalAssum (make_annot n r, t) :: accu) (i - 1) evl
   in
-  let rec loop c i = function
-  | (_, (n, t, _, r)) :: evl ->
-    let evs = Evarutil.undefined_evars_of_term sigma t in
+  let old_defs_abs = List.map (fun (ev, body) -> ev, get evlist 1 body) old_defs in
+  let rec loop c old_defs_abs i = function
+  | (ev, (n, t, _, r)) :: evl ->
+    let evs = Evarutil.undefined_evars_of_term src t in
     let t_evplist = List.filter (fun (k,_) -> Intset.mem k evs) evplist in
     let ctx_t = loopP t_evplist [] 1 t_evplist in
     let t = EConstr.it_mkProd_or_LetIn (get t_evplist 1 t) ctx_t in
     let t = get evlist (i - 1) t in
     let extra_args = List.rev_map (fun (k,_) -> mkRel (fst (lookup k i evlist))) t_evplist in
-    let c = if extra_args = [] then c else app extra_args 1 c in
-    loop (mkLambda (make_annot (mk_evar_name n) r, t, c)) (i - 1) evl
-  | [] -> c in
-  let res = loop (get evlist 1 c0) 1 evlist in
-  List.length evlist, res
+    let c = if extra_args = [] then c else app_rel 1 extra_args 0 c in
+    let extra_args0 = List.rev_map (fun (k,_) -> mkRel (fst (lookup k 1 evlist))) t_evplist in
+    let old_defs_abs =
+      if extra_args0 = [] then old_defs_abs else
+      let target = fst (lookup ev 1 evlist) in
+      List.map (fun (ev, body) -> ev, app_rel target extra_args0 0 body) old_defs_abs
+    in
+    loop (mkLambda (make_annot (mk_evar_name n) r, t, c)) old_defs_abs (i - 1) evl
+  | [] -> c, old_defs_abs in
+  let res, old_defs_abs = loop (get evlist 1 c0) old_defs_abs 1 evlist in
+  let install_old_evars args dst =
+    List.fold_left begin fun dst (ev, body_abs) ->
+      if not (Evd.is_undefined dst ev) then dst else
+      let body = EConstr.Vars.substl args body_abs in
+      let body = Evarutil.nf_evar dst body in
+      (* Source-only keys must have been replaced by applyn-created dst evars. *)
+      let deps = Evarutil.undefined_evars_of_term dst body in
+      if not (Intset.for_all (fun dep -> Evd.mem dst dep) deps) then
+        anomaly "abs_evars_pirrel: old evar body mentions a source-only evar";
+      if Evarutil.occur_evar_upto dst ev body then
+        Pretype_errors.error_occur_check env dst ev body
+      else
+        Evd.define ev body dst
+    end dst old_defs_abs
+  in
+  {
+    abs_n = List.length evlist;
+    abs_term = res;
+    abs_src = src;
+    install_old_evars;
+  }
 
 (* Strip all non-essential dependencies from an abstracted term, generating *)
 (* standard names for the abstracted holes.                                 *)
@@ -845,7 +900,8 @@ let dependent_apply_error =
  *
  * Refiner.refiner that does not handle metas with a non ground type but works
  * with dependently typed higher order metas. *)
-let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
+let applyn ?(beta=false) ~with_evars ?(first_goes_last=false)
+    ?(install_old_evars = no_old_evar_installer) n t =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
@@ -864,10 +920,14 @@ let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
         | _ -> assert false
       in
       let _, ty = EConstr.decompose_prod_n_decls sigma n (Retyping.get_type_of env sigma t) in
-      let args, sigma = saturate t [] sigma n in
-      let ty = EConstr.Vars.substl args ty in
-      let args = Array.rev_of_list args in
-      let t = EConstr.mkApp (t, args) in
+      let args_for_rels, sigma = saturate t [] sigma n in
+      let ty = EConstr.Vars.substl args_for_rels ty in
+      (* The installer wants the unreversed list, i.e. Rel 1, Rel 2, ... .
+         Install before unification so old evar aliases keep the orientation
+         found while interpreting the ssreflect term. *)
+      let sigma = install_old_evars args_for_rels sigma in
+      let args_for_app = Array.rev_of_list args_for_rels in
+      let t = EConstr.mkApp (t, args_for_app) in
       let t = if beta then Reductionops.whd_beta env sigma t else t in
       let sigma = unify_HO env sigma ty concl in
       (* Set our own set of goals. In theory saturate generates them in the
@@ -878,7 +938,7 @@ let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
       | Evar (evk, _) -> Evd.declare_future_goal evk sigma
       | _ -> sigma
       in
-      let sigma = Array.fold_left fold sigma args in
+      let sigma = Array.fold_left fold sigma args_for_app in
       (sigma, t)
       end
     in
@@ -909,8 +969,11 @@ let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
     let _, sigma = Evd.pop_future_goals sigma in
 
     let map evk = Proofview.goal_with_state evk (Proofview.Goal.state gl) in
+    let mk_arg evk = EConstr.mkEvar (evk, inst) in
     let sgl = List.rev_map map args in
-    let ans = EConstr.applist (t, List.rev_map (fun evk -> EConstr.mkEvar (evk, inst)) args) in
+    let args_for_rels = List.map mk_arg args in
+    let sigma = install_old_evars args_for_rels sigma in
+    let ans = EConstr.applist (t, List.rev args_for_rels) in
     let evk = Proofview.Goal.goal gl in
     let _ =
       if not (Evarutil.occur_evar_upto sigma evk ans) then ()
@@ -924,15 +987,20 @@ let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
     ]
   end
 
+(* Old definitions from the source map are installed by [abs_evars_pirrel] after
+   their fresh source dependencies have been abstracted into destination goals. *)
 let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let uct = Evd.ustate (fst oc) in
-  let n, oc = abs_evars_pirrel env sigma oc in
-  Proofview.Unsafe.tclEVARS (Evd.set_ustate sigma uct) <*>
-  Proofview.tclORELSE (applyn ~with_evars ~first_goes_last ?beta n oc)
+  let src, c = oc in
+  let abs = abs_evars_pirrel env ~src sigma c in
+  let sigma = Evd.set_ustate sigma (Evd.ustate abs.abs_src) in
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Proofview.tclORELSE
+    (applyn ~with_evars ~first_goes_last ?beta
+       ~install_old_evars:abs.install_old_evars abs.abs_n abs.abs_term)
     (fun _ -> Proofview.tclZERO dependent_apply_error)
   end
 
