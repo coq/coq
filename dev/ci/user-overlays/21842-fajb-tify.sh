@@ -1,0 +1,10 @@
+overlay bedrock2 https://github.com/proux01/bedrock2 stdlib251 21842
+overlay coqutil https://github.com/proux01/coqutil stdlib251 21842
+overlay elpi https://github.com/proux01/coq-elpi stdlib251 21842
+overlay equations https://github.com/proux01/Coq-Equations stdlib251 21842
+overlay itauto https://github.com/proux01/itauto stdlib251 21842
+overlay metarocq https://github.com/proux01/metarocq stdlib251 21842
+overlay micromega https://github.com/rocq-community/micromega-plugin tify 21842
+overlay stdlib https://github.com/fajb/stdlib tify 21842
+overlay smtcoq https://github.com/proux01/smtcoq stdlib251 21842
+overlay waterproof https://github.com/proux01/coq-waterproof stdlib251 21842

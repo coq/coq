@@ -477,22 +477,22 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
     Proof.
     pose (ff := IMPL
       (A isProp
-         {| Flhs := PEadd (PEX 1) (PEmul (PEc 2) (PEX 2));
+         {| Flhs := PEadd (@PEX _ 1) (PEmul (PEc 2) (@PEX _ 2));
             Fop := OpLe; Frhs := PEc 4 |} tt) None
       (IMPL
          (A isProp
-            {| Flhs := PEadd (PEmul (PEc 2) (PEX 1)) (PEX 2);
+            {| Flhs := PEadd (PEmul (PEc 2) (@PEX _ 1)) (@PEX _ 2);
                Fop := OpLe; Frhs := PEc 4 |}
             tt) None
          (A isProp
-            {| Flhs := PEadd (PEX 1) (PEX 2);
+            {| Flhs := PEadd (@PEX _ 1) (@PEX _ 2);
                Fop := OpLt; Frhs := PEc 3 |} tt))
       : BFormula (Formula Q) isProp).
 
   .. rocqtop:: all extra-stdlib
 
     pose (varmap := VarMap.Branch (VarMap.Elt y) x VarMap.Empty).
-    let ff' := eval unfold ff in ff in wlra_Q wit ff'.
+    let ff' := eval unfold ff in ff in mp_wlra_Q wit ff'.
     change (eval_bf (Qeval_formula (@VarMap.find Q 0 varmap)) ff).
     apply (QTautoChecker_sound ff wit).
 
