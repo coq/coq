@@ -181,3 +181,5 @@ val get_type_of_refresh :
   -> evar_map * types
 
 val checked_appvect_hook : (env -> evar_map -> constr -> constr array -> evar_map * constr) Hook.t
+val checked_cast_hook : (env -> evar_map -> constr -> Constr.cast_kind -> constr -> evar_map) Hook.t
+val full_type_of_hook : (env -> evar_map -> constr -> evar_map * constr) Hook.t

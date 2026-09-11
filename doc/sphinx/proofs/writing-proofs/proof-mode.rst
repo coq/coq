@@ -1402,6 +1402,19 @@ Delaying solving unification constraints
    behavior, allowing tactics to leave unification constraints unsolved. Use the
    :tacn:`solve_constraints` tactic at any point to solve the constraints.
 
+.. flag:: Unification Recheck Casts
+
+   When this :term:`flag` is set, the evar solver validates Cast nodes after
+   inverting substitutions in evar definitions. This catches universe
+   constraints that might otherwise be dropped. Off by default.
+
+.. flag:: Unification Full Retyping
+
+   When this :term:`flag` is set, the evar solver uses full type checking
+   (which processes casts) instead of fast retyping (which trusts casts)
+   when validating evar bodies. This catches universe constraints that
+   might otherwise be dropped. Off by default.
+
 .. _proof-maintenance:
 
 Proof maintenance

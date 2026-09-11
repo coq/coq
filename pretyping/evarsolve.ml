@@ -216,6 +216,20 @@ exception IllTypedInstance of env * evar_map * EConstr.types option * EConstr.ty
 exception IllTypedInstanceFun of env * evar_map * EConstr.constr * EConstr.types
 
 let checked_appvect, checked_appvect_hook = Hook.make ()
+let checked_cast, checked_cast_hook = Hook.make ()
+let full_type_of, full_type_of_hook = Hook.make ()
+
+let { Goptions.get = recheck_casts } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Unification";"Recheck";"Casts"]
+    ~value:false
+    ()
+
+let { Goptions.get = full_retyping } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Unification";"Full";"Retyping"]
+    ~value:false
+    ()
 
 let recheck_applications unify flags env evdref t =
   let rec aux env t =
@@ -224,6 +238,9 @@ let recheck_applications unify flags env evdref t =
     match EConstr.kind !evdref t with
     | App (f, args) ->
       let evd, _ = Hook.get checked_appvect env !evdref f args in
+      evdref := evd
+    | Cast (c, k, t) when recheck_casts () ->
+      let evd = Hook.get checked_cast env !evdref c k t in
       evdref := evd
     | _ -> ()
   in
@@ -900,15 +917,23 @@ let check_evar_instance_evi unify flags env evd evi body =
   let evenv = evar_env env evi in
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
-  match Retyping.get_type_of ~lax:true evenv evd body
-  with
-  | exception Retyping.RetypeError _ ->
-    let loc, _ = Evd.evar_source evi in
-    Loc.raise ?loc (IllTypedInstance (evenv,evd,None, Evd.evar_concl evi))
-  | ty ->
-    match unify flags TypeUnification evenv evd Conversion.CUMUL ty (Evd.evar_concl evi) with
-    | Success evd -> evd
-    | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,Some ty, Evd.evar_concl evi))
+  let evd, ty =
+    if full_retyping () then
+      match Hook.get full_type_of evenv evd body with
+      | exception PretypeError _ ->
+        let loc, _ = Evd.evar_source evi in
+        Loc.raise ?loc (IllTypedInstance (evenv,evd,None, Evd.evar_concl evi))
+      | evd, ty -> evd, ty
+    else
+      match Retyping.get_type_of ~lax:true evenv evd body with
+      | exception Retyping.RetypeError _ ->
+        let loc, _ = Evd.evar_source evi in
+        Loc.raise ?loc (IllTypedInstance (evenv,evd,None, Evd.evar_concl evi))
+      | ty -> evd, ty
+  in
+  match unify flags TypeUnification evenv evd Conversion.CUMUL ty (Evd.evar_concl evi) with
+  | Success evd -> evd
+  | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,Some ty, Evd.evar_concl evi))
 
 let check_evar_instance unify flags env evd evk body =
   let evi = try Evd.find_undefined evd evk with Not_found -> assert false in
