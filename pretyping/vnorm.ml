@@ -79,10 +79,25 @@ let find_rectype_a env sigma c =
   | Ind ind -> (ind, l)
   | _ -> raise Not_found
 
+type readback_info = {
+  readback_depth : int;
+}
+
+type readback_check = readback_info -> Environ.env -> Evd.evar_map -> EConstr.types -> Vmvalues.kind -> unit
+
+let no_readback_check _ _ _ _ _ = ()
+
 type env = {
   env : Environ.env;
   norm_params : bool;
+  readback_check : readback_check;
+  readback_info : readback_info;
 }
+
+let descend_readback env =
+  { env with
+    readback_info =
+      { readback_depth = env.readback_info.readback_depth + 1 } }
 
 let push_rel decl env =
   { env with env = Environ.push_rel decl env.env }
@@ -180,7 +195,14 @@ let build_case_type (pctx, p) realargs c =
 
 (* La fonction de normalisation *)
 
-let rec nf_val (env : env) sigma v t = nf_whd env sigma (Vmvalues.whd_val v) t
+let rec nf_val ?readback_check (env : env) sigma v t =
+  let env = match readback_check with
+  | None -> env
+  | Some readback_check -> { env with readback_check }
+  in
+  let whd = Vmvalues.whd_val v in
+  env.readback_check env.readback_info env.env sigma (EConstr.of_constr t) whd;
+  nf_whd (descend_readback env) sigma whd t
 
 and nf_vtype env sigma v =  nf_val env sigma v crazy_type
 
@@ -485,7 +507,7 @@ let default_vm_flags = {
   vm_normalize_params = false;
 }
 
-let cbv_vm ?(flags = default_vm_flags) env sigma c t  =
+let cbv_vm ?(flags = default_vm_flags) ?readback_check env sigma c t  =
   if not (Environ.typing_flags env).enable_VM then
     CErrors.user_err Pp.(str "vm_compute reduction has been disabled.");
   if Termops.occur_meta sigma c then
@@ -494,5 +516,12 @@ let cbv_vm ?(flags = default_vm_flags) env sigma c t  =
   let c = EConstr.Unsafe.to_constr c in
   let t = EConstr.Unsafe.to_constr t in
   let v = Vmsymtable.val_of_constr env (evars_of_evar_map sigma) c in
-  let env = { env; norm_params = flags.vm_normalize_params } in
-  EConstr.of_constr (nf_val env sigma v t)
+  let env = {
+    env;
+    norm_params = flags.vm_normalize_params;
+    readback_check = no_readback_check;
+    readback_info = {
+      readback_depth = 0;
+    };
+  } in
+  EConstr.of_constr (nf_val ?readback_check env sigma v t)
