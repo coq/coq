@@ -1353,7 +1353,7 @@ let check_canset ?early_stop model ?(w=PSet.empty) (cls : CanSet.t) =
   debug_check_invariants model;
   let rec inner_loop w cardW premconclw conclw m =
     (* Should consider only clauses with conclusions in w *)
-    (* Partition the clauses acscording to the presence of w in the premises *)
+    (* Partition the clauses according to the presence of w in the premises *)
     (* Warning: m is not necessarily a model for w *)
     let rec inner_loop_partition w cardW premconclw conclw m =
       match loop cardW PSet.empty premconclw m with
@@ -2291,7 +2291,7 @@ let check_leq m u v = check_constraint m u UnivConstraint.Le v
 let check_eq m u v =
   match Universe.repr u, Universe.repr v with
   | [ur], [vr] -> check_eq_level_expr ur vr m
-   (* || check_constraint m u UnivConstraint.Eq v *)
+   || check_constraint m u UnivConstraint.Eq v
   | _, _ -> check_constraint m u UnivConstraint.Eq v
 
 let enforce_constraint (u, k, v) (m : t) = enforce u k v m
