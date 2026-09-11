@@ -448,12 +448,14 @@ let get_options () =
 
 let set_options options =
   let open Goptions in
-  let iter (name, value) = match import_option_value value with
-  | BoolValue b -> set_bool_option_value name b
-  | IntValue i -> set_int_option_value name i
-  | StringValue s -> set_string_option_value name s
-  | StringOptValue (Some s) -> set_string_option_value name s
-  | StringOptValue None -> unset_option_value_gen name
+  let iter (name, value) =
+    Goptions.disable_summary name;
+    match import_option_value value with
+    | BoolValue b -> set_bool_option_value name b
+    | IntValue i -> set_int_option_value name i
+    | StringValue s -> set_string_option_value name s
+    | StringOptValue (Some s) -> set_string_option_value name s
+    | StringOptValue None -> unset_option_value_gen name
   in
   List.iter iter options
 

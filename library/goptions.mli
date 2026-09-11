@@ -283,3 +283,6 @@ val declare_string_option: ?preprocess:(string -> string) ->
                            string option_sig -> unit
 val declare_stringopt_option: ?preprocess:(string option -> string option) ->
                               string option option_sig -> unit
+
+(** For rocqide *)
+val disable_summary : option_name -> unit

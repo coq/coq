@@ -602,3 +602,5 @@ let declare_string_option ?preprocess osig =
 
 let declare_stringopt_option ?preprocess osig =
   declare_option ?preprocess ~kind:StringOptKind osig
+
+let disable_summary key = Summary.disable_summary (nickname key)

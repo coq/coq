@@ -62,9 +62,6 @@ module Interp : sig
   val freeze_interp_state : unit -> t
   val unfreeze_interp_state : t -> unit
 
-  (* WARNING: Do not use, it will go away in future releases *)
-  val invalidate_cache : unit -> unit
-
 end
 
 type t =

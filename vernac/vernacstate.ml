@@ -97,7 +97,6 @@ module LemmaStack = struct
 
 end
 
-let s_cache = ref None
 let s_lemmas = ref None
 let s_program = ref (NeList.singleton Declare.OblState.empty)
 
@@ -112,23 +111,8 @@ type t = {
   opaques : Opaques.Summary.t;     (* opaque proof terms *)
 }
 
-let invalidate_cache () =
-  s_cache := None
-
-let update_cache rf v =
-  rf := Some v; v
-
-let do_if_not_cached rf f v =
-  match !rf with
-  | None ->
-    rf := Some v; f v
-  | Some vc when vc != v ->
-    rf := Some v; f v
-  | Some _ ->
-    ()
-
 let freeze_interp_state () =
-  { system = update_cache s_cache (System.freeze ());
+  { system = System.freeze ();
     lemmas = !s_lemmas;
     program = !s_program;
     opaques = Opaques.Summary.freeze ();
@@ -138,7 +122,7 @@ let make_shallow s =
   { s with system = System.Stm.make_shallow s.system }
 
 let unfreeze_interp_state { system; lemmas; program; opaques } =
-  do_if_not_cached s_cache System.unfreeze system;
+  System.unfreeze system;
   s_lemmas := lemmas;
   s_program := program;
   Opaques.Summary.unfreeze opaques
