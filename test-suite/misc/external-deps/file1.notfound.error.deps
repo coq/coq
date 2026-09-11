@@ -1,0 +1,4 @@
+File "misc/external-deps/file1.v", line 2, characters 51-55:
+Error: external file d1 is required
+from root foo.bar and has not been found in the loadpath!
+[module-not-found,filesystem,default]

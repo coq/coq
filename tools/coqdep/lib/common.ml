@@ -66,14 +66,13 @@ type what = Library | External
 let str_of_what = function Library -> "library" | External -> "external file"
 
 let warning_module_notfound =
-  let warn (what, from, s) =
-    let open Pp in
-    str (str_of_what what) ++ spc () ++ str (String.concat "." s) ++ str " is required" ++
-    pr_opt (fun pth -> str "from root " ++ str (String.concat "." pth)) from ++
-    str " and has not been found in the loadpath!"
-  in
   CWarnings.create ~name:"module-not-found"
-    ~category:CWarnings.CoreCategories.filesystem warn
+    ~category:CWarnings.CoreCategories.filesystem
+    ~default:AsError
+    Pp.(fun (what, from, s) ->
+        str (str_of_what what) ++ spc () ++ str (String.concat "." s) ++ str " is required" ++
+        pr_opt (fun pth -> str "from root " ++ str (String.concat "." pth)) from ++
+        str " and has not been found in the loadpath!")
 
 let warn_if_clash ?(what=Library) exact file dir f1 = function
   | f2::fl ->

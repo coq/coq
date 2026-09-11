@@ -38,7 +38,7 @@ let make () =
 
 
 let warn_unknown_option =
-  CWarnings.create ~name:"unknown-option"
+  CWarnings.create ~name:"unknown-option" ~default:AsError
     Pp.(fun opt -> str "Unknown option \"" ++ str opt ++ str "\".")
 
 let usage () =
