@@ -1354,10 +1354,11 @@ let find_projection_data c =
   | GRef (GlobRef.ConstRef cst,us) -> Some (cst, us, [], Structure.projection_nparams (Global.env ()) cst)
   | _ -> None
 
-let glob_sort_of_level (level: glob_level) : glob_sort =
+let glob_sort_of_level level gu =
   match level with
-  | UAnonymous _ as l -> None, l
-  | UNamed id -> None, UNamed [id, 0]
+  | None -> gu
+  | Some (UAnonymous _ as l) -> l
+  | Some UNamed id -> UNamed [id, 0]
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
@@ -1392,11 +1393,22 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
           DAst.make ?loc @@ GApp (DAst.make ?loc:loc' @@ GRef (ref, us), arg)
         | _ -> err ()
         end
-      | Some ([],[s]), GSort gs when Glob_ops.(glob_sort_eq glob_Type_sort gs) ->
-        DAst.make ?loc @@ GSort (glob_sort_of_level s)
-      | Some ([],[_old_level]), GSort _new_sort ->
-        (* TODO: add old_level and new_sort to the error message *)
-        user_err ?loc (str "Cannot change universe level of notation " ++ pr_qualid qid)
+      | Some (qs, us), GSort (gq, gu) ->
+        let q_err () = user_err ?loc (str "Wrong sort instance length, should be <= 1") in
+        let q = match qs with [] -> None | [q] -> Some q | _ -> q_err () in
+        let u_err () = user_err ?loc (str "Wrong universe instance length, should be <= 1") in
+        let u = match us with [] -> None | [u] -> Some u | _ -> u_err () in
+        let gs_has_fixed_level = match gu with UAnonymous _ -> false | UNamed _ -> true in
+        let gs_has_fixed_sort = Option.has_some gq || gs_has_fixed_level in
+        let () = if gs_has_fixed_sort && Option.has_some q then
+          (* TODO: add old_level and new_sort to the error message *)
+          user_err ?loc (str "Cannot change sort quality of abbreviation " ++ pr_qualid qid)
+        in
+        let () = if Option.has_some u && gs_has_fixed_level then
+          (* TODO: add old_level and new_sort to the error message *)
+          user_err ?loc (str "Cannot change universe level of abbreviation " ++ pr_qualid qid)
+        in
+        DAst.make ?loc @@ GSort (q, glob_sort_of_level u gu)
       | Some _, _ -> err ()
       in
       c, None, args2

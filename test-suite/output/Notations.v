@@ -221,8 +221,20 @@ Check (fun x => match x with | nil => NONE | h :' t => SOME3 _ t end).
    universe than the actual one; but it would be the same anyway
    without a notation *)
 
+Universe u.
+
 Abbreviation s := Type.
 Check s.
+Check s@{u}.
+Check s@{Type;u}.
+Check s@{Prop;}.
+Check s@{Prop;u}.
+
+Abbreviation s' := Type@{u}.
+
+Check s'.
+Fail Check s'@{Prop;}.
+Fail Check s'@{u}.
 
 (* Test bug #2835: notations were not uniformly managed under prod and lambda *)
 

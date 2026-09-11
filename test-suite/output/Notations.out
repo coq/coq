@@ -130,6 +130,22 @@ where
   x0 cannot be used)
 s
      : s
+s
+     : s
+s
+     : s
+Prop
+     : s
+Prop
+     : s
+s
+     : s
+File "./output/Notations.v", line 236, characters 11-13:
+The command has indeed failed with message:
+Cannot change sort quality of abbreviation s'
+File "./output/Notations.v", line 237, characters 11-13:
+The command has indeed failed with message:
+Cannot change universe level of abbreviation s'
 10
      : nat
 fun _ : nat => 9
