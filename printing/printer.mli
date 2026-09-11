@@ -236,6 +236,7 @@ type axiom =
   | TypeInType of GlobRef.t (* a constant which relies on type in type *)
   | UIP of MutInd.t (* An inductive using the special reduction rule. *)
   | IndicesNotMattering of MutInd.t (* An inductive relying on indices not mattering. *)
+  | ImpredicativeSet of GlobRef.t (* a definition typed with impredicative Set *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)

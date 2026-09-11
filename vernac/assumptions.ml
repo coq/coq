@@ -417,6 +417,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
       in
+      let accu =
+        if not cb.const_typing_flags.impredicative_set then accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (ImpredicativeSet obj, l)) Constr.mkProp accu
+      in
     if not (Option.has_some contents) then
       let t = type_of_constant cb in
       (* An opaque constant reaches this point only when its body could not
@@ -466,6 +472,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (IndicesNotMattering m, l)) Constr.mkProp accu
+      in
+      let accu =
+        if not mind.mind_typing_flags.impredicative_set then accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (ImpredicativeSet obj, l)) Constr.mkProp accu
       in
       accu
   in
