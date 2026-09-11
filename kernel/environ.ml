@@ -1229,46 +1229,128 @@ sig
   val canonize : env -> t -> t
 end
 
-module type HackQS = sig
-  (** A type with canonical information separate from the env *)
+module type QCanonS = sig
   type t
+  val canonize : env -> t -> t
+  val fast_eq : t -> t -> bool
 
-  val canonize : t -> t
-  module CanOrd : sig
+  module UserOrd : sig
     val equal : t -> t -> bool
     val compare : t -> t -> int
     val hash : t -> int
   end
+
+  (* Requirement: [UserOrd.equal (canonize e x) (canonize e y) = true] implies [fast_eq x y = true] *)
+
 end
 
-module HackQ (X:HackQS) (UserMap:CSig.UMapS with type key = X.t) = struct
+module QCanon (X : QCanonS) = struct
   module Self = struct
     type t = X.t
-    let canonize _env x = X.canonize x
+    include X.UserOrd
+    let canonize = X.canonize
   end
   include Self
-  let equal _env c1 c2 = X.CanOrd.equal c1 c2
-  let compare _env c1 c2 = X.CanOrd.compare c1 c2
-  let hash _env c = X.CanOrd.hash c
-
+  let equal env c1 c2 = X.fast_eq c1 c2 && X.UserOrd.equal (X.canonize env c1) (X.canonize env c2)
+  let compare env c1 c2 = X.UserOrd.compare (X.canonize env c1) (X.canonize env c2)
+  let hash env c = X.UserOrd.hash (X.canonize env c)
+  module UserMap = HMap.Make(Self)
   module Map = QMap(UserMap)(Self)
 end
 
-module QConstant = HackQ(Constant)(Cmap_env)
+let lookup_can_constant cst env = match Cmap_env.find_opt cst env.env_constants with
+| None -> Constant.user cst (* fallback for robustness *)
+| Some (_, _, kn) -> kn
 
-module QMutInd = HackQ(MutInd)(Mindmap_env)
+let lookup_can_mind mind env = match Mindmap_env.find_opt mind env.env_inductives with
+| None -> MutInd.user mind (* fallback for robustness *)
+| Some (_, _, kn) -> kn
 
-module QInd = HackQ(Ind)(Indmap_env)
+module CanConstant =
+struct
+  include Constant
+  let canonize env cst =
+    Constant.make1 (lookup_can_constant cst env)
+  let fast_eq c1 c2 =
+    Id.equal (Constant.label c1) (Constant.label c2)
+end
 
-module QConstruct = HackQ(Construct)(Constrmap_env)
+module CanMutInd =
+struct
+  include MutInd
+  let canonize env mind =
+    MutInd.make1 (lookup_can_mind mind env)
+  let fast_eq m1 m2 =
+    Id.equal (MutInd.label m1) (MutInd.label m2)
+end
+
+module CanInd =
+struct
+  include Ind
+  let canonize env (mind, i) =
+    (CanMutInd.canonize env mind, i)
+  let fast_eq (m1, i1) (m2, i2) =
+    CanMutInd.fast_eq m1 m2 && Int.equal i1 i2
+end
+
+module CanConstruct =
+struct
+  include Construct
+  let canonize env (ind, i) =
+    (CanInd.canonize env ind, i)
+  let fast_eq (ind1, i1) (ind2, i2) =
+    CanInd.fast_eq ind1 ind2 && Int.equal i1 i2
+end
+
+module CanProjectionRepr =
+struct
+  include Projection.Repr
+  let canonize env p =
+    make (CanInd.canonize env (inductive p)) ~proj_npars:(npars p) ~proj_arg:(arg p) (label p)
+  let fast_eq p1 p2 =
+    CanInd.fast_eq (inductive p1) (inductive p2)
+end
+
+module CanProjection =
+struct
+  include Projection
+  let canonize env p =
+    Projection.make (CanProjectionRepr.canonize env (Projection.repr p)) (Projection.unfolded p)
+  let fast_eq p1 p2 =
+    CanProjectionRepr.fast_eq (Projection.repr p1) (Projection.repr p2) && Projection.unfolded p1 == (Projection.unfolded p2 : bool)
+end
+
+module CanGlobRef =
+struct
+  include GlobRef
+  let canonize env gr = match gr with
+  | VarRef _ -> gr
+  | ConstRef cst -> ConstRef (CanConstant.canonize env cst)
+  | IndRef ind -> IndRef (CanInd.canonize env ind)
+  | ConstructRef cstr -> ConstructRef (CanConstruct.canonize env cstr)
+  let fast_eq gr1 gr2 = match gr1, gr2 with
+  | VarRef _, VarRef _ -> true
+  | ConstRef c1, ConstRef c2 -> CanConstant.fast_eq c1 c2
+  | IndRef i1, IndRef i2 -> CanInd.fast_eq i1 i2
+  | ConstructRef c1, ConstructRef c2 -> CanConstruct.fast_eq c1 c2
+  | (VarRef _ | ConstRef _ | IndRef _ | ConstructRef _), _ -> false
+end
+
+module QConstant = QCanon(CanConstant)
+
+module QMutInd = QCanon(CanMutInd)
+
+module QInd = QCanon(CanInd)
+
+module QConstruct = QCanon(CanConstruct)
 
 module QProjection =
 struct
-  include HackQ(Projection)(HMap.Make(Projection.UserOrd))
-  module Repr = HackQ(Projection.Repr)(HMap.Make(Projection.Repr.UserOrd))
+  include QCanon(CanProjection)
+  module Repr = QCanon(CanProjectionRepr)
 end
 
-module QGlobRef = HackQ(GlobRef)(GlobRef.Map_env)
+module QGlobRef = QCanon(CanGlobRef)
 
 let rec constant_dependencies_with_cache env cache kn =
   match DepCache.get kn cache with
