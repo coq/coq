@@ -519,10 +519,12 @@ Creating Hints
    Outside of sections, these commands support the :attr:`local`, :attr:`export`
    and :attr:`global` attributes. :attr:`export` is the default.
 
-   Inside sections, some commands only support the :attr:`local` attribute. These are
-   :cmd:`Hint Immediate`, :cmd:`Hint Resolve`, :cmd:`Hint Constructors`,
-   :cmd:`Hint Unfold`, :cmd:`Hint Extern` and :cmd:`Hint Rewrite`.
-   :attr:`local` is the default for all hint commands inside sections.
+   Inside sections, :cmd:`Hint Immediate`, :cmd:`Hint Unfold`,
+   :cmd:`Hint Extern`, and :cmd:`Hint Rewrite` only support the :attr:`local`
+   attribute.  :cmd:`Hint Resolve` and :cmd:`Hint Constructors` also support
+   :attr:`export` and :attr:`global`, subject to the section-discharge
+   restrictions described below.  :attr:`local` is the default for all hint
+   commands inside sections.
 
    + :attr:`local` hints are never visible from other modules, even if they
      :cmd:`Import` or :cmd:`Require` the current module.
@@ -582,6 +584,44 @@ Creating Hints
       :tacn:`eauto` / :tacn:`typeclasses eauto`, but not by :tacn:`auto`.  A
       typical hint that would only be used by :tacn:`eauto` is a transitivity
       lemma.
+
+      Within a section, :cmd:`Hint Resolve` supports :attr:`export` and
+      :attr:`global` when no explicit :n:`@one_pattern` is supplied and the
+      discharged hint can still be indexed by a global head symbol.  A section
+      variable cannot itself be made a non-local hint.  These restrictions are
+      checked by the hint command, before the section is closed.
+
+      On section closure, Rocq rebuilds the hint from the generalized type of
+      the referenced declaration.  If :n:`@natural` was omitted, the cost is
+      recomputed from that generalized type; an explicitly supplied cost is
+      preserved.  Generalization can also make previously inferable parameters
+      unresolvable by :tacn:`auto`.  In that case the rebuilt hint is restricted
+      to :tacn:`eauto`, and Rocq reports the transition.
+
+      The locality then behaves as it does for hints declared directly in the
+      containing module: an :attr:`export` hint is activated when that module is
+      imported, whereas a :attr:`global` hint is activated whenever the module
+      is loaded.  For example:
+
+      .. rocqtop:: all
+
+         Create HintDb section_hints.
+         Inductive section_inhabited (A : Type) : Prop :=
+         | section_inhabits : A -> section_inhabited A.
+         Module ExportedHint.
+           Section S.
+             Context (A : Type) (a : A).
+             Lemma inhabited_hint : section_inhabited A.
+             Proof. exact (section_inhabits A a). Qed.
+             #[export] Hint Resolve inhabited_hint : section_hints.
+           End S.
+         End ExportedHint.
+         Import ExportedHint.
+         Goal forall (A : Type) (a : A), section_inhabited A.
+         Proof. intros; auto with section_hints. Qed.
+
+      :cmd:`Hint Constructors` uses the same persistence and discharge rules,
+      because it registers each constructor as a resolve hint.
 
       :n:`{| -> | <- }`
         The second form adds the left-to-right (`->`) or right-ot-left implication (`<-`)

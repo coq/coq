@@ -1,0 +1,44 @@
+File "./output/HintResolveSections.v", line 12, characters 2-87:
+The command has indeed failed with message:
+Hint Resolve does not support the global attribute in sections when an explicit pattern is provided.
+File "./output/HintResolveSections.v", line 13, characters 2-87:
+The command has indeed failed with message:
+Hint Resolve does not support the export attribute in sections when an explicit pattern is provided.
+File "./output/HintResolveSections.v", line 19, characters 2-45:
+The command has indeed failed with message:
+Hint Resolve does not support the global attribute in sections when the hint is a section variable.
+File "./output/HintResolveSections.v", line 28, characters 2-57:
+The command has indeed failed with message:
+Hint Resolve does not support the global attribute for indirect_hint in this section because the hint will not have a global head after section discharge.
+File "./output/HintResolveSections.v", line 37, characters 2-64:
+The command has indeed failed with message:
+Hint Resolve does not support the global attribute for variable_head_iff_proj_l2r in this section because the hint will not have a global head after section discharge.
+File "./output/HintResolveSections.v", line 38, characters 13-39:
+The command has indeed failed with message:
+The reference variable_head_iff_proj_l2r was not found in the current
+environment.
+File "./output/HintResolveSections.v", line 39, characters 2-64:
+The command has indeed failed with message:
+Hint Resolve does not support the export attribute for variable_head_iff_proj_r2l in this section because the hint will not have a global head after section discharge.
+File "./output/HintResolveSections.v", line 40, characters 13-39:
+The command has indeed failed with message:
+The reference variable_head_iff_proj_r2l was not found in the current
+environment.
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
+For True ->   simple apply output_alias_hint (cost 1, pattern True, id 0)
+For output_alias ->   exact output_alias_hint (cost 0, pattern output_alias, id 0)
+
+Non-discriminated database
+Unfoldable variable definitions: all
+Unfoldable constant definitions: all
+Unfoldable projection definitions: all
+Cut: emp
+For any goal ->   
+For True ->   simple apply output_alias_hint (cost 1, pattern True, id 0)
+For output_alias ->   exact output_alias_hint (cost 0, pattern output_alias, id 0)
+

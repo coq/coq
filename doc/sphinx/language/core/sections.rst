@@ -228,7 +228,21 @@ A similar table for :cmd:`Module` can be found
 
       module [#note2]_
 
-  * - ``Hints`` (and :cmd:`Instance`)
+  * - :cmd:`Hint Resolve`, :cmd:`Hint Constructors`
+
+      (and :cmd:`Instance`)
+    - :attr:`local`
+    - not available
+    - :attr:`export` in
+
+      module [#note4]_
+    - :attr:`global` in
+
+      module [#note4]_
+
+  * - :cmd:`Hint Immediate`, :cmd:`Hint Unfold`,
+
+      :cmd:`Hint Extern`, :cmd:`Hint Rewrite`
     - :attr:`local`
     - not available
     - ❌
@@ -266,6 +280,14 @@ A similar table for :cmd:`Module` can be found
    The default behaviour (no attribute) is to make the setting persist outside
    the section in the current :cmd:`Module`, but not outside the current
    :cmd:`Module`.
+
+.. [#note4] For :cmd:`Hint Resolve`, :cmd:`Hint Constructors`, and
+   :cmd:`Instance`, the :attr:`export` and :attr:`global` attributes make the
+   command's effects persist outside the section.  Exported hints are visible
+   outside the containing module when it is imported; global hints are visible
+   whenever that module is loaded.  Resolve hints with explicit patterns, hints
+   that are section variables, and hints whose conclusion has no global head
+   after section discharge do not support these attributes.
 
 .. _Admissible-rules-for-global-environments:
 

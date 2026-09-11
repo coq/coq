@@ -649,8 +649,10 @@ while noting a few exceptional commands for which :attr:`local` and
    .. note::
 
       - For some commands, this is the only locality supported within
-        sections (e.g., for :cmd:`Notation`, :cmd:`Ltac` and
-        :ref:`Hint <creating_hints>` commands).
+        sections (e.g., for :cmd:`Notation`, :cmd:`Ltac`,
+        :cmd:`Hint Immediate`, :cmd:`Hint Unfold`, and :cmd:`Hint Extern`).
+        Some other hint commands support non-local attributes; see
+        :ref:`creating_hints`.
 
       - For some commands, this is the default locality within
         sections even though other locality attributes are supported
@@ -670,9 +672,11 @@ while noting a few exceptional commands for which :attr:`local` and
    persist when the section is closed and applies the effect when the
    module containing the command is imported.
 
-   Commands supporting this attribute include :cmd:`Set`, :cmd:`Unset`
-   and the :ref:`Hint <creating_hints>` commands, although the latter
-   don't support it within sections.
+   Commands supporting this attribute include :cmd:`Set`, :cmd:`Unset`,
+   and the :ref:`Hint <creating_hints>` commands.  Within sections,
+   support depends on the specific hint command; in particular,
+   :cmd:`Hint Resolve` and :cmd:`Hint Constructors` support
+   :attr:`export` subject to their section-discharge restrictions.
 
 .. attr:: global
 
