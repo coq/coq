@@ -114,10 +114,14 @@ Coercion denote_SPEC_VAR_TYPE (x : SPEC_VAR_TYPE) : Set
     [Constr.equal], and we'll check for [IFF (x = y) (x' = y')] that
     [Constr.equal x y] and [Constr.equal x' y'] are the same.  (We
     don't currently support reporting results about [IFF A B] for [A]
-    and [B] not equalities. *)
+    and [B] not equalities.  Any other shape of specification
+    (implications, conjunctions, ...) is kept as a [PROP], whose truth
+    value is decided syntactically after evaluation (see
+    [decide_prop]). *)
 Inductive BARE_SPEC :=
 | EQ {T1 T2} (lhs : T1) (rhs : T2)
-| IFF {T1 T2} (lhs : T1) (rhs : T2).
+| IFF {T1 T2} (lhs : T1) (rhs : T2)
+| PROP (P : Prop).
 
 (** A [SPEC] is a [BARE_SPEC] prenex-quanified over known variable
     types.  We hold the original proposition here so that we can
@@ -190,10 +194,15 @@ Ltac2 unify_bool (x : constr) (y : constr) : bool
 
 Ltac2 lf () := String.make 1 (Char.of_int 10).
 
+(** Only the leading binders over known variable types are
+    instantiated; a subsequent non-dependent product is an implication
+    and is part of the proposition to decide. *)
+Ltac2 is_known_var_type (t : constr) : bool :=
+  List.exist (Constr.equal t) ['spec_float; 'float; 'int].
 Ltac2 rec count_prod (x : constr) : int :=
   match kind x with
   | Cast x _ _ => count_prod x
-  | Prod _ x => Int.add 1 (count_prod x)
+  | Prod b x => if is_known_var_type (Binder.type b) then Int.add 1 (count_prod x) else 0
   | _ => 0
   end.
 Ltac2 mkApp f x := Unsafe.make (App f (Array.of_list x)).
@@ -254,8 +263,8 @@ Ltac2 reify_bare_spec (ty : constr) : constr
           then Unsafe.make (App (mkApp '@EQ [Array.get args 0]) args)
           else if Constr.equal f '@iff
                then Unsafe.make (App (mkApp '@IFF ['Prop; 'Prop]) args)
-               else Control.throw (Reification_error (fprintf "Unhandled base spec app %t" ty))
-     | k => Control.throw (Reification_unhandled_kind (fprintf "Unhandled base spec %t" ty) k)
+               else mkApp 'PROP [ty]
+     | _ => mkApp 'PROP [ty]
      end.
 (** ** Reification of specs, including binders *)
 (** [n] is how many binders are left to remove in [spec], and
@@ -265,9 +274,12 @@ Ltac2 rec reify_spec' (ty : constr) (spec : constr) (n : int) : constr
   := match kind ty with
      | Cast ty _ _ => reify_spec' ty spec n
      | Prod b body
-       => let ty := reify_var_type (Binder.type b) in
-          let body := reify_spec' body (mkApp spec [mkRel n]) (Int.sub n 1) in
-          mkApp 'FORALL [ty; mkLambda b body]
+       => if Bool.and (Int.gt n 0) (is_known_var_type (Binder.type b))
+          then let ty := reify_var_type (Binder.type b) in
+               let body := reify_spec' body (mkApp spec [mkRel n]) (Int.sub n 1) in
+               mkApp 'FORALL [ty; mkLambda b body]
+          else let r := reify_bare_spec ty in
+               mkApp '@BARE [ty; spec; r]
      | _ => let r := reify_bare_spec ty in
             mkApp '@BARE [ty; spec; r]
      end.
@@ -276,6 +288,29 @@ Ltac2 reify_spec (spec : constr) : constr
      reify_spec' ty spec (count_prod ty).
 
 Notation "` x" := (ltac2:(let v := reify_spec (pretype x) in exact $v)) (only parsing, at level 10).
+
+(** * Machinery for deciding fully evaluated propositions *)
+(** After [vm_compute], a closed proposition built from the specs is
+    made of equalities between closed values, [True], [False],
+    conjunctions, disjunctions and non-dependent products (implications,
+    including [not]).  Anything else means the evaluation was not
+    complete, and is an error rather than a failure. *)
+Ltac2 rec decide_prop (p : constr) : bool
+  := lazy_match! p with
+     | True => true
+     | False => false
+     | ?x = ?y => Constr.equal x y
+     | ?a /\ ?b => Bool.and (decide_prop a) (decide_prop b)
+     | ?a \/ ?b => Bool.or (decide_prop a) (decide_prop b)
+     | _ => match kind p with
+            | Prod b body
+              => if Unsafe.noccur_between 1 1 body
+                 then Bool.or (Bool.neg (decide_prop (Binder.type b)))
+                              (decide_prop (Unsafe.substnl ['True] 0 body))
+                 else Control.throw (PrimFloat_Test_InternalError (fprintf "Cannot decide dependent product %t" p))
+            | _ => Control.throw (PrimFloat_Test_InternalError (fprintf "Cannot decide %t" p))
+            end
+     end.
 
 (** * Machinery for reporting results *)
 Ltac2 report_result (red : string) (result : constr) (specTy : constr) (spec : constr) : message option
@@ -299,6 +334,10 @@ Ltac2 report_result (red : string) (result : constr) (specTy : constr) (spec : c
             else (* if Bool.equal (unify_bool x x') (unify_bool y y') (* commented out because of https://github.com/rocq-prover/rocq/pull/17899 *)
                  then Some (fprintf "%s failed to fully reduce, leaving over %t (expected something equivalent to: %t), in %t %t" red lhs rhs spec specTy)
                  else *) Some (fprintf "%s failed!%sGot: %t%sExpected something equivalent to: %t%s(both sides %s unify)%sIn %t %t" red (lf ()) lhs (lf ()) rhs (lf ()) descr (lf ()) spec specTy)
+       | PROP ?p
+         => if decide_prop p
+            then None
+            else Some (fprintf "%s failed!%sGot: %t%swhich does not hold%sIn %t %t" red (lf ()) p (lf ()) (lf ()) spec specTy)
        | _ => Control.throw (PrimFloat_Test_InternalError (fprintf "Unhandled result %t (on %t : %t with %s)" result spec specTy red))
        end in
      match msg with
@@ -335,15 +374,10 @@ Ltac2 report_results_fast red results := report_results_gen true red results.
 (** * List of (reified) specifications *)
 (** EDIT HERE TO ADD MORE TESTS *)
 
-(* [Prim2SF_SF2Prim] has an hypothesis not handled by the above machinery
-   so let's check something stronger in theory but equivalent in practice,
-   since all test cases satisfy the hypothesis by construction. *)
-Axiom Prim2SF_SF2Prim' : forall x, (* valid_binary x = true -> *) Prim2SF (SF2Prim x) = x.
-
 Definition spec_list : list SPEC :=
   [ `Prim2SF_valid
     ; `SF2Prim_Prim2SF
-    ; `Prim2SF_SF2Prim'
+    ; `Prim2SF_SF2Prim
 
     ; `opp_spec
     ; `abs_spec
@@ -441,8 +475,10 @@ End TestSpecs.
 Section NegativeTest.
 
 Axiom wrong_spec : forall x, (- x)%float = PrimFloat.abs x.
+(* wrong on nan only *)
+Axiom wrong_prop_spec : forall x, valid_binary (Prim2SF x) = true -> (x =? x)%float = true.
 
-Definition wrong_spec_list : list SPEC := cons ( `wrong_spec ) nil.
+Definition wrong_spec_list : list SPEC := [ `wrong_spec ; `wrong_prop_spec ].
 
 Definition wrong_specs : list ANNOTATED_BARE_SPEC
   := Eval cbv [wrong_spec_list instantiate_all_ways] in instantiate_all_ways wrong_spec_list.
@@ -492,7 +528,7 @@ Fixpoint extract_lhs (ls : list BARE_SPEC) : hlist
      | nil => hnil
      | x :: xs
        => let rest := extract_lhs xs in
-          match x with EQ v _ | IFF v _ => hcons v rest end
+          match x with EQ v _ | IFF v _ => hcons v rest | PROP p => hcons p rest end
      end.
 Fixpoint merge_lhs (ls : list BARE_SPEC) (result : hlist) : list BARE_SPEC
   := match ls, result with
@@ -501,6 +537,7 @@ Fixpoint merge_lhs (ls : list BARE_SPEC) (result : hlist) : list BARE_SPEC
        => match x with
           | EQ _ x' => EQ v x'
           | IFF _ x' => IFF v x'
+          | PROP p => PROP p
           end :: merge_lhs xs vs
      end.
 
