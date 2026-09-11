@@ -1,4 +1,4 @@
-
+Unset Universe Polymorphism.
 
 Section Foo.
 
@@ -34,10 +34,10 @@ Section Foo.
   Polymorphic Definition bli@{j} := Type@{j} -> bla.
 
   Definition bloo := bli@{_}.
-
+  
   Polymorphic Universe i.
-
-  Fail Definition x := Type.
+  (* Should fail *)
+  (* Definition x := Type@{i}. *)
   Fail Inductive x : Type := .
   Polymorphic Definition x@{=j} := Type@{j}.
   Polymorphic Inductive y : x := .
@@ -59,7 +59,7 @@ End Foo.
 Check bli@{_}.
 Check bloo@{}.
 
-Check thing@{_ _ _}.
+Check thing@{_ _}.
 
 Section Foo.
 

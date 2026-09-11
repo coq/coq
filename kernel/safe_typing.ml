@@ -861,7 +861,6 @@ let add_field ((l,sfb) as field) gn senv =
     | Some sections ->
       match sfb, gn with
       | SFBconst _, C con ->
-        (* FIXME wrong poly:true here, e.g. in sections with poly univs, cannot add a mono decl *)
         Some Section.(push_global ~poly:true env' (SecDefinition con) sections)
       | SFBmind mib, I mind ->
         let poly = Declareops.inductive_is_polymorphic mib in

@@ -56,14 +56,14 @@ exception BadConstant of Constant.t * Pp.t
 let check_constant_declaration env opac kn cb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ Constant.print kn);
   let env = CheckFlags.set_local_flags cb.const_typing_flags env in
-  let poly, env =
-    match cb.const_universes with
-    | (auctx, _variances) -> (* FIXME check variances *)
-      let ctx = UVars.AbstractContext.repr auctx in
-      (* [env] contains De Bruijn universe variables *)
-      let () = check_ucontext ctx env in
-      let env = push_context ~strict:false ctx env in
-      not (UVars.AbstractContext.is_empty auctx), env
+  let env =
+    let (auctx, _variances) = cb.const_universes in
+    (* FIXME check variances *)
+    let ctx = UVars.AbstractContext.repr auctx in
+    (* [env] contains De Bruijn universe variables *)
+    let () = check_ucontext ctx env in
+    let env = push_context ~strict:false ctx env in
+    env
   in
   let ty = cb.const_type in
   let jty = Typeops.infer_type env ty in
@@ -74,12 +74,9 @@ let check_constant_declaration env opac kn cb opacify =
     | Def c -> Some c, env
     | OpaqueDef o ->
       let c, u = !indirect_accessor o in
-      let env = match u, poly with
-        | Opaqueproof.PrivateMonomorphic (), false -> env
-        | Opaqueproof.PrivatePolymorphic local, _ ->
-          (* Don't have the info for checking if the initial constant was "poly" *)
-          push_subgraph local env
-        | _ -> assert false
+      let env = match u with
+        | Opaqueproof.PrivateMonomorphic () -> env
+        | Opaqueproof.PrivatePolymorphic local -> push_subgraph local env      
       in
       Some c, env
   in

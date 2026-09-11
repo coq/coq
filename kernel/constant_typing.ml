@@ -114,9 +114,10 @@ let _used_section_universes sec_univs univs ctx body typ =
   match sec_univs with
   | None -> []
   | Some sec_univs -> (* sec_univs represents all universes quantified in enclosing sections *)
-    match univs with
-    | Entries.Monomorphic_entry -> []
-    | Entries.Polymorphic_entry (uctx, _) ->
+    let uctx = match univs with
+    | Entries.Monomorphic_entry -> UContext.empty
+    | Entries.Polymorphic_entry (uctx, _) -> uctx
+    in
       let used = compute_section_universes ctx body typ in
       let _qcstrs, ucstrs = UContext.constraints uctx in
       let used = Univ.UnivConstraints.levels ~init:used ucstrs in
