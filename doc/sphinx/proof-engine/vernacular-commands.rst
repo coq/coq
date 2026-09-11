@@ -454,6 +454,18 @@ Requests to the environment
    The message "Closed under the global context" indicates that all the theorems and
    definitions have no dependencies.
 
+   The body of an opaque constant is not available when the library defining
+   it was compiled with ``-vos``, which is in particular the case in ``-vok``
+   builds (see :ref:`compiled-interfaces`). Such a constant is reported under
+   "Opaque proofs that could not be accessed" rather than under "Axioms",
+   since what it assumes is unknown.
+
+   .. warn:: Cannot access the opaque body of @qualid, its assumptions are unknown.
+      :name: unreachable-opaque-body
+
+      The body of :n:`@qualid` could not be read, so the assumptions it
+      relies on are not part of the reported ones.
+
 .. flag:: Printing All Assumptions
 
    Turn this :term:`flag` on to make :cmd:`Print Assumptions` report

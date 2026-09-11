@@ -241,6 +241,7 @@ type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
   | Axiom of axiom * (GlobRef.t * Constr.rel_context * types) list
   | Opaque of Constant.t     (* An opaque constant. *)
+  | UnreachableOpaque of Constant.t (* An opaque constant whose body could not be accessed. *)
   | Transparent of Constant.t
 
 module ContextObjectSet : CSet.ExtS with type elt = context_object

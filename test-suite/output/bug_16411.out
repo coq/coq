@@ -1,4 +1,7 @@
-Axioms:
+File "./output/bug_16411.v", line 5, characters 0-22:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Opaque proofs that could not be accessed:
 foo : nat
 0
      : nat

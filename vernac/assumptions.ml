@@ -199,6 +199,16 @@ let fold_with_full_binders g f n acc c =
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
 
+let warn_unreachable_opaque_body =
+  CWarnings.create ~name:"unreachable-opaque-body" ~category:CWarnings.CoreCategories.vernacular
+    Pp.(fun kn -> str "Cannot access the opaque body of "
+                  ++ Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef kn)
+                  ++ str ", its assumptions are unknown.")
+
+(* Answers [None] both for a constant which has no body and for an opaque
+   constant whose body could not be read, for instance a delayed proof
+   missing in vok mode. The two are told apart by [Declareops.is_opaque] in
+   [assumptions] below. *)
 let get_constant_body access kn =
   let cb = lookup_constant kn in
   match cb.const_body with
@@ -207,7 +217,7 @@ let get_constant_body access kn =
   | OpaqueDef o ->
     match Global.force_proof access o with
     | c, _ -> Some c
-    | exception e when CErrors.noncritical e -> None (* missing delayed body, e.g. in vok mode *)
+    | exception e when CErrors.noncritical e -> warn_unreachable_opaque_body kn; None
 
 let rec traverse access (current:GlobRef.t) ctx accu t =
   let open GlobRef in
@@ -409,8 +419,13 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
       in
     if not (Option.has_some contents) then
       let t = type_of_constant cb in
-      let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-      ContextObjectMap.add (Axiom (Constant kn,l)) t accu
+      (* An opaque constant reaches this point only when its body could not
+         be read. It is not an axiom, we just do not know what it assumes. *)
+      if Declareops.is_opaque cb then
+        ContextObjectMap.add (UnreachableOpaque kn) t accu
+      else
+        let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+        ContextObjectMap.add (Axiom (Constant kn,l)) t accu
     else if add_opaque && (Declareops.is_opaque cb || not (Structures.PrimitiveProjections.is_transparent_constant st kn)) then
       let t = type_of_constant cb in
       ContextObjectMap.add (Opaque kn) t accu
