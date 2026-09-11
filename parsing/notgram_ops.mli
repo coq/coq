@@ -14,12 +14,14 @@ open Notation_gram
 
 (** {6 Declare the parsing rules and entries of a (possibly uninterpreted) notation } *)
 
+type entry_types = Extend.constr_entry_key list
+
 val declare_notation_grammar : notation -> notation_grammar -> unit
 val grammar_of_notation : notation -> notation_grammar
   (** raise [Not_found] if not declared *)
 
-val declare_notation_non_terminals : notation -> Extend.constr_entry_key list -> unit
-val non_terminals_of_notation : notation -> Extend.constr_entry_key list
+val declare_notation_non_terminals : notation -> entry_types -> unit
+val non_terminals_of_notation : notation -> entry_types
 
 (** [longest_common_prefix ntn] looks among notations [ntn'] already
     registered with [declare_notation_non_terminals ntn'] for the one

@@ -183,7 +183,7 @@ val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool ->
 (** Same together with the full notation *)
 val interp_notation_as_global_reference_expanded : ?loc:Loc.t -> head:bool ->
       (GlobRef.t -> bool) -> notation_key -> delimiters option ->
-  (notation_entry * notation_key) * notation_key * notation_with_optional_scope * interpretation * GlobRef.t
+  notation * notation_key * notation_with_optional_scope * interpretation * GlobRef.t
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :
@@ -227,10 +227,20 @@ val symbol_eq : symbol -> symbol -> bool
 val make_notation_key : notation_entry -> symbol list -> notation
 val decompose_notation_key : notation -> notation_entry * symbol list
 
+(** This is the output of decomposing a notation declaration:
+    [mainvars] include all notation variables, keeping only one for
+      each pair (typically the first one) in case of a recursive pattern
+      (e.g. in ``Notation "[ x ; y ; .. ; z ]" := ...'', the mainvars
+      are [x;y]);
+    [maintypes] describes the structure of the pattern, e.g.,
+      for the same notation, it is
+      [[NtnRawTypeVar "x"; NtnRawTypeVarList (NtnRawTypeVar ("y", "z"))]]
+    [symbols] describes the parsing rule, e.g. for the same notation, it is
+      [[Terminal "["; NonTerminal "x"; SProdList ("y",[Terminal ";"]); Terminal "]"]] *)
 type notation_symbols = {
-  recvars : (Id.t * Id.t) list; (* pairs (x,y) as in [ x ; .. ; y ] *)
-  mainvars : Id.t list; (* variables non involved in a recursive pattern *)
-  symbols : symbol list; (* the decomposition of the notation into terminals and nonterminals *)
+  mainvars : Id.t list; (* names of "toplevel" non-terminals *)
+  maintypes : Id.t notation_raw_type list; (* types of "toplevel" non-terminals *)
+  symbols : symbol list; (* the decomposition of the notation into terminals and nonterminals; there, recursive patterns refer to the left-hand variable *)
 }
 
 val is_prim_token_constant_in_constr : notation_entry * symbol list -> bool

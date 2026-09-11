@@ -25,3 +25,11 @@ let split_assoc = function
 
 let self_on_the_left assoc = fst (split_assoc assoc)
 let self_on_the_right assoc = snd (split_assoc assoc)
+
+let g_assoc_eq a1 a2 =
+  match a1, a2 with
+  | BothA, BothA -> true
+  | LeftA, LeftA -> true
+  | RightA, RightA -> true
+  | NonA, NonA -> true
+  | (BothA | LeftA | RightA | NonA), _ -> false

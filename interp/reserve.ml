@@ -125,8 +125,7 @@ let revert_reserved_type env evd t =
         then I've introduced a bug... *)
     let filter _ pat =
       try
-        let _ : _ * _ * _ * _ =
-          match_notation_constr ~print_parentheses:true ~factorize_eqns t ~vars:Id.Set.empty ([], pat)
+        let _ = match_notation_constr ~print_parentheses:true ~factorize_eqns t ~vars:Id.Set.empty ([], pat)
         in
         true
       with No_match -> false

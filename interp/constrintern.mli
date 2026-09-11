@@ -108,7 +108,7 @@ module Interner : sig
   ; evar : t -> (Glob_term.existential_name CAst.t * (lident * constr_expr) list) fn
   ; sort : t -> sort_expr fn
   ; cast : t -> (constr_expr * Constr.cast_kind option * constr_expr) fn
-  ; notation : t -> (notation_with_optional_scope option * notation * constr_notation_substitution) fn
+  ; notation : t -> (notation_with_optional_scope option * notation * notation_substitution) fn
   ; generalization : t -> (Glob_term.binding_kind * constr_expr) fn
   ; prim : t -> prim_token fn
   ; delimiters : t -> (delimiter_depth * string * constr_expr) fn
@@ -239,7 +239,7 @@ val is_global : Id.t -> bool
     guaranteed to have the same domain as the input one. *)
 val interp_notation_constr : env -> ?impls:internalization_env ->
   notation_interp_env -> constr_expr ->
-  (bool * subscopes * Id.Set.t) Id.Map.t * notation_constr * reversibility_status
+  (bool * subscopes * Id.Set.t * bool) Id.Map.t * notation_constr * reversibility_status
 
 (** Typically used to internalize a term inside a tactic. *)
 val intern_core : typing_constraint -> ?pattern_mode:bool ->

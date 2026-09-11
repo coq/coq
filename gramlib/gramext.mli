@@ -18,3 +18,5 @@ val self_on_the_left : g_assoc -> bool
 
 val self_on_the_right : g_assoc -> bool
 (** Returns whether SELF means SELF on the right. *)
+
+val g_assoc_eq : g_assoc -> g_assoc -> bool
