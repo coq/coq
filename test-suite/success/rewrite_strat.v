@@ -189,3 +189,33 @@ Module StratTactic.
   Qed.
 
 End StratTactic.
+
+Module RewriteLet.
+  Import Nat.
+
+  (* In a "deep" context *)
+
+  Axiom f : nat -> nat.
+
+  Goal forall x : nat, f (let x0 := x + 1 in x0 + x0) = f (S (S (x + x))).
+  Proof.
+    intros x.
+    rewrite_strat (topdown (choice (<- plus_n_Sm) (<- plus_n_O))).
+    reflexivity.
+  Qed.
+
+  (* In a toplevel context, requiring to mediate between [eq] and [impl] / [flip impl] *)
+  Goal forall x : nat, let x0 := x + 1 in x0 = x0.
+  Proof.
+    intros x.
+    now rewrite_strat (topdown (choice (<- plus_n_Sm) (<- plus_n_O))).
+  Qed.
+
+  Goal forall x : nat, (let x0 := x + 1 in x0 = x0) -> S x = S x.
+  Proof.
+    intros x H.
+    rewrite_strat (topdown (choice (<- plus_n_Sm) (<- plus_n_O))) in H.
+    exact H.
+  Qed.
+
+End RewriteLet.

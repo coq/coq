@@ -238,8 +238,12 @@ Hint Extern 3 (StrictOrder (flip _)) => class_apply flip_StrictOrder : typeclass
 Hint Extern 3 (PreOrder (flip _)) => class_apply flip_PreOrder : typeclass_instances.
 
 #[global]
-Hint Extern 4 (subrelation (flip _) _) => 
-  class_apply @subrelation_symmetric : typeclass_instances.
+Hint Extern 4 (subrelation (flip ?R) _) =>
+  match R with
+  | Basics.impl => fail 1
+  | flip Basics.impl => fail 1
+  | _ => class_apply @subrelation_symmetric
+  end : typeclass_instances.
 
 Arguments irreflexivity {A R Irreflexive} [x] _ : rename.
 Arguments symmetry {A} {R} {_} [x] [y] _.

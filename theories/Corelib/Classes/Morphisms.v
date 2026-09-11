@@ -322,15 +322,39 @@ Ltac proper_subrelation :=
 #[global]
 Hint Extern 5 (@Proper _ ?H _) => proper_subrelation : typeclass_instances.
 
-(** Essential subrelation instances for [iff], [impl] and [pointwise_relation]. *)
+(** Essential subrelation instances for [eq], [iff], [impl] and [pointwise_relation]. *)
+Lemma eq_iff_subrelation : subrelation eq iff.
+Proof. now intros x y ->. Qed.
 
+(* We force exact matching, so this doesn't influence inference of signatures for existing morphisms *)
 #[global]
-Instance iff_impl_subrelation : subrelation iff impl | 2.
+Hint Extern 4 (subrelation eq iff) => exact eq_iff_subrelation : typeclass_instances.
+
+Lemma eq_flip_impl_subrelation : subrelation eq (Basics.flip Basics.impl).
+Proof. now intros x y ->. Qed.
+
+(* We force exact matching, so this doesn't influence inference of signatures for existing morphisms *)
+#[global]
+Hint Extern 5 (subrelation eq (Basics.flip Basics.impl)) => exact eq_flip_impl_subrelation : typeclass_instances.
+
+Lemma eq_impl_subrelation : subrelation eq Basics.impl.
+Proof. now intros x y ->. Qed.
+
+(* We force exact matching, so this doesn't influence inference of signatures for existing morphisms *)
+#[global]
+Hint Extern 5 (subrelation eq Basics.impl) => exact eq_impl_subrelation : typeclass_instances.
+
+Lemma iff_impl_subrelation : subrelation iff impl.
 Proof. firstorder. Qed.
 
 #[global]
-Instance iff_flip_impl_subrelation : subrelation iff (flip impl) | 2.
+Hint Extern 5 (subrelation iff impl) => exact iff_impl_subrelation : typeclass_instances.
+
+Lemma iff_flip_impl_subrelation : subrelation iff (flip impl).
 Proof. firstorder. Qed.
+
+#[global]
+Hint Extern 5 (subrelation iff (flip impl)) => exact iff_flip_impl_subrelation : typeclass_instances.
 
 (** We use an extern hint to help unification. *)
 
