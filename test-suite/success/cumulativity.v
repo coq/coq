@@ -162,8 +162,8 @@ End S.
 Check T@{Set}.
 Check T'@{Set Set}.
 
-(* T'' expects two universes, that is also u; do we really want it? *)
-Fail Check T''@{Set}.
+(* T'' expects just one universe, not depending on u *)
+Check T''@{Set}.
 
 End InSection.
 
