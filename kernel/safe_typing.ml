@@ -863,7 +863,7 @@ let add_field ((l,sfb) as field) gn senv =
       | SFBconst _, C con ->
         Some Section.(push_global ~poly:true env' (SecDefinition con) sections)
       | SFBmind mib, I mind ->
-        let poly = Declareops.inductive_is_polymorphic mib in
+        let poly = not @@ Declareops.inductive_is_template mib in
         Some Section.(push_global ~poly env' (SecInductive mind) sections)
       | _, (M _ | MT _) -> Some sections
       | _ -> assert false
