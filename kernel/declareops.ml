@@ -279,7 +279,7 @@ let inductive_polymorphic_context mib =
 let inductive_is_polymorphic mib =
   match mib.mind_universes with
   | Template _ -> false
-  | Polymorphic _ -> true
+  | Polymorphic (univs, _) -> not (UVars.AbstractContext.is_empty @@ univs)
 
 let inductive_is_template mib =
   match mib.mind_universes with
