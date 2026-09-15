@@ -532,7 +532,10 @@ let create_tab ?profiling () = {
 
 let sample_rate = ref (1,1)
 
+let config_prof = false
+
 let update_time ?(force=false) tab ctx =
+  if config_prof then
   match tab.last_time with
   | None -> ()
   | Some last_time ->
@@ -2165,23 +2168,25 @@ let record_step_in records flag ctx =
   add_step record flag
 
 let record_step tab flag ctx =
-  update_time tab ctx;
-  let () = match tab.recorded_steps, !global_steps with
-    | None, None -> ()
-    | Some records, None | None, Some records ->
-      let num,denum = !RecordedSteps.sample_rate in
-      (* sample [num / denum] of the steps *)
-      if num = denum || Random.int denum < num then
-        record_step_in records flag ctx
-    | Some records1, Some records2 ->
-      let num,denum = !RecordedSteps.sample_rate in
-      (* sample [num / denum] of the steps *)
-      if num = denum || Random.int denum < num then begin
-        record_step_in records1 flag ctx;
-        record_step_in records2 flag ctx
-      end
-  in
-  lazy_trace flag ctx
+  if config_prof then begin
+    update_time tab ctx;
+    let () = match tab.recorded_steps, !global_steps with
+      | None, None -> ()
+      | Some records, None | None, Some records ->
+        let num,denum = !RecordedSteps.sample_rate in
+        (* sample [num / denum] of the steps *)
+        if num = denum || Random.int denum < num then
+          record_step_in records flag ctx
+      | Some records1, Some records2 ->
+        let num,denum = !RecordedSteps.sample_rate in
+        (* sample [num / denum] of the steps *)
+        if num = denum || Random.int denum < num then begin
+          record_step_in records1 flag ctx;
+          record_step_in records2 flag ctx
+        end
+    in
+    lazy_trace flag ctx
+  end
 
 let cons_context fl ctx =
   let kn = let open GlobRef in
