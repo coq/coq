@@ -54,11 +54,13 @@ let compare_stack_shape stk1 stk2 =
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zproj _::s1, Zproj _::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
-    | (ZcaseT(_,_c1,_,_,_,_,_)::s1, ZcaseT(_,_c2,_,_,_,_,_)::s2) ->
+    | (ZcaseT(_c1,_,_,_,_,_)::s1, ZcaseT(_c2,_,_,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
-    | Zprimitive(_,op1,_,rargs1, _kargs1)::s1, Zprimitive(_,op2,_,rargs2, _kargs2)::s2 ->
+    | Zprimitive(op1,_,rargs1, _kargs1)::s1, Zprimitive(op2,_,rargs2, _kargs2)::s2 ->
+        let op1 = cval op1 and op2 = cval op2 in
+        (* XXX don't use poly comparison for op1/op2 *)
         bal=0 && op1=op2 && List.length rargs1=List.length rargs2 &&
         compare_rec 0 s1 s2
     | [], _ :: _
@@ -102,15 +104,15 @@ let pure_stack lfts stk =
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
             | (Zapp a, (l,pstk)) ->
                 (l,zlapp (map_lift l a) pstk)
-            | (Zproj (_,p,_), (l,pstk)) ->
-                (l, Zlproj (p,l)::pstk)
+            | (Zproj (p,_), (l,pstk)) ->
+                (l, Zlproj (cval p,l)::pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
-            | (ZcaseT(_,ci,u,pms,p,br,e),(l,pstk)) ->
-                (l,Zlcase(ci,l,u,pms,p,br,e)::pstk)
-            | (Zprimitive(_,op,c,rargs,kargs),(l,pstk)) ->
-                (l,Zlprimitive(op,c,List.map (fun t -> (l,t)) rargs,
+            | (ZcaseT(ci,u,pms,p,br,e),(l,pstk)) ->
+                (l,Zlcase(cval ci,l,u,pms,p,br,e)::pstk)
+            | (Zprimitive(op,c,rargs,kargs),(l,pstk)) ->
+                (l,Zlprimitive(cval op,c,List.map (fun t -> (l,t)) rargs,
                             List.map (fun (k,t) -> (k,(l,t))) kargs)::pstk))
   in
   snd (pure_rec lfts stk)

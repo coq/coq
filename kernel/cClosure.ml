@@ -94,6 +94,11 @@ module type FConstrT = sig
   val with_term : _ t -> 't -> 't t
   val fctx : _ t -> current_context
   val set_fctx : _ t -> current_context -> unit
+
+  type 'a withctx
+  val cval : 'a withctx -> 'a
+  val cctx : _ withctx -> current_context
+  val mkc : current_context -> 'a -> 'a withctx
 end
 
 module FConstr0 : FConstrT = struct
@@ -110,6 +115,11 @@ module FConstr0 : FConstrT = struct
   let[@inline] with_term x t = { x with term = t }
   let[@inline] fctx _ = None
   let[@inline] set_fctx _ _ = ()
+
+  type 'a withctx = 'a
+  let[@inline] cval x = x
+  let[@inline] cctx _ = None
+  let[@inline] mkc _ x = x
 end
 
 [@@@warning "-unused-module"]
@@ -128,10 +138,19 @@ module FConstrProf : FConstrT = struct
   let[@inline] with_term x t = { x with term = t }
   let[@inline] fctx x = x.ctx
   let[@inline] set_fctx x c = x.ctx <- c
+
+  type 'a withctx = current_context * 'a
+  let[@inline] cval (_,x) = x
+  let[@inline] cctx (c,_) = c
+  let[@inline] mkc c x = (c, x)
 end
 [@@@warning "unused-module"]
 
 open FConstr0
+
+type 'a withctx = 'a FConstr0.withctx
+let cctx = cctx
+let cval = cval
 
 type fconstr = fterm FConstr0.t
 
@@ -259,10 +278,10 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of current_context * case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
-  | Zproj of current_context * Projection.Repr.t * Sorts.relevance
+  | ZcaseT of case_info withctx * UVars.Instance.t * constr array * case_return * case_branch array * usubs
+  | Zproj of Projection.Repr.t withctx * Sorts.relevance
   | Zfix of fconstr * stack
-  | Zprimitive of current_context * CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
+  | Zprimitive of CPrimitives.t withctx * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
@@ -963,13 +982,13 @@ let rec zip m stk =
   match stk with
     | [] -> m
     | Zapp args :: s -> zip (mkFApp m args) s
-    | ZcaseT(ctx, ci, u, pms, p, br, e)::s ->
-        let t = FCaseT(ci, u, pms, p, m, br, e) in
+    | ZcaseT(ci, u, pms, p, br, e)::s ->
+        let t = FCaseT(cval ci, u, pms, p, m, br, e) in
         let mark = (neutr (fmark m)) in
-        zip (mkf ctx mark t) s
-    | Zproj (ctx, p,r) :: s ->
+        zip (mkf (cctx ci) mark t) s
+    | Zproj (p,r) :: s ->
         let mark = (neutr (fmark m)) in
-        zip (mkf ctx mark @@ FProj(Projection.make p true,r,m)) s
+        zip (mkf (cctx p) mark @@ FProj(Projection.make (cval p) true,r,m)) s
     | Zfix(fx,par)::s ->
         zip fx (par @ append_stack [|m|] s)
     | Zshift(n)::s ->
@@ -978,11 +997,11 @@ let rec zip m stk =
       (** The stack contains [Zupdate] marks only if in sharing mode *)
         let () = update_with rf m in
         zip rf s
-    | Zprimitive(ctx,_op,c,rargs,kargs)::s ->
+    | Zprimitive(op,c,rargs,kargs)::s ->
       let args = List.rev_append rargs (m::List.map snd kargs) in
-      let f = mkf ctx Red @@ FFlex (ConstKey c) in
+      let f = mkf (cctx op) Red @@ FFlex (ConstKey c) in
       (* don't need to mkFApp because not a constructor *)
-      zip (mkf ctx (neutr (fmark m)) @@ FApp (f, Array.of_list args)) s
+      zip (mkf (cctx op) (neutr (fmark m)) @@ FApp (f, Array.of_list args)) s
 
 let fapp_stack (m,stk) = zip m stk
 
@@ -1288,7 +1307,7 @@ let contract_fix_vect ctx fix =
 let unfold_projection info ctx p r =
   if red_projection info.i_flags p
   then
-    Some (Zproj (ctx, Projection.repr p, r))
+    Some (Zproj (mkc ctx @@ Projection.repr p, r))
   else None
 
 (************************************************************************)
@@ -1624,7 +1643,7 @@ let rec skip_irrelevant_stack info stk = match stk with
 | (Zfix _ | Zproj _) :: s ->
   (* Typing rules ensure that fix / proj over SProp is irrelevant *)
   skip_irrelevant_stack info s
-| ZcaseT (_, _, _, _, (_,r), _, e) :: s ->
+| ZcaseT (_, _, _, (_,r), _, e) :: s ->
   let r = usubst_relevance e r in
   if is_irrelevant info r then skip_irrelevant_stack info s
   else stk
@@ -1654,7 +1673,7 @@ let rec knh info tab m stk =
       if is_irrelevant info r' then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knh info tab t (ZcaseT(fctx m,ci,u,pms,p,br,e)::zupdate info m stk)
+        knh info tab t (ZcaseT(mkc (fctx m) ci,u,pms,p,br,e)::zupdate info m stk)
     | FFix (((ri, n), (lna, _, _)), e) ->
       if is_irrelevant info (usubst_relevance e (lna.(n)).binder_relevance) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
@@ -1705,7 +1724,7 @@ and knht info tab e ctx t stk =
       if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
       else
-        knht info tab e ctx t (ZcaseT(ctx, ci, u, pms, p, br, e)::stk)
+        knht info tab e ctx t (ZcaseT(mkc ctx ci, u, pms, p, br, e)::stk)
     | Case(ci,u,pms,(_,r as p),CaseInvert{indices},t,br) ->
       if is_irrelevant info (usubst_relevance e r) then
         (mk_irrelevant, skip_irrelevant_stack info stk)
@@ -1957,7 +1976,8 @@ and match_elim : 'a. ('a, 'a depth) reduction -> _ -> _ -> pat_state:'a depth ->
   | Zupdate m :: s ->
       let () = update_with m head in
       match_elim red info tab ~pat_state next depth states elims head s
-  | ZcaseT (ctx, ci, u, pms, ((pctx, p), _ as pred), brs, e) :: s ->
+  | ZcaseT (ci, u, pms, ((pctx, p), _ as pred), brs, e) :: s ->
+      let ctx = cctx ci and ci = cval ci in
       let t = FCaseT (ci, u, pms, pred, head, brs, e) in
       let mark = neutr (fmark head) in
       let head = mkf ctx mark t in
@@ -1998,7 +2018,8 @@ and match_elim : 'a. ('a, 'a depth) reduction -> _ -> _ -> pat_state:'a depth ->
       in
       let loc = LocArg { patterns = prets; depth = pdepth + depth; arg = mk_clos ctx pred_e p; next = loc } in
       match_main red info tab ~pat_state states loc
-  | Zproj (ctx,proj', r) :: s ->
+  | Zproj (proj', r) :: s ->
+      let ctx = cctx proj' and proj' = cval proj' in
       let mark = (neutr (fmark head)) in
       let head = mkf ctx mark @@ FProj(Projection.make proj' true, r, head) in
       let elims, states = extract_or_kill2 (function [@ocaml.warning "-4"]
@@ -2281,7 +2302,7 @@ let rec knr info tab ~pat_state m stk =
             let () = record_step tab Delta ctx in
             let c = match fl with ConstKey c -> c | RelKey _ | VarKey _ -> assert false in
             let rargs, a, nargs, stk = get_native_args1 op c stk in
-            kni info tab ~pat_state a (Zprimitive(ctx,op,c,rargs,nargs)::stk)
+            kni info tab ~pat_state a (Zprimitive(mkc ctx op,c,rargs,nargs)::stk)
           else
             (* Similarly to fix, partially applied primitives are not Ntrl! *)
             knr_ret info tab ~pat_state (m, stk)
@@ -2293,7 +2314,8 @@ let rec knr info tab ~pat_state m stk =
     let use_fix = red_set info.i_flags fFIX in
     begin match [@ocaml.warning "-4"] stk with
     | Zapp _ :: _ -> assert false (* knh *)
-    | ZcaseT(case_ctx, ci,_,pms,_,br,e)::s when use_match ->
+    | ZcaseT(ci,_,pms,_,br,e)::s when use_match ->
+      let case_ctx = cctx ci and ci = cval ci in
       (* instance on the case and instance on the constructor are compatible by typing *)
       record_step tab Match case_ctx;
       let (br, e) = get_branch info ci pms c args br e in
@@ -2303,7 +2325,8 @@ let rec knr info tab ~pat_state m stk =
       record_step tab Fix (fctx fx);
       let (fxe,fxbd) = contract_fix_vect (fctx fx) (fterm fx) in
       knit info tab ~pat_state fxe (fctx fx) fxbd stk'
-    | Zproj (proj_ctx,p,_)::s when use_match ->
+    | Zproj (p,_)::s when use_match ->
+      let proj_ctx = cctx p and p = cval p in
       let rargs = drop_parameters (Projection.Repr.npars p) args in
       let rarg = rargs.(Projection.Repr.arg p) in
       record_step tab Match proj_ctx;
@@ -2331,7 +2354,8 @@ let rec knr info tab ~pat_state m stk =
       knit info tab ~pat_state (usubs_cons v e) (fctx m) bd stk
   | FInt _ | FFloat _ | FString _ | FArray _ ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-     | (_, _, _, Zprimitive(ctx,op,(_,u as c),rargs,nargs)::s) ->
+     | (_, _, _, Zprimitive(ctxop,(_,u as c),rargs,nargs)::s) ->
+       let ctx = cctx ctxop and op = cval ctxop in
        let (rargs, nargs) = skip_native_args (m::rargs) nargs in
        begin match nargs with
        | [] ->
@@ -2350,7 +2374,7 @@ let rec knr info tab ~pat_state m stk =
            end
          | (kd,a)::nargs ->
            assert (kd = CPrimitives.Kwhnf);
-           kni info tab ~pat_state a (Zprimitive(ctx,op,c,rargs,nargs)::s)
+           kni info tab ~pat_state a (Zprimitive(ctxop,c,rargs,nargs)::s)
              end
      | (depth, _, _, stk) -> knr_ret info tab ~pat_state (m,zshift depth stk))
   | FCaseInvert (ci, u, pms, ((_pnas, p), _r), iv, _c, v, env) when red_set info.i_flags fMATCH ->
@@ -2561,7 +2585,8 @@ and zip_term info tab m stk = match stk with
 | [] -> m
 | Zapp args :: s ->
     zip_term info tab (mkApp(m, Array.map (kl info tab) args)) s
-| ZcaseT(ctx, ci, u, pms, (p,r), br, e) :: s ->
+| ZcaseT(ci, u, pms, (p,r), br, e) :: s ->
+  let ctx = cctx ci and ci = cval ci in
   let zip_ctx (nas, c) =
       let nas = Array.map (usubst_binder e) nas in
       let e = usubs_liftn (Array.length nas) e in
@@ -2572,7 +2597,8 @@ and zip_term info tab m stk = match stk with
     let t = mkCase(ci, u, Array.map (fun c -> klt info tab e ctx c) pms, (zip_ctx p, r),
       NoInvert, m, Array.map zip_ctx br) in
     zip_term info tab t s
-| Zproj (_ctx,p,r)::s ->
+| Zproj (p,r)::s ->
+    let p = cval p in
     let t = mkProj (Projection.make p true, r, m) in
     zip_term info tab t s
 | Zfix(fx,par)::s ->
@@ -2582,7 +2608,7 @@ and zip_term info tab m stk = match stk with
     zip_term info tab (lift n m) s
 | Zupdate(_rf)::s ->
     zip_term info tab m s
-| Zprimitive(_,_,c,rargs, kargs)::s ->
+| Zprimitive(_,c,rargs, kargs)::s ->
     let kargs = List.map (fun (_,a) -> kl info tab a) kargs in
     let args =
       List.fold_left (fun args a -> kl info tab a ::args) (m::kargs) rargs in
@@ -2640,7 +2666,7 @@ let unfold_ref_with_args infos tab m v =
   | Primitive op when check_native_args op v ->
     let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
     let rargs, a, nargs, v = get_native_args1 op c v in
-    Some (a, (Zupdate a::(Zprimitive(cons_context fl (fctx m),op,c,rargs,nargs)::v)))
+    Some (a, (Zupdate a::(Zprimitive(mkc (cons_context fl (fctx m)) op,c,rargs,nargs)::v)))
   | Symbol (u, b, r) ->
     RedPattern.match_symbol knred (infos_with_reds infos all) tab ~pat_state:(RedPattern.Nil Yes) fl (u, b, r) v
   | Undef _ | OpaqueDef _ | Primitive _ -> None

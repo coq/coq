@@ -285,7 +285,8 @@ and infer_stack infos variances (stk:CClosure.stack) =
       | Zfix (fx,a) ->
         let variances = infer_fterm CONV infos variances fx [] in
         infer_stack infos variances a
-      | ZcaseT (ctx,ci,u,pms,p,br,e) ->
+      | ZcaseT (ci,u,pms,p,br,e) ->
+        let ctx = cctx ci and ci = cval ci in
         let dummy = mkProp in
         let case = (ci, u, pms, p, NoInvert, dummy, br) in
         let (_, (p, _), _, _, br) = Inductive.expand_case (info_env (fst infos)) case in
@@ -293,7 +294,7 @@ and infer_stack infos variances (stk:CClosure.stack) =
         infer_vect infos variances (Array.map (mk_clos ctx e) br)
       | Zshift _ -> variances
       | Zupdate _ -> variances
-      | Zprimitive (_,_,_,rargs,kargs) ->
+      | Zprimitive (_,_,rargs,kargs) ->
         let variances = List.fold_left (fun variances c -> infer_fterm CONV infos variances c []) variances rargs in
         let variances = List.fold_left (fun variances (_,c) -> infer_fterm CONV infos variances c []) variances kargs in
         variances

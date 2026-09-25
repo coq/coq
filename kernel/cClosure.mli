@@ -65,12 +65,17 @@ type fterm =
    [append_stack] one array at a time *)
 type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
+type 'a withctx
+
+val cctx : 'a withctx -> current_context
+val cval : 'a withctx -> 'a
+
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of current_context * case_info * UVars.Instance.t * constr array * case_return * case_branch array * usubs
-  | Zproj of current_context * Projection.Repr.t * Sorts.relevance
+  | ZcaseT of case_info withctx * UVars.Instance.t * constr array * case_return * case_branch array * usubs
+  | Zproj of Projection.Repr.t withctx * Sorts.relevance
   | Zfix of fconstr * stack
-  | Zprimitive of current_context * CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
+  | Zprimitive of CPrimitives.t withctx * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
