@@ -174,6 +174,10 @@ let init_warnings opts =
     (List.rev opts.pre.injections)
 
 let init_profile_lazy () =
+  let () =
+    if not Coq_config.lazy_profile then
+      CErrors.user_err Pp.(str "Lazy profiler was disabled when Rocq was compiled (configure time).")
+  in
   CClosure.RecordedSteps.globally_record_steps ();
   at_exit (fun () ->
       let steps = CClosure.RecordedSteps.get_global_steps () in

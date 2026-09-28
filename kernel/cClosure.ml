@@ -101,7 +101,7 @@ module type FConstrT = sig
   val mkc : current_context -> 'a -> 'a withctx
 end
 
-module FConstr0 : FConstrT = struct
+module FConstrNoProf : FConstrT = struct
   type 't t = {
     mutable mark : red_state;
     mutable term: 't;
@@ -122,7 +122,6 @@ module FConstr0 : FConstrT = struct
   let[@inline] mkc _ x = x
 end
 
-[@@@warning "-unused-module"]
 module FConstrProf : FConstrT = struct
   type 't t = {
     mutable mark : red_state;
@@ -144,7 +143,11 @@ module FConstrProf : FConstrT = struct
   let[@inline] cctx (c,_) = c
   let[@inline] mkc c x = (c, x)
 end
-[@@@warning "unused-module"]
+
+module FConstr0 =
+  (val if Coq_config.lazy_profile then
+      (module FConstrProf : FConstrT)
+    else (module FConstrNoProf : FConstrT))
 
 open FConstr0
 
@@ -599,10 +602,8 @@ let create_tab ?profiling () = {
 
 let sample_rate = ref (1,1)
 
-let config_prof = false
-
 let update_time ?(force=false) tab ctx =
-  if config_prof then
+  if Coq_config.lazy_profile then
   match tab.last_time with
   | None -> ()
   | Some last_time ->
@@ -2228,7 +2229,7 @@ let record_step_in records flag ctx =
   add_step record flag
 
 let record_step tab flag ctx =
-  if config_prof then begin
+  if Coq_config.lazy_profile then begin
     update_time tab ctx;
     let () = match tab.recorded_steps, !global_steps with
       | None, None -> ()

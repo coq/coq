@@ -470,6 +470,7 @@ let write_coq_config_ml install_prefix camlenv coqenv caml_flags caml_version_nu
     (match prefs.nativecompiler with
      | NativeYes -> "NativeOn {ondemand=false}" | NativeNo -> "NativeOff"
      | NativeOndemand -> "NativeOn {ondemand=true}");
+  pr_b "lazy_profile" prefs.lazyprof;
 
   let core_src_dirs = [ "boot"; "config"; "lib"; "clib"; "kernel"; "library";
                         "engine"; "pretyping"; "interp"; "gramlib"; "parsing"; "proofs";

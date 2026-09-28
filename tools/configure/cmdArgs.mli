@@ -40,6 +40,8 @@ type t =
   (** Enable/disable Rocq's VM *)
   ; nativecompiler : nativecompiler
   (** Enable/disable Rocq's native compiler *)
+  ; lazyprof : bool
+  (** Enable/disable lazy profiler *)
   ; coqwebsite : string
   (** Override Rocq's website, used by distributions  *)
   ; debug : bool

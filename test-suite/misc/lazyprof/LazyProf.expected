@@ -37,140 +37,140 @@
 └──────────────────────────────────────────────────────────────────────┘
      = (987, 21)
      : nat * nat
-Debug: [lazy-trace] delta in DebugLazy.SimpleFib.main
-Debug: [lazy-trace] beta  in DebugLazy.SimpleFib.main
-Debug: [lazy-trace] delta in DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
-Debug: [lazy-trace] beta  in DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+Debug: [lazy-trace] delta in LazyProf.SimpleFib.main
+Debug: [lazy-trace] beta  in LazyProf.SimpleFib.main
+Debug: [lazy-trace] delta in LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
+Debug: [lazy-trace] beta  in LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  delta in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  delta in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  fix   in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  fix   in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  beta  in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  beta  in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  delta in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
-    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+  delta in Corelib.Init.Nat.add, LazyProf.SimpleFib.fib,
+    LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  fix   in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  fix   in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  beta  in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  beta  in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  fix   in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
-    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+  fix   in Corelib.Init.Nat.add, LazyProf.SimpleFib.fib,
+    LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  beta  in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
-    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+  beta  in Corelib.Init.Nat.add, LazyProf.SimpleFib.fib,
+    LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
-    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+  match in Corelib.Init.Nat.add, LazyProf.SimpleFib.fib,
+    LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  fix   in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
-    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+  fix   in Corelib.Init.Nat.add, LazyProf.SimpleFib.fib,
+    LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  beta  in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
-    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+  beta  in Corelib.Init.Nat.add, LazyProf.SimpleFib.fib,
+    LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in Corelib.Init.Nat.add, DebugLazy.SimpleFib.fib,
-    DebugLazy.SimpleFib.f, DebugLazy.SimpleFib.main
+  match in Corelib.Init.Nat.add, LazyProf.SimpleFib.fib,
+    LazyProf.SimpleFib.f, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  fix   in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  fix   in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  beta  in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
+  beta  in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.f,
-    DebugLazy.SimpleFib.main
-Debug: [lazy-trace] delta in DebugLazy.SimpleFib.g, DebugLazy.SimpleFib.main
-Debug: [lazy-trace] beta  in DebugLazy.SimpleFib.g, DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.f,
+    LazyProf.SimpleFib.main
+Debug: [lazy-trace] delta in LazyProf.SimpleFib.g, LazyProf.SimpleFib.main
+Debug: [lazy-trace] beta  in LazyProf.SimpleFib.g, LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  delta in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  delta in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  delta in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  delta in LazyProf.SimpleFib.div2, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  fix   in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  fix   in LazyProf.SimpleFib.div2, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  beta  in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  beta  in LazyProf.SimpleFib.div2, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.div2, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.div2, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  fix   in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  fix   in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  beta  in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  beta  in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  fix   in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  fix   in LazyProf.SimpleFib.div2, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  beta  in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  beta  in LazyProf.SimpleFib.div2, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.div2, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.div2, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 Debug:
 [lazy-trace]
-  match in DebugLazy.SimpleFib.fib, DebugLazy.SimpleFib.g,
-    DebugLazy.SimpleFib.main
+  match in LazyProf.SimpleFib.fib, LazyProf.SimpleFib.g,
+    LazyProf.SimpleFib.main
 [lazy]
   
 ┌───────────────────────────────────────────────────────┐

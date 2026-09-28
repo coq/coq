@@ -74,3 +74,5 @@ val wwwbugtracker : string
 val bytecode_compiler : bool
 type native_compiler = NativeOff | NativeOn of { ondemand : bool }
 val native_compiler : native_compiler
+
+val lazy_profile : bool

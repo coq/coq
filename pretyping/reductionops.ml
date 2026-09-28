@@ -1199,8 +1199,20 @@ let () =
     optwrite;
   }
 
-let { Goptions.get = lazy_profiling } =
-  Goptions.declare_bool_option_and_ref ~key:["Lazy";"Profiling"] ~value:false ()
+let lazy_profiling = Summary.ref ~name:"LazyProfiling" false
+
+let check_lazy_config b =
+  if b && not Coq_config.lazy_profile then
+    CErrors.user_err Pp.(str "Lazy profiler was disabled when Rocq was compiled (configure time).")
+
+let () =
+  Goptions.declare_option ~kind:BoolKind {
+    optstage = Interp;
+    optdepr = None;
+    optkey = ["Lazy";"Profiling"];
+    optread = (fun () -> Summary.Ref.get lazy_profiling);
+    optwrite = (fun b -> check_lazy_config b; Summary.Ref.set lazy_profiling b);
+  }
 
 let { Goptions.get = lazy_time_profiling } =
   Goptions.declare_bool_option_and_ref ~key:["Lazy";"Time";"Profiling"] ~value:true ()
@@ -1210,11 +1222,11 @@ let () = Goptions.declare_bool_option {
     optstage = Interp;
     optdepr = None;
     optread = (fun () -> !Conversion.ccnv_profiling);
-    optwrite = (fun b -> Conversion.ccnv_profiling := b);
+    optwrite = (fun b -> check_lazy_config b; Conversion.ccnv_profiling := b);
   }
 
 let get_lazy_profiling () =
-  match lazy_profiling(), lazy_time_profiling() with
+  match Summary.Ref.get lazy_profiling, lazy_time_profiling() with
   | false, _ -> None
   | true, false -> Some CClosure.StepsOnly
   | true, true -> Some CClosure.StepsAndTime
