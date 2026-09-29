@@ -838,7 +838,12 @@ let extern_instance uvars = function
   | Some (ql,ul) ->
     let ql = List.map (extern_glob_quality uvars) ql in
     let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) ul in
-    Some { qualities = ql; levels = ul }
+    Some  {
+            univannot_qualities = ql;
+            univannot_extensible_qualities = false;
+            univannot_levels = ul;
+            univannot_extensible_levels = false
+          }
   | None -> None
 
 let extern_ref {vars; uvars} ref us =

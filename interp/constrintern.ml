@@ -1192,9 +1192,9 @@ let intern_sort ~local_univs (q,l) =
 
 let intern_instance ~local_univs = function
   | None -> None
-  | Some { qualities = qs; levels = us } ->
-    let qs = List.map (intern_quality ~local_univs) qs in
-    let us = List.map (map_glob_sort_gen (intern_sort_name ~local_univs)) us in
+  | Some i ->
+    let qs = List.map (intern_quality ~local_univs) i.univannot_qualities in
+    let us = List.map (map_glob_sort_gen (intern_sort_name ~local_univs)) i.univannot_levels in
     Some (qs, us)
 
 let intern_name_alias = function
