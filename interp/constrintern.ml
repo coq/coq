@@ -1897,7 +1897,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       in_not test_kind loc scopes subst extrargs c
     | CPatDelimiters (depth, key, e) ->
       let sc = find_delimiters_scope ?loc key in
-      let scopes = (depth, sc) :: subscopes_unbounded scopes in
+      let scopes = (depth, sc) :: scopes in
       in_pat test_kind scopes e
     | CPatPrim p ->
       let pat = Notation.interp_prim_token_cases_pattern_expr ?loc
@@ -2841,7 +2841,7 @@ let prim self genv env lvar ?loc p =
 let delimiters self genv env lvar ?loc (depth, key, e) =
   let intern env = intern self genv env lvar in
   let sc = find_delimiters_scope ?loc key in
-  let env = set_env_scopes (reset_tmp_scope env) [depth, sc] in
+  let env = set_env_scopes env [depth, sc] in
   intern env e
 
 let array self genv env lvar ?loc (u,t,def,ty) =
