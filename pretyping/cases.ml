@@ -484,7 +484,15 @@ let map_tomatch_type f = function
   | IsInd (t,ind,names) -> IsInd (f t,map_inductive_type f ind,names)
   | NotInd (c,t) -> NotInd (Option.map f c, f t)
 
-let liftn_tomatch_type n depth = map_tomatch_type (Vars.liftn n depth)
+(* there are a couple calls with negative argument in
+   postprocess_dependencies (maybe could be refactored to use "map"
+   functions with pop instead of replacing liftn deeply in
+   combinators). *)
+let liftn_gen n depth c =
+  if n < 0 then strengthen_between depth (-n) c
+  else Vars.liftn n depth c
+
+let liftn_tomatch_type n depth = map_tomatch_type (liftn_gen n depth)
 let lift_tomatch_type n = liftn_tomatch_type n 1
 
 (**********************************************************************)
@@ -763,18 +771,18 @@ let replace_tomatch sigma n c =
 let rec liftn_tomatch_stack n depth = function
   | [] -> []
   | Pushed (initial,((c,tm),l,na))::rest ->
-      let c = liftn n depth c in
+      let c = liftn_gen n depth c in
       let tm = liftn_tomatch_type n depth tm in
       let l = List.map (fun i -> if i<depth then i else i+n) l in
       Pushed (initial,((c,tm),l,na))::(liftn_tomatch_stack n depth rest)
   | Alias (initial,(na,c,d))::rest ->
-      Alias (initial,(na,liftn n depth c,map_pair (liftn n depth) d))
+      Alias (initial,(na,liftn_gen n depth c,map_pair (liftn_gen n depth) d))
       ::(liftn_tomatch_stack n depth rest)
   | NonDepAlias  :: rest ->
       NonDepAlias :: liftn_tomatch_stack n depth rest
   | Abstract (i,d)::rest ->
       let i = if i<depth then i else i+n in
-      Abstract (i, RelDecl.map_constr (liftn n depth) d)
+      Abstract (i, RelDecl.map_constr (liftn_gen n depth) d)
       ::(liftn_tomatch_stack n (depth+1) rest)
 
 let lift_tomatch_stack n = liftn_tomatch_stack n 1
@@ -944,7 +952,7 @@ let rec map_predicate f k ccl = function
 
 let noccur_predicate_between sigma n = map_predicate (noccur_between sigma n)
 
-let liftn_predicate n = map_predicate (liftn n)
+let liftn_predicate n = map_predicate (liftn_gen n)
 
 let lift_predicate n = liftn_predicate n 1
 
@@ -2241,7 +2249,7 @@ let constr_of_pat env sigma arsign pat avoid =
     | PatCstr (((_, i) as cstr),patargs,alias) ->
         let cind = inductive_of_constructor cstr in
         let IndType (indf, _) =
-          try find_rectype env sigma (lift (-(List.length realdecls)) ty)
+          try find_rectype env sigma (popn (List.length realdecls) ty)
           with Not_found -> error_case_not_inductive env sigma
             {uj_val = ty; uj_type = Retyping.get_type_of env sigma ty}
         in

@@ -737,8 +737,8 @@ let fix_r2l_forward_rew_scheme env (c, ctx') =
   | hp :: p :: ind :: indargs ->
      let c' =
       my_it_mkLambda_or_LetIn indargs
-        (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 1) p)
-          (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 2) hp)
+        (mkLambda_or_LetIn (RelDecl.map_constr (strengthen_betweenC 1 1) p)
+          (mkLambda_or_LetIn (RelDecl.map_constr (strengthen_betweenC 2 1) hp)
             (mkLambda_or_LetIn (RelDecl.map_constr (lift 2) ind)
               (EConstr.Unsafe.to_constr (Reductionops.whd_beta env sigma
                 (EConstr.of_constr (applist (c,

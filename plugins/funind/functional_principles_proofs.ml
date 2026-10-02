@@ -33,8 +33,6 @@ open UnsafeMonomorphic
 let list_chop ?(msg = "") n l =
   try List.chop n l with Failure msg' -> failwith (msg ^ msg')
 
-let pop t = Vars.lift (-1) t
-
 let make_refl_eq constructor type_of_t t =
   (*   let refl_equal_term = refl_equal() in *)
   mkApp (constructor, [|type_of_t; t|])

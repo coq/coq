@@ -870,7 +870,7 @@ let liftn n k c =
     | ELID -> c
     | el -> exliftn el c
 
-let lift n = liftn n 1
+let lift n c = liftn n 1 c
 
 type 'univs instance_compare_fn = (GlobRef.t * int) option ->
   'univs -> 'univs -> bool

@@ -581,12 +581,12 @@ let abs_cterm env sigma n c0 =
   let rec strip_ndeps j i c = match EConstr.kind sigma c with
   | Prod (x, t, c1) when i < j ->
     let dl, c2 = strip_ndeps j (i + 1) c1 in
-    if Vars.noccurn sigma 1 c2 then dl, Vars.lift (-1) c2 else
+    if Vars.noccurn sigma 1 c2 then dl, pop c2 else
     i :: dl, mkProd (x, strip i t, c2)
   | LetIn (x, b, t, c1) when i < j ->
     let _, _, c1' = destProd sigma c1 in
     let dl, c2 = strip_ndeps j (i + 1) c1' in
-    if Vars.noccurn sigma 1 c2 then dl, Vars.lift (-1) c2 else
+    if Vars.noccurn sigma 1 c2 then dl, pop c2 else
     i :: dl, mkLetIn (x, strip i b, strip i t, c2)
   | _ -> [], strip i c in
   let rec strip_evars i c = match EConstr.kind sigma c with
@@ -598,7 +598,7 @@ let abs_cterm env sigma n c0 =
       let x' =
         if na' = 0 then Name (type_id env sigma t2) else mk_evar_name na' in
       mkLambda ({x with binder_name=x'}, t2, strip_evars (i + 1) c1)
-(*      if noccurn 1 c2 then lift (-1) c2 else
+(*      if noccurn 1 c2 then pop c2 else
       mkLambda (Name (pf_type_id gl t2), t2, c2) *)
     | _ -> strip i c in
   strip_evars 0 c0

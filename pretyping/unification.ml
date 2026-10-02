@@ -511,7 +511,7 @@ let solve_pattern_eqn_array (env,nb) f l c (subst : subst0) =
         let c = solve_pattern_eqn env sigma l c in
         let pb = (Conv,TypeNotProcessed) in
           if noccur_between sigma 1 nb c then
-            let subst = push_metas sigma  (k, lift (-nb) c, pb) subst in
+            let subst = push_metas sigma  (k, popn nb c, pb) subst in
             { subst with subst_metam = metas }
           else
             let l = List.map of_alias l in
@@ -1150,7 +1150,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env pb flags m n
               push_metas sigma (k, cN, snd (extract_instance_status pb)) substn
             else if noccur_between sigma 1 nb cN then
               push_metas sigma
-                (k, lift (-nb) cN, snd (extract_instance_status pb)) substn
+                (k, popn nb cN, snd (extract_instance_status pb)) substn
             else error_cannot_unify_local curenv sigma (m,n,cN)
         | _, Meta k
             when not (occur_metavariable sigma k cM) (* helps early trying alternatives *) ->
@@ -1169,7 +1169,7 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env pb flags m n
               push_metas sigma (k, cM, fst (extract_instance_status pb)) substn
             else if noccur_between sigma 1 nb cM
             then
-              push_metas sigma (k, lift (-nb) cM, fst (extract_instance_status pb)) substn
+              push_metas sigma (k, popn nb cM, fst (extract_instance_status pb)) substn
             else error_cannot_unify_local curenv sigma (m,n,cM)
         | Evar (evk,_ as ev), Evar (evk',_)
             when is_evar_allowed sigma flags evk

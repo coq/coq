@@ -405,7 +405,7 @@ Register eq_ind as core.eq.ind.
 Register eq_sind as core.eq.sind.
 Register eq_rect as core.eq.rect.
 Register eq_rec as core.eq.rec.
-
+Set Debug "backtrace".
 Scheme Rewriting for eq.
 
 Register eq_rew_dep as core.eq.rect_dep.

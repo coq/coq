@@ -131,8 +131,6 @@ type kind_of_formula=
   | Forall of constr*constr
   | Atom of EConstr.t
 
-let pop t = Vars.lift (-1) t
-
 let fresh_atom ~flags state env sigma metas atm =
   let vars, atm =
     if List.is_empty metas then Int.Set.empty, atm
@@ -160,7 +158,7 @@ let fresh_atom ~flags state env sigma metas atm =
 let kind_of_formula ~flags env sigma term =
   let cciterm = special_whd ~flags env sigma term in
     match match_with_imp_term env sigma cciterm with
-        Some (a,b)-> Arrow (a, pop b)
+        Some (a,b)-> Arrow (a, Termops.pop b)
       |_->
          match match_with_forall_term env sigma cciterm with
              Some (_,a,b)-> Forall (a, b)
@@ -222,7 +220,7 @@ let build_atoms (type a) ~flags state env sigma metagen (side : a side) cciterm 
             end;
           let v = ind_hyps env sigma 0 i l in
           let g i _ decl =
-            build_rec subst polarity (lift i (RelDecl.get_type decl)) in
+            build_rec subst polarity (Termops.popn (-i) (RelDecl.get_type decl)) in
           let f l =
             List.fold_left_i g (1-(List.length l)) () l in
             if polarity && (* we have a constant constructor *)

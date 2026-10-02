@@ -922,7 +922,7 @@ let check_evar_instance unify flags env evd evk body =
 let find_projectable_constructor env evd cstr k args cstr_subst =
   try
     let l = Constrmap.find cstr cstr_subst in
-    let args = Array.map (lift (-k)) args in
+    let args = Array.map (popn k) args in
     let l =
       List.filter (fun (args',id) ->
         (* is_conv is maybe too strong (and source of useless computation) *)

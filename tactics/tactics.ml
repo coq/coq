@@ -1565,7 +1565,7 @@ let make_projection env sigma params cstr sign elim i n c (ind, u) =
         && (not (isRel sigma t))
       then
         let (_, mip) as specif = Inductive.lookup_mind_specif env ind in
-        let t = lift (i + 1 - n) t in
+        let t = popn (n - (i + 1)) t in
         let ksort = Retyping.get_sort_quality_or_set_of (push_rel_context sign env) sigma t in
         if UnivGen.QualityOrSet.eliminates_to (Inductiveops.elim_sort specif) ksort then
           let arity = List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt in

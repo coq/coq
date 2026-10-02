@@ -132,7 +132,7 @@ let rec build_lambda sigma vars ctx m = match vars with
   let map i (na, id, c) =
     let i = succ i in
     let subst = List.skipn i subst in
-    let subst = List.map (fun c -> Vars.lift (- i) c) subst in
+    let subst = List.map (fun c -> popn i c) subst in
     (na, id, substl subst c)
   in
   let pre = List.mapi map pre in
@@ -232,7 +232,7 @@ let merge_binding sigma allow_bound_rels ctx n cT subst =
       let depth = List.length ctx in
       let min_elt = try Int.Set.min_elt frels with Not_found -> succ depth in
       if depth < min_elt then
-        ([], Vars.lift (- depth) cT)
+        ([], popn depth cT)
       else raise PatternMatchingFailure
   in
   constrain sigma n c subst

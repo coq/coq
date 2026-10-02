@@ -96,8 +96,34 @@ val isMetaOf : Evd.evar_map -> metavariable -> constr -> bool
 (** Type assignment for metavariables *)
 type meta_type_map = (metavariable * Constr.types) list
 
-(** [pop c] lifts by -1 the positive indexes in [c] *)
+(** [strengthen_between n m c] adds [-m] to rels above [n+m]
+    and leaves rels strictly below [n] unchanged.
+
+    Assuming [c] is well formed in [Γ, Δ, Ξ] with [|Δ| = m] and [|Ξ| = n-1]
+    and [c] and [Ξ] do not refer to [Δ],
+    [strengthen_between n m c] is well formed in [Γ, Ξ].
+
+    Unbound rels between [n] and [n+m]) become some other unbound rel in an unspecified manner.
+
+    (NB: when [noccurn sigma n c], rels below [n] may still be present in the non evar normalized [c]
+    and since this function doesn't take an evar map it cannot do a meaningful check)
+*)
+val strengthen_between : int -> int -> constr -> constr
+
+(** Constr version of strengthen_between *)
+val strengthen_betweenC : int -> int -> Constr.constr -> Constr.constr
+
+(** [popn n c = strengthen_between 1 n c] *)
+val popn : int -> constr -> constr
+
+(** Constr version of popn *)
+val popnC : int -> Constr.constr -> Constr.constr
+
+(** [pop c = popn 1 c] *)
 val pop : constr -> constr
+
+(** Constr version of pop *)
+val popC : Constr.constr -> Constr.constr
 
 (** {6 ... } *)
 (** Substitution of an arbitrary large term. Uses equality modulo

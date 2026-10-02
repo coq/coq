@@ -1355,7 +1355,7 @@ let clear_goals sigma =
     match EConstr.kind sigma t with
     | Prod (({binder_name = Name id} as na), t', b) ->
       let b' = clear_goal b in
-      if noccurn sigma 1 b' && is_rec_res id then Vars.lift (-1) b'
+      if noccurn sigma 1 b' && is_rec_res id then pop b'
       else if b' == b then t
       else mkProd (na, t', b')
     | _ -> EConstr.map sigma clear_goal t
