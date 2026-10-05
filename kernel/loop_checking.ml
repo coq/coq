@@ -620,7 +620,7 @@ module ClausesOf = struct
       | x -> x
 
     (** [subsumes cl cl'] is true if [cl] subsumes [cl'], i.e. [cl'] is implied by [cl] *)
-    let subsumes (i, local, prems) (i', local', prems') =
+    let _subsumes (i, local, prems) (i', local', prems') =
       if Int.equal i i' && subsumes_locality local local' then
         let find (l, k) =
            match NeList._assq l prems' with
@@ -646,8 +646,9 @@ module ClausesOf = struct
   let shift n cls = if Int.equal n 0 then cls else map (fun (k, local, prems) -> (k + n, local, prems)) cls
 
   let add cl cls =
-    if exists (fun cl' -> ClauseInfo.subsumes cl' cl) cls then cls
-    else SWC.add cl cls
+    (* if exists (fun cl' -> ClauseInfo.subsumes cl' cl) cls then cls *)
+    (* else  *)
+      SWC.add cl cls
 
   let choose cls = SWC.choose cls
 
