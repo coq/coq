@@ -580,84 +580,90 @@ let pr_local local = let open Pp in
   | Local -> spc () ++ str"(local)"
   | Global -> spc () ++ str"(global)"
 
-let compare_locality local local' =
-  match local, local' with
-  | Local, Local -> 0
-  | Local, Global -> -1
-  | Global, Local -> 1
-  | Global, Global -> 0
-
-let subsumes_locality local local' =
-  match local, local' with
-  | Local, Local -> true
-  | Local, Global -> false (* A local constraint cannot replace a global one *)
-  | Global, Local -> true (* A global constraint is a fortiori valid locally *)
-  | Global, Global -> true
-
 type clause = Premises.t * (Index.t * int)
 
 module ClausesOf = struct
   module ClauseInfo = struct
-    type t = int * locality * Premises.t
+    type t = int * Premises.t
 
     let _equal x y : bool =
-      let (k, local, prems) = x in
-      let (k', local', prems') = y in
+      let (k, prems) = x in
+      let (k', prems') = y in
       if Int.equal k k' then
-        if local == local' then
-          Premises.equal prems prems'
-        else false
+        Premises.equal prems prems'
       else false
 
     let compare x y : int =
-      let (k, local, prems) = x in
-      let (k', local', prems') = y in
+      let (k, prems) = x in
+      let (k', prems') = y in
       match Int.compare k k' with
-      | 0 ->
-        (match compare_locality local local' with
-        | 0 -> Premises.compare prems prems'
-        | x -> x)
+      | 0 -> Premises.compare prems prems'
       | x -> x
 
-    (** [subsumes cl cl'] is true if [cl] subsumes [cl'], i.e. [cl'] is implied by [cl] *)
-    let _subsumes (i, local, prems) (i', local', prems') =
-      if Int.equal i i' && subsumes_locality local local' then
-        let find (l, k) =
-           match NeList._assq l prems' with
-           | exception Not_found -> false
-           | k' -> k <= k'
-        in
-        NeList.for_all find prems
-      else false
-
-    let pr pr_index_point concl (k, local, prem) =
+    let pr pr_index_point local concl (k, prem) =
       let open Pp in
       hov 0 (Premises.pr pr_index_point prem ++ str " → " ++ pr_index_point (concl, k) ++ pr_local local)
   end
 
   module ClauseSet = Set.Make(ClauseInfo)
   module SWC = SetWithCardinal(ClauseInfo)(ClauseSet)
-  include SWC
+
+  type t = { local : SWC.t; global : SWC.t }
+  
+  let empty = { local = SWC.empty; global = SWC.empty }
+  let is_empty cls = SWC.is_empty cls.local && SWC.is_empty cls.global
+
+  let add local cl cls =
+    match local with
+    | Local -> 
+      (* If the clause is already in the global set, don't add it to the local set *)
+      if SWC.mem cl cls.global then cls
+      else
+        let local' = SWC.add cl cls.local in
+        if local' == cls.local then cls
+        else { cls with local = local' }
+    | Global -> let global' = SWC.add cl cls.global in
+      if global' == cls.global then cls
+      else { cls with global = global' }
+
+  let pr pr_index_point local concl cls =
+    let open Pp in
+    v 0 (prlist_with_sep spc (ClauseInfo.pr pr_index_point local concl) (SWC.elements cls))
 
   let pr pr_index_point concl cls =
     let open Pp in
-    v 0 (prlist_with_sep spc (ClauseInfo.pr pr_index_point concl) (elements cls))
+    pr pr_index_point Global concl cls.local ++ pr pr_index_point Local concl cls.global
 
-  let shift n cls = if Int.equal n 0 then cls else map (fun (k, local, prems) -> (k + n, local, prems)) cls
+  let shift n cls = if Int.equal n 0 then cls else SWC.map (fun (k, prems) -> (k + n, prems)) cls
 
-  let add cl cls =
-    (* if exists (fun cl' -> ClauseInfo.subsumes cl' cl) cls then cls *)
-    (* else  *)
-      SWC.add cl cls
+  let shift n cls = { local = shift n cls.local; global = shift n cls.global }
 
-  let choose cls = SWC.choose cls
+  let iter f cls = SWC.iter f cls.local; SWC.iter f cls.global
 
-  let to_clauses concl cls : (locality * clause) list =
-    let to_clauses (conclk, local, prems) cls =
+  let map f cls = { local = SWC.map (f Local) cls.local; global = SWC.map (f Global) cls.global }
+
+  let fold f cls acc = SWC.fold (f Local) cls.local (SWC.fold (f Global) cls.global acc)
+
+  let filter f cls = { local = SWC.filter f cls.local; global = SWC.filter f cls.global }
+
+  let union cls cls' = 
+    { local = SWC.union cls.local cls'.local; global = SWC.union cls.global cls'.global }
+
+  let choose cls =
+    if SWC.is_empty cls.global then SWC.choose cls.local 
+    else SWC.choose cls.global
+
+  let cardinal cls = SWC.cardinal cls.local + SWC.cardinal cls.global
+
+  let to_clauses local concl cls : (locality * clause) list =
+    let to_clauses (conclk, prems) cls =
       let to_clauses (concl, k) cls = (local, (prems, (concl, conclk + k))) :: cls in
       NeList.fold to_clauses concl cls
     in
-    fold to_clauses cls []
+    SWC.fold to_clauses cls []
+
+  let to_clauses concls cls =
+    to_clauses Global concls cls.global @ to_clauses Local concls cls.local
 
 end
 
@@ -997,7 +1003,7 @@ let check_invariants ~(required_canonical:Level.t -> bool) model =
     (* assert (PMap.mem idx model.values); *)
     let cls = can.clauses_bwd in
     ClausesOf.iter
-      (fun (k, _local, prems) ->
+      (fun (k, prems) ->
         (* prems -> can + k *)
         if not (k >= 0) then CErrors.user_err Pp.(str "A conclusion has negative weight") else ();
         let check_prem (l, lk) =
@@ -1434,10 +1440,10 @@ let remove_premise idx prems =
 
 let add_can_clause_model m ((prems, (canl, conclk)) : can_clause) : (can_clause * model) option =
   let canprems = NeList.map (fun (can, k) -> (can.canon, k)) prems in
-  let clof = (conclk, m.locality, canprems) in
+  let clof = (conclk, canprems) in
   (* Add clause to the backwards clauses of l *)
   let canl' =
-    let bwd = ClausesOf.add clof canl.clauses_bwd in
+    let bwd = ClausesOf.add m.locality clof canl.clauses_bwd in
     if bwd == canl.clauses_bwd then canl
     else { canl with clauses_bwd = bwd }
   in
@@ -1500,9 +1506,9 @@ let subst_fwd_clauses idx (idx', k' as u) fwd =
   @param bwd A set of backward clauses of shape [prems -> _ + k]
   @return A set of backward clauses of shape [prems[idx/u] -> _ + k] *)
 let subst_bwd_clauses idx u bwd  =
-  ClausesOf.map (fun (kconcl, local, prems as cli) ->
+  ClausesOf.map (fun _local (kconcl, prems as cli) ->
     let prems' = subst_prems idx u prems in
-    if prems' == prems then cli else (kconcl, local, prems')) bwd
+    if prems' == prems then cli else (kconcl, prems')) bwd
 
 (** [subst_fwd_of_prem idx u prem model] For a given premise [prem] substitute [idx] by [u]
   in the forward clauses of its canonical representative.
@@ -1517,7 +1523,7 @@ let subst_fwd_of_prem idx u prem model =
   [idx] by [u] in the forward clauses of [prems].
   @return An updated model. *)
 let subst_fwd_of_bwd idx u bwd model =
-  ClausesOf.fold (fun (_kconcl, _local, prems) model ->
+  ClausesOf.fold (fun _local (_kconcl, prems) model ->
     let f (prem, _) model = subst_fwd_of_prem idx u prem model in
     Premises._fold f prems model) bwd model
 
@@ -1587,14 +1593,14 @@ let subst_fwd_clauses idx u fwd =
   @param bwd A set of backward clauses of shape [prems -> _ + k]
   @return A set of backward clauses of shape [prems[idx/u] -> _ + k] *)
 let subst_bwd_clauses idx u bwd  =
-  ClausesOf.map (fun (kconcl, local, prems as cli) ->
+  ClausesOf.map (fun _local (kconcl, prems as cli) ->
     let prems' = Premises.subst idx u prems in
-    if prems' == prems then cli else (kconcl, local, prems')) bwd
+    if prems' == prems then cli else (kconcl, prems')) bwd
 
 (** [remove_bwd_clauses idx bwd] removes from the backward clauses [bwd] those that mention [idx] in one of their premises.
   @param bwd A set of backward clauses of shape [prems -> _ + k] *)
 let remove_bwd_clauses idx bwd  =
-  ClausesOf.filter (fun (_kconcl, _local, prems) -> not (in_premises idx prems)) bwd
+  ClausesOf.filter (fun (_kconcl, prems) -> not (in_premises idx prems)) bwd
 
 (** [remove_from_fwd_clauses_of idx prem bwd] removes from the forward clauses of the canonical
   representative of [prem] those that mention [idx] in one of their premises or conclusion.
@@ -1610,7 +1616,7 @@ let remove_from_fwd_clauses_of idx prem model =
   in one of their premises or conclusion.
   @return An updated model *)
 let remove_fwd_of_bwd idx bwd model =
-  ClausesOf.fold (fun (_kconcl, _local, prems) model ->
+  ClausesOf.fold (fun _local (_kconcl, prems) model ->
     let f (prem, _) model = remove_from_fwd_clauses_of idx prem model in
     Premises._fold f prems model) bwd model
 
@@ -1929,7 +1935,7 @@ let find_to_merge_bwd model (status : Status.t) prems (canv, kv) =
       let cls = can.clauses_bwd in
       if ClausesOf.is_empty cls then Status.replace status can Status.NonMerged, merge else begin
         let status = Status.replace status can Status.Processing in
-        let merge_fn (clk, _local, prems) (status, merge) =
+        let merge_fn _local (clk, prems) (status, merge) =
           (* Ensure there is indeed a backward clause of shape canv -> can *)
           (* prems -> can + clk *)
           let status, mergeprem = backward_premises k clk (repr_premises model prems) (status, path) in
@@ -2002,7 +2008,7 @@ let get_explanation model prems (canv, kv) =
       let cls = can.clauses_bwd in
       if ClausesOf.is_empty cls then status, merge
       else begin
-        let merge_fn (clk, _local, prems) (status, merge) =
+        let merge_fn _local (clk, prems) (status, merge) =
           (* prems -> can + clk *)
           let status, mergeprem = backward_premises k clk (repr_premises model prems) (status, path) in
           status, PathSet.union merge mergeprem
@@ -2584,7 +2590,7 @@ let maximize_can can model =
   | 0 -> NoBound
   | n when n <> 1 -> CannotSimplify
   | _ ->
-    let cank, _local, ubound = ClausesOf.choose bwd in
+    let cank, ubound = ClausesOf.choose bwd in
     if NeList.for_all (fun (_, k) -> cank <= k) ubound then
       let ubound = NeList.map (fun (can, k) -> (can, k - cank)) ubound in
       let ubound = repr_premises model ubound in
@@ -2602,7 +2608,7 @@ let maximize level model =
 let remove_bwd_clauses_from model idx k other =
   let can = repr model idx in
   let bwd = can.clauses_bwd in
-  let bwd' = ClausesOf.filter (fun (kconcl, _, prems) ->
+  let bwd' = ClausesOf.filter (fun (kconcl, prems) ->
     not (Int.equal kconcl k) ||
     match prems with
     | NeList.Tip (prem, 0) -> not (Index.equal prem other)
@@ -2687,7 +2693,7 @@ let subst ~local model =
 
 let constraints_of_clauses ?(only_local = false) m clauses =
   PMap.fold (fun concl bwd cstrs ->
-    ClausesOf.fold (fun (k, local, prems) cstrs ->
+    ClausesOf.fold (fun local (k, prems) cstrs ->
       if only_local && local == Global then cstrs
       else
       let prems = NeList.to_list prems in
@@ -2772,7 +2778,7 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
       let concl = repr model concl in
       PartialClausesOf.fold (fun (conclk, premsfwd) model ->
         (* premsfwd, can + kprem -> concl + conclk *)
-        ClausesOf.fold (fun (cank, _local, premsbwd) model ->
+        ClausesOf.fold (fun _local (cank, premsbwd) model ->
           (* premsbwd -> can + cank *)
           let premsfwd = (cons_opt_nelist (can.canon, kprem) premsfwd) in
           let cl = merge_clauses premsbwd can.canon cank premsfwd concl.canon conclk in
@@ -2811,7 +2817,7 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
     in
     if not (Index.equal arc.canon u) then acc else
     let cls = arc.clauses_bwd in
-    ClausesOf.fold (fun (k, _local, prems) csts -> add_from arc csts prems (k + uk)) cls acc
+    ClausesOf.fold (fun _local (k, prems) csts -> add_from arc csts prems (k + uk)) cls acc
   in
   PSet.fold fold keptp csts
 
@@ -2833,7 +2839,7 @@ let remove_from_fwd idxs fwd =
   ForwardClauses._filter_map f fwd
 
 let remove_from_bwd idxs bwd =
-  let f (_kconcl, _local, prems) = not (occurs_in_premises idxs prems) in
+  let f (_kconcl, prems) = not (occurs_in_premises idxs prems) in
   ClausesOf.filter f bwd
 
 (** [remove_from_model idxs model] Removes all clauses mentionning [idxs] and
@@ -2869,7 +2875,7 @@ let remove removed model =
       let concl = repr model concl in
       PartialClausesOf.fold (fun (conclk, premsfwd) model ->
         (* premsfwd, can + kprem -> concl + conclk *)
-        ClausesOf.fold (fun (cank, _local, premsbwd) model ->
+        ClausesOf.fold (fun _local (cank, premsbwd) model ->
           (* premsbwd -> can + cank *)
           let premsfwd = (cons_opt_nelist (can.canon, kprem) premsfwd) in
           let cl = merge_clauses premsbwd can.canon cank premsfwd concl.canon conclk in
@@ -2952,8 +2958,8 @@ let repr ~local model =
       let conclp = Index.repr idx model.table in
       let prems = can.clauses_bwd in
       let cls =
-        ClausesOf.fold (fun cli l ->
-          let (k, locality, prem) = cli in
+        ClausesOf.fold (fun locality cli l ->
+          let (k, prem) = cli in
           if not local || (local && locality == Local) then
             let u = universe_of_premise model prem in
             (k, u) :: l
