@@ -264,19 +264,19 @@ let clos_rel e i =
       Regular (lift_fconstr (k-p) {mark=Red;term=FFlex(RelKey p)})
 
 (* since the head may be reducible, we might introduce lifts of 0 *)
+let rec compact_stack_strip_rec head depth = function
+  | Zshift(k)::s -> compact_stack_strip_rec head (depth+k) s
+  | Zupdate(m)::s ->
+      (* Be sure to create a new cell otherwise sharing would be
+         lost by the update operation *)
+      let h' = lft_fconstr depth head in
+      (** The stack contains [Zupdate] marks only if in sharing mode *)
+      let () = update m h'.mark h'.term in
+      compact_stack_strip_rec head depth s
+  | ((ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zprimitive _) :: _ | []) as stk -> zshift depth stk
+
 let compact_stack head stk =
-  let rec strip_rec depth = function
-    | Zshift(k)::s -> strip_rec (depth+k) s
-    | Zupdate(m)::s ->
-        (* Be sure to create a new cell otherwise sharing would be
-           lost by the update operation *)
-        let h' = lft_fconstr depth head in
-        (** The stack contains [Zupdate] marks only if in sharing mode *)
-        let () = update m h'.mark h'.term in
-        strip_rec depth s
-    | ((ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zprimitive _) :: _ | []) as stk -> zshift depth stk
-  in
-  strip_rec 0 stk
+  compact_stack_strip_rec head 0 stk
 
 (* Put an update mark in the stack, only if needed *)
 let zupdate info m s =

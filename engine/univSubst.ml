@@ -116,23 +116,23 @@ let subst_univs_fn_puniverses f (c, u as cu) =
   let u' = Instance.subst_fn f u in
     if u' == u then cu else (c, u')
 
+let map_universes_opt_subst_aux_rec next aux frel k ((nas, tys, bds) as rc) =
+  let nas' = Array.Smart.map (Context.map_annot_relevance frel) nas in
+  let tys' = Array.Fun1.Smart.map aux k tys in
+  let k' = iterate next (Array.length tys') k in
+  let bds' = Array.Fun1.Smart.map aux k' bds in
+  if nas' == nas && tys' == tys && bds' == bds then rc
+  else (nas', tys', bds')
+
+let map_universes_opt_subst_aux_ctx next aux frel k ((nas, c) as p) =
+  let nas' = Array.Smart.map (Context.map_annot_relevance frel) nas in
+  let k' = iterate next (Array.length nas) k in
+  let c' = aux k' c in
+  if nas' == nas && c' == c then p
+  else (nas', c')
+
 let map_universes_opt_subst_with_binders next aux frel fqual funiv k c =
   let flevel = fqual, level_subst_of funiv in
-  let aux_rec ((nas, tys, bds) as rc) =
-    let nas' = Array.Smart.map (Context.map_annot_relevance frel) nas in
-    let tys' = Array.Fun1.Smart.map aux k tys in
-    let k' = iterate next (Array.length tys') k in
-    let bds' = Array.Fun1.Smart.map aux k' bds in
-    if nas' == nas && tys' == tys && bds' == bds then rc
-    else (nas', tys', bds')
-  in
-  let aux_ctx ((nas, c) as p) =
-    let nas' = Array.Smart.map (Context.map_annot_relevance frel) nas in
-    let k' = iterate next (Array.length nas) k in
-    let c' = aux k' c in
-    if nas' == nas && c' == c then p
-    else (nas', c')
-  in
   match kind c with
   | Const pu ->
     let pu' = subst_univs_fn_puniverses flevel pu in
@@ -150,6 +150,7 @@ let map_universes_opt_subst_with_binders next aux frel fqual funiv k c =
     let u' = Instance.subst_fn flevel u in
     let rel' = frel rel in
     let pms' = Array.Fun1.Smart.map aux k pms in
+    let aux_ctx = map_universes_opt_subst_aux_ctx next aux frel k in
     let p' = aux_ctx p in
     let iv' = map_invert (aux k) iv in
     let t' = aux k t in
@@ -183,11 +184,11 @@ let map_universes_opt_subst_with_binders next aux frel fqual funiv k c =
     if na' == na && b' == b && t' == t && u' == u then c
     else mkLetIn (na', b', t', u')
   | Fix (i, rc) ->
-    let rc' = aux_rec rc in
+    let rc' = map_universes_opt_subst_aux_rec next aux frel k rc in
     if rc' == rc then c
     else mkFix (i, rc')
   | CoFix (i, rc) ->
-    let rc' = aux_rec rc in
+    let rc' = map_universes_opt_subst_aux_rec next aux frel k rc in
     if rc' == rc then c
     else mkCoFix (i, rc')
   | Proj (p, r, v) ->
