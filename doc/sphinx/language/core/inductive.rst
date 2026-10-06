@@ -34,93 +34,254 @@ Inductive types
       inductive_definition ::= @ident {? @cumul_univ_decl } {* @binder } {? %| {* @binder } } {? : @type } := {? {? %| } {+| @constructor } } {? @decl_notations }
       constructor ::= {* #[ {+, @attribute } ] } @ident {* @binder } {? of {+& @term99 } } {? @of_type_inst }
 
-   Defines one or more
-   inductive types and its constructors.  Rocq generates
-   :gdef:`induction principles <induction principle>`
-   depending on the universe that the inductive type belongs to.
+   Constructor :n:`@ident`\s can come with :n:`@binder`\s, in which case
+   the actual type of the constructor is :n:`forall {* @binder }, @type`,
+   where :n:`@type` is its result type. For inductive types without indices,
+   this result type can be omitted and is inferred from the declaration.
 
-   The induction principles are named :n:`@ident`\ ``_rect``, :n:`@ident`\ ``_ind``,
-   :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_sind``, which
-   respectively correspond to
-   on :g:`Type`, :g:`Prop`, :g:`Set` and :g:`SProp`.  Their types
-   expresses structural induction/recursion principles over objects of
-   type :n:`@ident`.  These :term:`constants <constant>` are generated when
-   possible (for instance :n:`@ident`\ ``_rect`` may be impossible to derive
-   when :n:`@ident` is a proposition).
+   :n:`{? of {+& @term99 } }` `of T1 & ... & Tn` is syntactic sugar for anonymous binders `(_ : T1) ... (_ : Tn)`.
 
-   This commands supports :attr:`schemes` to control the automatic
-   generation of inductive principles.
+   Constructor arguments can be declared using three alternative syntaxes.
 
-   .. flag:: Dependent Proposition Eliminators
+   .. example:: Constructor argument syntaxes
 
-      The inductive principles express dependent elimination when the
-      inductive type allows it (always true when not using
-      :flag:`Primitive Projections`), except by default when the
-      inductive is explicitly declared in `Prop`.
+      The following declarations use a full constructor type, anonymous
+      binders, and :n:`of`, respectively, to describe pairs of booleans.
 
-      The dependent elimination corresponds to the "Induction"
-      :n:`@scheme_type`, and non-dependent elimination to
-      "Minimality".
+      .. rocqtop:: in
 
-      Explicitly `Prop` inductive types declared when this flag is
-      enabled also automatically declare dependent inductive
-      principles. Name generation may also change when using tactics
-      such as :tacn:`destruct` on such inductives.
+         Inductive bool_pair_type : Type :=
+         | pair_type : bool -> bool -> bool_pair_type.
 
-      Note that explicit declarations through :cmd:`Scheme` are not
-      affected by this flag.
+         Inductive bool_pair_binders : Type :=
+         | pair_binders (_ : bool) (_ : bool).
 
-   :n:`{? %| {* @binder } }`
-     The :n:`|` separates uniform and non uniform parameters.
-     See :flag:`Uniform Inductive Parameters`.
-
-   The :cmd:`Inductive` command supports the :attr:`universes(polymorphic)`,
-   :attr:`universes(template)`, :attr:`universes(cumulative)`,
-   :attr:`bypass_check(positivity)`, :attr:`bypass_check(universes)` and
-   :attr:`private(matching)` attributes.
-
-   When record syntax is used, this command also supports the
-   :attr:`projections(primitive)` :term:`attribute`. Also, in the
-   record syntax, if given, the :n:`as @ident` part specifies the name
-   to use for inhabitants of the record in the type of projections.
+         Inductive bool_pair_of : Type :=
+         | pair_of of bool & bool.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
    The :n:`@ident`\s are simultaneously added to the global environment before
-   the types of constructors are checked.  Each :n:`@ident` can be used
-   independently thereafter.  However, the induction principles currently generated for
-   such types are not useful.  Use the :cmd:`Scheme` command to generate useful
-   induction principles.  See :ref:`mutually_inductive_types`.
+   the types of constructors are checked. Each :n:`@ident` can be used
+   independently thereafter. However, the automatically generated induction
+   principles do not provide induction hypotheses for the other mutually
+   defined types. Use the :cmd:`Scheme` command to generate mutual induction
+   principles. See :ref:`mutually_inductive_types`.
+
+   .. example:: Mutually inductive predicates
+
+      The following predicates characterize even and odd natural numbers.
+      Each refers to the other, so they are declared together using :n:`with`.
+
+      .. rocqtop:: in
+
+         Inductive even : nat -> Prop :=
+         | even_zero : even 0
+         | even_succ : forall n, odd n -> even (S n)
+         with odd : nat -> Prop :=
+         | odd_succ : forall n, even n -> odd (S n).
 
    If the entire inductive definition is parameterized with :n:`@binder`\s, those
    :gdef:`inductive parameters <inductive parameter>` correspond
    to a local context in which the entire set of inductive declarations is interpreted.
-   For this reason, the parameters must be strictly the same for each inductive type.
+   Within a mutual declaration, all inductive types must have the same
+   parameter binders, with the same names and types in the same order.
    See :ref:`parametrized-inductive-types`.
 
-   Constructor :n:`@ident`\s can come with :n:`@binder`\s, in which case
-   the actual type of the constructor is :n:`forall {* @binder }, @type`.
+   :n:`{? %| {* @binder } }`
+     The :n:`|` separates uniform and non-uniform parameters.
+     See :flag:`Uniform Inductive Parameters` for more details.
 
-   :n:`{? of {+& @term99 } }`
-     `of T1 & ... & Tn` is syntactic sugar for anonymous binders `(_ : T1) ... (_ : Tn)`.
+   The :cmd:`Inductive` command supports the :attr:`universes(polymorphic)`,
+   :attr:`universes(template)`, :attr:`universes(cumulative)`,
+   :attr:`universes(collapse_sort_variables)`, :attr:`bypass_check(universes)`,
+   :attr:`bypass_check(positivity)`, :attr:`private(matching)` and
+   :attr:`schemes` attributes.
 
-   .. exn:: Non strictly positive occurrence of @ident in @type.
+   When record syntax (``{ ... }``) is used, :attr:`projections(primitive)`
+   is also supported, while :attr:`private(matching)` and the :n:`bypass_check`
+   attributes are not supported. In record syntax, the optional :n:`as @ident`
+   part specifies the name to use for inhabitants of the record in the type
+   of projections.
 
-      The types of the constructors have to satisfy a *positivity
-      condition* (see Section :ref:`positivity`). This condition
-      ensures the soundness of the inductive definition.
-      Positivity checking can be disabled using the :flag:`Positivity
-      Checking` flag or the :attr:`bypass_check(positivity)` attribute (see
-      :ref:`controlling-typing-flags`).
 
-   .. exn:: The conclusion of @type is not valid; it must be built from @ident.
+.. _automatic-prop-lowering:
 
-      The conclusion of the type of the constructors must be the inductive type
-      :n:`@ident` being defined (or :n:`@ident` applied to arguments in
-      the case of indexed inductive types — cf. next section).
+Automatic Prop lowering
+~~~~~~~~~~~~~~~~~~~~~~~
 
-The following subsections show examples of simple inductive types,
-simple indexed inductive types, simple parametric inductive types,
-mutually inductive types and private (matching) inductive types.
+When an inductive type is declared without an explicit sort, it is put in the
+smallest sort which permits large elimination, that is, elimination into
+:g:`Set` or :g:`Type` (excluding :g:`SProp` from the inferred sorts).
+For :ref:`empty and singleton <Empty-and-singleton-elimination>` types this
+means they are declared in :g:`Prop`. An empty type has no constructors;
+a singleton type has one constructor whose arguments, if any, are proofs.
+
+.. example:: Inferring sorts
+
+   Neither declaration below specifies a sort. The first has one constructor
+   without arguments, so Rocq declares it in :g:`Prop`. The second stores an
+   element of :g:`A : Type`, so :g:`inferred_box A` belongs to :g:`Type`.
+
+   .. rocqtop:: in
+
+      Inductive inferred_singleton := inferred_singleton_intro.
+      Inductive inferred_box (A : Type) :=
+      | inferred_box_intro : A -> inferred_box A.
+
+   .. rocqtop:: all
+
+      Check inferred_singleton.
+      Check inferred_box Type.
+
+Positivity Condition
+~~~~~~~~~~~~~~~~~~~~
+
+To be accepted, an inductive type must satisfy the *strict positivity condition*.
+See :ref:`positivity` for the exact condition, including for mutual and nested inductive types.
+Informally, the inductive type being defined must not occur to the left of
+an arrow within an argument type, even under another arrow.
+It may occur to the right of an arrow whose domain does not contain that type.
+
+.. exn:: Non strictly positive occurrence of @ident in @type.
+
+   An occurrence of the inductive type in a constructor argument violates the
+   strict positivity condition. Positivity checking can be disabled using the
+   :flag:`Positivity Checking` flag or the :attr:`bypass_check(positivity)`
+   attribute (see :ref:`controlling-typing-flags`).
+
+.. example:: An inductive type in the domain of a function argument
+
+   The constructor below takes a function whose input has type :g:`negative`,
+   the type being defined. This occurrence is to the left of an arrow in the
+   constructor argument type :g:`negative -> nat`, so it is rejected.
+
+   .. rocqtop:: all
+
+      Fail Inductive negative : Type :=
+      | negative_intro : (negative -> nat) -> negative.
+
+.. example:: Two arrows do not restore strict positivity
+
+   Nesting :g:`double_negative -> nat` in another function domain does not
+   make the recursive occurrence strictly positive. The type being defined
+   still occurs to the left of an arrow within the constructor argument type,
+   so Rocq rejects the following definition as well:
+
+   .. rocqtop:: all
+
+      Fail Inductive double_negative : Type :=
+      | double_negative_intro : ((double_negative -> nat) -> nat) -> double_negative.
+
+Constructor conclusions must also satisfy a separate requirement: they must
+return the inductive type being defined.
+
+.. exn:: The conclusion of @type is not valid; it must be built from @ident.
+
+   The conclusion of each constructor type must be the inductive type
+   :n:`@ident` being defined, applied to its parameters and indices when present.
+
+   .. example:: A constructor with an invalid conclusion
+
+      The constructor below returns :g:`nat` instead of the type
+      :g:`invalid_conclusion` being defined, so Rocq rejects the declaration.
+
+      .. rocqtop:: all
+
+         Fail Inductive invalid_conclusion : Type :=
+         | invalid_conclusion_intro : nat.
+
+Eliminators
+~~~~~~~~~~~
+
+By default, Rocq automatically generates eliminators, also known as
+:gdef:`induction principles <induction principle>`, for an inductive type,
+depending on the sort to which it belongs and the sorts into which it can be
+eliminated.
+
+The induction principles are named :n:`@ident`\ ``_rect``, :n:`@ident`\ ``_ind``,
+:n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_sind``, corresponding respectively to
+elimination into :g:`Type`, :g:`Prop`, :g:`Set` and :g:`SProp`.
+Their types express structural induction or recursion over objects of type
+:n:`@ident`. These :term:`constants <constant>` are generated when permitted
+by the elimination restrictions. For instance, :n:`@ident`\ ``_rect`` may not
+be generated when :n:`@ident` is a proposition.
+
+.. example:: Generated eliminators
+
+   The eliminators :g:`bool_ind` and :g:`bool_rect` each require cases for
+   :g:`true` and :g:`false`. Their predicates take values in :g:`Prop` and
+   :g:`Type`, respectively.
+
+   .. rocqtop:: all
+
+      Check bool_ind.
+      Check bool_rect.
+
+Variants of these eliminators as well as other schemes can be generated with the
+:cmd:`Scheme` command.
+See also :ref:`automatic-declaration-of-schemes` for the flags and attribute
+controlling the automatic generation of these schemes.
+
+.. flag:: Dependent Proposition Eliminators
+
+   This flag controls whether automatically generated induction principles
+   for inductive types explicitly declared in :g:`Prop` are dependent.
+   It defaults to off: the result type does not depend on the proof being
+   eliminated. When the flag is on, the result type may depend on that proof.
+   For example, when eliminating :g:`p : P`, a dependent principle can
+   establish :g:`Q p`, whereas a non-dependent principle establishes a result
+   whose type does not depend on :g:`p`. The flag does not relax the
+   restrictions on the sorts into which the inductive type can be eliminated.
+
+   .. example:: Non-dependent and dependent principles
+
+      The two propositions below have the same form, but the generated
+      principles differ. In :g:`plain_proof_ind`, :g:`P` is a proposition.
+      In :g:`dependent_proof_ind`, :g:`P` is a predicate on proofs of
+      :g:`dependent_proof`.
+
+      .. rocqtop:: in
+
+         Unset Dependent Proposition Eliminators.
+         Inductive plain_proof : Prop := plain_intro.
+
+      .. rocqtop:: all
+
+         Check plain_proof_ind.
+
+      .. rocqtop:: in
+
+         Set Dependent Proposition Eliminators.
+         Inductive dependent_proof : Prop := dependent_intro.
+
+      .. rocqtop:: all
+
+         Check dependent_proof_ind.
+
+      .. rocqtop:: in
+
+         Unset Dependent Proposition Eliminators.
+
+   The flag is consulted when the inductive type is declared; changing it
+   does not alter principles already generated. Types
+   :ref:`automatically lowered to Prop <automatic-prop-lowering>` already
+   receive dependent principles, even when the flag is off.
+   For other sorts, generated principles are also dependent whenever the
+   inductive type permits dependent elimination. Some records using
+   :flag:`Primitive Projections` do not permit it.
+
+   With :cmd:`Scheme`, dependent induction corresponds to ``Induction`` and
+   non-dependent induction to ``Minimality`` in :n:`@scheme_type`.
+   Explicit declarations through this command are not affected by the flag.
+   The flag can also affect the names automatically chosen for variables
+   introduced by tactics such as :tacn:`destruct`.
+
+Examples of inductive types and eliminators
+--------------------------------------------
+
+The following sections show examples of simple inductive types,
+simple indexed inductive types, parameterized inductive types,
+mutually defined inductive types and nested inductive types.
 
 .. _simple-inductive-types:
 
@@ -174,62 +335,91 @@ by giving the type of its arguments alone.
 
       Inductive nat : Set := O | S (_:nat).
 
-Automatic Prop lowering
-+++++++++++++++++++++++
-
-When an inductive is declared without an explicit sort, it is put in the
-smallest sort which permits large elimination (excluding
-`SProp`). For :ref:`empty and singleton <Empty-and-singleton-elimination>`
-types this means they are declared in `Prop`.
-
 Simple indexed inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In indexed inductive types, the universe where the inductive type
-is defined is no longer a simple :n:`@sort`, but what is called an arity,
-which is a type whose conclusion is a :n:`@sort`.
+An indexed inductive definition has arguments called *indices*, whose
+instantiations may differ between constructor conclusions. Its type is an
+arity of the form :g:`forall x1 : T1, ... forall xn : Tn, s`, where :g:`s`
+is a :n:`@sort`.
 
-.. example::
+.. example:: The Collatz predicate
 
-   As an example of indexed inductive types, let us define the
-   :g:`even` predicate:
+   The following predicate describes natural numbers that reach 1 after
+   finitely many Collatz steps: an even number is divided by 2, and an odd
+   number is multiplied by 3 and increased by 1.
 
-   .. rocqtop:: all
+   .. rocqtop:: reset none
+
+      Import Nat.
 
       Inductive even : nat -> Prop :=
-      | even_0 : even O
-      | even_SS : forall n:nat, even n -> even (S (S n)).
+      | even_zero : even 0
+      | even_succ : forall n, odd n -> even (S n)
+      with odd : nat -> Prop :=
+      | odd_succ : forall n, even n -> odd (S n).
 
-   The type :g:`nat->Prop` means that :g:`even` is a unary predicate (inductively
-   defined) over natural numbers. The type of its two constructors are the
-   defining clauses of the predicate :g:`even`. The type of :g:`even_ind` is:
+   .. rocqtop:: in
+
+      Inductive collatz : nat -> Prop :=
+      | collatz_root : collatz 1
+      | collatz_even n : even n -> collatz (n / 2) -> collatz n
+      | collatz_odd n : odd n -> collatz (3 * n + 1) -> collatz n.
+
+   The natural number :g:`n` is an index of :g:`collatz`. The constructor
+   :g:`collatz_root` establishes :g:`collatz 1`. The other constructors
+   establish :g:`collatz n` from the corresponding parity condition and a
+   proof of :g:`collatz` at the next step. Thus, constructor conclusions
+   can instantiate the index with a fixed value such as :g:`1` or a
+   constructor-bound variable such as :g:`n`. Recursive occurrences can
+   use a different index, here :g:`n / 2` or :g:`3 * n + 1`.
 
    .. rocqtop:: all
 
-      Check even_ind.
+      Check collatz_ind.
 
-   From a mathematical point of view, this asserts that the natural numbers satisfying
-   the predicate :g:`even` are exactly in the smallest set of naturals satisfying the
-   clauses :g:`even_0` or :g:`even_SS`. This is why, when we want to prove any
-   predicate :g:`P` over elements of :g:`even`, it is enough to prove it for :g:`O`
-   and to prove that if any natural number :g:`n` satisfies :g:`P` its double
-   successor :g:`(S (S n))` satisfies also :g:`P`. This is analogous to the
-   structural induction principle we got for :g:`nat`.
+   The principle :g:`collatz_ind` establishes that a predicate
+   :g:`P : nat -> Prop` holds for every natural number satisfying
+   :g:`collatz`. It requires a proof of :g:`P 1` and two step cases.
+   The even case assumes :g:`even n`, :g:`collatz (n / 2)`,
+   and the induction hypothesis :g:`P (n / 2)`, and must prove :g:`P n`.
+   Similarly, the odd case assumes :g:`odd n`,
+   :g:`collatz (3 * n + 1)`, and :g:`P (3 * n + 1)`, and must prove :g:`P n`.
+   Induction follows the structure of the proof of :g:`collatz n`, even
+   though the next step need not be a smaller natural number.
 
 .. _parametrized-inductive-types:
 
 Parameterized inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the previous example, each constructor introduces a different
-instance of the predicate :g:`even`. In some cases, all the constructors
-introduce the same generic instance of the inductive definition, in
-which case, instead of an index, we use a context of parameters
-which are :n:`@binder`\s shared by all the constructors of the definition.
+In the previous example, constructor conclusions instantiate the index
+with :g:`1` or the constructor-bound variable :g:`n`.
+Parameters, in contrast, are :n:`@binder`\s shared by all constructors.
+Every constructor conclusion uses the parameters bound by the declaration
+as their instantiations.
 
-Parameters differ from inductive type indices in that the
-conclusion of each type of constructor invokes the inductive type with
-the same parameter values of its specification.
+Parameters need not have the same instantiation in recursive occurrences
+within constructor arguments. A parameter is uniform when it has the same
+instantiation in all recursive occurrences as in the constructor conclusions;
+otherwise, it is non-uniform. The distinction is determined by how the
+parameter is used in the definition.
+
+An inductive definition can use indices in place of parameters, but this
+can affect its sort and elimination principles. Constructors must then
+quantify explicitly over the arguments that were parameters; this
+quantification can impose higher universe requirements. The induction
+predicate is quantified over the indices, whereas a uniform parameter is
+fixed before the induction predicate is introduced.
+
+Uniform parameters
+++++++++++++++++++
+
+In every constructor conclusion, the inductive type must be applied to
+the parameters bound by the declaration.
+In recursive occurrences of the inductive type within constructor arguments,
+uniform parameters must be instantiated with the same values as in the
+constructor conclusion.
 
 .. example::
 
@@ -266,83 +456,139 @@ the same parameter values of its specification.
 
       Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
 
-.. note::
-   + The constructor type can
-     recursively invoke the inductive definition on an argument which is not
-     the parameter itself.
+Non-uniform parameters
+++++++++++++++++++++++
 
-     One can define :
+In constructor conclusions, a non-uniform parameter must be instantiated
+with the parameter bound by the declaration. In recursive occurrences within
+constructor arguments, it may be instantiated with a different term.
+The induction principle must therefore allow its predicate to vary with that
+parameter, whereas a uniform parameter is fixed throughout induction.
 
-     .. rocqtop:: all
+.. example:: A non-uniform parameter in recursive occurrences
 
-        Inductive list2 (A:Set) : Set :=
-        | nil2 : list2 A
-        | cons2 : A -> list2 (A*A) -> list2 A.
+   In the power list type :g:`plist`, the constructor :g:`pcons` takes a recursive argument of
+   type :g:`plist (A * A)` and returns :g:`plist A`. Thus, :g:`A` is a
+   non-uniform parameter: it is instantiated with :g:`A * A` in the
+   recursive argument and with :g:`A` in the constructor conclusion.
 
-     that can also be written by specifying only the type of the arguments:
+   .. rocqtop:: in
 
-     .. rocqtop:: all reset
+      Inductive plist (A : Set) : Set :=
+      | pnil : plist A
+      | pcons : A -> plist (A * A) -> plist A.
 
-        Inductive list2 (A:Set) : Set :=
-        | nil2
-        | cons2 (_:A) (_:list2 (A*A)).
+   Unlike :g:`list_ind`, whose predicate concerns lists over one fixed
+   type :g:`A`, :g:`plist_ind` takes a predicate over all element types in :g:`Set`.
+   Its recursive premise uses that predicate at :g:`A * A`.
 
-     But the following definition will give an error:
+   .. rocqtop:: all
 
-     .. rocqtop:: all
+      Check plist_ind.
 
-        Fail Inductive listw (A:Set) : Set :=
-        | nilw : listw (A*A)
-        | consw : A -> listw (A*A) -> listw (A*A).
+.. example:: Invalid parameter instantiation in constructor conclusions
 
-     because the conclusion of the type of constructors should be :g:`listw A`
-     in both cases.
+   Even a non-uniform parameter must be instantiated with the parameter
+   bound by the declaration in each constructor conclusion. The following
+   declaration is rejected because
+   its constructors return :g:`listw (A * A)` instead of :g:`listw A`:
 
-   + A parameterized inductive definition can be defined using indices
-     instead of parameters but it will sometimes give a different (bigger)
-     sort for the inductive definition and will produce a less convenient
-     rule for case elimination.
+   .. rocqtop:: all
+
+      Fail Inductive listw (A : Set) : Set :=
+      | nilw : listw (A * A)
+      | consw : A -> listw (A * A) -> listw (A * A).
+
+The separator :n:`|` specifies which parameters are abstracted during
+constructor checking. Parameters before it are uniform by construction and
+are omitted from recursive occurrences within the declaration. Parameters
+after it are supplied explicitly and may be used uniformly or non-uniformly.
+Outside the declaration, the inductive type takes both groups as arguments.
+
+.. example:: Using :n:`|` in parameters
+
+   A parameter after :n:`|` can still be uniform, as :g:`A` is here:
+
+   .. rocqtop:: in
+
+      Inductive explicit_list | (A : Type) : Type :=
+      | explicit_nil : explicit_list A
+      | explicit_cons : A -> explicit_list A -> explicit_list A.
+
+   .. rocqtop:: all
+
+      Check explicit_list_ind.
+
+   As in :g:`list_ind`, :g:`A` is fixed before the induction predicate is
+   introduced.
+
+   However, placing :g:`A` before :n:`|` prevents the non-uniform
+   instantiation used in :g:`plist`: during constructor checking,
+   :g:`uniform_plist` takes no explicit parameter, so applying it to
+   :g:`A * A` is rejected.
+
+   .. rocqtop:: all
+
+      Fail Inductive uniform_plist (A : Set) | : Set :=
+      | uniform_pnil : uniform_plist
+      | uniform_pcons : A -> uniform_plist (A * A)%type -> uniform_plist.
 
 .. flag:: Uniform Inductive Parameters
 
-     When this :term:`flag` is set (it is off by default),
-     inductive definitions are abstracted over their parameters
-     before type checking constructors, allowing to write:
+   This flag determines the implicit position of :n:`|` when the declaration
+   does not contain an explicit separator. It defaults to off, corresponding
+   to placing :n:`|` before all parameters. When on, it corresponds to placing
+   :n:`|` after all parameters.
 
-     .. rocqtop:: all
+   When the flag is on, all parameters are abstracted during constructor
+   checking and are uniform by construction. They are therefore omitted
+   from recursive occurrences within the declaration. When the flag is off,
+   parameters are supplied explicitly, as in :g:`list A` and
+   :g:`plist (A * A)` above, and may be used uniformly or non-uniformly.
 
-        Set Uniform Inductive Parameters.
-        Inductive list3 (A:Set) : Set :=
-        | nil3 : list3
-        | cons3 : A -> list3 -> list3.
+   .. example:: Declaring uniform parameters implicitly
 
-     This behavior is essentially equivalent to starting a new section
-     and using :cmd:`Context` to give the uniform parameters, like so
-     (cf. :ref:`section-mechanism`):
+      With the flag on, :g:`A` is fixed throughout the declaration, so
+      the recursive occurrence is written :g:`list3` rather than
+      :g:`list3 A`.
 
-     .. rocqtop:: all reset
+      .. rocqtop:: in
 
-        Section list3.
-        Context (A:Set).
-        Inductive list3 : Set :=
-        | nil3 : list3
-        | cons3 : A -> list3 -> list3.
-        End list3.
+         Set Uniform Inductive Parameters.
+         Inductive list3 (A : Set) : Set :=
+         | nil3 : list3
+         | cons3 : A -> list3 -> list3.
+         Unset Uniform Inductive Parameters.
 
-     For finer control, you can use a ``|`` between the uniform and
-     the non-uniform parameters:
+      This is equivalent to declaring the type in a section with
+      :g:`A` in the context (see :ref:`section-mechanism`):
 
-     .. rocqtop:: in reset
+      .. rocqtop:: in reset
 
-        Inductive Acc {A:Type} (R:A->A->Prop) | (x:A) : Prop
-          := Acc_in : (forall y, R y x -> Acc y) -> Acc x.
+         Section list3.
+         Context (A : Set).
+         Inductive list3 : Set :=
+         | nil3 : list3
+         | cons3 : A -> list3 -> list3.
+         End list3.
 
-     The flag can then be seen as deciding whether the ``|`` is at the
-     beginning (when the flag is unset) or at the end (when it is set)
-     of the parameters when not explicitly given.
+   An explicit :n:`|` overrides the flag. Only the parameters before the
+   separator are abstracted during constructor checking; those after it
+   are supplied explicitly and may be used uniformly or non-uniformly.
 
-.. seealso::
-   Section :ref:`inductive-definitions` and the :tacn:`induction` tactic.
+   .. example:: Explicit non-uniform parameters with the flag on
+
+      Placing :n:`|` before :g:`A` allows it to be non-uniform even with
+      the flag on. As in :g:`plist`, the recursive argument instantiates
+      :g:`A` with :g:`A * A`.
+
+      .. rocqtop:: in
+
+         Set Uniform Inductive Parameters.
+         Inductive explicit_plist | (A : Set) : Set :=
+         | explicit_pnil : explicit_plist A
+         | explicit_pcons : A -> explicit_plist (A * A) -> explicit_plist A.
+         Unset Uniform Inductive Parameters.
 
 .. _mutually_inductive_types:
 
@@ -351,8 +597,9 @@ Mutually defined inductive types
 
 .. todo: combine with the very similar tree/forest example in reasoning-inductives.rst
 
-The induction principles currently generated for mutually defined types are not
-useful.  Use the :cmd:`Scheme` command to generate a useful induction principle.
+The automatically generated induction principles do not provide induction
+hypotheses for the other mutually defined types. Use the :cmd:`Scheme` command
+to generate mutual induction principles.
 
 .. example:: Mutually defined inductive types
 
@@ -402,6 +649,63 @@ useful.  Use the :cmd:`Scheme` command to generate a useful induction principle.
 .. seealso::
    A generic command :cmd:`Scheme` is useful to build automatically various
    mutual induction principles.
+
+.. _nested-inductive-types:
+
+Nested inductive types
+~~~~~~~~~~~~~~~~~~~~~~
+
+An occurrence of an inductive type in a constructor argument is called
+*nested* when it appears as an argument to another inductive type. By
+extension, an inductive type with nested recursive occurrences is itself
+called nested. Such occurrences can be accepted if they satisfy the
+:ref:`nested positivity condition <nested-positivity>`.
+
+To generate induction hypotheses for nested recursive arguments, Rocq uses
+an ``All`` predicate and its associated theorem registered for the type used
+for nesting. The predicate expresses that the induction predicate holds for
+each recursive subterm contained in the nested argument. Without these
+registered definitions, the generated eliminator has no induction hypothesis
+for that argument.
+
+For an inductive type, these definitions can be generated and registered
+with :cmd:`Scheme All` before declaring the nested inductive type. See
+:ref:`nested-inductive-eliminators` for details on generating and registering
+them.
+
+.. example:: Rose trees
+
+   A rose tree has leaves labeled with elements of :g:`A` and nodes containing
+   lists of child trees. In the argument type :g:`list (RoseTree A)`, the
+   recursive occurrence :g:`RoseTree A` is nested in :g:`list`.
+   Informally, this is permitted because the element type is a strictly positive
+   uniform parameter of :g:`list`.
+
+   .. rocqtop:: in
+
+      Scheme All for list.
+
+      Inductive RoseTree A : Type :=
+      | RTleaf (a : A) : RoseTree A
+      | RTnode (l : list (RoseTree A)) : RoseTree A.
+
+   The generated principle uses :g:`list_all` to express the induction
+   hypotheses for the child trees:
+
+   .. rocqtop:: all
+
+      Check RoseTree_ind.
+
+   For a predicate :g:`P : RoseTree A -> Prop`, the :g:`RTnode` case
+   requires :g:`list_all (RoseTree A) P l`, expressing that :g:`P` holds for
+   every tree in :g:`l`, to establish :g:`P (RTnode A l)`.
+   The definition of :g:`list_all` has a case for the empty list and a case
+   requiring :g:`P` for the head and :g:`list_all (RoseTree A) P` for
+   the tail:
+
+   .. rocqtop:: all
+
+      Print list_all.
 
 .. index::
    single: fix
@@ -836,6 +1140,8 @@ cases:
   any of the :math:`t_i` nor in any of the :math:`a_j` for :math:`m < j ≤ r` where :math:`m ≤ r`
   is the number of recursively uniform parameters, and the (instantiated) types of constructor
   :math:`\subst{C_i}{p_j}{a_j}_{j=1… m}` of :math:`I` satisfy the nested positivity condition for :math:`X_1 … X_k`
+
+.. _nested-positivity:
 
 Nested Positivity
 +++++++++++++++++
@@ -1616,9 +1922,9 @@ The reduction for fixpoints is:
 .. math::
    (\Fix~f_i \{F\}~a_1 …a_{k_i}) ~\triangleright_ι~ \subst{t_i}{f_k}{\Fix~f_k \{F\}}_{k=1… n} ~a_1 … a_{k_i}
 
-when the structural argument :math:`a_{k_i}` starts with a constructor. 
-This last restriction is needed in order to keep strong normalization 
-and corresponds to the reduction for primitive recursive operators. 
+when the structural argument :math:`a_{k_i}` starts with a constructor.
+This last restriction is needed in order to keep strong normalization
+and corresponds to the reduction for primitive recursive operators.
 The following reductions are now possible:
 
 .. math::

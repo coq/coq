@@ -1336,6 +1336,8 @@ Generation of induction principles with ``Scheme``
       Scheme Case for Nat Sort Set.
       About Nat_case_nodep.
 
+.. _nested-inductive-eliminators:
+
 Eliminators for Nested Inductive Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1513,6 +1515,8 @@ Scheme Equality, and Rewriting
    Tries to generate rewriting schemes such as congruence for :n:`@reference`.
    Equivalent to setting :flag:`Rewriting Schemes` before declaring :n:`@reference`.
 
+.. _automatic-declaration-of-schemes:
+
 Automatic declaration of schemes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1539,21 +1543,26 @@ Automatic declaration of schemes
 
    This :term:`flag` governs the generation of case analysis lemmas for inductive types,
    i.e. corresponding to the pattern matching term alone and without fixpoint.
+   Defaults to off.
 
 .. flag:: Boolean Equality Schemes
           Decidable Equality Schemes
 
-   These :term:`flags <flag>` control the automatic declaration of those Boolean equalities (see
-   the second variant of ``Scheme``).
+   :flag:`Boolean Equality Schemes` controls the automatic generation of
+   Boolean equality functions, as with :cmd:`Scheme Boolean Equality`.
+   :flag:`Decidable Equality Schemes` controls the automatic generation of
+   proofs of decidable equality, as with :cmd:`Scheme Equality`.
+   Both default to off.
 
-.. warning::
+   .. warning::
 
-   You have to be careful with these flags since Rocq may now reject well-defined
-   inductive types because it cannot compute a Boolean equality for them.
+     You have to be careful with these flags since Rocq may now reject well-defined
+     inductive types because it cannot compute a Boolean equality for them.
 
 .. flag:: Rewriting Schemes
 
    This :term:`flag` governs generation of equality-related schemes such as congruence.
+   Defaults to off.
 
 Combined Scheme
 ~~~~~~~~~~~~~~~
