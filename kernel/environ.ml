@@ -926,6 +926,9 @@ let is_primitive_type env c =
   is_int63_type env c || is_float64_type env c || is_array_type env c ||
   is_string_type env c
 
+let polymorphic_constant cst env =
+  Declareops.constant_is_polymorphic (lookup_constant cst env)
+
 let cumulative_constant cst env =
   Declareops.constant_is_cumulative (lookup_constant cst env)
 
@@ -1168,7 +1171,7 @@ let is_polymorphic env r =
   let open Names.GlobRef in
   match r with
   | VarRef _id -> false
-  | ConstRef _ -> true
+  | ConstRef cst -> polymorphic_constant cst env
   | IndRef ind -> polymorphic_ind ind env
   | ConstructRef cstr -> polymorphic_ind (inductive_of_constructor cstr) env
 

@@ -67,6 +67,10 @@ let has_cumulative_variance = function
 
 (** {6 Constants } *)
 
+let constant_is_polymorphic cb = 
+  let (univs, _) = cb.const_universes in 
+  not (UVars.AbstractContext.is_empty @@ univs)
+
 let constant_is_cumulative cb =
   let  (_, variances) = cb.const_universes in
   has_cumulative_variance variances

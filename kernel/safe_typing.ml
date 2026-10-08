@@ -1856,8 +1856,8 @@ let register_inline kn senv =
 
 let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) (mb, ob as spec) =
   let ind = match mb.mind_universes with
-    | Polymorphic univs ->
-      if not (Declareops.is_empty_universes univs) then
+    | Polymorphic (univs, _) ->
+      if not (UVars.AbstractContext.is_empty univs) then
          CErrors.user_err Pp.(str "A universe monomorphic inductive type is expected.");
       Constr.mkIndU (ind, UVars.Instance.empty)
     | Template _ -> Constr.UnsafeMonomorphic.mkInd ind

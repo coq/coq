@@ -34,6 +34,9 @@ val constant_has_body : ('a, 'b) pconstant_body -> bool
 
 val constant_polymorphic_context : ('a, 'b) pconstant_body -> AbstractContext.t
 
+(** Is the constant polymorpic, i.e. binds sorts or universes? *)
+val constant_is_polymorphic : ('a, 'b) pconstant_body -> bool
+
 (** Is the constant cumulative? *)
 val constant_is_cumulative : ('a, 'b) pconstant_body -> bool
 
