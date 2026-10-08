@@ -103,7 +103,7 @@ let compute_variances_context env sigma ?(on_lets=false) ?(position = fun x -> P
     | LocalAssum (na, ty) -> compute_variances env sigma status (position i) (cumul_pb, typing_pb) ty
     | LocalDef (_, bdy, _) ->
       if on_lets then 
-        compute_variances env sigma status (position i) (Conv, typing_pb) bdy
+        compute_variances env sigma status Position.InTerm (Conv, typing_pb) bdy
       else status
     in (EConstr.push_rel binder env, status)
   in

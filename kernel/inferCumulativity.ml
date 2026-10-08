@@ -969,6 +969,7 @@ let infer_arity_constructor is_arity env ~evars ?(shift = 0) variances arcn =
        infer_term (if is_arity then (Conv, Conv) else (Cumul,Conv)) env ~evars variances typ')
     | Context.Rel.Declaration.LocalDef (_, bdy, _) ->
       (* no need to infer on the type of the letin *)
+      let variances = Inf.set_position Position.InTerm variances in 
       let variances = infer_term (Conv, Conv) env ~evars variances bdy in
       (Environ.push_rel typ env, i, variances)
   in
