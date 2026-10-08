@@ -588,7 +588,7 @@ let v_rrb = v_tuple "rewrite_rules_body"
 
 let v_module_with_decl = v_sum "with_declaration" 0 [|
     [|v_list v_id; v_mp|];
-    [|v_list v_id; v_pair v_constr (v_opt v_abs_context)|];
+    [|v_list v_id; v_pair v_constr v_abs_context|];
   |]
 
 let v_mae =
