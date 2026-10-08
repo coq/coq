@@ -2,7 +2,6 @@ open Univ
 
 let debug_loop_checking_invariants_flag, debug_loop_checking_invariants = CDebug.create_full ~name:"loop-checking-invariants" ()
 let _debug_loop_checking_flag, debug_loop_checking = CDebug.create_full ~name:"loop-checking" ()
-let _, debug_constraints_for = CDebug.create_full ~name:"constraints_for" ()
 
 module Index :
 sig
