@@ -600,7 +600,7 @@ let check_add_elimination_constraints ~primitive univs elim_cstrs_map record_qua
     if eliminates_to qgraph record_quality proj_quality then univs, None
     else
       let entry, new_field_elim_cstrs = match univs.UState.universes_entry_universes with
-        | UState.Polymorphic_entry (uctx, variances) ->
+        | UState.Polymorphic_entry (uctx, variances) when not @@ UVars.UContext.is_empty uctx ->
           let open Sorts in
           let new_elim_cstr = record_quality, ElimConstraint.ElimTo, proj_quality in
           let (elim_cstrs, univ_cstrs) = UVars.UContext.constraints uctx in
