@@ -616,12 +616,14 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
   | FFloat _ -> infer_stack variance infos variances stk
   | FString _ -> infer_stack variance infos variances stk
   | FFlex Names.(RelKey _ | VarKey _ as fl) ->
-    (* We could try to lazily unfold but then we have to analyse the
-       universes in the bodies, not worth coding at least for now. *)
-    begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
-    | Some (hd,stk) -> infer_fterm cv_pb variance infos variances hd stk
-    | None -> infer_stack variance infos variances stk
-    end
+    if (Environ.typing_flags (info_env (fst infos))).Declarations.cumulativity_zeta then
+      (* We could try to lazily unfold but then we have to analyse the
+        universes in the bodies, not worth coding at least for now. *)
+      begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
+      | Some (hd,stk) -> infer_fterm cv_pb variance infos variances hd stk
+      | None -> infer_stack variance infos variances stk
+      end
+    else infer_stack variance infos variances stk
   | FFlex (Names.ConstKey con as fl) ->
     begin
       if not (Environ.mem_constant (fst con) (info_env (fst infos))) then
