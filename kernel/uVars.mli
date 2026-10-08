@@ -485,3 +485,10 @@ val pr_abstract_universe_context : Sorts.printer -> ?variances:variances ->
 
 val hcons_universe_context : UContext.t Hashcons.f
 val hcons_abstract_universe_context : AbstractContext.t Hashcons.f
+
+(** {6 Restriction }
+
+  Used for discharging
+*)
+
+val restrict_contexts : UContext.t list -> Level.Set.t -> UContext.t list

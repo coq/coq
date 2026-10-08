@@ -211,6 +211,7 @@ val sort_and_universes_of_constr : ?init:Sorts.Quality.Set.t * Univ.Level.Set.t 
 (** Constant qualities not included in the output. *)
 
 val universes_of_constr : ?init:Univ.Level.Set.t -> constr -> Univ.Level.Set.t
+val universes_of_named_context : ?init:Univ.Level.Set.t -> named_context -> Univ.Level.Set.t
 
 type ('a,'s,'u,'r) univ_visitor = {
   visit_sort : 'a -> 's -> 'a;

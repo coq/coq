@@ -952,7 +952,9 @@ let infer_arity_constructor is_arity env ~evars ?(shift = 0) variances arcn =
   if not is_arity then
     let variances = Inf.set_position Position.InTerm variances in
     infer_term (Conv, Conv) env ~evars variances codom
-  else variances
+  else
+    let variances = Inf.set_position Position.InType variances in
+    infer_term (Cumul, Cumul) env ~evars variances codom
 
 
 let infer_inductive_core ~env ~env_ar_par ~evars ?in_ctx ~params ~arities ~ctors variances =

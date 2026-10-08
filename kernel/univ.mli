@@ -222,6 +222,8 @@ module UnivConstraint : sig
   val compare_kind : kind -> kind -> int
   val pr_kind : kind -> Pp.t
   type t = Universe.t * kind * Universe.t
+
+  val levels : t -> Level.Set.t
 end
 
 module UnivConstraints : sig
@@ -230,6 +232,8 @@ module UnivConstraints : sig
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
 
   val hcons : t Hashcons.f
+
+  val levels : ?init:Level.Set.t -> t -> Level.Set.t
 end
 
 (** Enforcing UnivConstraints.t. *)

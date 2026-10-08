@@ -546,6 +546,12 @@ module UnivConstraint = struct
   module Hasher = Hashcons.Make(Hstruct)
 
   let hcons = Hashcons.simple_hcons Hasher.generate Hasher.hcons ()
+
+  let levels (l, _, r) =
+    let ls = Universe.levels l in
+    let rs = Universe.levels r in
+    Level.Set.union ls rs
+
 end
 
 module UnivConstraints =
@@ -564,6 +570,11 @@ struct
     end)
 
   let hcons = Hashcons.simple_hcons Hconstraints.generate Hconstraints.hcons ()
+
+  let levels ?(init=Level.Set.empty) cstrs =
+    fold (fun cl acc ->
+      Level.Set.union (UnivConstraint.levels cl) acc) cstrs init
+
 end
 
 (** UnivConstraints functions. *)

@@ -107,78 +107,20 @@ type pre_universes =
 let compute_section_universes ctx body typ =
   let used = Vars.universes_of_constr typ in
   let used = Option.cata (Vars.universes_of_constr ~init:used) used body in
-  let used = Context.Named.fold_inside (fun used decl -> NamedDecl.fold_constr (fun c used -> Vars.universes_of_constr ~init:used c) decl used) ~init:used ctx in
+  let used = Vars.universes_of_named_context ~init:used ctx in
   used
-
-let levels_of_constraints ?(init=Univ.Level.Set.empty) cstrs =
-  Univ.UnivConstraints.fold (fun (l, _, r) acc ->
-    Univ.Level.Set.union (Univ.Level.Set.union (Univ.Universe.levels l) (Univ.Universe.levels r))
-      acc) cstrs init
-
-let dependencies used cstrs =
-  let fold (acc, rest, used)  (_, (cls, _) as cl) =
-    if not (Univ.Level.Set.is_empty (Univ.Level.Set.inter cls used)) then
-      (acc, cl :: rest, Univ.Level.Set.union cls used)
-    else (cl :: acc, rest, used)
-  in
-  let rec loop cstrs rest used =
-    let cstrs', rest, used' = List.fold_left fold ([], rest, used) cstrs in
-    if used == used' then used, rest
-    else loop cstrs' rest used'
-  in loop cstrs [] used
-
-let restrict_uctx uctx used cstrs =
-  let inst = UContext.instance uctx in
-  let names = UContext.names uctx in
-  let qs, us = LevelInstance.to_array inst in
-  let us = Array.to_list us in
-  let names', us = List.filter2 (fun _ i -> Univ.Level.Set.mem i used) (Array.to_list names.univs) us in
-  let names = { quals = names.quals; univs = Array.of_list names' } in
-  let us = Array.of_list us in
-  UContext.make names (LevelInstance.of_array (qs, us), (UContext.elim_constraints uctx, cstrs))
-
-let restrict_secunivs sec_univs used =
-  let build_cstr i (l, _, r as cl) =
-    let ls = Univ.Universe.levels l in
-    let rs = Univ.Universe.levels r in
-    let cls = Univ.Level.Set.union ls rs in
-    (i, (cls, cl))
-  in
-  let cstrs =
-    List.fold_left_i (fun i cstrs uctx -> cstrs @ (List.map (build_cstr i) (Univ.UnivConstraints.elements (UContext.univ_constraints uctx))))
-      0 [] sec_univs in
-  let used, cstrs = dependencies used cstrs in
-  let cstrs = List.factorize_left Int.equal cstrs in
-  let cstrs = List.sort (fun (i, _) (j, _) -> Int.compare i j) cstrs in
-  let sec_univs = List.mapi (fun i uctx ->
-    let cstrs =
-      try let cstrs = List.assoc i cstrs in
-        Univ.UnivConstraints.of_list (List.map snd cstrs)
-      with Not_found -> Univ.UnivConstraints.empty
-    in
-    restrict_uctx uctx used cstrs)
-    sec_univs
-  in sec_univs
-
-(* let pr_secunivs l =
-  let open Pp in
-  prlist_with_sep fnl (fun x -> str"[" ++ UContext.pr Sorts.raw_printer x ++ str "]") l *)
 
 let _used_section_universes sec_univs univs ctx body typ =
   match sec_univs with
   | None -> []
   | Some sec_univs -> (* sec_univs represents all universes quantified in enclosing sections *)
-    let used = compute_section_universes ctx body typ in
     match univs with
     | Entries.Monomorphic_entry -> []
     | Entries.Polymorphic_entry (uctx, _) ->
+      let used = compute_section_universes ctx body typ in
       let _qcstrs, ucstrs = UContext.constraints uctx in
-      let used = levels_of_constraints ~init:used ucstrs in
-      let res = restrict_secunivs sec_univs used in
-      (* Feedback.msg_debug Pp.(str"used section universes" ++ Univ.Level.Set.pr Univ.Level.raw_pr used ++
-        str" section ctx: " ++ pr_secunivs sec_univs ++
-        str"restricted: " ++ pr_secunivs res); *)
-      res
+      let used = Univ.UnivConstraints.levels ~init:used ucstrs in
+      UVars.restrict_contexts sec_univs used
 
 let process_universes env ?sec_univs = function
   | Entries.Monomorphic_entry ->
@@ -360,7 +302,7 @@ let infer_parameter ~sec_univs env entry =
     const_def_height = None;
   }
 
-let pr_pre_universes univs =
+let _pr_pre_universes univs =
   let open Pp in
   match univs with
   | PreMonomorphic -> mt ()
@@ -371,7 +313,6 @@ let pr_pre_universes univs =
 
 let infer_definition ~sec_univs env entry =
   let env, _, univs = process_universes env ?sec_univs entry.definition_entry_universes in
-  Feedback.msg_debug Pp.(str"process_universes: " ++ pr_pre_universes univs);
   let body = entry.definition_entry_body in
   let hbody = HConstr.of_constr env body in
   let j = Typeops.infer_hconstr env hbody in

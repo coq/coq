@@ -484,6 +484,25 @@ let used_section_variables env inds =
 let sec_univs_instance secunivs =
   List.fold_right (fun uctx acc -> LevelInstance.append acc (UContext.instance uctx)) secunivs LevelInstance.empty
 
+let compute_section_universes ctx inds =
+  let fold l c = Vars.universes_of_constr ~init:l c in
+  let used = fold_inductive_blocks fold Level.Set.empty inds in
+  let used = Vars.universes_of_named_context ~init:used ctx in
+  used
+
+let used_section_universes sec_univs univs ctx inds =
+  match sec_univs with
+  | None -> []
+  | Some sec_univs -> (* sec_univs represents all universes quantified in enclosing sections *)
+    match univs with
+    | Entries.Monomorphic_ind_entry -> []
+    | Entries.Template_ind_entry _ -> []
+    | Entries.Polymorphic_ind_entry (uctx, _) ->
+      let used = compute_section_universes ctx inds in
+      let _qcstrs, ucstrs = UContext.constraints uctx in
+      let used = Univ.UnivConstraints.levels ~init:used ucstrs in
+      UVars.restrict_contexts sec_univs used
+
 let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with
   | [] -> CErrors.anomaly Pp.(str "empty inductive types declaration.")
@@ -568,13 +587,19 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         data, Some None, Some reason (* back to FakeRecord with a reason why *)
   in
   let hyps = used_section_variables env data in
+  let sec_univs = used_section_universes sec_univs mie.mind_entry_universes hyps data in
+  
 
   let univs, sec_variance =
-      match mie.mind_entry_universes with
-      | Monomorphic -> Monomorphic, None
+      match univs with
+      | Monomorphic -> 
+        begin match template with
+        | None -> Polymorphic Declareops.empty_universes, None
+        | Some templ -> Template templ
+        end
       | Polymorphic (auctx, variance) ->
         let variance, sec_variance = match variance with
-        | None -> None
+        | None -> None, None
         | Some variances ->
           (* no variance for qualities *)
           let _qualities, univs = LevelInstance.to_array @@ UContext.instance (AbstractContext.repr auctx) in
@@ -587,7 +612,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
           let variance, sec_variance = InferCumulativity.infer_inductive ~env:env_univs ~env_ar_par
             ~evars:(CClosure.default_evar_handler env)
             ~in_ctx:hyps
-            ~sec_univs:(Option.map sec_univs_instance sec_univs)
+            ~sec_univs:(Some (sec_univs_instance sec_univs))
             ~params
             ~arities
             ~ctors

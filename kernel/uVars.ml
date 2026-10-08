@@ -1193,3 +1193,43 @@ let abstract_universes uctx =
 
 let pr_universe_context = UContext.pr
 let pr_abstract_universe_context = AbstractContext.pr
+
+let dependencies used cstrs =
+  let fold (acc, rest, used)  (_, (cls, _) as cl) =
+    if not (Univ.Level.Set.is_empty (Univ.Level.Set.inter cls used)) then
+      (acc, cl :: rest, Univ.Level.Set.union cls used)
+    else (cl :: acc, rest, used)
+  in
+  let rec loop cstrs rest used =
+    let cstrs', rest, used' = List.fold_left fold ([], rest, used) cstrs in
+    if used == used' then used, rest
+    else loop cstrs' rest used'
+  in loop cstrs [] used
+
+let restrict_uctx uctx used cstrs =
+  let inst = UContext.instance uctx in
+  let names = UContext.names uctx in
+  let qs, us = LevelInstance.to_array inst in
+  let us = Array.to_list us in
+  let names', us = List.filter2 (fun _ i -> Univ.Level.Set.mem i used) (Array.to_list names.univs) us in
+  let names = { quals = names.quals; univs = Array.of_list names' } in
+  let us = Array.of_list us in
+  UContext.make names (LevelInstance.of_array (qs, us), (UContext.elim_constraints uctx, cstrs))
+
+let restrict_contexts ctxs used =
+  let build_cstr i cl = (i, (Univ.UnivConstraint.levels cl, cl)) in
+  let cstrs =
+    List.fold_left_i (fun i cstrs uctx -> cstrs @ (List.map (build_cstr i) (Univ.UnivConstraints.elements (UContext.univ_constraints uctx))))
+      0 [] ctxs in
+  let used, cstrs = dependencies used cstrs in
+  let cstrs = List.factorize_left Int.equal cstrs in
+  let cstrs = List.sort (fun (i, _) (j, _) -> Int.compare i j) cstrs in
+  let ctxs = List.mapi (fun i uctx ->
+    let cstrs =
+      try let cstrs = List.assoc i cstrs in
+        Univ.UnivConstraints.of_list (List.map snd cstrs)
+      with Not_found -> Univ.UnivConstraints.empty
+    in
+    restrict_uctx uctx used cstrs)
+    ctxs
+  in ctxs

@@ -592,3 +592,9 @@ let sort_and_universes_of_constr ?init c =
 
 let universes_of_constr ?(init=Univ.Level.Set.empty) c =
   snd (sort_and_universes_of_constr ~init:(Sorts.Quality.Set.empty,init) c)
+
+let universes_of_named_context ?(init=Univ.Level.Set.empty) ctx =
+  let fold used decl =
+    Context.Named.Declaration.fold_constr (fun c used -> universes_of_constr ~init:used c) decl used
+  in
+  Context.Named.fold_inside fold ~init ctx
