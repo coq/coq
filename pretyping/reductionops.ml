@@ -706,6 +706,16 @@ struct
     let v = CClosure.norm_term ~mode:CClosure.RedState.normal_full ci ct s t in
     EConstr.of_constr v
 
+  (* Evaluate the run, not a strongly normalized snapshot of its operand.
+     The closure machine exposes the operand in full mode, but hands its
+     payload to the continuation in the caller's mode. It also retains the
+     special forcing semantics of block-local captures. *)
+  let eval_whd_lazy (env, sigma, flgs) t =
+    let ci = Evarutil.create_clos_infos env sigma flgs in
+    let ct = CClosure.create_tab () in
+    let v = CClosure.inject (EConstr.Unsafe.to_constr t) in
+    EConstr.of_constr (CClosure.whd_val ci ct v)
+
   let eval_id_lazy (env, sigma, flgs) t = (* FIXME make it id. *)
     let ci = Evarutil.create_clos_infos env sigma flgs in
     let ct = CClosure.create_tab () in
@@ -1009,13 +1019,10 @@ let rec whd_state_gen flags ?metas env sigma =
         |_ -> fold ()
       else fold ()
 
-    | PRun (_ty,_k,b,cont) ->
-      let b' = CNativeEntries.eval_full_lazy (env, sigma, flags) b in
-      begin match EConstr.kind sigma b' with
-      | PBlock (_, _, entries, t) ->
-        whrec (mkApp (cont, [|EConstr.expand_pblock entries t|]), stack)
-      | _ -> fold ()
-      end
+    | PRun _ ->
+      let x' = CNativeEntries.eval_whd_lazy (env, sigma, flags) x in
+      if EConstr.eq_constr sigma x x' then fold ()
+      else whrec (x', stack)
 
     | Int _ | Float _ | String _ | Array _ | PBlock _ ->
       begin match Stack.strip_app stack with
@@ -1105,13 +1112,10 @@ let local_whd_state_gen flags ?metas env sigma =
         |_ -> s
       else s
 
-    | PRun (_ty,_k,b,cont) ->
-      let b' = CNativeEntries.eval_full_lazy (env, sigma, flags) b in
-      begin match EConstr.kind sigma b' with
-      | PBlock (_, _, entries, t) ->
-        whrec (mkApp (cont, [|EConstr.expand_pblock entries t|]), stack)
-      | _ -> s
-      end
+    | PRun _ ->
+      let x' = CNativeEntries.eval_whd_lazy (env, sigma, flags) x in
+      if EConstr.eq_constr sigma x x' then s
+      else whrec (x', stack)
 
     | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _
       | Int _ | Float _ | String _ | Array _ | PBlock _ -> s
