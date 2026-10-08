@@ -127,7 +127,8 @@ let process_universes env ?sec_univs = function
     env, UVars.Instance.empty, PreMonomorphic
   | Entries.Polymorphic_entry (auctx, variances) ->
     if AbstractContext.is_empty auctx && Option.is_empty sec_univs then
-      env, UVars.Instance.empty, PreMonomorphic
+      env, UVars.Instance.empty,
+        PrePolymorphic (AbstractContext.empty, None)
     else
     (** [ctx] must contain local universes, such that it has no impact
         on the rest of the graph (up to transitivity). *)

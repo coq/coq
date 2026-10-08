@@ -15,8 +15,7 @@ val universe_variances_constr : Environ.env -> Evd.evar_map -> ?typ:Constr.t -> 
 
 val register_universe_variances_of_constr : Environ.env -> Evd.evar_map -> ?typ:Constr.t -> Constr.t -> Evd.evar_map
 
-val register_universe_variances_of : Environ.env -> Evd.evar_map -> ?sec_ctx:Univ.ContextSet.t ->
-  ?typ:EConstr.t -> EConstr.t -> Evd.evar_map
+val register_universe_variances_of : Environ.env -> Evd.evar_map -> ?typ:EConstr.t -> EConstr.t -> Evd.evar_map
 
 val register_universe_variances_of_undefined : Environ.env -> Evd.evar_map -> Evd.evar_map
 

@@ -1157,9 +1157,8 @@ let declare_definition_uinst ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   Option.iter (check_evars_are_solved env sigma) typ;
   check_evars_are_solved env sigma body;
   let poly = info.Info.poly in
-  let sec_ctx = Global.section_universes () in
   debug Pp.(fun () -> str"declare_definition for " ++ Id.print name ++ str", minimizing ");
-  let sigma = UnivVariances.register_universe_variances_of env sigma ~sec_ctx ?typ body in
+  let sigma = UnivVariances.register_universe_variances_of env sigma ?typ body in
   let sigma = Evd.minimize_universes ~poly sigma in
   let body = EConstr.to_constr sigma body in
   let typ = Option.map (EConstr.to_constr sigma) typ in
