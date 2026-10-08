@@ -24,7 +24,7 @@ Section foo.
   Definition baz := same x y.
 End foo.
 
-Definition baz' := Eval unfold baz in baz@{i j k l}.
+Definition baz' := Eval unfold baz in baz@{i j}.
 
 Module Export HoTT_DOT_Overture.
 Module Export HoTT.

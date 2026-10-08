@@ -542,16 +542,14 @@ let instance ?loc ~flags evd (ql,ul) =
   in
   evd, Some (EInstance.make (UVars.Instance.of_array (Array.rev_of_list ql', Array.rev_of_list ul')))
 
-type pretype_instance =
-  | Global of (glob_quality list * glob_univ list) option
-  | Inferred of UVars.Instance.t
-
-let pretype_global ?loc ~flags rigid env evd gr us =
+let pretype_global ?loc ~flags rigid env evd gr (us, us') =
   let evd, instance =
     match us with
-    | Global None -> evd, None
-    | Global (Some l) -> instance ?loc ~flags evd l
-    | Inferred i -> evd, Some (EInstance.make i)
+    | None ->
+      (match us' with
+      | None -> evd, None
+      | Some us -> evd, Some (EInstance.make us))
+    | Some l -> instance ?loc ~flags evd l
   in
   Evd.fresh_global ?loc ?names:instance !!env evd gr
 
@@ -585,13 +583,13 @@ let pretype_ref ?loc ~flags sigma env ref us tycon =
         | Some ty ->
           (try let ((ind', u), pars) = find_mrectype !!env sigma ty in
             if Names.Ind.CanOrd.equal ind ind' then (* Only applies if no coercion is needed *)
-              Inferred (EInstance.kind sigma u)
-            else Global us
-           with Not_found -> Global us)
-        | None -> Global us)
-      | _ -> Global us
+              Some (EInstance.kind sigma u)
+            else None
+           with Not_found -> None)
+        | None -> None)
+      | _ -> None
     in
-    let sigma, c = pretype_global ?loc ~flags univ_flexible env sigma ref inst in
+    let sigma, c = pretype_global ?loc ~flags univ_flexible env sigma ref (us, inst) in
     let sigma, ty = type_of !!env sigma c in
     sigma, make_judge c ty
 

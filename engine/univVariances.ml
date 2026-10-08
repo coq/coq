@@ -81,24 +81,30 @@ let compute_variances env sigma status position variance c =
   let c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   compute_variances_constr env sigma status position variance c
 
-let compute_variances_context_constr env sigma ?(position = fun x -> Position.InBinder x) ?(cumul_pb=Conv) ?(typing_pb=Conv) status ctx =
+let compute_variances_context_constr env sigma ?(on_lets=false) ?(position = fun x -> Position.InBinder x) ?(cumul_pb=Conv) ?(typing_pb=Conv) status ctx =
   let fold_binder i binder (env, status) =
     let open Context.Rel.Declaration in
     let status = match binder with
     | LocalAssum (na, ty) ->
       compute_variances_constr env sigma status (position i) (cumul_pb, typing_pb) ty
-    | LocalDef _ -> status
+    | LocalDef (_, bdy, _) -> 
+      if on_lets then 
+        compute_variances_constr env sigma status (position i) (Conv, typing_pb) bdy
+      else status
     in (Environ.push_rel binder env, status)
   in
   let env, variances = CList.fold_right_i fold_binder 0 ctx (env, status) in
   variances
 
-let compute_variances_context env sigma ?(position = fun x -> Position.InBinder x) ?(cumul_pb=Conv) ?(typing_pb=Conv) status ctx =
+let compute_variances_context env sigma ?(on_lets=false) ?(position = fun x -> Position.InBinder x) ?(cumul_pb=Conv) ?(typing_pb=Conv) status ctx =
   let fold_binder i binder (env, status) =
     let open Context.Rel.Declaration in
     let status = match binder with
     | LocalAssum (na, ty) -> compute_variances env sigma status (position i) (cumul_pb, typing_pb) ty
-    | LocalDef _ -> status
+    | LocalDef (_, bdy, _) ->
+      if on_lets then 
+        compute_variances env sigma status (position i) (Conv, typing_pb) bdy
+      else status
     in (EConstr.push_rel binder env, status)
   in
   let env, variances = CList.fold_right_i fold_binder 0 ctx (env, status) in
@@ -130,13 +136,14 @@ let compute_variances_body_constr env sigma ?(ctx_position = fun i -> Position.I
 let compute_variances_body env sigma ?(ctx_position = fun i -> Position.InBinder i) ?(ctx_cumul_pb=Conv) ?(cumul_pb=Cumul) status c =
   compute_variances_body_constr env sigma ~ctx_position ~ctx_cumul_pb ~cumul_pb status (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
 
-let compute_variances_type_constr env sigma ?(position=Position.InType) ?(ctx_position = fun x -> Position.InBinder x) ?(ctx_cumul_pb=Conv) ?(ctx_typing_pb=Conv) ?(cumul_pb=Cumul) status c =
+let compute_variances_type_constr env sigma ?(on_lets=false) ?(position=Position.InType) ?(ctx_position = fun x -> Position.InBinder x) ?(ctx_cumul_pb=Conv) ?(ctx_typing_pb=Conv) ?(cumul_pb=Cumul) status c =
   let ctx, c = Term.decompose_prod_decls c in
-  let status = compute_variances_context_constr env sigma ~position:ctx_position ~cumul_pb:ctx_cumul_pb ~typing_pb:ctx_typing_pb status (Vars.smash_rel_context ctx) in
+  let ctx' = if on_lets then ctx else (Vars.smash_rel_context ctx) in
+  let status = compute_variances_context_constr env sigma ~on_lets ~position:ctx_position ~cumul_pb:ctx_cumul_pb ~typing_pb:ctx_typing_pb status ctx' in
   compute_variances_constr (Environ.push_rel_context ctx env) sigma status position (cumul_pb, cumul_pb) c
 
-let compute_variances_type env sigma ?(position=Position.InType) ?(ctx_position = fun x -> Position.InBinder x) ?(ctx_cumul_pb=Conv) ?(ctx_typing_pb=Conv) ?(cumul_pb=Cumul) status c =
-  compute_variances_type_constr env sigma status ~position ~ctx_position ~ctx_cumul_pb ~ctx_typing_pb ~cumul_pb
+let compute_variances_type env sigma ?on_lets ?(position=Position.InType) ?(ctx_position = fun x -> Position.InBinder x) ?(ctx_cumul_pb=Conv) ?(ctx_typing_pb=Conv) ?(cumul_pb=Cumul) status c =
+  compute_variances_type_constr env sigma ?on_lets status ~position ~ctx_position ~ctx_cumul_pb ~ctx_typing_pb ~cumul_pb
     (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
 
 let init_status_ustate env ?(position=Position.InType) ?(udecl : UState.universe_decl option) sigma =
@@ -233,7 +240,7 @@ let register_universe_variances_of_inductive env sigma ~udecl ~cumulative ~param
   let status = List.fold_left (compute_variances_type ~ctx_position:(fun i -> InBinder (i + paramlen)) env sigma) status arities in
   let status = List.fold_left (fun status (_nas, tys) ->
     List.fold_left (fun status ty ->
-      compute_variances_type env sigma status ~position:InTerm ~ctx_position:(fun _ -> InTerm) ~ctx_cumul_pb:Cumul ~ctx_typing_pb:Conv ty) status tys) status constructors in
+      compute_variances_type env sigma ~on_lets:true status ~position:InTerm ~ctx_position:(fun _ -> InTerm) ~ctx_cumul_pb:Cumul ~ctx_typing_pb:Conv ty) status tys) status constructors in
   finalize sigma status
 
 let register_universe_variances_of_record env sigma ~env_ar_pars ~params ~fields ~types =
@@ -241,7 +248,7 @@ let register_universe_variances_of_record env sigma ~env_ar_pars ~params ~fields
   let status = compute_variances_context env sigma status params in
   let paramlen = Context.Rel.length params in
   let status = List.fold_left (compute_variances_type ~ctx_position:(fun i -> InBinder (i + paramlen)) env sigma) status types in
-  let status = List.fold_left (compute_variances_context env_ar_pars sigma ~position:(fun _ -> InTerm) ~cumul_pb:Cumul ~typing_pb:Conv) status fields in
+  let status = List.fold_left (compute_variances_context env_ar_pars sigma ~on_lets:true ~position:(fun _ -> InTerm) ~cumul_pb:Cumul ~typing_pb:Conv) status fields in
   finalize sigma status
 
 let register_universe_variances_of_fix env sigma types bodies =

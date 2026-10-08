@@ -10,9 +10,9 @@ Qed.
 
 Require Import Corelib.Array.PrimArray.
 
-
+Universe glob.
 Axiom P : forall A t i (a:A), get t i = a.
-Axiom Q : forall A a i, @length@{length.u0} A a = i.
+Axiom Q : forall A a i, @length@{glob} A a = i.
 
 Lemma test : forall A a i, @length@{P.u0} A a = i.
 Proof.

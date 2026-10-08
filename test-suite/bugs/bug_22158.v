@@ -18,5 +18,5 @@ Qed.
 #[universes(polymorphic)]
 Lemma test_app_imposs@{i j | i < j} (x : nat) : bar@{i} x = bar@{j} x.
 Proof.
-  Fail move/bar: x.
-Abort.
+  move/bar: x. reflexivity.
+Qed.
