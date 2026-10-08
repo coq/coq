@@ -20,7 +20,8 @@ open Constrexpr
 (***********)
 (* Universes *)
 
-let expr_Type_sort rigid = None, UAnonymous {rigid}
+let expr_Type_sort rigid = None, UAnonymous {rigid = Some rigid}
+let expr_Type_sort_gen rigid = None, UAnonymous {rigid = rigid}
 let expr_Univ_sort rigid = Some (CQAnon None), UAnonymous {rigid}
 let expr_SProp_sort = None, UNamed [CSProp, 0]
 let expr_Prop_sort = None, UNamed [CProp, 0]
