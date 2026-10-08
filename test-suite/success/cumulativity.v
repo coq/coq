@@ -89,7 +89,7 @@ with Mut2 A :=
 
 (* If we don't reduce T while inferring cumulativity for the
    constructor we will see a Rel and believe i is irrelevant. *)
-
+Set Kernel Cumulativity Zeta.
 Inductive withparams@{i j} (T:=Type@{i}:Type@{j}) := mkwithparams : T -> withparams.
 
 Definition withparams_co@{i i' j|i < i', i' < j} : withparams@{i j} -> withparams@{i' j}

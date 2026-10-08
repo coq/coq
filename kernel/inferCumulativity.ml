@@ -821,6 +821,7 @@ let infer_named_context env ~evars ?(skip_lets=true) variances ctx =
         (i, variances)
       else
         (* no need to infer on the type of the letin AFAICT *)
+        let variances = Inf.set_position InTerm variances in
         let variances = infer_term (Conv, Conv) env ~evars variances bdy in
         (i, variances)
   in
@@ -840,6 +841,7 @@ let infer_context env ~evars ?(skip_lets=true) ?(shift = 0) ?(binder_pos = fun i
         (Environ.push_rel typ env, i, variances)
       else
         (* no need to infer on the type of the letin AFAICT *)
+        let variances = Inf.set_position InTerm variances in
         let variances = infer_term (Conv, Conv) env ~evars variances bdy in
         (Environ.push_rel typ env, i, variances)
 

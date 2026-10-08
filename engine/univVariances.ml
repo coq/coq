@@ -89,7 +89,7 @@ let compute_variances_context_constr env sigma ?(on_lets=false) ?(position = fun
       compute_variances_constr env sigma status (position i) (cumul_pb, typing_pb) ty
     | LocalDef (_, bdy, _) -> 
       if on_lets then 
-        compute_variances_constr env sigma status (position i) (Conv, typing_pb) bdy
+        compute_variances_constr env sigma status Position.InTerm (Conv, typing_pb) bdy
       else status
     in (Environ.push_rel binder env, status)
   in
@@ -126,7 +126,7 @@ let compute_variances_named_context env sigma ?(position = fun x -> Position.InB
 
 let compute_variances_body_constr env sigma ?(ctx_position = fun i -> Position.InBinder i) ?(ctx_cumul_pb=Conv) ?(cumul_pb=Cumul) status c =
   let ctx, c = Term.decompose_lambda_decls c in
-  let status = compute_variances_context_constr env sigma ~position:ctx_position ~typing_pb:ctx_cumul_pb status (Vars.smash_rel_context ctx) in
+  let status = compute_variances_context_constr env sigma ~on_lets:true ~position:ctx_position ~typing_pb:ctx_cumul_pb status ctx in
   let status = Inf.set_position Position.InTerm status in
   try infer_body (Cumul, cumul_pb) (Environ.push_rel_context ctx env) ~evars:(Evd.evar_handler sigma) ~shift:(Context.Rel.nhyps ctx) status c
   with
@@ -186,11 +186,11 @@ let init_status env ?(position=Position.InType) ?(udecl : UState.universe_decl o
 
 let universe_variances_body_ty env sigma status ?typ body =
   let status = Option.fold_left (compute_variances_type env sigma) status typ in
-  let variances = compute_variances_body env sigma status body in
-  debug Pp.(fun () -> Inf.pr (Termops.pr_evd_level sigma) variances ++ fnl () ++
+  let status = compute_variances_body env sigma status body in
+  debug Pp.(fun () -> Inf.pr (Termops.pr_evd_level sigma) status ++ fnl () ++
     str "Computed from body " ++ Termops.Internal.print_constr_env env sigma body ++ fnl () ++
     str " and type: " ++ Option.cata (Termops.Internal.print_constr_env env sigma) (mt()) typ);
-  variances
+  status
 
 let universe_variances env sigma ?typ body =
   let status = init_status env ~position:InTerm sigma in

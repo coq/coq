@@ -448,7 +448,9 @@ Module F.
 End F.
 
 Set Universe Polymorphism.
+Set Kernel Cumulativity Zeta.
 Cumulative Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
+Unset Kernel Cumulativity Zeta.
 
 Section test_letin_subtyping.
   Universe i j i' j'.
