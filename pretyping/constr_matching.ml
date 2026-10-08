@@ -292,6 +292,20 @@ let matches_core env sigma allow_bound_rels (binding_vars, pat) c =
   | PApp (PApp (h, a1), a2), _ ->
     sorec ctx env subst (PApp (h, Array.append a1 a2)) t
 
+  (* [pattern_of_constr] represents force primitives as virtual applications.
+     Match their operands structurally, just as ordinary application operands.
+     Block captures are expanded by the pattern producer, so expand them on
+     the term side as well. *)
+  | PApp (PVar id, [|pty; pbody|]), PBlock (_, ty, entries, body)
+      when Id.equal id (Id.of_string "__block") ->
+    let body = EConstr.expand_pblock entries body in
+    sorec ctx env (sorec ctx env subst pty ty) pbody body
+
+  | PApp (PVar id, [|pty; pk; pb; pcont|]), PRun (ty, k, b, cont)
+      when Id.equal id (Id.of_string "__run") ->
+    Array.fold_left2 (sorec ctx env) subst
+      [|pty; pk; pb; pcont|] [|ty; k; b; cont|]
+
   | PApp (PMeta meta, args1), App (c2, args2) ->
     let diff = Array.length args2 - Array.length args1 in
     if diff >= 0 then
