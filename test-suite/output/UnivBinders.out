@@ -288,32 +288,25 @@ Universe u0 already exists.
 File "./output/UnivBinders.v", line 251, characters 6-26:
 The command has indeed failed with message:
 Tactic failure: Not equal (due to universes).
-eq_rect@{UnivBinders.136 UnivBinders.137}
-     : forall (A : Type@{UnivBinders.137}) (x : A)
-         (P : A -> Type@{UnivBinders.136}),
+eq_rect@{UnivBinders.128 UnivBinders.129}
+     : forall (A : Type@{UnivBinders.129}) (x : A)
+         (P : A -> Type@{UnivBinders.128}),
        P x -> forall y : A, x = y -> P y
-(* {UnivBinders.137 UnivBinders.136} | 
+(* {UnivBinders.129 UnivBinders.128} | 
 Normalized constraints:
- {UnivBinders.137 UnivBinders.136} |  *)
-File "./output/UnivBinders.v", line 269, characters 18-19:
-Warning: Separating sorts from universes with "|" is deprecated.
-Use ";" instead.
-[deprecated-sort-poly-syntax,deprecated-since-9.1,deprecated,default]
-File "./output/UnivBinders.v", line 269, characters 33-34:
-Warning: Separating sorts from universes with "|" is deprecated.
-Use ";" instead.
-[deprecated-sort-poly-syntax,deprecated-since-9.1,deprecated,default]
-File "./output/UnivBinders.v", line 275, characters 16-17:
-Warning: Separating sorts from universes with "|" is deprecated.
-Use ";" instead.
-[deprecated-sort-poly-syntax,deprecated-since-9.1,deprecated,default]
+ {UnivBinders.129 UnivBinders.128} |  *)
+File "./output/UnivBinders.v", line 267, characters 26-36:
+Warning: Support for Type@{s;l} is deprecated. Use "Univ@{s;l}" instead.
+[deprecated-type-sort-poly-syntax,deprecated-since-9.3,deprecated,default]
+Quickfix:
+Replace File "./output/UnivBinders.v", line 267, characters 26-30 with Univ
 id@{Prop ; 0}
      : forall A : Prop, A -> A
 id@{SProp ; 0}
      : forall A : SProp, A -> A
 id3@{s ; u} =
-fun (A : Type@{s ; u}) (a : A) => a
-     : forall A : Type@{s ; u}, A -> A
+fun (A : Univ@{s ; u}) (a : A) => a
+     : forall A : Univ@{s ; u}, A -> A
 (* s ; u | 1 <= u *)
 
 Arguments id3 A%_type_scope a

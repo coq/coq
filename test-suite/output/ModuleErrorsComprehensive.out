@@ -59,7 +59,7 @@ expected B but found C.
 File "./output/ModuleErrorsComprehensive.v", line 132, characters 0-49:
 The command has indeed failed with message:
 Signature components for field I do not match:
-type is expected to be coinductive.
+type is expected to be inductive.
 File "./output/ModuleErrorsComprehensive.v", line 142, characters 0-49:
 The command has indeed failed with message:
 Signature components for field I1 do not match:
@@ -67,11 +67,11 @@ number of inductive types differs: expected 2 but found 1.
 File "./output/ModuleErrorsComprehensive.v", line 151, characters 0-49:
 The command has indeed failed with message:
 Signature components for field I do not match: parameters differs: expected
-(A B : Type@{β0 ; _}) but found (A : Type@{β0 ; _}).
+(A B : Univ@{β0 ; _}) but found (A : Univ@{β0 ; _}).
 File "./output/ModuleErrorsComprehensive.v", line 160, characters 0-49:
 The command has indeed failed with message:
 Signature components for field R do not match:
-type is expected to be a record.
+type is expected to be non-recursive.
 File "./output/ModuleErrorsComprehensive.v", line 169, characters 0-52:
 The command has indeed failed with message:
 Signature components for field R do not match: projection names differ:

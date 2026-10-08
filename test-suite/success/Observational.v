@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Prelude.
+From Corelib Require Import Prelude.
 
 Set Universe Polymorphism.
 
@@ -60,7 +60,7 @@ Hint Resolve obseq_Has_Leibniz_r_elim : rewrite_instances.
 Definition obseq_apd@{sa sb; la lb}
     {A : Univ@{sa;la}} {a} (P : forall b : A, a ~ b -> Univ@{sb ; lb})
     (b : A) (e : a ~ b) : @obseq _ (P a (refl A a)) (P b e) :=
-    J_eliminator@{sa SProp SProp|la 0 0} _ a (fun b e => @obseq@{Type;lb+1} _ (P a (refl _ _)) (P b e)) (refl _ _) b e.
+    J_eliminator@{sa SProp SProp;la 0 0} _ a (fun b e => @obseq@{Type;lb+1} _ (P a (refl _ _)) (P b e)) (refl _ _) b e.
 
 Instance obseq_Has_J_elim@{α β;l l'} : Has_J@{α SProp β;l l l'} (@obseq) _ :=
   fun A a P t b e => cast (P a (refl _ _)) (P b e) (obseq_apd@{α β ;l l'} P b e) t.

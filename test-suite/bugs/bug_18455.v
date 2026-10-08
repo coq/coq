@@ -1,6 +1,6 @@
 Set Universe Polymorphism.
 Set Implicit Arguments.
-Cumulative Record prod@{s;*a *b|} (A : Univ@{s;a}) (B : Univ@{s;b}) : Univ@{s;max(a,b)} := pair {
+Cumulative Record prod@{s;a b|} (A : Univ@{s;a}) (B : Univ@{s;b}) : Univ@{s;max(a,b)} := pair {
   fst : A;
   snd : B
   }.
@@ -11,7 +11,7 @@ Definition and@{|} : Prop -> Prop -> Prop := prod.
 
 Check prod True Set.
 
-Definition conj@{|} : forall [A B : Prop], A -> B -> and A B := pair.
-Definition proj1@{|} : forall [A B : Prop], and A B -> A := fst.
-Definition proj2@{|} : forall [A B : Prop], and A B -> B := snd.
-Definition flip_and@{|} : forall [A B : Prop], and A B -> and B A := flip_prod.
+Definition conj@{} : forall [A B : Prop], A -> B -> and A B := pair.
+Definition proj1@{} : forall [A B : Prop], and A B -> A := fst.
+Definition proj2@{} : forall [A B : Prop], and A B -> B := snd.
+Definition flip_and@{} : forall [A B : Prop], and A B -> and B A := flip_prod.

@@ -52,7 +52,7 @@ Minimized universes:
 Normalized constraints:
  {sort_poly_elab.29} | U+1 <= sort_poly_elab.29 *)
 exfalso@{α ; u} :
-forall (A : Type@{α ; u}) (_ : False), A
+forall (A : Univ@{α ; u}) (_ : False), A
 (* α ; u(= in 1st binder) |  *)
 
 exfalso is universe polymorphic and cumulative
@@ -61,7 +61,7 @@ exfalso is transparent
 Expands to: Constant sort_poly_elab.Reduction.exfalso
 Declared in library sort_poly_elab, line 32, characters 13-20
 iter@{α ; u} :
-forall (A : Type@{α ; u}) (_ : forall _ : A, A) (_ : nat) (_ : A), A
+forall (A : Univ@{α ; u}) (_ : forall _ : A, A) (_ : nat) (_ : A), A
 (* α ; u(= in 1st binder, = in 1st fix  binder) | 
     *)
 
@@ -71,7 +71,7 @@ iter is transparent
 Expands to: Constant sort_poly_elab.Reduction.iter
 Declared in library sort_poly_elab, line 39, characters 11-15
 Box@{α α0 ; u} :
-forall _ : Type@{α ; u}, Type@{α0 ; u}
+forall _ : Univ@{α ; u}, Univ@{α0 ; u}
 (* α α0 ; u(= in 1st binder, + in type) |  *)
 
 Box is universe polymorphic and cumulative
@@ -84,7 +84,7 @@ Arguments Box A%_type_scope
 Expands to: Inductive sort_poly_elab.Conversion.Box
 Declared in library sort_poly_elab, line 54, characters 12-15
 t1@{α α0 ; u} :
-forall (A : Type@{α ; u}) (_ : A) (_ : A), Box@{α α0 ; u} A
+forall (A : Univ@{α ; u}) (_ : A) (_ : A), Box@{α α0 ; u} A
 (* α α0 ; u(= in 1st binder) |  *)
 
 t1 is universe polymorphic and cumulative
@@ -93,7 +93,7 @@ t1 is transparent
 Expands to: Constant sort_poly_elab.Conversion.t1
 Declared in library sort_poly_elab, line 58, characters 13-15
 t2@{α α0 ; u} :
-forall (A : Type@{α ; u}) (_ : A) (_ : A), Box@{α α0 ; u} A
+forall (A : Univ@{α ; u}) (_ : A) (_ : A), Box@{α α0 ; u} A
 (* α α0 ; u(= in 1st binder) |  *)
 
 t2 is universe polymorphic and cumulative
@@ -102,7 +102,7 @@ t2 is transparent
 Expands to: Constant sort_poly_elab.Conversion.t2
 Declared in library sort_poly_elab, line 62, characters 13-15
 t1'@{α ; u} :
-forall (A : Type@{α ; u}) (_ : A) (_ : A), A
+forall (A : Univ@{α ; u}) (_ : A) (_ : A), A
 (* α ; u(= in 1st binder) |  *)
 
 t1' is universe polymorphic and cumulative
@@ -111,7 +111,7 @@ t1' is transparent
 Expands to: Constant sort_poly_elab.Conversion.t1'
 Declared in library sort_poly_elab, line 66, characters 13-16
 t2'@{α ; u} :
-forall (A : Type@{α ; u}) (_ : A) (_ : A), A
+forall (A : Univ@{α ; u}) (_ : A) (_ : A), A
 (* α ; u(= in 1st binder) |  *)
 
 t2' is universe polymorphic and cumulative
@@ -199,7 +199,7 @@ Minimized universes:
 Normalized constraints:
   *)
 ignore@{α ; u} :
-forall {A : Type@{α ; u}} (_ : A), unit
+forall {A : Univ@{α ; u}} (_ : A), unit
 (* α ; u(= in 1st binder) |  *)
 
 ignore is universe polymorphic and cumulative
@@ -231,7 +231,7 @@ t is transparent
 Expands to: Constant sort_poly_elab.Conversion.t
 Declared in library sort_poly_elab, line 104, characters 13-14
 v@{α ; u} :
-forall (A : Type@{α ; u}) (_ : bool), A
+forall (A : Univ@{α ; u}) (_ : bool), A
 (* α ; u(= in 1st binder, = in term) |  *)
 
 v is universe polymorphic
@@ -241,15 +241,15 @@ Declared in library sort_poly_elab, line 108, characters 8-9
 File "./output/sort_poly_elab.v", line 110, characters 50-51:
 The command has indeed failed with message:
 In environment
-P : forall _ : nat, Type@{α57 ; sort_poly_elab.82}
+P : forall _ : nat, Univ@{α57 ; sort_poly_elab.82}
 x : P (v@{Type ; sort_poly_elab.81} nat true)
 The term "x" has type "P (v@{Type ; sort_poly_elab.81} nat true)"
 while it is expected to have type
  "P (v@{Type ; sort_poly_elab.83} nat false)".
-fun (A : SProp) (P : forall _ : A, Type@{α63 ; sort_poly_elab.88})
+fun (A : SProp) (P : forall _ : A, Univ@{α63 ; sort_poly_elab.88})
   (x : P (v@{SProp ; sort_poly_elab.87} A true)) =>
 x : P (v@{SProp ; sort_poly_elab.89} A false)
-     : forall (A : SProp) (P : forall _ : A, Type@{α63 ; sort_poly_elab.88})
+     : forall (A : SProp) (P : forall _ : A, Univ@{α63 ; sort_poly_elab.88})
          (_ : P (v@{SProp ; sort_poly_elab.87} A true)),
        P (v@{SProp ; sort_poly_elab.89} A false)
 (* {α63}; {sort_poly_elab.89 sort_poly_elab.88 sort_poly_elab.87
@@ -268,7 +268,7 @@ Minimized universes:
 Normalized constraints:
  {sort_poly_elab.88} |  *)
 zog@{α ; u} :
-forall _ : Type@{α ; u}, Type@{α ; u}
+forall _ : Univ@{α ; u}, Univ@{α ; u}
 (* α ; u(= in 1st binder, + in type) |  *)
 
 zog is universe polymorphic and cumulative
@@ -277,7 +277,7 @@ zog is transparent
 Expands to: Constant sort_poly_elab.Inference.zog
 Declared in library sort_poly_elab, line 118, characters 13-16
 zag@{α ; u} :
-forall _ : Type@{α ; u}, Type@{α ; u}
+forall _ : Univ@{α ; u}, Univ@{α ; u}
 (* α ; u(= in 1st binder, + in type) |  *)
 
 zag is universe polymorphic and cumulative
@@ -286,7 +286,7 @@ zag is transparent
 Expands to: Constant sort_poly_elab.Inference.zag
 Declared in library sort_poly_elab, line 123, characters 13-16
 zig@{α ; u} :
-forall _ : Type@{α ; u}, Type@{α ; u}
+forall _ : Univ@{α ; u}, Univ@{α ; u}
 (* α ; u(= in 1st binder, + in type) |  *)
 
 zig is universe polymorphic and cumulative
@@ -297,12 +297,12 @@ Declared in library sort_poly_elab, line 128, characters 13-16
 File "./output/sort_poly_elab.v", line 133, characters 66-67:
 The command has indeed failed with message:
 In environment
-A : Type@{s ; 0}
-The term "A" has type "Type@{s ; 0}" while it is expected to have type
- "Type@{s' ; 0}"
+A : Univ@{s ; 0}
+The term "A" has type "Univ@{s ; 0}" while it is expected to have type
+ "Univ@{s' ; 0}"
 (universe inconsistency: Cannot enforce Type@{s; 0} ≤ 
 Type@{s'; 0}).
-implicit@{α ; u} : Type@{α ; u}
+implicit@{α ; u} : Univ@{α ; u}
 (* α ; u*(+ in type) |  *)
 
 implicit is universe polymorphic and cumulative
@@ -313,7 +313,7 @@ implicit@{α ; u} may only be eliminated to produce values whose type is in sort
   than the instantiation of α.
 Expands to: Inductive sort_poly_elab.Inductives.implicit
 Declared in library sort_poly_elab, line 137, characters 12-20
-foo1@{α ; u} : Type@{α ; u}
+foo1@{α ; u} : Univ@{α ; u}
 (* α ; u*(+ in type) |  *)
 
 foo1 is universe polymorphic and cumulative
@@ -349,7 +349,7 @@ foo1_False' is transparent
 Expands to: Constant sort_poly_elab.Inductives.foo1_False'
 Declared in library sort_poly_elab, line 157, characters 13-24
 foo2@{α α0 ; u} :
-Type@{α ; u+1}
+Univ@{α ; u+1}
 (* α α0 ; u(+ (= for typing) in term, + in type) | 
     *)
 
@@ -366,7 +366,7 @@ The command has indeed failed with message:
 The reference foo2_rect was not found in the current environment.
 Did you mean bool_rect, sig2_rect, prod_rect, ex2_rect or bool_rec?
 foo3@{α α0 ; u} :
-forall _ : Type@{α0 ; u}, Type@{α ; u}
+forall _ : Univ@{α0 ; u}, Univ@{α ; u}
 (* α α0 ; u(= in 1st binder, + in type) |  *)
 
 foo3 is universe polymorphic and cumulative
@@ -382,7 +382,7 @@ File "./output/sort_poly_elab.v", line 171, characters 13-22:
 The command has indeed failed with message:
 The reference foo3_rect was not found in the current environment.
 Did you mean bool_rect, prod_rect or bool_rec?
-foo5@{α ; u} : forall _ : Type@{α ; u}, Prop
+foo5@{α ; u} : forall _ : Univ@{α ; u}, Prop
 (* α ; u(= in 1st binder) |  *)
 
 foo5 is universe polymorphic and cumulative
@@ -403,7 +403,7 @@ foo5_ind' is transparent
 Expands to: Constant sort_poly_elab.Inductives.foo5_ind'
 Declared in library sort_poly_elab, line 178, characters 13-22
 foo5_Prop_rect@{α ; u} :
-forall (A : Prop) (P : forall _ : foo5@{Prop ; 0} A, Type@{α ; u})
+forall (A : Prop) (P : forall _ : foo5@{Prop ; 0} A, Univ@{α ; u})
   (_ : forall a : A, P (Foo5@{Prop ; 0} A a)) (f : foo5@{Prop ; 0} A),
 P f
 (* α ; u(= in 2nd binder) | Prop -> α *)
@@ -414,7 +414,7 @@ foo5_Prop_rect is transparent
 Expands to: Constant sort_poly_elab.Inductives.foo5_Prop_rect
 Declared in library sort_poly_elab, line 182, characters 13-27
 foo5_Prop_rect'@{α ; u} :
-forall (A : Prop) (P : forall _ : foo5@{Prop ; 0} A, Type@{α ; u})
+forall (A : Prop) (P : forall _ : foo5@{Prop ; 0} A, Univ@{α ; u})
   (_ : forall a : A, P (Foo5@{Prop ; 0} A a)) (f : foo5@{Prop ; 0} A),
 P f
 (* α ; u(= in 2nd binder) |  *)
@@ -424,7 +424,7 @@ Arguments foo5_Prop_rect' A%_type_scope (P H)%_function_scope f
 foo5_Prop_rect' is transparent
 Expands to: Constant sort_poly_elab.Inductives.foo5_Prop_rect'
 Declared in library sort_poly_elab, line 193, characters 13-28
-foo6@{α ; u} : Type@{α ; u}
+foo6@{α ; u} : Univ@{α ; u}
 (* α ; u*(+ in type) |  *)
 
 foo6 is universe polymorphic and cumulative
@@ -441,7 +441,7 @@ The reference foo6_sind was not found in the current environment.
 Did you mean foo5_sind, foo5_ind, bool_sind, prod_sind, or_sind, foo5_ind' or
 bool_ind?
 foo6_rect@{α α0 ; u} :
-forall (P : forall _ : foo6@{α ; 0}, Type@{α0 ; u}) 
+forall (P : forall _ : foo6@{α ; 0}, Univ@{α0 ; u}) 
   (_ : P Foo6@{α ; 0}) (f : foo6@{α ; 0}),
 P f
 (* α α0 ; u(= in 1st binder) | α -> α0 *)
@@ -452,7 +452,7 @@ foo6_rect is transparent
 Expands to: Constant sort_poly_elab.Inductives.foo6_rect
 Declared in library sort_poly_elab, line 209, characters 13-22
 foo6_prop_rect@{α ; u} :
-forall (P : forall _ : foo6@{Prop ; 0}, Type@{α ; u}) 
+forall (P : forall _ : foo6@{Prop ; 0}, Univ@{α ; u}) 
   (_ : P Foo6@{Prop ; 0}) (f : foo6@{Prop ; 0}),
 P f
 (* α ; u(= in 1st binder) |  *)
@@ -462,18 +462,18 @@ Arguments foo6_prop_rect P%_function_scope H f
 foo6_prop_rect is transparent
 Expands to: Constant sort_poly_elab.Inductives.foo6_prop_rect
 Declared in library sort_poly_elab, line 218, characters 13-27
-foo6_type_rect@{α ; u} :
-forall (P : forall _ : foo6@{Type ; 0}, Type@{α ; u}) 
+foo6_Type_rect@{α ; u} :
+forall (P : forall _ : foo6@{Type ; 0}, Univ@{α ; u}) 
   (_ : P Foo6@{Type ; 0}) (f : foo6@{Type ; 0}),
 P f
 (* α ; u(= in 1st binder) |  *)
 
-foo6_type_rect is universe polymorphic and cumulative
-Arguments foo6_type_rect P%_function_scope H f
-foo6_type_rect is transparent
-Expands to: Constant sort_poly_elab.Inductives.foo6_type_rect
+foo6_Type_rect is universe polymorphic and cumulative
+Arguments foo6_Type_rect P%_function_scope H f
+foo6_Type_rect is transparent
+Expands to: Constant sort_poly_elab.Inductives.foo6_Type_rect
 Declared in library sort_poly_elab, line 227, characters 13-27
-foo7@{α ; } : Type@{α ; 0}
+foo7@{α ; } : Univ@{α ; 0}
 (* α ;  |  *)
 
 foo7 is universe polymorphic
@@ -516,8 +516,8 @@ foo7_prop_rect is transparent
 Expands to: Constant sort_poly_elab.Inductives.foo7_prop_rect
 Declared in library sort_poly_elab, line 248, characters 13-27
 sigma@{α α0 α1 ; u u0} :
-forall (A : Type@{α ; u}) (_ : forall _ : A, Type@{α0 ; u0}),
-Type@{α1 ; max(u,u0)}
+forall (A : Univ@{α ; u}) (_ : forall _ : A, Univ@{α0 ; u0}),
+Univ@{α1 ; max(u,u0)}
 (* α α0 α1 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) | 
     *)
 
@@ -571,7 +571,7 @@ Expands to: Constant sort_poly_elab.Inductives.pr2
 Declared in library sort_poly_elab, line 278, characters 13-16
 π2 not a defined object.
 seq@{α ; u} :
-forall (A : Type@{α ; u}) (_ : A) (_ : A), Prop
+forall (A : Univ@{α ; u}) (_ : A) (_ : A), Prop
 (* α ; u(= in 1st binder) |  *)
 
 seq is universe polymorphic and cumulative
@@ -579,7 +579,7 @@ Arguments seq A%_type_scope a _
 Expands to: Inductive sort_poly_elab.Inductives.seq
 Declared in library sort_poly_elab, line 293, characters 12-15
 eta@{α α0 α1 ; u u0} :
-forall (A : Type@{α1 ; u}) (B : forall _ : A, Type@{α ; u0})
+forall (A : Univ@{α1 ; u}) (B : forall _ : A, Univ@{α ; u0})
   (s : sigma@{α1 α α0 ; u u0} A B),
 seq@{α0 ; max(u,u0)} (sigma@{α1 α α0 ; u u0} A B) s
   (pair@{α1 α α0 ; u u0} A B (@pr1@{α α0 α1 ; u u0} A B s)
@@ -595,7 +595,7 @@ eta is opaque
 Expands to: Constant sort_poly_elab.Inductives.eta
 Declared in library sort_poly_elab, line 298, characters 13-16
 sum@{α α0 α1 ; u u0} :
-forall (_ : Type@{α ; u}) (_ : Type@{α0 ; u0}), Type@{α1 ; max(u,u0)}
+forall (_ : Univ@{α ; u}) (_ : Univ@{α0 ; u0}), Univ@{α1 ; max(u,u0)}
 (* α α0 α1 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) | 
     *)
 
@@ -686,7 +686,7 @@ The quality constraints are inconsistent: cannot enforce Prop -> Type
 because it would identify Type and Prop which is inconsistent.
 This is introduced by the constraints Prop -> Type
 list@{α α0 ; u} :
-forall _ : Type@{α ; u}, Type@{α0 ; u}
+forall _ : Univ@{α ; u}, Univ@{α0 ; u}
 (* α α0 ; u(= in 1st binder, + in type) |  *)
 
 list is universe polymorphic and cumulative
@@ -714,7 +714,7 @@ list_elim is transparent
 Expands to: Constant sort_poly_elab.Inductives.list_elim
 Declared in library sort_poly_elab, line 408, characters 13-22
 list_idT@{α α0 ; u} :
-forall {A : Type@{α0 ; u}} (_ : list@{α0 α ; u} A), list@{α0 Type ; u} A
+forall {A : Univ@{α0 ; u}} (_ : list@{α0 α ; u} A), list@{α0 Type ; u} A
 (* α α0 ; u(= in 1st binder, = in 1st fix  binder) | 
    α -> Type *)
 
@@ -724,7 +724,7 @@ list_idT is transparent
 Expands to: Constant sort_poly_elab.Inductives.list_idT
 Declared in library sort_poly_elab, line 419, characters 11-19
 list_idP@{α α0 ; u} :
-forall {A : Type@{α0 ; u}} (_ : list@{α0 α ; u} A), list@{α0 Prop ; u} A
+forall {A : Univ@{α0 ; u}} (_ : list@{α0 α ; u} A), list@{α0 Prop ; u} A
 (* α α0 ; u(= in 1st binder, = in 1st fix  binder) | 
    α -> Prop *)
 
@@ -734,7 +734,7 @@ list_idP is transparent
 Expands to: Constant sort_poly_elab.Inductives.list_idP
 Declared in library sort_poly_elab, line 427, characters 11-19
 list_idS@{α α0 ; u} :
-forall {A : Type@{α0 ; u}} (_ : list@{α0 α ; u} A), list@{α0 SProp ; u} A
+forall {A : Univ@{α0 ; u}} (_ : list@{α0 α ; u} A), list@{α0 SProp ; u} A
 (* α α0 ; u(= in 1st binder, = in 1st fix  binder) | 
    α -> SProp *)
 
@@ -755,7 +755,7 @@ Arguments map (A B)%_type_scope f%_function_scope l
 map is transparent
 Expands to: Constant sort_poly_elab.Inductives.map
 Declared in library sort_poly_elab, line 443, characters 11-14
-False'@{α ; u} : Type@{α ; u}
+False'@{α ; u} : Univ@{α ; u}
 (* α ; u*(+ in type) |  *)
 
 False' is universe polymorphic and cumulative
@@ -774,7 +774,7 @@ Arguments False'_False x
 False'_False is transparent
 Expands to: Constant sort_poly_elab.Inductives.False'_False
 Declared in library sort_poly_elab, line 461, characters 13-25
-bool@{α ; } : Type@{α ; 0}
+bool@{α ; } : Univ@{α ; 0}
 (* α ;  |  *)
 
 bool is universe polymorphic
@@ -815,13 +815,13 @@ The command has indeed failed with message:
 The term "tt" has type "unit" while it is expected to have type
  "?P@{b:=true@{Test ; }}"
 (unable to find a well-typed instantiation for "?P": cannot ensure that 
-"Set" is a subtype of "Type@{Test ; sort_poly_elab.344}").
+"Set" is a subtype of "Univ@{Test ; sort_poly_elab.344}").
 File "./output/sort_poly_elab.v", line 510, characters 58-66:
 The command has indeed failed with message:
 The term "testctor" has type "testind" while it is expected to have type
  "?P@{b:=true@{Test ; }}"
 (unable to find a well-typed instantiation for "?P": cannot ensure that
-"Type@{Test2 ; 0}" is a subtype of "Type@{Test ; sort_poly_elab.346}").
+"Univ@{Test2 ; 0}" is a subtype of "Univ@{Test ; sort_poly_elab.346}").
 match true@{Test ; } return testind'@{Test ; } with
 | true => testctor'@{Test ; }
 | false => testctor'@{Test ; }
@@ -832,7 +832,7 @@ Minimized universes:
  sort_poly_elab.348 := 0
 Normalized constraints:
   *)
-unit@{α ; u} : Type@{α ; u}
+unit@{α ; u} : Univ@{α ; u}
 (* α ; u*(+ in type) |  *)
 
 unit is universe polymorphic and cumulative
@@ -843,7 +843,7 @@ unit@{α ; u} may only be eliminated to produce values whose type is in sort qua
   than the instantiation of α.
 Expands to: Inductive sort_poly_elab.Inductives.unit
 Declared in library sort_poly_elab, line 518, characters 12-16
-FooNat@{α ; } : Type@{α ; 0}
+FooNat@{α ; } : Univ@{α ; 0}
 (* α ;  |  *)
 
 FooNat is universe polymorphic
@@ -878,7 +878,7 @@ The command has indeed failed with message:
 The record R1 could not be defined as a primitive record because it has no
 projections. [non-primitive-record,records,default]
 R2@{α ; u} :
-forall _ : SProp, Type@{α ; u}
+forall _ : SProp, Univ@{α ; u}
 (* α ; u*(+ in type) | α -> SProp *)
 
 R2 is universe polymorphic and cumulative
@@ -887,7 +887,7 @@ Arguments R2 A%_type_scope
 Expands to: Inductive sort_poly_elab.Records.R2
 Declared in library sort_poly_elab, line 551, characters 9-11
 R3@{α α0 ; u} :
-forall _ : Type@{α ; u}, Type@{α0 ; u}
+forall _ : Univ@{α ; u}, Univ@{α0 ; u}
 (* α α0 ; u(= in 1st binder, + in type) | α0 -> α *)
 
 R3 is universe polymorphic and cumulative
@@ -895,7 +895,7 @@ R3 has primitive projections with eta conversion depending on sort instantiation
 Arguments R3 A%_type_scope
 Expands to: Inductive sort_poly_elab.Records.R3
 Declared in library sort_poly_elab, line 555, characters 9-11
-R4@{s ; } : forall _ : Type@{s ; 0}, Type@{s ; 0}
+R4@{s ; } : forall _ : Univ@{s ; 0}, Univ@{s ; 0}
 (* s ;  |  *)
 
 R4 is universe polymorphic
@@ -908,7 +908,7 @@ The command has indeed failed with message:
 The record R5 could not be defined as a primitive record because it is
 squashed. [non-primitive-record,records,default]
 R5@{α ; u} :
-forall _ : Type@{α ; u}, SProp
+forall _ : Univ@{α ; u}, SProp
 (* α ; u(= in 1st binder) | SProp -> α *)
 
 R5 is universe polymorphic and cumulative
@@ -916,7 +916,7 @@ R5@{α ; u} may only be eliminated to produce values whose type is SProp.
 Arguments R5 A%_type_scope
 Expands to: Inductive sort_poly_elab.Records.R5
 Declared in library sort_poly_elab, line 566, characters 11-13
-R6@{s ; } : forall _ : Type@{s ; 0}, Set
+R6@{s ; } : forall _ : Univ@{s ; 0}, Set
 (* s ;  |  *)
 
 R6 is universe polymorphic
@@ -985,7 +985,7 @@ while it is expected to have type
 (cannot unify "Conversion.box@{Type Type ; sort_poly_elab.367} nat (R6f2 _ x)"
 and "Conversion.box@{Type Type ; sort_poly_elab.368} nat (R6f2 _ y)").
 R7@{α α0 ; u} :
-forall _ : Type@{α ; u}, Type@{α0 ; u}
+forall _ : Univ@{α ; u}, Univ@{α0 ; u}
 (* α α0 ; u(= in 1st binder, + in type) |  *)
 
 R7 is universe polymorphic and cumulative
@@ -998,7 +998,7 @@ Arguments R7 A%_type_scope
 Expands to: Inductive sort_poly_elab.Records.R7
 Declared in library sort_poly_elab, line 582, characters 38-40
 R7f1@{α α0 ; u} :
-forall (A : Type@{α ; u}) (_ : R7@{α α0 ; u} A), A
+forall (A : Univ@{α ; u}) (_ : R7@{α α0 ; u} A), A
 (* α α0 ; u(= in 1st binder) | α0 -> α *)
 
 R7f1 is universe polymorphic and cumulative
@@ -1008,7 +1008,7 @@ R7f1 is transparent
 Expands to: Constant sort_poly_elab.Records.R7f1
 Declared in library sort_poly_elab, line 582, characters 55-59
 R7f2@{α α0 ; u} :
-forall (A : Type@{α ; u}) (_ : R7@{α α0 ; u} A), nat
+forall (A : Univ@{α ; u}) (_ : R7@{α α0 ; u} A), nat
 (* α α0 ; u(= in 1st binder) | α0 -> Type *)
 
 R7f2 is universe polymorphic and cumulative
@@ -1018,8 +1018,8 @@ R7f2 is transparent
 Expands to: Constant sort_poly_elab.Records.R7f2
 Declared in library sort_poly_elab, line 582, characters 65-69
 Rsigma@{s ; u v} :
-forall (A : Type@{s ; u}) (_ : forall _ : A, Type@{s ; v}),
-Type@{s ; max(u,v)}
+forall (A : Univ@{s ; u}) (_ : forall _ : A, Univ@{s ; v}),
+Univ@{s ; max(u,v)}
 (* s ; u(= in 1st binder, + in type) v(= in 2nd binder, + in type) | 
     *)
 
@@ -1043,7 +1043,7 @@ Rsigma_srect is transparent
 Expands to: Constant sort_poly_elab.Records.Rsigma_srect
 Declared in library sort_poly_elab, line 598, characters 13-25
 sexists@{α ; u} :
-forall (A : Type@{α ; u}) (_ : forall _ : A, Prop), Prop
+forall (A : Univ@{α ; u}) (_ : forall _ : A, Prop), Prop
 (* α ; u(= in 1st binder) |  *)
 
 sexists is universe polymorphic and cumulative
@@ -1053,7 +1053,7 @@ Arguments sexists A%_type_scope B%_function_scope
 Expands to: Inductive sort_poly_elab.Records.sexists
 Declared in library sort_poly_elab, line 612, characters 12-19
 sexists_ind@{α401 ; sort_poly_elab.390}
-     : forall (A : Type@{α401 ; sort_poly_elab.390}) 
+     : forall (A : Univ@{α401 ; sort_poly_elab.390}) 
          (B : forall _ : A, Prop) (P : Prop)
          (_ : forall (a : A) (_ : B a), P)
          (_ : sexists@{α401 ; sort_poly_elab.390} A B),
@@ -1064,7 +1064,7 @@ Collapsed sorts:
 Normalized constraints:
  {sort_poly_elab.390} |  *)
 R8@{α α0 ; u} :
-Type@{α ; u+1}
+Univ@{α ; u+1}
 (* α α0 ; u(+ (= for typing) in term, + in type) | 
     *)
 
@@ -1077,7 +1077,7 @@ R8@{α α0 ; u} may only be eliminated to produce values whose type is in sort q
 Expands to: Inductive sort_poly_elab.Records.R8
 Declared in library sort_poly_elab, line 622, characters 9-11
 R8f1@{α α0 ; u} :
-forall _ : R8@{α α0 ; u}, Type@{α0 ; u}
+forall _ : R8@{α α0 ; u}, Univ@{α0 ; u}
 (* α α0 ; u(= in 1st binder, = in term, + in type) | 
    α -> Type *)
 
@@ -1099,7 +1099,7 @@ Arguments R8f2 r
 R8f2 is transparent
 Expands to: Constant sort_poly_elab.Records.R8f2
 Declared in library sort_poly_elab, line 624, characters 4-8
-R9@{α α0 α1 ; } : Type@{α ; 0}
+R9@{α α0 α1 ; } : Univ@{α ; 0}
 (* α α0 α1 ;  |  *)
 
 R9 is universe polymorphic
@@ -1131,7 +1131,7 @@ R9f2 is transparent
 Expands to: Constant sort_poly_elab.Records.R9f2
 Declared in library sort_poly_elab, line 644, characters 4-8
 R10@{α α0 α1 α2 ; u u0} :
-forall _ : Type@{α0 ; u}, Type@{α ; max(u,u0)}
+forall _ : Univ@{α0 ; u}, Univ@{α ; max(u,u0)}
 (* α α0 α1 α2 ; u(= in 1st binder, + in type) u0*(+ in type) | 
     *)
 
@@ -1145,7 +1145,7 @@ Arguments R10 A%_type_scope
 Expands to: Inductive sort_poly_elab.Records.R10
 Declared in library sort_poly_elab, line 656, characters 9-12
 R10f1@{α α0 α1 α2 ; u u0} :
-forall (A : Type@{α0 ; u}) (_ : R10@{α α0 α1 α2 ; u u0} A), A
+forall (A : Univ@{α0 ; u}) (_ : R10@{α α0 α1 α2 ; u u0} A), A
 (* α α0 α1 α2 ; u(= in 1st binder) u0* | α -> α0 *)
 
 R10f1 is universe polymorphic and cumulative
@@ -1155,7 +1155,7 @@ R10f1 is transparent
 Expands to: Constant sort_poly_elab.Records.R10f1
 Declared in library sort_poly_elab, line 657, characters 4-9
 R10f2@{α α0 α1 α2 ; u u0} :
-forall (A : Type@{α0 ; u}) (r : R10@{α α0 α1 α2 ; u u0} A),
+forall (A : Univ@{α0 ; u}) (r : R10@{α α0 α1 α2 ; u u0} A),
 @eq@{α0 α1 ; u0 u} A (R10f1@{α α0 α1 α2 ; u u0} A r)
   (R10f1@{α α0 α1 α2 ; u u0} A r)
 (* α α0 α1 α2 ; u(= in 1st binder) u0* | α -> α0
@@ -1168,7 +1168,7 @@ R10f2 is transparent
 Expands to: Constant sort_poly_elab.Records.R10f2
 Declared in library sort_poly_elab, line 658, characters 4-9
 R10f3@{α α0 α1 α2 ; u u0} :
-forall (A : Type@{α0 ; u}) (_ : R10@{α α0 α1 α2 ; u u0} A), bool@{α2 ; }
+forall (A : Univ@{α0 ; u}) (_ : R10@{α α0 α1 α2 ; u u0} A), bool@{α2 ; }
 (* α α0 α1 α2 ; u(= in 1st binder) u0* | α -> α2 *)
 
 R10f3 is universe polymorphic and cumulative
@@ -1178,7 +1178,7 @@ R10f3 is transparent
 Expands to: Constant sort_poly_elab.Records.R10f3
 Declared in library sort_poly_elab, line 659, characters 4-9
 R11@{α α0 α1 α2 α3 α4 α5 ; } :
-Type@{α ; 0}
+Univ@{α ; 0}
 (* α α0 α1 α2 α3 α4 α5 ;  | α0 -> α3
                             α3 -> Type *)
 
@@ -1209,7 +1209,7 @@ let r0 : R10@{α0 α1 α2 α3 ; 0 0} bool@{α1 ; } :=
     (@eq_refl@{α1 α2 ; 0 0} bool@{α1 ; } true@{α1 ; })
     (R11f1@{α α0 α1 α2 α3 α4 α5 ; } r)
   in
-match R10f3@{α0 α1 α2 α3 ; 0 0} bool@{α1 ; } r0 return Type@{α4 ; 0} with
+match R10f3@{α0 α1 α2 α3 ; 0 0} bool@{α1 ; } r0 return Univ@{α4 ; 0} with
 | true => bool@{α4 ; }
 | false => bool@{α4 ; }
 end
@@ -1236,7 +1236,7 @@ Arguments R11f3 r
 R11f3 is transparent
 Expands to: Constant sort_poly_elab.Records.R11f3
 Declared in library sort_poly_elab, line 682, characters 4-9
-R12@{α α0 ; } : Type@{α ; 0}
+R12@{α α0 ; } : Univ@{α ; 0}
 (* α α0 ;  | α0 -> Type *)
 
 R12 is universe polymorphic
@@ -1282,7 +1282,7 @@ R12f2 is transparent
 Expands to: Constant sort_poly_elab.Records.R12f2
 Declared in library sort_poly_elab, line 703, characters 4-9
 R13@{α α0 α1 α2 ; u u0} :
-Type@{α ; max(u+1,u0+1)}
+Univ@{α ; max(u+1,u0+1)}
 (* α α0 α1 α2 ; u(= in term, + in type) u0(+ (= for typing) in term, + in type) | 
    α1 -> Type
    α2 -> Type,
@@ -1297,7 +1297,7 @@ R13@{α α0 α1 α2 ; u u0} may only be eliminated to produce values whose type 
 Expands to: Inductive sort_poly_elab.Records.R13
 Declared in library sort_poly_elab, line 718, characters 9-12
 R13f1@{α α0 α1 α2 ; u u0} :
-forall _ : R13@{α α0 α1 α2 ; u u0}, Type@{α0 ; u}
+forall _ : R13@{α α0 α1 α2 ; u u0}, Univ@{α0 ; u}
 (* α α0 α1 α2 ; u(= in 1st binder, = in term, + in type) u0(= in 1st binder, = in term) | 
    α -> Type
    α1 -> Type
@@ -1311,7 +1311,7 @@ R13f1 is transparent
 Expands to: Constant sort_poly_elab.Records.R13f1
 Declared in library sort_poly_elab, line 719, characters 4-9
 R13f2@{α α0 α1 α2 ; u u0} :
-forall _ : R13@{α α0 α1 α2 ; u u0}, Type@{α0 ; u0}
+forall _ : R13@{α α0 α1 α2 ; u u0}, Univ@{α0 ; u0}
 (* α α0 α1 α2 ; u(= in 1st binder, = in term) u0(= in 1st binder, = in term, + in type) | 
    α -> Type
    α1 -> Type
@@ -1363,7 +1363,7 @@ R13f4 is transparent
 Expands to: Constant sort_poly_elab.Records.R13f4
 Declared in library sort_poly_elab, line 722, characters 4-9
 C1@{α α0 ; u} :
-forall _ : Type@{α ; u}, Type@{α0 ; u}
+forall _ : Univ@{α ; u}, Univ@{α0 ; u}
 (* α α0 ; u(= in 1st binder, + in type) |  *)
 
 C1 is universe polymorphic and cumulative
@@ -1376,7 +1376,7 @@ Arguments C1 A%_type_scope
 Expands to: Inductive sort_poly_elab.Classes.C1
 Declared in library sort_poly_elab, line 757, characters 8-10
 C1f1@{α α0 ; u} :
-forall {A : Type@{α ; u}} {_ : C1@{α α0 ; u} A}, A
+forall {A : Univ@{α ; u}} {_ : C1@{α α0 ; u} A}, A
 (* α α0 ; u(= in 1st binder) | α0 -> α *)
 
 C1f1 is universe polymorphic and cumulative
@@ -1419,7 +1419,7 @@ C1AxiomaticI1@{α α0 ; } : C1@{α α0 ; 0} unit@{α ; 0}
 C1AxiomaticI1 is universe polymorphic
 Expands to: Constant sort_poly_elab.Classes.C1AxiomaticI1
 Declared in library sort_poly_elab, line 785, characters 9-22
-C1InductiveI1@{α ; u} : Type@{α ; u}
+C1InductiveI1@{α ; u} : Univ@{α ; u}
 (* α ; u*(+ in type) |  *)
 
 C1InductiveI1 is universe polymorphic and cumulative
@@ -1433,7 +1433,7 @@ Declared in library sort_poly_elab, line 789, characters 12-25
 File "./output/sort_poly_elab.v", line 798, characters 0-76:
 The command has indeed failed with message:
 Sort metavariables must be collapsed to Type in universe monomorphic constructions.
-Attr@{α ; u} : Type@{α ; u}
+Attr@{α ; u} : Univ@{α ; u}
 (* α ; u*(+ in type) |  *)
 
 Attr is universe polymorphic and cumulative

@@ -2,7 +2,7 @@ File "./output/nested_eliminators.v", line 33, characters 13-21:
 The command has indeed failed with message:
 The reference True_all was not found in the current environment.
 Inductive
-list_all@{α ; u u0} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+list_all@{α ; u u0} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : list A -> Type@{max(u,u0)} :=
     nil_all : list_all@{α ; u u0} A PA (nil A)
   | cons_all : forall a : A,
@@ -27,8 +27,8 @@ list_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.list_all_forall
 Declared in library nested_eliminators, line 36, characters 2-88
 Inductive
-list_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
-(PPA : forall a : A, PA a -> Type@{α0 ; u1})
+list_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+(PPA : forall a : A, PA a -> Univ@{α0 ; u1})
   : forall l : list A, list_all@{α ; u u0} A PA l -> Type@{max(u,u0,u1)} :=
     nil_all_all : list_all_all@{α α0 ; u u0 u1} A PA PPA 
                     (nil A) (nil_all@{α ; u u0} A PA)
@@ -82,7 +82,7 @@ RoseTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.RoseTree_ind
 Declared in library nested_eliminators, line 53, characters 2-113
 Inductive
-RoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+RoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : RoseTree A -> Type@{max(u,u0,u1)} :=
     RTleaf_all : forall a : A,
                  PA a -> RoseTree_all@{α ; u u0 u1} A PA (RTleaf A a)
@@ -98,7 +98,7 @@ Arguments RoseTree_all A%_type_scope PA%_function_scope r
 Arguments RTleaf_all A%_type_scope PA%_function_scope a _
 Arguments RTnode_all A%_type_scope PA%_function_scope l _
 RoseTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall r : RoseTree A, RoseTree_all@{α ; u u0 max(u,u0)} A PA r
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -110,12 +110,12 @@ Expands to: Constant nested_eliminators.Template.RoseTree_all_forall
 Declared in library nested_eliminators, line 53, characters 2-113
 Inductive
 RoseTreeMut_all@{α ; u} (A : Type@{RoseTreeMut.u0}) 
-(PA : A -> Type@{α ; u}) : RoseTreeMut A -> Type@{max(RoseTreeMut.u0,u)} :=
+(PA : A -> Univ@{α ; u}) : RoseTreeMut A -> Type@{max(RoseTreeMut.u0,u)} :=
     node_mut_all : forall f : forest A,
                    forest_all@{α ; u} A PA f ->
                    RoseTreeMut_all@{α ; u} A PA (node_mut A f)
   with forest_all@{α ; u} (A : Type@{RoseTreeMut.u0})
-       (PA : A -> Type@{α ; u}) : forest A -> Type@{max(RoseTreeMut.u0,u)} :=
+       (PA : A -> Univ@{α ; u}) : forest A -> Type@{max(RoseTreeMut.u0,u)} :=
     forest_nil_all : forest_all@{α ; u} A PA (forest_nil A)
   | forest_cons_all : forall a : A,
                       PA a ->
@@ -189,12 +189,12 @@ Expands to: Constant nested_eliminators.Template.RoseTreeMut_all_all_forall
 Declared in library nested_eliminators, line 61, characters 2-164
 Inductive
 RoseTreeMut_all@{α ; u} (A : Type@{RoseTreeMut.u0}) 
-(PA : A -> Type@{α ; u}) : RoseTreeMut A -> Type@{max(RoseTreeMut.u0,u)} :=
+(PA : A -> Univ@{α ; u}) : RoseTreeMut A -> Type@{max(RoseTreeMut.u0,u)} :=
     node_mut_all : forall f : forest A,
                    forest_all@{α ; u} A PA f ->
                    RoseTreeMut_all@{α ; u} A PA (node_mut A f)
   with forest_all@{α ; u} (A : Type@{RoseTreeMut.u0})
-       (PA : A -> Type@{α ; u}) : forest A -> Type@{max(RoseTreeMut.u0,u)} :=
+       (PA : A -> Univ@{α ; u}) : forest A -> Type@{max(RoseTreeMut.u0,u)} :=
     forest_nil_all : forest_all@{α ; u} A PA (forest_nil A)
   | forest_cons_all : forall a : A,
                       PA a ->
@@ -281,7 +281,7 @@ RoseRoseTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.RoseRoseTree_ind
 Declared in library nested_eliminators, line 77, characters 2-136
 Inductive
-RoseRoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+RoseRoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : RoseRoseTree A -> Type@{max(u,u0,u1)} :=
     Nleaf_all : forall a : A,
                 PA a -> RoseRoseTree_all@{α ; u u0 u1} A PA (Nleaf A a)
@@ -299,7 +299,7 @@ Arguments RoseRoseTree_all A%_type_scope PA%_function_scope r
 Arguments Nleaf_all A%_type_scope PA%_function_scope a _
 Arguments Nnode_all A%_type_scope PA%_function_scope p _
 RoseRoseTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall r : RoseRoseTree A, RoseRoseTree_all@{α ; u u0 max(u,u0)} A PA r
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -324,7 +324,7 @@ ArrowTree1_ind is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree1_ind
 Declared in library nested_eliminators, line 85, characters 2-133
 Inductive
-ArrowTree1_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+ArrowTree1_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : ArrowTree1 A -> Type@{max(u,u0,u1)} :=
     ATleaf1_all : forall a : A,
                   PA a -> ArrowTree1_all@{α ; u u0 u1} A PA (ATleaf1 A a)
@@ -342,7 +342,7 @@ Arguments ArrowTree1_all A%_type_scope PA%_function_scope a
 Arguments ATleaf1_all A%_type_scope PA%_function_scope a _
 Arguments ATnode1_all A%_type_scope (PA l _)%_function_scope
 ArrowTree1_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall a : ArrowTree1 A, ArrowTree1_all@{α ; u u0 max(u,u0)} A PA a
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -367,7 +367,7 @@ ArrowTree2_ind is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree2_ind
 Declared in library nested_eliminators, line 93, characters 2-130
 Inductive
-ArrowTree2_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+ArrowTree2_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : ArrowTree2 A -> Type@{max(u,u0,u1)} :=
     ATleaf2_all : forall a : A,
                   PA a -> ArrowTree2_all@{α ; u u0 u1} A PA (ATleaf2 A a)
@@ -386,7 +386,7 @@ Arguments ArrowTree2_all A%_type_scope PA%_function_scope a
 Arguments ATleaf2_all A%_type_scope PA%_function_scope a _
 Arguments ATnode2_all A%_type_scope PA%_function_scope l _
 ArrowTree2_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall a : ArrowTree2 A, ArrowTree2_all@{α ; u u0 max(u,u0)} A PA a
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -413,7 +413,7 @@ ArrowTree3_ind is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree3_ind
 Declared in library nested_eliminators, line 101, characters 2-140
 Inductive
-ArrowTree3_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+ArrowTree3_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : ArrowTree3 A -> Type@{max(u,u0,u1)} :=
     ATleaf3_all : forall a : A,
                   PA a -> ArrowTree3_all@{α ; u u0 u1} A PA (ATleaf3 A a)
@@ -433,7 +433,7 @@ Arguments ArrowTree3_all A%_type_scope PA%_function_scope a
 Arguments ATleaf3_all A%_type_scope PA%_function_scope a _
 Arguments ATnode3_all A%_type_scope (PA l _)%_function_scope
 ArrowTree3_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall a : ArrowTree3 A, ArrowTree3_all@{α ; u u0 max(u,u0)} A PA a
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -528,7 +528,7 @@ PairTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.PairTree_ind
 Declared in library nested_eliminators, line 121, characters 2-124
 Inductive
-PairTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+PairTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : PairTree A -> Type@{max(u,u0,u1)} :=
     Pleaf_all : forall a : A,
                 PA a -> PairTree_all@{α ; u u0 u1} A PA (Pleaf A a)
@@ -545,7 +545,7 @@ Arguments PairTree_all A%_type_scope PA%_function_scope p
 Arguments Pleaf_all A%_type_scope PA%_function_scope a _
 Arguments Pnode_all A%_type_scope PA%_function_scope p _
 PairTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall p : PairTree A, PairTree_all@{α ; u u0 max(u,u0)} A PA p
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -571,7 +571,7 @@ Expands to: Constant
             nested_eliminators.Template.AutoGeneratedScheme.LeftTree_ind
 Declared in library nested_eliminators, line 131, characters 4-121
 Inductive
-LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : LeftTree A -> Type@{max(u,u0,u1)} :=
     Lleaf_all : forall a : A,
                 PA a -> LeftTree_all@{α ; u u0 u1} A PA (Lleaf A a)
@@ -588,7 +588,7 @@ Arguments LeftTree_all A%_type_scope PA%_function_scope l
 Arguments Lleaf_all A%_type_scope PA%_function_scope a _
 Arguments Lnode_all A%_type_scope PA%_function_scope p _
 LeftTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall l : LeftTree A, LeftTree_all@{α ; u u0 max(u,u0)} A PA l
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -614,7 +614,7 @@ LeftTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.Scheme.LeftTree_ind
 Declared in library nested_eliminators, line 149, characters 4-44
 Inductive
-LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : LeftTree A -> Type@{max(u,u0,u1)} :=
     Lleaf_all : forall a : A,
                 PA a -> LeftTree_all@{α ; u u0 u1} A PA (Lleaf A a)
@@ -631,7 +631,7 @@ Arguments LeftTree_all A%_type_scope PA%_function_scope l
 Arguments Lleaf_all A%_type_scope PA%_function_scope a _
 Arguments Lnode_all A%_type_scope PA%_function_scope p _
 LeftTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall l : LeftTree A, LeftTree_all@{α ; u u0 max(u,u0)} A PA l
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -715,7 +715,7 @@ LeftTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.PartialAll.LeftTree_ind
 Declared in library nested_eliminators, line 165, characters 4-121
 Inductive
-LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : LeftTree A -> Type@{max(u,u0,u1)} :=
     Lleaf_all : forall a : A,
                 PA a -> LeftTree_all@{α ; u u0 u1} A PA (Lleaf A a)
@@ -731,7 +731,7 @@ Arguments LeftTree_all A%_type_scope PA%_function_scope l
 Arguments Lleaf_all A%_type_scope PA%_function_scope a _
 Arguments Lnode_all A%_type_scope PA%_function_scope p _
 LeftTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall l : LeftTree A, LeftTree_all@{α ; u u0 max(u,u0)} A PA l
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -757,7 +757,7 @@ RightTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.RightTree_ind
 Declared in library nested_eliminators, line 175, characters 2-119
 Inductive
-RightTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+RightTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : RightTree A -> Type@{max(u,u0,u1)} :=
     Rleaf_all : forall a : A,
                 PA a -> RightTree_all@{α ; u u0 u1} A PA (Rleaf A a)
@@ -774,7 +774,7 @@ Arguments RightTree_all A%_type_scope PA%_function_scope r
 Arguments Rleaf_all A%_type_scope PA%_function_scope a _
 Arguments Rnode_all A%_type_scope PA%_function_scope p _
 RightTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall r : RightTree A, RightTree_all@{α ; u u0 max(u,u0)} A PA r
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -785,7 +785,7 @@ RightTree_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.RightTree_all_forall
 Declared in library nested_eliminators, line 175, characters 2-119
 Inductive
-vec_all@{α ; u u0} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+vec_all@{α ; u u0} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : forall n : nat, vec A n -> Type@{max(u,u0)} :=
     vnil_all : vec_all@{α ; u u0} A PA zero (vnil A)
   | vcons_all : forall a : A,
@@ -859,7 +859,7 @@ VecTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.VecTree_ind
 Declared in library nested_eliminators, line 194, characters 2-112
 Inductive
-VecTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+VecTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : VecTree A -> Type@{max(u,u0,u1)} :=
     VNleaf_all : forall a : A,
                  PA a -> VecTree_all@{α ; u u0 u1} A PA (VNleaf A a)
@@ -875,7 +875,7 @@ Arguments VecTree_all A%_type_scope PA%_function_scope v
 Arguments VNleaf_all A%_type_scope PA%_function_scope a _
 Arguments VNnode_all A%_type_scope PA%_function_scope n p _
 VecTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall v : VecTree A, VecTree_all@{α ; u u0 max(u,u0)} A PA v
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -1223,7 +1223,7 @@ NestRel_all@{α α0 ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
 Arguments NestRel_all A%_type_scope (PA R PR)%_function_scope n
 Arguments mkR_all A%_type_scope (PA R PR)%_function_scope x _ o _
 NestRel_all_forall@{α α0 ; u u0 u1} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall (R : A -> A -> Prop) (PR : forall a a0 : A, R a a0 -> Univ@{α0 ; u1}),
 (forall (a a0 : A) (r : R a a0), PR a a0 r) ->
@@ -1282,7 +1282,7 @@ Expands to: Constant nested_eliminators.Template.adequate_ind
 Declared in library nested_eliminators, line 298, characters 2-131
 adequate_all@{α ; u u0} :
 forall (L : language) (φ : unit -> Type@{u}),
-(forall u : unit, φ u -> Type@{α ; u0}) -> adequate L φ -> Prop
+(forall u : unit, φ u -> Univ@{α ; u0}) -> adequate L φ -> Prop
 (* α ; u(= in 2nd binder) u0(= in 3rd binder) |  *)
 
 adequate_all is universe polymorphic and cumulative
@@ -1291,7 +1291,7 @@ Expands to: Inductive nested_eliminators.Template.adequate_all
 Declared in library nested_eliminators, line 298, characters 2-131
 casenat_all@{α ; u} :
 forall P : nat -> Set,
-(forall n : nat, P n -> Type@{α ; u}) -> casenat P -> Type@{u}
+(forall n : nat, P n -> Univ@{α ; u}) -> casenat P -> Type@{u}
 (* α ; u(= in 2nd binder, + in type) |  *)
 
 casenat_all is universe polymorphic and cumulative
@@ -1302,7 +1302,7 @@ casenat'_all@{α α0 ; u u0} :
 forall (A : nat -> Set) (PZ : Set),
 (PZ -> Univ@{α ; u}) ->
 forall PS : forall n : nat, A n -> Set,
-(forall (n : nat) (a : A n), PS n a -> Type@{α0 ; u0}) ->
+(forall (n : nat) (a : A n), PS n a -> Univ@{α0 ; u0}) ->
 casenat' A PZ PS -> Type@{max(u,u0)}
 (* α α0 ; u(= in 3rd binder, + in type) u0(= in 5th binder, + in type) | 
     *)
@@ -1316,7 +1316,7 @@ File "./output/nested_eliminators.v", line 328, characters 13-21:
 The command has indeed failed with message:
 The reference True_all was not found in the current environment.
 Inductive
-list_all@{α ; u u0} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+list_all@{α ; u u0} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : list@{u} A -> Type@{max(u,u0)} :=
     nil_all : list_all@{α ; u u0} A PA (nil@{u} A)
   | cons_all : forall a : A,
@@ -1341,8 +1341,8 @@ list_all_forall is transparent
 Expands to: Constant nested_eliminators.UnivPoly.list_all_forall
 Declared in library nested_eliminators, line 331, characters 2-88
 Inductive
-list_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
-(PPA : forall a : A, PA a -> Type@{α0 ; u1})
+list_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+(PPA : forall a : A, PA a -> Univ@{α0 ; u1})
   : forall l : list@{u} A, list_all@{α ; u u0} A PA l -> Type@{max(u,u0,u1)} :=
     nil_all_all : list_all_all@{α α0 ; u u0 u1} A PA PPA 
                     (nil@{u} A) (nil_all@{α ; u u0} A PA)
@@ -1397,7 +1397,7 @@ RoseTree_ind is transparent
 Expands to: Constant nested_eliminators.UnivPoly.RoseTree_ind
 Declared in library nested_eliminators, line 345, characters 2-113
 Inductive
-RoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+RoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : RoseTree@{u} A -> Type@{max(u,u0,u1)} :=
     RTleaf_all : forall a : A,
                  PA a -> RoseTree_all@{α ; u u0 u1} A PA (RTleaf@{u} A a)
@@ -1413,7 +1413,7 @@ Arguments RoseTree_all A%_type_scope PA%_function_scope r
 Arguments RTleaf_all A%_type_scope PA%_function_scope a _
 Arguments RTnode_all A%_type_scope PA%_function_scope l _
 RoseTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall r : RoseTree@{u} A, RoseTree_all@{α ; u u0 max(u,u0)} A PA r
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -1439,7 +1439,7 @@ RoseRoseTree_ind is transparent
 Expands to: Constant nested_eliminators.UnivPoly.RoseRoseTree_ind
 Declared in library nested_eliminators, line 353, characters 2-136
 Inductive
-RoseRoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+RoseRoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : RoseRoseTree@{u} A -> Type@{max(u,u0,u1)} :=
     Nleaf_all : forall a : A,
                 PA a -> RoseRoseTree_all@{α ; u u0 u1} A PA (Nleaf@{u} A a)
@@ -1457,7 +1457,7 @@ Arguments RoseRoseTree_all A%_type_scope PA%_function_scope r
 Arguments Nleaf_all A%_type_scope PA%_function_scope a _
 Arguments Nnode_all A%_type_scope PA%_function_scope p _
 RoseRoseTree_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall r : RoseRoseTree@{u} A, RoseRoseTree_all@{α ; u u0 max(u,u0)} A PA r
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -1485,7 +1485,7 @@ ArrowTree3_ind is transparent
 Expands to: Constant nested_eliminators.UnivPoly.ArrowTree3_ind
 Declared in library nested_eliminators, line 361, characters 2-140
 Inductive
-ArrowTree3_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+ArrowTree3_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : ArrowTree3@{u} A -> Type@{max(u,u0,u1)} :=
     ATleaf3_all : forall a : A,
                   PA a -> ArrowTree3_all@{α ; u u0 u1} A PA (ATleaf3@{u} A a)
@@ -1505,7 +1505,7 @@ Arguments ArrowTree3_all A%_type_scope PA%_function_scope a
 Arguments ATleaf3_all A%_type_scope PA%_function_scope a _
 Arguments ATnode3_all A%_type_scope (PA l _)%_function_scope
 ArrowTree3_all_forall@{α ; u u0} :
-forall (A : Type@{u}) (PA : A -> Type@{α ; u0}),
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall a : ArrowTree3@{u} A, ArrowTree3_all@{α ; u u0 max(u,u0)} A PA a
 (* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
@@ -1535,7 +1535,7 @@ fix F (t : trie@{u} A) : P t :=
 Arguments trie_rect A%_type_scope P%_function_scope 
   TLeaf TNode%_function_scope t
 Inductive
-trie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+trie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : trie@{u} A -> Type@{max(u,u0,u1)} :=
     TLeaf_all : trie_all@{α ; u u0 u1} A PA (TLeaf@{u} A)
   | TNode_all : forall a : A,
@@ -1586,7 +1586,7 @@ fix F (a : ArrowTrie@{u} A) : P a :=
 Arguments ArrowTrie_rect A%_type_scope P%_function_scope 
   ATLeaf ATNode%_function_scope a
 Inductive
-ArrowTrie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+ArrowTrie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : ArrowTrie@{u} A -> Type@{max(u,u0,u1)} :=
     ATLeaf_all : ArrowTrie_all@{α ; u u0 u1} A PA (ATLeaf@{u} A)
   | ATNode_all : forall a : A,
@@ -1634,7 +1634,7 @@ fix F (a : ArrayTrie@{u} A) : P a :=
 Arguments ArrayTrie_rect A%_type_scope P%_function_scope 
   AyTLeaf AyTNode%_function_scope a
 Inductive
-ArrayTrie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Type@{α ; u0})
+ArrayTrie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
   : ArrayTrie@{u} A -> Type@{max(u,u0,u1)} :=
     AyTLeaf_all : ArrayTrie_all@{α ; u u0 u1} A PA (AyTLeaf@{u} A)
   | AyTNode_all : forall a : A,
