@@ -471,6 +471,19 @@ let get_template template_context default_univs params arity lc =
     template_defaults = default_univs;
   }
 
+let fold_inductive_blocks f acc inds =
+  List.fold_left (fun acc ((arity,lc),_,_,_) ->
+      f (Array.fold_left f acc lc) arity)
+    acc inds
+
+let used_section_variables env inds =
+  let fold l c = Id.Set.union (Environ.global_vars_set env c) l in
+  let ids = fold_inductive_blocks fold Id.Set.empty inds in
+  keep_hyps env ids
+
+let sec_univs_instance secunivs =
+  List.fold_right (fun uctx acc -> LevelInstance.append acc (UContext.instance uctx)) secunivs LevelInstance.empty
+
 let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with
   | [] -> CErrors.anomaly Pp.(str "empty inductive types declaration.")
@@ -554,12 +567,13 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         let data = List.map map data in
         data, Some None, Some reason (* back to FakeRecord with a reason why *)
   in
+  let hyps = used_section_variables env data in
 
-  let univs =
-      match univs with
-      | Monomorphic -> Monomorphic
+  let univs, sec_variance =
+      match mie.mind_entry_universes with
+      | Monomorphic -> Monomorphic, None
       | Polymorphic (auctx, variance) ->
-        let variance = match variance with
+        let variance, sec_variance = match variance with
         | None -> None
         | Some variances ->
           (* no variance for qualities *)
@@ -569,32 +583,19 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
             | Infer_variances -> Array.map (fun a -> a, None) univs
             | Check_variances variances -> Array.map2 (fun a b -> a,Some b) univs (UVars.Variances.repr variances)
           in
-          let univs = match sec_univs with
-            | None -> univs
-            | Some sec_univs ->
-              (* no variance for qualities *)
-              let _, sec_univs = UVars.LevelInstance.to_array sec_univs in
-              let sec_univs = Array.map (fun u -> u, None) sec_univs in
-              Array.append sec_univs univs
-          in
           let arities, ctors = List.split @@ List.map (fun (_, arity, lc) -> (arity, lc)) blocks in
-          let variances = InferCumulativity.infer_inductive ~env_params ~env_ar_par
-              ~evars:(CClosure.default_evar_handler env)
-              ~arities
-              ~ctors
-              univs
-          in
-          Some variances
+          let variance, sec_variance = InferCumulativity.infer_inductive ~env:env_univs ~env_ar_par
+            ~evars:(CClosure.default_evar_handler env)
+            ~in_ctx:hyps
+            ~sec_univs:(Option.map sec_univs_instance sec_univs)
+            ~params
+            ~arities
+            ~ctors
+            univs
+          in Some variance, sec_variance          
         in
-        Polymorphic (auctx, variance)
+        Polymorphic (auctx, variance), sec_variance
   in
-
-  (* let env_ar_par =
-    let ctx = Environ.rel_context env_ar_par in
-    let ctx = Vars.subst_univs_level_context usubst ctx in
-    let env = Environ.pop_rel_context (Environ.nb_rel env_ar_par) env_ar_par in
-    Environ.push_rel_context ctx env
-  in *)
   let check_packet env (_, _, univ_info, _) =
     if not (List.is_empty univ_info.missing)
     then raise (InductiveError (env, MissingUnivConstraints (univ_info.missing,univ_info.ind_univ)));
@@ -605,5 +606,5 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     ((arity, lc), b, univs.ind_squashed, relies_on_indices_not_mattering)
   in
   let data = List.map map data in
-
-  env_ar_par, univs, record, not_prim_reason_or_has_eta, params, Array.of_list data
+  let sec_univs = match sec_univs with None -> [] | Some l -> l in
+  env_ar_par, hyps, sec_univs, univs, sec_variance, record, not_prim_reason_or_has_eta, params, Array.of_list data

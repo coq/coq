@@ -113,6 +113,7 @@ let subst_const_body subst cb =
     then cb
     else
       { const_hyps = [];
+        const_univ_ctx = [];
         const_univ_hyps = UVars.LevelInstance.empty;
         const_body = body';
         const_type = type';
@@ -251,9 +252,11 @@ let subst_mind_packet subst mbp =
 
 let subst_mind_body subst mib =
   (* we're outside sections *)
-  assert (List.is_empty mib.mind_hyps && UVars.LevelInstance.is_empty mib.mind_univ_hyps);
+  assert (List.is_empty mib.mind_hyps && List.is_empty mib.mind_univ_ctx
+    && UVars.LevelInstance.is_empty mib.mind_univ_hyps);
   { mind_finite = mib.mind_finite ;
     mind_hyps = [];
+    mind_univ_ctx = [];
     mind_univ_hyps = UVars.LevelInstance.empty;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;

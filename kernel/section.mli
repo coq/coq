@@ -60,13 +60,21 @@ val push_global : Environ.env -> poly:bool -> section_entry -> 'a t -> 'a t
 
 val section_qvar_count : _ t -> int
 
-val all_poly_univs : 'a t -> LevelInstance.t
-(** Returns all polymorphic universes, including those from previous
-   sections. Earlier sections are earlier in the array.
+val poly_universes : 'a t -> UContext.t
+(** Returns the polymorphic universe context of the current section.
 
     NB: even if the array is empty there may be polymorphic
    constraints about monomorphic universes, which prevent declaring
    monomorphic globals. *)
+
+val all_poly_univs : 'a t -> UContext.t list
+(** Returns all polymorphic universes contexts, including those from previous
+   sections. The earliest section is at the top of the list.
+
+    NB: even if a context is empty there may be polymorphic
+   constraints about monomorphic universes, which prevent declaring
+   monomorphic globals. *)
+
 
 val segment_of_constant : Constant.t -> 'a t -> cooking_info
 (** Section segment at the time of the constant declaration *)

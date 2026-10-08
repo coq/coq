@@ -112,23 +112,29 @@ val infer_definition :
   (** By default, CClosure.default_evar_handler *)
   ?infer_in_type : bool ->
   (** Infer the universes in the type *)
-  ?in_ctx:Constr.named_context ->
+  in_ctx:Constr.named_context option ->
   (** The section context in which the definition is checked *)
+  sec_univs:LevelInstance.t option ->
+  (** The section universes in which the inductive declaration is checked *)
   typ:Constr.t ->
   ?body:Constr.t ->
   pre_variances ->
-  int * UVars.Variances.t (* Variance position are shifted by [i] due to context [in_ctx], if present *)
+  UVars.Variances.t * UVars.Variances.t option
 
 val infer_inductive
-  : env_params : Environ.env
-  (** Environment containing the polymorphic universes and the
-      parameters. *)
+  : env : Environ.env
+  (** Environment containing the polymorphic universes *)
   -> env_ar_par : Environ.env
   (** Environment containing the polymorphic universes and the inductives then the parameters. *)
   -> ?evars:CClosure.evar_handler
   (** By default, CClosure.default_evar_handler *)
+  -> in_ctx:Constr.named_context
+  (** The section context in which the inductive declaration is checked *)
+  -> sec_univs:LevelInstance.t option
+  (** The section universes in which the inductive declaration is checked *)
+  -> params : Constr.rel_context
   -> arities : Constr.t list
   -> ctors : Constr.t list list
   -> pre_variances
   (** Universes whose cumulativity we want to infer or check. *)
-  -> UVars.Variances.t
+  -> UVars.Variances.t * UVars.Variances.t option (* Variances for the inductive universe and optionally for the section universes *)

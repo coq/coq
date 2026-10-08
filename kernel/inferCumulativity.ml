@@ -805,7 +805,7 @@ let infer_named_context env ~evars variances ctx =
   let _env, sec_binders, variances = Context.Named.fold_outside infer_typ ctx ~init:(env, 0, variances) in
   sec_binders, variances
 
-let infer_context env ~evars ?(shift = 0) ?(binder_pos = fun i -> Position.InBinder i) variances ctx =
+let infer_context env ~evars ~(skip_lets=true) ?(shift = 0) ?(binder_pos = fun i -> Position.InBinder i) variances ctx =
   let infer_typ typ (env, i, variances) =
     let variances = Inf.set_position (binder_pos i) variances in
     match typ with
@@ -813,9 +813,14 @@ let infer_context env ~evars ?(shift = 0) ?(binder_pos = fun i -> Position.InBin
       (Environ.push_rel typ env, succ i,
        infer_term (Conv, Conv) env ~evars variances typ')
     | Context.Rel.Declaration.LocalDef _ -> 
-      (* no need to infer on the type of the letin AFAICT *)
-      let variances = infer_term (Conv, Conv) env ~evars variances bdy in
-      (Environ.push_rel typ env, variances)
+      if skip_lets then
+        (* Skip let-bound variables *)
+        (Environ.push_rel typ env, i, variances)
+      else
+        (* no need to infer on the type of the letin AFAICT *)
+        let variances = infer_term (Conv, Conv) env ~evars variances bdy in
+        (Environ.push_rel typ env, i, variances)
+
   in
   let env, _, variances = Context.Rel.fold_outside infer_typ ctx ~init:(env, shift, variances) in
   env, variances
@@ -884,14 +889,17 @@ let infer_type env ~evars ?(shift = 0) variances arcn =
   let variances = Inf.set_position Position.InType variances in
   infer_term (Cumul, Cumul) env ~evars variances codom
 
+let infer_section_context env ~evars ~infer_in_type in_ctx variances =
+  match in_ctx with
+  | None -> 0, Inf.start ~infer_in_type variances Position.InType
+  | Some ctx ->
+    let shift = Context.Named.nhyps ctx in
+    let variances = Inf.start ~infer_in_type (Array.map (fun (l, occ) -> (l, Option.map (VarianceOccurrence.lift shift) occ)) variances) Position.InType in
+    infer_named_context env ~evars variances ctx
+
 let infer_definition_core env ?(evars = CClosure.default_evar_handler env) ~infer_in_type ?in_ctx ~typ ?body variances =
   let shift, variances =
-    match in_ctx with
-    | None -> 0, Inf.start ~infer_in_type variances Position.InType
-    | Some ctx ->
-      let shift = Context.Named.nhyps ctx in
-      let variances = Inf.start ~infer_in_type (Array.map (fun (l, occ) -> (l, Option.map (VarianceOccurrence.lift shift) occ)) variances) Position.InType in
-      infer_named_context env ~evars variances ctx
+    infer_section_context env ~evars ~infer_in_type in_ctx variances
   in
   debug_infer_def Pp.(fun () -> str"infer_definition: " ++ Inf.pr Level.raw_pr variances ++
     str" in type: " ++ Constr.debug_print typ ++ spc () ++
@@ -902,8 +910,30 @@ let infer_definition_core env ?(evars = CClosure.default_evar_handler env) ~infe
   debug Pp.(fun () -> str"infer_definition finished with: " ++ Inf.pr Level.raw_pr variances);
   shift, Inf.finish env variances
 
-let infer_definition env ?(evars = CClosure.default_evar_handler env) ?(infer_in_type=false) ?in_ctx ~typ ?body variances =
-  try infer_definition_core env ~evars ~infer_in_type ?in_ctx ~typ ?body variances
+let push_section_universes variances sec_univs =
+  match sec_univs with
+  | None -> variances
+  | Some sec_univs ->
+    (* no variance for qualities *)
+    let _, sec_univs = UVars.LevelInstance.to_array sec_univs in
+    let sec_univs = Array.map (fun u -> u, None) sec_univs in
+    Array.append sec_univs variances
+
+let pop_section_universes variances sec_univs shift =
+  match sec_univs with
+  | None -> variances, None
+  | Some sec_univs ->
+    (* no variance for qualities *)
+    let _nsecq, nsecu = UVars.LevelInstance.length sec_univs in
+    let arr', arr = UVars.Variances.split nsecu variances in
+    Feedback.msg_debug Pp.(str"pop section variances" ++ UVars.Variances.pr arr');
+    UVars.Variances.lift (-shift) arr, Some arr'
+
+let infer_definition env ?(evars = CClosure.default_evar_handler env) ?(infer_in_type=false) ~in_ctx ~sec_univs ~typ ?body variances =
+  try
+    let variances = push_section_universes variances sec_univs in
+    let shift, variances = infer_definition_core env ~evars ~infer_in_type ?in_ctx ~typ ?body variances in
+    pop_section_universes variances sec_univs shift
   with BadVariance (lev, expected, actual) ->
     Type_errors.error_bad_variance env ~lev ~expected ~actual
 
@@ -925,21 +955,29 @@ let infer_arity_constructor is_arity env ~evars ?(shift = 0) variances arcn =
     infer_term (Conv, Conv) env ~evars variances codom
   else variances
 
-let infer_inductive_core ~env_params ~env_ar_par ~evars ~arities ~ctors univs =
-  let variances = Inf.start ~infer_in_type:false univs Position.InType in
+
+let infer_inductive_core ~env ~env_ar_par ~evars ?in_ctx ~params ~arities ~ctors variances =
+  let shift, variances =
+    infer_section_context env ~evars ~infer_in_type:false in_ctx variances
+  in
+  let env_params, variances = infer_context env ~evars ~shift variances params in
+  let variances = Inf.set_position Position.InType variances in
   let variances = List.fold_left (fun variances arity ->
       infer_arity_constructor true env_params ~evars variances arity)
       variances arities
   in
   let variances = Inf.set_position Position.InTerm variances in
   let variances = List.fold_left
-      (List.fold_left (infer_arity_constructor false env_ar_par ~shift:0 ~evars))
+      (List.fold_left (infer_arity_constructor false env_ar_par ~shift ~evars))
       variances ctors
   in
-  Inf.finish env_params variances
+  shift, Inf.finish env_params variances
 
-let infer_inductive ~env_params ~env_ar_par ?(evars = CClosure.default_evar_handler env_params) ~arities ~ctors univs =
-  try infer_inductive_core ~env_params ~env_ar_par ~evars ~arities ~ctors univs
+let infer_inductive ~env ~env_ar_par ?(evars = CClosure.default_evar_handler env) ~in_ctx ~sec_univs ~params ~arities ~ctors variances =
+  try
+    let variances = push_section_universes variances sec_univs in
+    let shift, variances = infer_inductive_core ~env ~env_ar_par ~evars ~in_ctx ~params ~arities ~ctors variances in
+    pop_section_universes variances sec_univs shift
   with
   | BadVariance (lev, expected, actual) ->
-    Type_errors.error_bad_variance env_params ~lev ~expected ~actual
+    Type_errors.error_bad_variance env ~lev ~expected ~actual

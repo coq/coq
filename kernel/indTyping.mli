@@ -28,9 +28,9 @@ type inductive_arity = { user_arity : Constr.types; sort : Sorts.t }
 (** Type checking for some inductive entry.
     Returns:
     - environment with inductives + parameters in rel context
+    - used section variable
     - abstracted universes
-    - checked variance info
-      (variance for section universes is at the beginning of the array)
+    - checked section universes variances
     - record entry (checked to be OK)
     - if primitive record was requested, either: (1) if it's not ok, then why, or (2) whether it has eta
     - parameters
@@ -39,10 +39,13 @@ type inductive_arity = { user_arity : Constr.types; sort : Sorts.t }
       * (indices * splayed constructor types) (both without params)
       * top allowed elimination
  *)
-val typecheck_inductive : env -> sec_univs:UVars.LevelInstance.t option
+val typecheck_inductive : env -> sec_univs:UVars.UContext.t list option
   -> mutual_inductive_entry
   -> env
+  * Constr.named_context
+  * UVars.UContext.t list
   * ind_universes
+  * UVars.variances option
   * Names.Id.t array option option
   * (Declarations.has_eta, NotPrimRecordReason.t) result option
   * Constr.rel_context

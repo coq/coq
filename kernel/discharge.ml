@@ -74,6 +74,9 @@ let cook_opaque_proofterm info c =
 let cook_constant env info cb =
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
   let info, univ_hyps, univs, sec_variance = lift_univs info cb.const_univ_hyps cb.const_universes cb.const_sec_variance in
+  Feedback.msg_debug Pp.(str"cook constant: univ_hyps = " ++
+   UVars.LevelInstance.pr Sorts.raw_printer univ_hyps ++
+   str" old = " ++ UVars.LevelInstance.pr Sorts.raw_printer cb.const_univ_hyps);
   let cache = create_cache info in
   let map c = abstract_as_body cache c in
   let body = match cb.const_body with
@@ -89,6 +92,7 @@ let cook_constant env info cb =
   let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) names)) cb.const_hyps in
   {
     const_hyps = hyps;
+    const_univ_ctx = List.tl cb.const_univ_ctx;
     const_univ_hyps = univ_hyps;
     const_body = body;
     const_type = typ;
@@ -199,6 +203,7 @@ let cook_inductive info mib =
     mind_packets;
     mind_finite = mib.mind_finite;
     mind_hyps;
+    mind_univ_ctx = List.tl mib.mind_univ_ctx;
     mind_univ_hyps = univ_hyps;
     mind_nparams = mib.mind_nparams + nnewparams;
     mind_nparams_rec = mib.mind_nparams_rec + nnewparams;

@@ -456,7 +456,7 @@ Section Logic_lemmas.
     Proof.
       red; intros h1 h2; apply h1; destruct h2; trivial.
     Qed.
-
+Set Debug "backtrace".
   End equality.
 
   Definition eq_sind_r :
