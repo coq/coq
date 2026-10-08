@@ -153,8 +153,8 @@ let no_warnings f =
    also agree. This lets [Check Type] print plain [Type] while still
    catching a reparse whose sort quality differs from the original. *)
 let modulo_universes_compare =
-  let open Conversion in
-  let compare_sorts _pb s1 s2 () =
+  let open UCompare in
+  let compare_sorts _env _pb s1 s2 () =
     if Sorts.Quality.equal (Sorts.quality s1) (Sorts.quality s2)
     then Result.Ok () else Result.Error None
   in
@@ -163,8 +163,8 @@ let modulo_universes_compare =
     if CArray.equal Sorts.Quality.equal q1 q2
     then Result.Ok () else Result.Error None
   in
-  let compare_cumul_instances _pb _variance i1 i2 () =
-    compare_instances ~flex:false i1 i2 ()
+  let compare_cumul_instances ~flex ~nargs _pb _variance i1 i2 () =
+    compare_instances ~flex i1 i2 ()
   in
   { compare_sorts; compare_instances; compare_cumul_instances }
 

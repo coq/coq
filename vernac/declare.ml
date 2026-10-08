@@ -235,11 +235,20 @@ let default_named_univ_entry =
   UState.{ universes_entry_universes = default_univ_entry;
     universes_entry_binders = UnivNames.empty_binders }
 
+let map_variances f = function 
+  | Entries.Infer_variances -> Entries.Infer_variances
+  | Entries.Check_variances vs -> Entries.Check_variances (f vs)
+
 let extract_monomorphic entry =
   let open UState in
   match entry.universes_entry_universes with
-  | UState.Monomorphic_entry ctx -> Entries.Monomorphic_entry, ctx
-  | UState.Polymorphic_entry (uctx, variances) -> Entries.Polymorphic_entry (uctx, variances), Univ.ContextSet.empty
+  | UState.Monomorphic_entry ctx -> 
+    UVars.empty_sort_subst, Entries.Monomorphic_entry, ctx
+  | UState.Polymorphic_entry (uctx, variances) -> 
+    let uinst, auctx = UVars.abstract_universes uctx in
+    let usubst = UVars.make_instance_subst uinst in
+    let variances = Option.map (map_variances (UVars.subst_sort_level_variances usubst)) variances in
+    usubst, Entries.Polymorphic_entry (auctx, variances), Univ.ContextSet.empty
 
 let instance_of_univs entry =
   match entry.UState.universes_entry_universes with
@@ -629,7 +638,7 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a ppro
   | MissingUsing _ -> section_context_of_opaque_proof_entry entry e.proof_entry_body typ
   | ExplicitUsing hyps -> hyps
   in
-  let usubst, univ_entry, ctx = extract_monomorphic (fst (e.proof_entry_universes)) in
+  let usubst, univ_entry, ctx = extract_monomorphic e.proof_entry_universes in
   let body : b = match entry with
   | PureEntry -> Vars.subst_univs_level_constr usubst e.proof_entry_body
   | ImmediateEffectEntry -> ()
@@ -683,7 +692,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
         Entries.OpaqueEntry cd, false, ubinders, Some (Future.chain body (subst_delayed_body usubst), feedback_id), ctx
       end
     | ParameterEntry e ->
-      let usubst, univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
+      let usubst, univ_entry, ctx = extract_monomorphic e.parameter_entry_universes in
       let ubinders = make_ubinders ctx e.parameter_entry_universes in
       let e = {
         Entries.parameter_entry_secctx = e.parameter_entry_secctx;
@@ -697,7 +706,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
       | None ->
         None, default_named_univ_entry, Univ.ContextSet.empty
       | Some (typ, entry_univs) ->
-        let usubst, univ_entry, ctx = extract_monomorphic (fst entry_univs) in
+        let usubst, univ_entry, ctx = extract_monomorphic entry_univs in
         Some (Vars.subst_univs_level_constr usubst typ, univ_entry), entry_univs, ctx
       in
       let e = {
@@ -707,7 +716,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
       let ubinders = make_ubinders ctx univ_entry in
       Entries.PrimitiveEntry e, false, ubinders, None, ctx
     | SymbolEntry { symb_entry_type=typ; symb_entry_unfold_fix=un_fix; symb_entry_universes=entry_univs } ->
-      let usubst, univ_entry, ctx = extract_monomorphic (fst entry_univs) in
+      let usubst, univ_entry, ctx = extract_monomorphic entry_univs in
       let e = {
         Entries.symb_entry_type = Vars.subst_univs_level_constr usubst typ;
         Entries.symb_entry_unfold_fix = un_fix;

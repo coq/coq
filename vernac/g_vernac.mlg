@@ -395,7 +395,7 @@ GRAMMAR EXTEND Gram
            univdecl_univ_constraints = univ_constraints @@ fst cs;
            univdecl_extensible_constraints = snd cs } }
 
-       | "@{" ; l = variances_opt; ext = [ "+" -> { true } | -> { false } ];
+       | "@{" ; l = variances_opt; ext = OPT "+";
          cs = univ_decl_constraints
          ->
          { let open UState in

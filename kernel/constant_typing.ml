@@ -152,12 +152,12 @@ let _used_section_universes env sec_univs univs ctx body typ =
   | Some (_has_poly, sec_univs) -> (* sec_univs represents all universes quantified in enclosing sections *)
     let uctx = match univs with
     | Entries.Monomorphic_entry -> UContext.empty
-    | Entries.Polymorphic_entry (uctx, _) -> uctx
+    | Entries.Polymorphic_entry (uctx, _) -> AbstractContext.repr uctx
     in
-      let used = compute_section_universes env ctx body typ in
-      let _qcstrs, ucstrs = UContext.constraints uctx in
-      let used = Univ.UnivConstraints.levels ~init:used ucstrs in
-      UVars.restrict_contexts sec_univs used
+    let used = compute_section_universes env ctx body typ in
+    let _qcstrs, ucstrs = UContext.constraints uctx in
+    let used = Univ.UnivConstraints.levels ~init:used ucstrs in
+    UVars.restrict_contexts sec_univs used
 
 let process_universes env ?sec_univs = function
   | Entries.Monomorphic_entry ->
@@ -167,7 +167,7 @@ let process_universes env ?sec_univs = function
         Pp.(str "Cannot add a universe monomorphic declaration when \
                  section polymorphic universes are present.")
      | _ -> env, UVars.Instance.empty, PreMonomorphic)
-  | Entries.Polymorphic_entry (uctx, variances) ->
+  | Entries.Polymorphic_entry (auctx, variances) ->
     if AbstractContext.is_empty auctx && Option.is_empty sec_univs then
       env, UVars.Instance.empty,
         PrePolymorphic (AbstractContext.empty, None)

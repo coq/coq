@@ -168,8 +168,8 @@ GRAMMAR EXTEND Gram
           Some (CQVar q), u
         }
       | "Type"; "@{"; u = universe_opt; "}" -> { None, u }
-      | "Univ"; "@{"; test_sort_qvar; q = reference; ";"; u = universe; "}" -> { Some (CQVar q), u }
-      | "Univ"; "@{"; OPT [ "_"; ";" -> { () } ]; u = universe; "}" -> { Some (CQAnon (Some loc)), u }
+      | "Univ"; "@{"; test_sort_qvar; q = reference; ";"; u = universe_opt; "}" -> { Some (CQVar q), u }
+      | "Univ"; "@{"; OPT [ "_"; ";" -> { () } ]; u = universe_opt; "}" -> { Some (CQAnon (Some loc)), u }
       | "Univ" -> { Some (CQAnon (Some loc)), UAnonymous {rigid=Some UnivFlexible} }
 
       ] ]

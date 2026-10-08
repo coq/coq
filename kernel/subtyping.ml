@@ -152,7 +152,7 @@ let check_ind_universes error env ~term_variances u1 u2 =
   | Template _, Polymorphic _ -> error (PolymorphicStatusExpected true)
   | Polymorphic _, Template _ -> error (PolymorphicStatusExpected false)
 
-let check_template error _env t1 t2 = match t1, t2 with
+let _check_template error _env t1 t2 = match t1, t2 with
 | None, None | Some _, Some _ -> ()
 | None, Some _ -> error (TemplateStatusExpected true)
 | Some _, None -> error (TemplateStatusExpected false)

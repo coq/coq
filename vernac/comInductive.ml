@@ -538,15 +538,16 @@ let map_variances f = function
 let nontemplate_univ_entry ~poly sigma udecl =
   (* FIXME: should collapse depending on poly *)
   let sigma = Evd.collapse_sort_variables ~only_above_prop:(not @@ PolyFlags.collapse_sort_variables poly) sigma in
-  let UState.{ universes_entry_universes = univ_entry; universes_entry_binders = ubinders } =
+  let UState.{ universes_entry_universes = univ_entry; } as ubinders =
     Evd.check_univ_decl ~poly sigma ~kind:PolyFlags.Definition udecl in
-  let uentry, global = match univ_entry with
+  let uentry, uinst, global = match univ_entry with
     | UState.Polymorphic_entry (uctx, variances) ->
       let (uinst, auctx) = UVars.abstract_universes uctx in
+      let usubst = UVars.make_instance_subst uinst in 
       let variances = Option.map (map_variances (UVars.subst_sort_level_variances usubst)) variances in
       Polymorphic_ind_entry (auctx, variances), uinst, Univ.ContextSet.empty
     | UState.Monomorphic_entry uctx -> 
-      Monomorphic_ind_entry, UVars.Instance.empty, uctx
+      Monomorphic_ind_entry, UVars.LevelInstance.empty, uctx
   in
   sigma, uentry, ubinders, uinst, global
 
@@ -562,7 +563,9 @@ let template_univ_entry sigma udecl ~template_univs pseudo_sort_poly =
   let uctx =
     UState.check_template_univ_decl (Evd.ustate sigma) ~template_qvars udecl
   in
-  let ubinders = Evd.universe_binders sigma in
+  let ubinders = 
+    UState.{ universes_entry_universes = UState.Monomorphic_entry uctx;
+      universes_entry_binders = Evd.universe_binders sigma } in
   (* Global universe declaration for the non-template universes. *)
   let template_univs, global = split_universe_context template_univs uctx in
   let uctx =
@@ -892,7 +895,7 @@ let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
     ind_arity_explicit = Option.has_some ar;
-    ind_arity = Option.default (CAst.make @@ CSort @@ Constrexpr_ops.expr_Univ_sort None) ar;
+    ind_arity = Option.default (CAst.make @@ CSort (Constrexpr_ops.expr_Univ_sort None)) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 

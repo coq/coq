@@ -499,7 +499,7 @@ let used_section_universes sec_univs univs ctx inds =
     | Entries.Template_ind_entry _ -> []
     | Entries.Polymorphic_ind_entry (uctx, _) ->
       let used = compute_section_universes ctx inds in
-      let _qcstrs, ucstrs = UContext.constraints uctx in
+      let _qcstrs, ucstrs = UContext.constraints (AbstractContext.repr uctx) in
       let used = Univ.UnivConstraints.levels ~init:used ucstrs in
       UVars.restrict_contexts sec_univs used
 

@@ -57,9 +57,10 @@ let universes_context (ctx, _) = ctx
 
 let abstract_universes = function
   | Entries.Monomorphic_entry ->
-    Monomorphic
-  | Entries.Polymorphic_entry auctx ->
-    Polymorphic auctx
+    empty_universes
+  | Entries.Polymorphic_entry (auctx, variances) ->
+    let variances = match variances with None | Some Infer_variances -> None | Some (Check_variances v) -> Some v in
+    (auctx, variances)
 
 let has_cumulative_variance = function
   | Some v -> UVars.Variances.cumulative v

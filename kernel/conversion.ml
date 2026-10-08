@@ -1045,8 +1045,9 @@ let eq_constr_univs env m n =
     let eq_instances = cumul_head_instances env univs CONV in
     let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq_sort Sorts.Quality.equal univs s1 s2 in
     let rec eq_constr' nargs m n =
-      m == n ||	compare_head_gen eq_instances eq_sorts (eq_existential (eq_constr' 0)) eq_constr' nargs m n
-    in compare_head_gen eq_instances eq_sorts (eq_existential (eq_constr' 0)) eq_constr' 0 m n
+      m == n ||	compare_head_gen_leq_with Constr.kind Constr.kind eq_instances eq_sorts (eq_existential (eq_constr' 0)) eq_constr' eq_constr' nargs m n
+    in compare_head_gen_leq_with Constr.kind Constr.kind 
+      eq_instances eq_sorts (eq_existential (eq_constr' 0)) eq_constr' eq_constr' 0 m n
 
 let leq_constr_univs env m n =
   if m == n then true
@@ -1059,10 +1060,12 @@ let leq_constr_univs env m n =
     let leq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_leq_sort Sorts.Quality.equal univs s1 s2 in
     let rec eq_constr' nargs m n =
-      m == n || compare_head_gen eq_instances eq_sorts (eq_existential (eq_constr' 0)) eq_constr' nargs m n
+      m == n || compare_head_gen_leq_with Constr.kind Constr.kind eq_instances eq_sorts 
+        (eq_existential (eq_constr' 0)) eq_constr' eq_constr' nargs m n
     in
     let rec compare_leq nargs m n =
-      compare_head_gen_leq leq_instances leq_sorts (eq_existential (eq_constr' 0)) eq_constr' leq_constr' nargs m n
+      compare_head_gen_leq_with Constr.kind Constr.kind leq_instances leq_sorts 
+        (eq_existential (eq_constr' 0)) eq_constr' leq_constr' nargs m n
     and leq_constr' nargs m n = m == n || compare_leq nargs m n in
     compare_leq 0 m n
 
