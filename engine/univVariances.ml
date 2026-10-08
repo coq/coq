@@ -231,12 +231,19 @@ let register_universe_variances_of_undefined env sigma =
   let status = Evd.fold_undefined fold sigma status in
   finalize sigma status
 
+let with_zeta env =
+  (Environ.typing_flags env).Declarations.cumulativity_zeta
+
 (* Precond: arities should be in arity form *)
 let register_universe_variances_of_inductive env sigma ~udecl ~cumulative ~params ~arities ~constructors =
   let status = init_status env ~udecl sigma in
-  let params = EConstr.Vars.smash_rel_context params in
-  let status = compute_variances_context env sigma status params in
-  let paramlen = Context.Rel.length params in
+  let status = 
+    if with_zeta env then
+      let params = EConstr.Vars.smash_rel_context params in
+      compute_variances_context env sigma status params
+    else compute_variances_context env sigma ~on_lets:true status params
+  in
+  let paramlen = Context.Rel.nhyps params in
   let status = List.fold_left (compute_variances_type ~ctx_position:(fun i -> InBinder (i + paramlen)) env sigma) status arities in
   let status = List.fold_left (fun status (_nas, tys) ->
     List.fold_left (fun status ty ->
@@ -245,7 +252,7 @@ let register_universe_variances_of_inductive env sigma ~udecl ~cumulative ~param
 
 let register_universe_variances_of_record env sigma ~env_ar_pars ~params ~fields ~types =
   let status = init_status env sigma in
-  let status = compute_variances_context env sigma status params in
+  let status = compute_variances_context env sigma ~on_lets:true status params in
   let paramlen = Context.Rel.length params in
   let status = List.fold_left (compute_variances_type ~ctx_position:(fun i -> InBinder (i + paramlen)) env sigma) status types in
   let status = List.fold_left (compute_variances_context env_ar_pars sigma ~on_lets:true ~position:(fun _ -> InTerm) ~cumul_pb:Cumul ~typing_pb:Conv) status fields in

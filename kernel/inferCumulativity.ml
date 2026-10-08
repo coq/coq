@@ -586,10 +586,8 @@ let infer_constant cv_pb variance env nargs variances has_def (con,u) =
 
 let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
 
-(* let flip_pb = function
-  | Conv -> Conv
-  | Cumul -> InvCumul
-  | InvCumul -> Cumul *)
+let with_zeta env = 
+  (Environ.typing_flags env).Declarations.cumulativity_zeta
 
 exception Expand
 
@@ -616,7 +614,7 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
   | FFloat _ -> infer_stack variance infos variances stk
   | FString _ -> infer_stack variance infos variances stk
   | FFlex Names.(RelKey _ | VarKey _ as fl) ->
-    if (Environ.typing_flags (info_env (fst infos))).Declarations.cumulativity_zeta then
+    if with_zeta (info_env (fst infos)) then
       (* We could try to lazily unfold but then we have to analyse the
         universes in the bodies, not worth coding at least for now. *)
       begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
@@ -810,16 +808,21 @@ let infer_term (cumul_cv_pb, typing_cv_pb) env ~evars variances c =
   status
 
 (* Assumes the context [ctx] is already in [env] *)
-let infer_named_context env ~evars variances ctx =
+let infer_named_context env ~evars ?(skip_lets=true) variances ctx =
   let infer_typ typ (i, variances) =
     let variances = Inf.set_position (Position.InBinder i) variances in
     match typ with
     | Context.Named.Declaration.LocalAssum (_, typ') ->
       (succ i,
        infer_term (Conv, Conv) env ~evars variances typ')
-    | Context.Named.Declaration.LocalDef (_, _, _) ->
-      (i, variances)
-      (* Skip let-bound variables *)
+    | Context.Named.Declaration.LocalDef (_, bdy, _) ->
+      if skip_lets then
+        (* Skip let-bound variables *)
+        (i, variances)
+      else
+        (* no need to infer on the type of the letin AFAICT *)
+        let variances = infer_term (Conv, Conv) env ~evars variances bdy in
+        (i, variances)
   in
   let sec_binders, variances = Context.Named.fold_outside infer_typ ctx ~init:(0, variances) in
   sec_binders, variances
@@ -914,7 +917,7 @@ let infer_section_context env ~evars ~infer_in_type in_ctx variances =
   | Some ctx ->
     let shift = Context.Named.nhyps ctx in
     let variances = Inf.start ~infer_in_type (Array.map (fun (l, occ) -> (l, Option.map (VarianceOccurrence.lift shift) occ)) variances) Position.InType in
-    infer_named_context env ~evars variances ctx
+    infer_named_context env ~evars ~skip_lets:(with_zeta env) variances ctx
 
 let infer_definition_core env ?(evars = CClosure.default_evar_handler env) ~infer_in_type ?in_ctx ~typ ?body variances =
   let shift, variances =
@@ -983,7 +986,8 @@ let infer_inductive_core ~env ~env_ar_par ~evars ?in_ctx ~params ~arities ~ctors
   let shift, variances =
     infer_section_context env ~evars ~infer_in_type:false in_ctx variances
   in
-  let env_params, variances = infer_context env ~evars ~shift variances params in
+  let skip_lets = with_zeta env in
+  let env_params, variances = infer_context env ~evars ~skip_lets ~shift variances params in
   let variances = Inf.set_position Position.InType variances in
   let variances = List.fold_left (fun variances arity ->
       infer_arity_constructor true env_params ~evars variances arity)

@@ -46,11 +46,12 @@ Module WithAxiom.
 
 End WithAxiom.
 
+Set Kernel Cumulativity Zeta.
 Module WithVars.
 
   Module Rel.
     Fail Cumulative Inductive foo@{*u +} (X:=Type@{u}) := C (_:X).
-
+    About C.
     Cumulative Inductive foo@{+u +} (X:=Type@{u}) := C (_:X).
   End Rel.
 
@@ -62,7 +63,7 @@ Module WithVars.
     End S.
 
     Fail Cumulative Inductive bar@{*u} := C' (_:foo@{u}).
-
+    
     Cumulative Inductive bar@{+u} := C' (_:foo@{u}).
   End Var.
 
