@@ -106,13 +106,47 @@ type pre_universes =
   | PreMonomorphic
   | PrePolymorphic of AbstractContext.t * InferCumulativity.pre_variances option
 
-let compute_section_universes ctx body typ =
-  let used = Vars.universes_of_constr typ in
-  let used = Option.cata (Vars.universes_of_constr ~init:used) used body in
-  let used = Vars.universes_of_named_context ~init:used ctx in
+let section_univs_and_qvars_visitor env = 
+  let visit_ref (qs,us) c =
+    let qs', us' = 
+      match c with
+      | GlobRef.ConstRef c ->
+        let cb = Environ.lookup_constant c env in
+        LevelInstance.levels cb.const_univ_hyps
+      | GlobRef.IndRef (i, _) | GlobRef.ConstructRef ((i, _), _) ->
+        let mib = Environ.lookup_mind i env in
+        LevelInstance.levels mib.Declarations.mind_univ_hyps
+      | _ -> Sorts.Quality.Set.empty, Univ.Level.Set.empty
+    in
+    Sorts.Quality.Set.union qs qs',
+    Univ.Level.Set.union us us'
+  in
+  { Vars.univs_and_qvars_visitor with visit_ref }
+
+let section_univs_and_qvars_of_constr ?(init=Sorts.Quality.Set.empty,Univ.Level.Set.empty) env c =
+  let rec aux s c =
+    let s = Vars.visit_kind_univs (section_univs_and_qvars_visitor env) s (kind c) in
+    Constr.fold aux s c
+  in
+  aux init c
+
+let section_universes_of_constr ?(init=Univ.Level.Set.empty) env c =
+  snd (section_univs_and_qvars_of_constr ~init:(Sorts.Quality.Set.empty,init) env c)
+
+let section_universes_of_named_context ?(init=Univ.Level.Set.empty) env ctx =
+  let fold used decl =
+    Context.Named.Declaration.fold_constr 
+      (fun c used -> section_universes_of_constr ~init:used env c) decl used
+  in
+  Context.Named.fold_inside fold ~init ctx
+
+let compute_section_universes env ctx body typ =
+  let used = section_universes_of_constr env typ in
+  let used = Option.cata (section_universes_of_constr ~init:used env) used body in
+  let used = section_universes_of_named_context ~init:used env ctx in
   used
 
-let _used_section_universes sec_univs univs ctx body typ =
+let _used_section_universes env sec_univs univs ctx body typ =
   match sec_univs with
   | None -> []
   | Some (_has_poly, sec_univs) -> (* sec_univs represents all universes quantified in enclosing sections *)
@@ -120,7 +154,7 @@ let _used_section_universes sec_univs univs ctx body typ =
     | Entries.Monomorphic_entry -> UContext.empty
     | Entries.Polymorphic_entry (uctx, _) -> uctx
     in
-      let used = compute_section_universes ctx body typ in
+      let used = compute_section_universes env ctx body typ in
       let _qcstrs, ucstrs = UContext.constraints uctx in
       let used = Univ.UnivConstraints.levels ~init:used ucstrs in
       UVars.restrict_contexts sec_univs used
@@ -292,7 +326,7 @@ let infer_parameter ~sec_univs env entry =
   let typ = j.uj_val in
   let undef = Undef entry.parameter_entry_inline_code in
   let hyps = used_section_variables env entry.parameter_entry_secctx None typ in
-  let sec_univs = _used_section_universes sec_univs entry.parameter_entry_universes hyps None typ in
+  let sec_univs = _used_section_universes env sec_univs entry.parameter_entry_universes hyps None typ in
   let sec_univs_instance = sec_univs_instance sec_univs in
   let univs, sec_variances = on_variances (InferCumulativity.infer_definition env ?evars:None
     ~infer_in_type:false ~in_ctx:(Some hyps) ~sec_univs:(Some sec_univs_instance) ~typ ?body:None) univs in
@@ -338,7 +372,7 @@ let infer_definition ~sec_univs env entry =
   let def = Def body in
   let def_h = Environ.constant_definitional_height env def in
   let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
-  let sec_univs = _used_section_universes sec_univs entry.definition_entry_universes hyps (Some body) typ in
+  let sec_univs = _used_section_universes env sec_univs entry.definition_entry_universes hyps (Some body) typ in
   let sec_univs_instance = sec_univs_instance sec_univs in
   let univs, sec_variance = on_variances (InferCumulativity.infer_definition env ?evars:None
     ~infer_in_type:(Option.is_empty entry.definition_entry_type) ~in_ctx:(Some hyps)
@@ -365,7 +399,7 @@ let infer_opaque ~sec_univs env entry =
   let typj = Typeops.infer_type env typ in
   let typ = typj.utj_val in
   let hyps = used_section_variables env (Some entry.opaque_entry_secctx) None typ in
-  let sec_univs = _used_section_universes sec_univs entry.opaque_entry_universes hyps None typ in
+  let sec_univs = _used_section_universes env sec_univs entry.opaque_entry_universes hyps None typ in
   let sec_univs_instance = sec_univs_instance sec_univs in
   let univs, sec_variance = on_variances (InferCumulativity.infer_definition env ?evars:None ~infer_in_type:true
      ~in_ctx:(Some hyps) ~sec_univs:(Some sec_univs_instance) ~typ ?body:None) univs in

@@ -217,7 +217,10 @@ type ('a,'s,'u,'r) univ_visitor = {
   visit_sort : 'a -> 's -> 'a;
   visit_instance : 'a -> 'u -> 'a;
   visit_relevance : 'a -> 'r -> 'a;
+  visit_ref : 'a -> GlobRef.t -> 'a;
 }
+
+val univs_and_qvars_visitor : (Sorts.Quality.Set.t * Univ.Level.Set.t, Sorts.t, Instance.t, Sorts.relevance) univ_visitor
 
 val visit_kind_univs : ('acc, 'sort, 'instance, 'relevance) univ_visitor ->
   'acc ->

@@ -530,6 +530,7 @@ type ('a,'s,'u,'r) univ_visitor = {
   visit_sort : 'a -> 's -> 'a;
   visit_instance : 'a -> 'u -> 'a;
   visit_relevance : 'a -> 'r -> 'a;
+  visit_ref : 'a -> GlobRef.t -> 'a;
 }
 
 let univs_and_qvars_visitor =
@@ -559,22 +560,30 @@ let univs_and_qvars_visitor =
       | Irrelevant | Relevant -> acc
       | RelevanceVar q -> Quality.Set.add (QVar q) qs, us
   in
+  let visit_ref acc _ = acc in
   {
-    visit_sort = visit_sort;
-    visit_instance = visit_instance;
-    visit_relevance = visit_relevance;
+    visit_sort;
+    visit_instance;
+    visit_relevance;
+    visit_ref;
   }
 
 let visit_kind_univs visit acc c =
   let acc = fold_kind_relevance visit.visit_relevance acc c in
   match c with
-  | Const (_, u) | Ind (_, u) | Construct (_,u) -> visit.visit_instance acc u
+  | Const (c, u) ->
+    visit.visit_ref (visit.visit_instance acc u) (GlobRef.ConstRef c)
+  | Ind (i, u) -> 
+    visit.visit_ref (visit.visit_instance acc u) (GlobRef.IndRef i)
+  | Construct (c,u) -> 
+    visit.visit_ref (visit.visit_instance acc u) (ConstructRef c)
   | Sort s -> visit.visit_sort acc s
   | Array (u,_,_,_) ->
     let acc = visit.visit_instance acc u in
     acc
-  | Case (_, u, _, _, _,_ ,_) ->
+  | Case (ci, u, _, _, _,_ ,_) ->
     let acc = visit.visit_instance acc u in
+    let acc = visit.visit_ref acc (IndRef ci.ci_ind) in
     acc
   | _ -> acc
 

@@ -956,10 +956,12 @@ let univs_and_qvars_visitor sigma =
   in
   let visit_instance acc u = add_universes_of_instance sigma acc u in
   let visit_relevance acc r = add_relevance sigma acc r in
+  let visit_ref acc _ = acc in
   {
     Vars.visit_sort = visit_sort;
     visit_instance = visit_instance;
     visit_relevance = visit_relevance;
+    visit_ref;
   }
 
 let universes_of_constr ?(init=Sorts.Quality.Set.empty,Univ.Level.Set.empty) sigma c =
