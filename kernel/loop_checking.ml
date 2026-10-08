@@ -2,6 +2,7 @@ open Univ
 
 let debug_loop_checking_invariants_flag, debug_loop_checking_invariants = CDebug.create_full ~name:"loop-checking-invariants" ()
 let _debug_loop_checking_flag, debug_loop_checking = CDebug.create_full ~name:"loop-checking" ()
+let _, debug_constraints_for = CDebug.create_full ~name:"constraints_for" ()
 
 module Index :
 sig
@@ -1334,7 +1335,7 @@ let add_fwd_clause m w cls =
     else
       let can = repr m idx in
       CanSet.add idx can.clauses_fwd cls)
- w cls
+  w cls
 
 (* If early_stop is given, check raises FoundImplication as soon as
    it finds that the given atom is true *)
@@ -2732,6 +2733,12 @@ type 'a constraint_fold = univ_constraint -> 'a -> 'a
 let interp_univ model l =
   Universe.of_list (NeList.to_list (NeList.map (fun (idx, k) -> (Index.repr idx model.table, k)) l))
 
+(* A clause u + k, ... -> v + k' is trivial if u = v and k >= k'. or v = 0 and k >= k' *)
+let is_trivial setidx u k v k' =
+  (Index.equal u v && k >= k') || 
+  (Index.equal v setidx && k >= k')
+
+
 let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu : 'a) : 'a =
   let add_cst u knd v (cst : 'a) : 'a =
     fold (interp_univ model u, knd, interp_univ model v) cst
@@ -2769,6 +2776,7 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
             PSet.add can.canon removed)
     model.entries PSet.empty
   in
+  let set_can = repr model (Index.find Level.set model.table) in
   let remove_can idx model =
     let can = repr model idx in
     assert (Index.equal can.canon idx);
@@ -2778,6 +2786,7 @@ let constraints_for ~(kept:Level.Set.t) model (fold : 'a constraint_fold) (accu 
       let concl = repr model concl in
       PartialClausesOf.fold (fun (conclk, premsfwd) model ->
         (* premsfwd, can + kprem -> concl + conclk *)
+        if is_trivial set_can.canon can.canon kprem concl.canon conclk then model else
         ClausesOf.fold (fun _local (cank, premsbwd) model ->
           (* premsbwd -> can + cank *)
           let premsfwd = (cons_opt_nelist (can.canon, kprem) premsfwd) in
