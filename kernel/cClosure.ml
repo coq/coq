@@ -2473,11 +2473,7 @@ and klt ~mode info tab (e : usubs) t =
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
 and norm_head info tab m =
-  (* An inert head must not strongly normalize children inherited from a
-     WHNF context while reifying a protected payload. *)
-  if is_val m || RedState.mode m.mark == identity then
-    term_of_fconstr ~info ~tab m
-  else
+  if is_val m then term_of_fconstr ~info ~tab m else
     let mode = RedState.mode m.mark in
     match [@ocaml.warning "-4"] m.term with
       | FLambda(_n,tys,f,e) ->
@@ -2515,7 +2511,14 @@ and norm_head info tab m =
       | FEvar(ev, args, env, repack) ->
           repack (ev, List.map (fun a -> klt ~mode info tab env a) args)
       | FProj (p,r,c) ->
-        mkProj (p, r, kl info tab c)
+        (* A protected projection must not strongly normalize its WHNF
+           record capture while quoting the inert projection itself. *)
+        let c =
+          if mode == identity && RedState.is_normal_whnf c.mark then
+            term_of_fconstr ~info ~tab c
+          else kl info tab c
+        in
+        mkProj (p, r, c)
       | FArray (u, a, ty) ->
         let a, def = Parray.to_array a in
         let a = Array.map (kl info tab) a in
