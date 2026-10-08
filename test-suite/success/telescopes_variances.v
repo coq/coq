@@ -1,3 +1,4 @@
+(* -*- mode: coq; coq-prog-args: ("-allow-rewrite-rules") -*- *)
 (* Example by Janno Kaiser, trying to get telescopes in a small universe still enjoying cumulativity *)
 Universes a b. Constraint a < b. (* only used for testing cumulativity. *)
 
