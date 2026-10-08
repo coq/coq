@@ -1228,7 +1228,6 @@ let update_value premv concl m (clause : PartialClausesOf.ClauseInfo.t) : int op
   let (conclk, premises) = clause in
   match min_premise m premv premises with
   | exception VacuouslyTrue -> None
-  | k0 when k0 < 0 -> None
   | k0 ->
     let newk = conclk + k0 in
     let canv = canonical_value m concl in
@@ -2145,11 +2144,12 @@ let infer_clause_extension cl minit =
 let check_one_clause model prems concl k =
   let model = NeList.fold (fun prem values ->
     let x, k = refresh_can_expr model prem in
-    update_model_value values x (Some (max k x.value))) prems
+    let v = model_value values x.canon in
+    update_model_value values x (Some (max k (Option.default 0 v)))) prems
     { model with values = Some PMap.empty }
   in
   let w, cls = NeList.fold (fun (prem, _k) (w, cls) -> (PSet.add prem.canon w, CanSet.add prem.canon prem.clauses_fwd cls)) prems (PSet.empty, CanSet.empty) in
-  (* We have a model where only the premise is true, check if the conclusion follows *)
+  (* We have a model where only the premises are true, check if the conclusion follows *)
   match check_canset ~early_stop:(concl, k) model ~w cls with
   | exception FoundImplication -> true
   | Loop -> false
@@ -2279,10 +2279,10 @@ let check_leq_can canu canv model =
     check_one_clause model prems concl k
 
 let rec check_leq_premises m (u, v) =
+  let canv = canonical_premises_repr m v in
   NeList.fold (fun (u, k) res ->
     if res then
       let canu = canonical_repr m (u, k) in
-      let canv = canonical_premises_repr m v in
       match canu with
       | NeList.Tip canu -> check_leq_can canu canv m
       | _ -> check_leq_premises m (canonical_can_premises canu, v)
