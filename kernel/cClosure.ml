@@ -1248,7 +1248,9 @@ let contract_fix_vect ~mode fix =
   (on_fst (fun env -> mk_subs env 0) env, thisbody)
 
 let unfold_projection ~mode info p r =
-  if RedFlags.red_projection info.i_flags p then
+  (* A projection beneath a block is inert, just like a constant application.
+     In particular, do not expose its captured record in a reducing mode. *)
+  if mode != identity && RedFlags.red_projection info.i_flags p then
     Some (Zproj (Projection.repr p, r, mode))
   else None
 
@@ -2408,16 +2410,19 @@ and klt ~mode info tab (e : usubs) t =
   | Inl (n, Regular mt) ->
     let m = lift_fconstr n mt in
     (* [klt] is only called with [identity] when reducing under [block].
-       This means we are no longer reducing in head position.
-       Terms from a [normal_whnf] context need to be treated as inert. *)
+       WHNF captures are inert here: quote the whole closure instead of
+       changing only its outer mode and strongly normalizing children that
+       may still carry reducing modes. Do not mutate the shared capture. *)
     if RedState.is_normal_whnf m.mark && mode == identity then
-      m.mark <- RedState.mk (RedState.red_state m.mark) mode;
-    kl info tab m
+      term_of_fconstr ~info ~tab m
+    else
+      kl info tab m
   | Inl (_, HigherOrder (nargs, term)) ->
     assert (Int.equal nargs 0);
     if RedState.is_normal_whnf term.mark && mode == identity then
-      term.mark <- RedState.mk (RedState.red_state term.mark) mode;
-    kl info tab term
+      term_of_fconstr ~info ~tab term
+    else
+      kl info tab term
   | Inr (k, None) -> if Int.equal k i then t else mkRel k
   | Inr (k, Some p) -> kl info tab @@ lift_fconstr (k-p) {mark=RedState.mk red mode;term=FFlex(RelKey p)}
   end
@@ -2468,7 +2473,11 @@ and klt ~mode info tab (e : usubs) t =
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
 and norm_head info tab m =
-  if is_val m then term_of_fconstr ~info ~tab m else
+  (* An inert head must not strongly normalize children inherited from a
+     WHNF context while reifying a protected payload. *)
+  if is_val m || RedState.mode m.mark == identity then
+    term_of_fconstr ~info ~tab m
+  else
     let mode = RedState.mode m.mark in
     match [@ocaml.warning "-4"] m.term with
       | FLambda(_n,tys,f,e) ->
