@@ -33,6 +33,11 @@ let is_empty ts =
   Cpred.is_empty ts.tr_cst &&
   PRpred.is_empty ts.tr_prj
 
+let union x y =
+  { tr_var = Id.Pred.union x.tr_var y.tr_var;
+    tr_cst = Cpred.union x.tr_cst y.tr_cst;
+    tr_prj = PRpred.union x.tr_prj y.tr_prj }
+
 let is_transparent_variable ts id =
   Id.Pred.mem id ts.tr_var
 

@@ -346,7 +346,7 @@ let foldtac occ rdx ft =
          errorstrm Pp.(str "fold pattern " ++ pr_econstr_pat env sigma t ++ spc ()
                        ++ str "does not match redex " ++ pr_econstr_pat env sigma c)),
     ignore in
-  let concl, us = eval_pattern env0 sigma0 concl0 rdx occ fold in
+  let concl, _us = eval_pattern env0 sigma0 concl0 rdx occ fold in
   let () = conclude () in
   convert_concl ~check:true concl
   end
@@ -674,6 +674,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       (fun e _ c _ i -> find_R ~k:(fun _ _ _ _ h -> EConstr.mkRel h) e c i),
       fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
   | Some (_, e) ->
+      debug_ssr Pp.(fun () -> str"rwxtac: rdx_pat = Some _");
       let r = ref None in
       (fun env us c _ h -> do_once r (fun () -> find_rule us c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;

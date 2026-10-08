@@ -112,6 +112,12 @@ let sections_are_opened () = Safe_typing.sections_are_opened (safe_env())
 
 let sections () = Safe_typing.sections_of_safe_env @@ safe_env ()
 
+let section_universes () = match sections () with
+  | None -> Univ.ContextSet.empty
+  | Some s ->
+    let univs = Section.all_poly_univs s in
+    List.fold_left (fun acc uc -> Univ.ContextSet.union (snd (UVars.UContext.to_context_set uc)) acc) Univ.ContextSet.empty univs
+
 let force_sections () = match sections() with
   | Some s -> s
   | None ->

@@ -1241,9 +1241,9 @@ let collapse_sort_variables ?except ~only_above_prop evd =
   let universes = UState.collapse_sort_variables ?except ~only_above_prop evd.universes in
   { evd with universes }
 
-let minimize_universes_no_collapse ~partial evd =
+let minimize_universes_no_collapse ~partial ?(solve_term=false) evd =
   let uctx' = UState.normalize_variables evd.universes in
-  let uctx' = UState.minimize ~partial uctx' in
+  let uctx' = UState.minimize ~partial ~solve_term uctx' in
   {evd with universes = uctx'}
 
 let minimize_universes ?(poly=PolyFlags.default) ?(partial=false) evd =
@@ -1251,7 +1251,7 @@ let minimize_universes ?(poly=PolyFlags.default) ?(partial=false) evd =
   let uctx' =
     UState.collapse_sort_variables ~only_above_prop:(not collapse_sort_variables) evd.universes
   in
-  minimize_universes_no_collapse ~partial {evd with universes = uctx'}
+  minimize_universes_no_collapse ~partial ~solve_term:(PolyFlags.solve_term_variables poly) {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
 

@@ -93,6 +93,8 @@ val close_section : Summary.Interp.frozen -> unit
 
 val sections_are_opened : unit -> bool
 
+val section_universes : unit -> Univ.ContextSet.t
+
 (** {6 Section management for discharge } *)
 
 val section_segment_of_constant : Constant.t -> Cooking.cooking_info

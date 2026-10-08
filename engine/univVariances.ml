@@ -11,6 +11,32 @@
 open Univ
 open UVars
 open InferCumulativity
+open Names
+
+let cumulativity_transparent_state = Summary.ref ~name:"transparent state for cumulativity inference" TransparentState.empty
+
+let cache_cumulativity_transparent_state us =
+  cumulativity_transparent_state := TransparentState.union !cumulativity_transparent_state us
+
+let cumulativity_transparent_state_obj =
+  Libobject.declare_object {
+    (Libobject.default_object "transparent state for cumulativity inference") with
+    cache_function = cache_cumulativity_transparent_state;
+    load_function = (fun _ us -> cache_cumulativity_transparent_state us);
+    discharge_function = (fun x -> Some x);
+    classify_function = (fun _ -> Escape);
+  }
+
+let add_cumulativity_transparent_state gr =
+  let st' = match gr with
+  | GlobRef.VarRef _ -> assert false
+  | GlobRef.ConstRef c -> TransparentState.{ empty with tr_cst = Cpred.add c Cpred.empty }
+  | GlobRef.IndRef _
+  | GlobRef.ConstructRef _ -> assert false
+  in
+  Lib.add_leaf (cumulativity_transparent_state_obj st')
+
+let cumulativity_transparent_state () = !cumulativity_transparent_state
 
 let debug = CDebug.create ~name:"UnivVariances" ()
 
@@ -101,18 +127,19 @@ let compute_variances_type env sigma ?(position=Position.InType) ?(ctx_position 
     (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
 
 let init_status_ustate ?(position=Position.InType) ?(udecl : UState.universe_decl option) ustate =
+  let volatile = cumulativity_transparent_state () in
   match UState.get_variances ustate with
-  | Some variances -> Inf.start_variances variances position
+  | Some variances -> Inf.start_variances ~volatile variances position
   | None ->
     let ctx = UState.universe_context_set ustate in
     debug Pp.(fun () -> str"Levels in context_set in init_status_ustate: " ++ Level.Set.pr Level.raw_pr (ContextSet.levels ctx));
     match udecl with
-    | None -> Inf.start_inference (ContextSet.levels ctx) position
+    | None -> Inf.start_inference ~volatile (ContextSet.levels ctx) position
     | Some udecl ->
       let levels = ContextSet.levels ctx in
       let us = udecl.UState.univdecl_instance and variances = udecl.UState.univdecl_variances in
       match variances with
-      | None -> Inf.start_inference levels position
+      | None -> Inf.start_inference ~volatile levels position
       | Some vs ->
         assert (Int.equal (List.length vs) (List.length us));
         let comp = CList.combine us vs in
@@ -125,7 +152,7 @@ let init_status_ustate ?(position=Position.InType) ?(udecl : UState.universe_dec
             | Some v -> Level.Map.add l (make_checked_occ (v, InTerm)) m)
           with Not_found -> Level.Map.add l default_occ m)
           levels Level.Map.empty
-        in Inf.start_variances map position
+        in Inf.start_variances ~volatile map position
 
 let init_status ?(position=Position.InType) ?(udecl : UState.universe_decl option) sigma =
   let ustate = Evd.ustate sigma in

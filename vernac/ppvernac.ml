@@ -1033,6 +1033,10 @@ let pr_synpure_vernac_expr v =
       hov 2 (keyword "Constraint" ++ spc () ++
              prlist_with_sep (fun _ -> str",") pr_pconstraint v)
     )
+  | VernacCumulativityTransparent gr ->
+     return (
+      hov 2 (keyword "Cumulativity Transparent" ++ spc () ++ pr_smart_global gr)
+    )
 
   (* Gallina extensions *)
   | VernacNameSectionHypSet (id,set) ->

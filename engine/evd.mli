@@ -671,7 +671,7 @@ val disable_universe_extension : evar_map -> with_cstrs:bool -> evar_map
 val get_variances : evar_map -> InferCumulativity.variances option
 val set_variances : evar_map -> InferCumulativity.variances -> evar_map
 
-val minimize_universes_no_collapse : partial:bool -> evar_map -> evar_map
+val minimize_universes_no_collapse : partial:bool -> ?solve_term:bool -> evar_map -> evar_map
 
 (** Universe minimization *)
 val minimize_universes :

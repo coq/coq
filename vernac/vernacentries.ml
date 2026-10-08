@@ -1472,6 +1472,9 @@ let vernac_constraint ~poly l =
                  (str"Polymorphic constraints can only be declared"
                   ++ str " inside sections, use Monomorphic Constraint instead.");
   DeclareUniv.do_constraint ~poly l
+let vernac_cumulativity_transparent qid =
+  let gr = smart_global qid in
+  UnivVariances.add_cumulativity_transparent_state gr
 
 (**********************)
 (* Modules            *)
@@ -2945,6 +2948,9 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacConstraint l ->
     vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)
+
+  | VernacCumulativityTransparent qid ->
+    vtdefault (fun () -> vernac_cumulativity_transparent qid)
 
   | VernacAddRewRule (id, c) ->
     vtdefault (fun () ->

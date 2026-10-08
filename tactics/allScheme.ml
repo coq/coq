@@ -977,7 +977,7 @@ let generate_all_aux cache ~poly ~udecl suffix kn u sub_temp mib uparams strpos 
   dbg Pp.(fun () -> str "Before Simpl, Ustate.t = " ++ UState.pr (Evd.ustate sigma) ++ str "\n");
   let uctx = UState.collapse_sort_variables ~only_above_prop:true uctx in
   let uctx = UState.normalize_variables uctx in
-  let uctx = UState.minimize ~partial:false uctx in
+  let uctx = UState.minimize ~partial:(false) uctx in
   dbg Pp.(fun () -> str "After Simpl, Ustate.t = " ++ UState.pr (Evd.ustate sigma) ++ str "\n");
   let (inst, auctx) = UVars.abstract_universes @@ UState.context uctx in
   let usubst = UVars.make_instance_subst inst in

@@ -73,9 +73,9 @@ module Inf : sig
 
   val set_position : Position.t -> status -> status
 
-  val start : infer_in_type:bool -> pre_variances -> Position.t -> status
-  val start_inference : Level.Set.t -> Position.t -> status
-  val start_variances : variances -> Position.t -> status
+  val start : ?volatile:TransparentState.t -> infer_in_type:bool -> pre_variances -> Position.t -> status
+  val start_inference : ?volatile:TransparentState.t -> Level.Set.t -> Position.t -> status
+  val start_variances : ?volatile:TransparentState.t -> variances -> Position.t -> status
 
   val inferred : status -> variances
   val finish : Environ.env -> status -> UVars.variances

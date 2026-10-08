@@ -656,10 +656,10 @@ let names_union ((qbind,ubind),(qrev,urev)) ((qbind',ubind'),(qrev',urev')) =
   ((qbind,ubind),(qrev,urev))
 
 let update_univ_subst_gen f vars flex variances subst =
-  let vars = List.fold_left (fun ls (l, u) ->
-    if Level.Set.mem l flex then Level.Set.remove l ls
-    else (* A rigid universe was unified *) ls) vars subst in
-  let flex = List.fold_left (fun ls (l, u) -> Level.Set.remove l ls) flex subst in
+  let flex, vars = List.fold_left (fun (flex, vars) (l, u) ->
+    if Level.Set.mem l flex then (Level.Set.remove l flex, Level.Set.remove l vars)
+    else flex, vars (* A rigid universe was unified with u *)) (flex, vars) subst in
+  (* let flex = List.fold_left (fun ls (l, u) -> Level.Set.remove l ls) flex subst in *)
   let variances = Option.map (fun variances -> List.fold_right (fun (l, u) variances ->
     Level.Map.remove l (UnivMinim.update_variances variances l (Univ.Universe.levels (f u)))) subst variances) variances in
   vars, flex, variances
@@ -1040,12 +1040,13 @@ let process_constraints ?src uctx cstrs =
     if UGraph.check_eq_sort Sorts.Quality.equal local.universes ls s then local
     else if is_uset l then match classify s with
     | USmall _ -> univ_inconsistency Eq set s
-    | ULevel (r, _) ->
+    | ULevel (r, ru) ->
       if is_flexible local r then
         try instantiate_variable r Universe.type0 local
         with UGraph.OccurCheck -> assert false
       else
-        univ_inconsistency Eq set s
+        (* Warn? Setting a rigid universe to 0 *)
+        add_local_univ fo (ru, Eq, Universe.type0) local
     | UAlgebraic u ->
       let inst = univ_level_rem Level.set u u in
       let repr = Univ.Universe.repr inst in
@@ -1988,14 +1989,16 @@ let update_variances_qvars qs variances =
   Univ.Level.Map.Smart.map upd variances
 
 let minimize
-  ~partial uctx =
+  ~partial ?(solve_term=false) uctx =
   let open UnivMinim in
   match uctx.variances with
   | None -> warn_no_variances (); uctx
   | Some variances ->
     let variances = update_variances_qvars uctx.sort_variables variances in
     let local_variables, flexible_variables, variances, universes =
-      normalize_context_set ~solve_flexibles:uctx.fixed_rigid_universes ~variances ~partial uctx.universes
+      normalize_context_set ~solve_flexibles:uctx.fixed_rigid_universes
+        ~solve_term
+        ~variances ~partial uctx.universes
         ~local_variables:uctx.local_variables
         ~flexible_variables:uctx.flexible_variables
         ~binders:(fst uctx.names) uctx.minim_extra
@@ -2079,9 +2082,9 @@ let check_uctx_impl ~fail uctx uctx' =
 
 let disable_minim, _ = CDebug.create_full ~name:"minimization" ()
 
-let minimize ~partial uctx =
+let minimize ~partial ?(solve_term=false) uctx =
   if CDebug.get_flag disable_minim then uctx
-  else minimize ~partial uctx
+  else minimize ~partial ~solve_term uctx
 
 module Internal =
 struct

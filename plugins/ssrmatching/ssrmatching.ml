@@ -704,6 +704,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
         let ise' = match u.up_k with
         | KpatFixed
         | KpatConst -> (* Ensure universe instances are unified *)
+          pp(lazy(str"match_upats_HO: " ++ pr_econstr_env env ise u.up_f ++ str" = " ++ pr_econstr_env env ise f));
           unif_HO env ise u.up_f f
         | KpatEvar _ ->
           let open EConstr in

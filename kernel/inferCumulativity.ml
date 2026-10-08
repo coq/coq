@@ -237,10 +237,12 @@ module Inf : sig
   val set_position : Position.t -> status -> status
   val get_position : status -> Position.t
 
-  val start : infer_in_type:bool -> pre_variances -> Position.t -> status
-  val start_variances : variances -> Position.t -> status
+  val start : ?volatile:TransparentState.t -> infer_in_type:bool -> pre_variances -> Position.t -> status
+  val start_variances : ?volatile:TransparentState.t -> variances -> Position.t -> status
 
-  val start_inference : Level.Set.t -> Position.t -> status
+  val start_inference : ?volatile:TransparentState.t -> Level.Set.t -> Position.t -> status
+
+  val volatile : status -> TransparentState.t
 
   val inferred : status -> variances
   val finish : Environ.env -> status -> UVars.variances
@@ -258,6 +260,7 @@ end = struct
     univs : variances;
     infer_mode : bool;
     position : Position.t;
+    volatile : TransparentState.t
   }
 
   let univs (s : status) = s.univs
@@ -363,16 +366,17 @@ end = struct
     let pr (l, v) = Level.raw_pr l ++ str " : " ++ pr_opt VarianceOccurrence.pr v in
     prvect_with_sep spc pr
 
-  let start ~infer_in_type univs position =
+  let start ?(volatile=TransparentState.empty) ~infer_in_type univs position =
     debug Pp.(fun () -> str"Starting from variances: " ++ pr_pre_variances univs);
-    { univs = of_variance_occurrences ~infer_in_type univs; orig_array = univs; infer_mode = true; position}
+    { univs = of_variance_occurrences ~infer_in_type univs; orig_array = univs; infer_mode = true; position;
+      volatile }
 
-  let start_variances univs position =
-    { univs; orig_array = [| |]; infer_mode = true; position}
+  let start_variances ?(volatile=TransparentState.empty) univs position =
+    { univs; orig_array = [| |]; infer_mode = true; position; volatile}
 
-  let start_inference levels position =
+  let start_inference ?(volatile=TransparentState.empty) levels position =
     let univs = Level.Set.fold (fun level -> Level.Map.add level default_occ) levels Level.Map.empty in
-    { univs; orig_array = [||]; infer_mode=true; position}
+    { univs; orig_array = [||]; infer_mode=true; position; volatile}
 
   let variance_occurrence_to_variance_pos VarianceOccurrence.{ in_binders; in_topfix_binders; in_term; in_type; under_impred_qvars = _ } =
     let open Position in
@@ -398,6 +402,8 @@ end = struct
 
   let to_variance_opt u expected o =
     Option.cata (fun occ -> variance_of_occ u expected occ) (Irrelevant,Position.InTerm) o
+
+  let volatile variances = variances.volatile
 
   let inferred (variances : status) = variances.univs
 
@@ -585,6 +591,8 @@ let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
   | Cumul -> InvCumul
   | InvCumul -> Cumul *)
 
+exception Expand
+
 let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd stk =
   Control.check_for_interrupt ();
   let hd,stk = whd_stack infos hd stk in
@@ -623,12 +631,13 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
       else
       let def = unfold_ref_with_args (fst infos) (snd infos) fl stk in
       try
+        if TransparentState.is_transparent_constant (Inf.volatile variances) (fst con) then raise Expand else
         let infer_mode = get_infer_mode variances in
         let nargs = stack_args_size stk in
         let variances = infer_constant cv_pb variance (info_env (fst infos)) (UVars.NumArgs nargs) variances (Option.has_some def) con in
         let variances = set_infer_mode infer_mode variances in
         infer_stack variance infos variances stk
-      with BadVariance _ | NotInferring as e ->
+      with BadVariance _ | Expand | NotInferring as e ->
       match def with
       | None -> raise e
       | Some (hd,stk) ->

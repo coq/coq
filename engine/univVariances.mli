@@ -8,16 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+val add_cumulativity_transparent_state : Names.GlobRef.t -> unit
+
 val universe_variances : Environ.env -> Evd.evar_map -> ?typ:EConstr.t -> EConstr.t -> InferCumulativity.variances
 val universe_variances_constr : Environ.env -> Evd.evar_map -> ?typ:Constr.t -> Constr.t -> InferCumulativity.variances
 
 val register_universe_variances_of_constr : Environ.env -> Evd.evar_map -> ?typ:Constr.t -> Constr.t -> Evd.evar_map
 
-val register_universe_variances_of : Environ.env -> Evd.evar_map -> ?typ:EConstr.t -> EConstr.t -> Evd.evar_map
+val register_universe_variances_of : Environ.env -> Evd.evar_map -> ?sec_ctx:Univ.ContextSet.t ->
+  ?typ:EConstr.t -> EConstr.t -> Evd.evar_map
 
 val register_universe_variances_of_undefined : Environ.env -> Evd.evar_map -> Evd.evar_map
 
-val register_universe_variances_of_type : Environ.env -> Evd.evar_map -> EConstr.t -> ?cumul_pb:InferCumulativity.cumul_pb -> Evd.evar_map
+val register_universe_variances_of_type : Environ.env -> Evd.evar_map -> ?cumul_pb:InferCumulativity.cumul_pb -> EConstr.t -> Evd.evar_map
 
 val register_universe_variances_of_inductive : Environ.env -> Evd.evar_map ->
   udecl:UState.universe_decl ->

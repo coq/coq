@@ -57,6 +57,8 @@ val set_variance : InferCumulativity.variances -> Level.t -> InferCumulativity.i
 
 val normalize_context_set :
   solve_flexibles:bool ->
+  solve_term:bool ->
+  (* Solve flexibles appearing in term position, if they are irrelevant for the type *)
   variances:InferCumulativity.variances ->
   partial:bool ->
   UGraph.t -> (* The graph representing constraints and a level to universe substitution *)

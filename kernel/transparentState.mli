@@ -25,6 +25,8 @@ val full : t
 
 val is_empty : t -> bool
 
+val union : t -> t -> t
+
 val is_transparent_variable : t -> Id.t -> bool
 val is_transparent_constant : t -> Constant.t -> bool
 val is_transparent_projection : t -> Projection.Repr.t -> bool

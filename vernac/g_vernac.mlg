@@ -300,6 +300,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Sort"; l = LIST1 identref -> { VernacSort l }
       | IDENT "Sorts"; l = LIST1 identref -> { VernacSort l }
       | IDENT "Constraint"; l = LIST1 sort_constraint SEP "," -> { VernacConstraint l }
+      | IDENT "Cumulativity"; IDENT "Transparent"; qid = global -> { VernacCumulativityTransparent (CAst.make ~loc @@ AN qid) }
       | IDENT "Rewrite"; IDENT "Rule"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->
           { VernacAddRewRule (id, rules) }
       | IDENT "Rewrite"; IDENT "Rules"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->

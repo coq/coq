@@ -15,8 +15,8 @@ open InferCumulativity
 let _debug_minim, debug = CDebug.create_full ~name:"univMinim" ()
 let _debug_minim_each, debug_each = CDebug.create_full ~name:"univMinim_each" ()
 let _debug_minim_each, debug_graph = CDebug.create_full ~name:"univMinim_graph" ()
-let switch_minim, _ = CDebug.create_full ~name:"switchminim" ()
-let () = CDebug.set_flag switch_minim true
+
+let disable_solve_term, _ = CDebug.create_full ~name:"minim-solve-term" ()
 
 (* To disallow minimization to Set *)
 let { Goptions.get = get_set_minimization } =
@@ -99,7 +99,7 @@ let update_equivs_bound (_, us, _, _ as acc) l u equivs =
   update_univ_subst acc ((l, u) :: subst_of_equivalences us equivs)
 
 (** [partial]: we have type information only, not term information (i.e. Axiom, Definition/Lemma type only) *)
-let simplify_variables solve_flexibles above_prop above_zero partial ctx flex variances graph =
+let simplify_variables solve_flexibles above_prop above_zero partial solve_term ctx flex variances graph =
   let open UVars.Variance in
   debug_each Pp.(fun () -> str"Simplifying variables with " ++ (if partial then str"partial" else str"non-partial") ++ str" information about the definition");
   let allowed_instance ~allow_collapse_to_zero u lbound =
@@ -151,21 +151,24 @@ let simplify_variables solve_flexibles above_prop above_zero partial ctx flex va
     let term_variance, type_variance, typing_variance, impred = variance_info u flex variances in
     debug_each Pp.(fun () -> str"Trying to minimize flexible " ++ Level.raw_pr u ++ str" arbitrarily, type variance: " ++ UVars.Variance.pr type_variance ++
       str " typing_variance: " ++ UVars.Variance.pr typing_variance);
-    if typing_variance == Irrelevant then
+    match typing_variance with
+    | Irrelevant ->
       (* The universe does not occur relevantly in the principal type of the expressions where it appears *)
-      match type_variance with
+      begin match type_variance with
       | Irrelevant -> arbitrary ~allow_collapse_to_zero:true u acc
       | Covariant -> minimize ~allow_collapse_to_zero:false u acc
       | Contravariant -> acc (* Do not maximize at first, as it would break the template hacks with max (0, ...) *)
       | Invariant -> acc
-    else
-      match typing_variance with
-      | Covariant when not partial -> minimize ~allow_collapse_to_zero:false u acc
-      | Contravariant when not partial ->
-        (* Do not maximize at first, as it would break template hacks with max(0,_) *)
-        simplify_impred u acc impred
-      | _ -> simplify_impred u acc impred
-
+      end
+    | Covariant when not partial -> minimize ~allow_collapse_to_zero:false u acc
+    | Contravariant when not partial ->
+      (* Do not maximize at first, as it would break template hacks with max(0,_) *)
+      simplify_impred u acc impred
+    | _ ->
+      (* Agressive minimization when the universe does not direcly affect the type of the expression. *)
+      if not partial && solve_term && not (CDebug.get_flag disable_solve_term) && type_variance == Irrelevant then
+        minimize ~allow_collapse_to_zero:true u acc
+      else simplify_impred u acc impred
   in
   let (_, flex, _, _ as acc) = Level.Set.fold simplify_min flex (ctx, flex, variances, graph) in
   let simplify_max u (ctx, flex, variances, graph as acc) =
@@ -280,7 +283,7 @@ let new_minimize_weak ctx flex weak (g, variances) =
         | _ -> acc)
     weak (ctx, flex, variances, g)
 
-let normalize_context_set ~solve_flexibles ~variances ~partial graph
+let normalize_context_set ~solve_flexibles ~solve_term ~variances ~partial graph
   ~local_variables ~flexible_variables ?binders
   {weak_constraints=weak;above_prop; above_zero} =
   let prl = UnivNames.pr_level_with_global_universes ?binders in
@@ -303,7 +306,7 @@ let normalize_context_set ~solve_flexibles ~variances ~partial graph
   (* Now we construct the instantiation of each variable. *)
   let local_variables, flexible_variables, variances, graph =
     (* debug Pp.(fun () -> str"Model after removal: " ++ UGraph.pr_model graph); *)
-    let ctx', flex, variances, graph = simplify_variables solve_flexibles above_prop above_zero partial local_variables flexible_variables variances graph in
+    let ctx', flex, variances, graph = simplify_variables solve_flexibles above_prop above_zero partial solve_term local_variables flexible_variables variances graph in
     debug_graph Pp.(fun () -> str"Model after simplification: " ++ UGraph.pr_model graph ++ fnl () ++ Level.Set.pr Level.raw_pr flex);
     new_minimize_weak ctx' flex weak (graph, variances)
   in

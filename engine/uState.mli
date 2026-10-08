@@ -245,7 +245,14 @@ val set_variances : t -> InferCumulativity.variances -> t
 
 (** Universe minimization *)
 
-val minimize : partial:bool -> t -> t
+(** [minimize partial sigma] minimizes universes in sigma.
+
+  partial = false if the variance information is partial (minimization is then conservative)
+  partial = true if the variance information is total (term and type have been analysed)
+  solve_term determines if flexible variables appearing only in the term, not the type, should be minimized (false by default).
+
+*)
+val minimize : partial:bool -> ?solve_term:bool -> t -> t
 
 val collapse_sort_variables : ?except:QVar.Set.t -> only_above_prop:bool -> t -> t
 

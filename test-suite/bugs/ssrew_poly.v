@@ -3,7 +3,7 @@ Set Universe Polymorphism.
 Axiom foo@{i} : unit.
 Set Printing Universes.
 
-Axiom lemma@{i} : foo@{i} = tt.
+Definition lemma@{i} : foo@{i} nat = 0 := eq_refl.
 
 Monomorphic Universes i j.
 Monomorphic Constraint i < j.

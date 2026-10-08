@@ -2543,9 +2543,11 @@ let minimize_can can k model =
   let glb =
     ForwardClauses.fold (fun ~kprem ~concl ~prems glb ->
       let concl = repr model concl in
-      PartialClausesOf.fold (fun (conclk, _premsfwd) glb ->
+      PartialClausesOf.fold (fun (conclk, premsfwd) glb ->
         (* premsfwd, can + kprem -> concl + conclk *)
-        (concl, (conclk - kprem)) :: glb)
+        if Option.is_empty premsfwd then
+          (concl, (conclk - kprem)) :: glb
+        else glb)
         prems glb)
     fwd []
   in
