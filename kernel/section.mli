@@ -75,6 +75,8 @@ val all_poly_univs : 'a t -> UContext.t list
    constraints about monomorphic universes, which prevent declaring
    monomorphic globals. *)
 
+val has_poly_univs : 'a t -> bool
+
 
 val segment_of_constant : Constant.t -> 'a t -> cooking_info
 (** Section segment at the time of the constant declaration *)

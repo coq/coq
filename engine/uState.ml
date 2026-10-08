@@ -659,7 +659,6 @@ let update_univ_subst_gen f vars flex variances subst =
   let flex, vars = List.fold_left (fun (flex, vars) (l, u) ->
     if Level.Set.mem l flex then (Level.Set.remove l flex, Level.Set.remove l vars)
     else flex, vars (* A rigid universe was unified with u *)) (flex, vars) subst in
-  (* let flex = List.fold_left (fun ls (l, u) -> Level.Set.remove l ls) flex subst in *)
   let variances = Option.map (fun variances -> List.fold_right (fun (l, u) variances ->
     Level.Map.remove l (UnivMinim.update_variances variances l (Univ.Universe.levels (f u)))) subst variances) variances in
   vars, flex, variances
@@ -994,21 +993,20 @@ let unify_quality c s1 s2 l =
 let normalize_universe graph u = UnivSubst.(subst_univs_universe (UGraph.normalize graph)) u
 
 let add_local_univ fo c local =
+  let is_flexible local l = Level.Set.mem l local.flexible_variables in
+  let all_rigid = Universe.for_all (fun (l,k) -> not (is_flexible local l)) in
   if fo then
     if UGraph.check_constraint local.universes c then local
     else raise UniversesDiffer
   else if local.fixed_rigid_constraints then
     (* Check that we don't add a constraint that is too strict w.r.t. rigid universes *)
-    if UGraph.check_constraint local.universes c then local
-    else
-    let local' = add_local_univ c local in
-    let newcstrs = UGraph.constraints_for ~kept:(Level.Set.diff local.local_variables local.flexible_variables) local'.universes in
-    if UnivConstraints.for_all (fun c -> UGraph.check_constraint local.universes c) newcstrs then
-      local'
-    else
-      (* The constraint is too strict *)
-      let (l, cst, r) = c in
-      raise (UGraph.UniverseInconsistency (None, (cst, Sorts.sort_of_univ l, Sorts.sort_of_univ r, None)))
+    let (l, cst, r) = c in 
+    if all_rigid l && all_rigid r then
+      if UGraph.check_constraint local.universes c then local
+      else
+        (* The constraint is too strict *)
+        raise (UGraph.UniverseInconsistency (None, (cst, Sorts.sort_of_univ l, Sorts.sort_of_univ r, None)))
+    else add_local_univ c local
   else add_local_univ c local
 
 let process_constraints ?src uctx cstrs =

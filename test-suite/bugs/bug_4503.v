@@ -1,8 +1,12 @@
-Require RelationClasses.
+From Corelib Require RelationClasses.
 Require TestSuite.relationclasses.
 
 Class PreOrder (A : Type) (r : A -> A -> Type) : Type :=
 { refl : forall x, r x x }.
+
+#[universes(template=no)]
+Class PreOrderP {A : Type} (r : A -> A -> Prop) : Prop :=
+{ reflP : forall x, r x x }.
 
 (* FAILURE 1 *)
 
@@ -13,7 +17,7 @@ Section foo.
 
   Fail Monomorphic Definition foo := PO.
 End foo.
-
+About foo.
 
 Module ILogic.
 
@@ -23,9 +27,8 @@ Set Universe Polymorphism.
 Class ILogic@{L} (A : Type@{L}) : Type := mkILogic
 {
   lentails: A -> A -> Prop;
-  lentailsPre:: RelationClasses.PreOrder lentails
+  lentailsPre:: PreOrderP lentails
 }.
-
 
 End ILogic.
 
@@ -36,5 +39,5 @@ Set Printing Universes.
 Section Embed_ILogic_Pre.
   Polymorphic Universes A T.
   Fail Monomorphic Context {A : Type@{A}} {ILA: ILogic.ILogic@{A} A}.
-
+  
 End Embed_ILogic_Pre.

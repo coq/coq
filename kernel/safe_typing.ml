@@ -1102,7 +1102,7 @@ let infer_direct_opaque ~sec_univs env ce =
   hbody, { cb with const_body = OpaqueDef c }
 
 let export_side_effects senv eff =
-  let sec_univs = Option.map Section.all_poly_univs senv.sections in
+  let sec_univs = Option.map (fun sec -> Section.has_poly_univs sec, Section.all_poly_univs sec) senv.sections in
   let env = senv.env in
   let not_exists e = not (Environ.mem_constant e.seff_constant env) in
   let aux (acc,sl) e =
@@ -1180,7 +1180,7 @@ let export_private_constants eff senv =
 let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
   let senv, (hbody, cb) =
-    let sec_univs = Option.map Section.all_poly_univs senv.sections in
+    let sec_univs = Option.map (fun sec -> Section.has_poly_univs sec, Section.all_poly_univs sec) senv.sections in
       match decl with
       | Entries.OpaqueEntry ce ->
         let senv, o = push_opaque_proof senv in
@@ -1279,7 +1279,7 @@ let add_private_constant l uctx decl senv : (Constant.t * private_constants) * s
   let kn = Constant.make2 senv.modpath l in
   let senv = push_context_set ~strict:true uctx senv in
     let hbody, cb =
-      let sec_univs = Option.map Section.all_poly_univs senv.sections in
+      let sec_univs = Option.map (fun sec -> Section.has_poly_univs sec, Section.all_poly_univs sec) senv.sections in
       match decl with
       | OpaqueEff ce ->
         let () = assert (check_constraints uctx ce.Entries.opaque_entry_universes) in
