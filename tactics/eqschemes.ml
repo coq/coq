@@ -106,15 +106,16 @@ let build_dependent_inductive ind (mib,mip) =
    scheme applying a previously declared scheme also needs constraints
    relating its universes to those of the latter (see
    [enforce_scheme_param_univs]). *)
-let maybe_template_instance (mib, mip) u = match mib.mind_template with
+let maybe_template_instance (mib, mip) u = match Declareops.inductive_template mib with
 | None -> u, UnivGen.empty_sort_context
 | Some templ ->
   let () = assert (UVars.Instance.is_empty u) in
-  let qdefaults, _ = UVars.Instance.to_array templ.template_defaults in
+  let qdefaults, _ = UVars.LevelInstance.to_array templ.template_defaults in
   let _, ulen = UVars.AbstractContext.size templ.template_context in
   let uinst = Array.init ulen (fun _ -> UnivGen.fresh_level ()) in
-  let inst = UVars.Instance.of_array (qdefaults, uinst) in
+  let inst = UVars.LevelInstance.of_array (qdefaults, uinst) in
   let us = Array.fold_right Univ.Level.Set.add uinst Univ.Level.Set.empty in
+  let inst = UVars.Instance.of_level_instance inst in
   let csts = UVars.AbstractContext.instantiate inst templ.template_context in
   inst, ((Sorts.QVar.Set.empty, us), csts)
 
@@ -182,7 +183,7 @@ let get_sym_eq_data env (ind,u) =
   if mip.mind_nrealargs > mib.mind_nparams then
     error "Constructors arguments must repeat the parameters.";
   let _,params2 = List.chop (mib.mind_nparams-mip.mind_nrealargs) params in
-  let paramsctxt = Vars.subst_instance_context u paramsctxt in
+  let paramsctxt = Vars.subst_instance_context u mib.mind_params_ctxt in
   let paramsctxt1,_ =
     List.chop (mib.mind_nparams-mip.mind_nrealargs) paramsctxt in
   if not (List.equal Constr.equal params2 constrargs) then
@@ -200,7 +201,7 @@ let get_sym_eq_data env (ind,u) =
 (* such that symmetry is a priori definable                           *)
 (**********************************************************************)
 
-let get_non_sym_eq_data env ctx (ind,u) =
+let get_non_sym_eq_data env (ind,u) =
   let (mib,mip as specif) = lookup_mind_specif env ind in
   let u, ctx = maybe_template_instance specif u in
   if not (Int.equal (Array.length mib.mind_packets) 1) ||
@@ -370,8 +371,7 @@ let build_sym_involutive_scheme env handle ind =
                NoInvert,
                mkRel 1 (* varH *),
                [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|])))))
-  in
-  typecheck env ctx c
+  in (c, of_context_set env ctx)
 
 let sym_involutive_scheme_kind =
   declare_individual_scheme_object "sym_involutive"
@@ -531,7 +531,7 @@ let build_l2r_rew_scheme dep env handle ind kind =
        [|main_body|]))
    else
      main_body))))))
-  in typecheck env ctx c
+  in (c, of_context_set env ctx)
 
 (**********************************************************************)
 (* Build the left-to-right rewriting lemma for hypotheses associated  *)

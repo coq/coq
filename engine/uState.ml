@@ -118,7 +118,7 @@ type elt = QVar.t
 let empty = { qmap = QMap.empty; above_prop = QMap.empty;
               elims = QGraph.initial_graph; initial_elims = QGraph.initial_graph }
 
-let is_empty m = QMap.is_empty m.qmap && QSet.is_empty m.above_prop
+let is_empty m = QMap.is_empty m.qmap && QMap.is_empty m.above_prop
 
 let rec repr q m = match QMap.find q m.qmap with
 | Canonical _ -> QVar q

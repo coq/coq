@@ -202,11 +202,11 @@ let push_relevances infos nas =
 let identity_of_ctx (ctx:Constr.rel_context) =
   Context.Rel.instance mkRel 0 ctx
 
-let get_template_instance mib u = match mib.mind_template with
+let get_template_instance mib u = match Declareops.inductive_template mib with
 | None -> u
 | Some templ ->
   let () = assert (UVars.Instance.is_empty u) in
-  templ.template_defaults
+  UVars.Instance.of_level_instance templ.template_defaults
 
 (* ind -> fun args => ind args *)
 let eta_expand_ind env (ind,u as pind) =
@@ -737,7 +737,7 @@ and eqwhnf cv_pb l2r infos (lft1, (hd1, v1) as appr1) (lft2, (hd2, v2) as appr2)
       let cuniv =
         let ind = (mind,snd ci1.ci_ind) in
         let nargs = inductive_cumulativity_arguments ind in
-        fail_check infos @@ UCompare.convert_inductives (info_env infos.cnv_inf) CONV ind ~nargs:(UVars.NumArgs nargs) u1 u2 cuniv
+        fail_check infos @@ UCompare.convert_inductives (info_env infos.cnv_inf) CONV ci1.ci_ind ~nargs:(UVars.NumArgs nargs) u1 u2 cuniv
       in
       let pms1 = mk_clos_vect e1 pms1 in
       let pms2 = mk_clos_vect e2 pms2 in

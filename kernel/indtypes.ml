@@ -510,9 +510,9 @@ let build_inductive env ~sec_univs ~hyps names prv univs sec_variance
     let consnrealargs =
       Array.map (fun (d,_) -> Context.Rel.nhyps d)
         splayed_lc in
-    let mind_relevance = match template with
-    | None -> Sorts.relevance_of_sort arity.IndTyping.sort
-    | Some templ ->
+    let mind_relevance = match univs with
+    | Polymorphic _ -> Sorts.relevance_of_sort arity.IndTyping.sort
+    | Template templ ->
       match templ.template_concl with
       | Sorts.Prop | Sorts.Set | Sorts.Type _ -> Sorts.Relevant
       | Sorts.SProp -> Sorts.Irrelevant

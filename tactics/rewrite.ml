@@ -923,7 +923,7 @@ let resolve_morphism env m args args' (b,cstr) evars =
     in
       (* Actual signature found *)
     let cl_args = [| appmtype' ; signature ; appm |] in
-    (evars', snd evars), cl_args, sigargs, appm, morphobjs, morphobjs'
+    evars, cl_args, sigargs, appm, morphobjs, morphobjs'
   in
   let projargs, subst, evars, respars, typeargs =
     Array.fold_left2

@@ -184,9 +184,9 @@ let show_top_evars ~proof =
   let given_up = Evar.Set.elements @@ Evd.given_up sigma in
   pr_evars_int sigma ~shelf ~given_up 1 (Evd.undefined_map sigma)
 
-let show_universes_aux ~poly sigma ~local =
+let show_universes_aux ~poly sigma ~local proof =
   let env = Global.env () in
-  let sigma = UnivVariances.register_universe_variances_of_partial_proofs env sigma (Proof.partial_proof proof) in
+  let sigma = UnivVariances.register_universe_variances_of_partial_proofs env sigma proof in
   let ctx = Evd.sort_context_set (Evd.minimize_universes ~poly ~partial:true sigma) in
   UState.pr ~local (Evd.ustate sigma) ++ fnl () ++
     v 1 (str "Normalized constraints:" ++ cut() ++
@@ -194,7 +194,7 @@ let show_universes_aux ~poly sigma ~local =
 
 let show_universes ~proof ~local =
   let Proof.{ sigma; poly } = Proof.data proof in
-  show_universes_aux ~poly sigma
+  show_universes_aux ~poly sigma ~local (Proof.partial_proof proof)
 
 (* Simulate the Intro(s) tactic *)
 let show_intro ~proof all =

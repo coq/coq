@@ -52,11 +52,11 @@ let find_coinductive ?evars env c =
 
 let inductive_params (mib,_) = mib.mind_nparams
 
-let get_template_instance mib u = match mib.mind_template with
+let get_template_instance mib u = match Declareops.inductive_template mib with
 | None -> u
 | Some templ ->
   let () = assert (UVars.Instance.is_empty u) in
-  templ.template_defaults
+  UVars.Instance.of_level_instance templ.template_defaults
 
 let inductive_paramdecls (mib,u) =
   let u = get_template_instance mib u in
@@ -1839,12 +1839,12 @@ let sorts_of_mutfix env minds names =
   else
     Some (Array.fold_left_i (fun i sorts (ind, inst) ->
         let mib, mip = lookup_mind_specif env ind in
-        let ind_sort = match mib.mind_template with
+        let ind_sort = match Declareops.inductive_template mib with
         | None -> UVars.subst_instance_sort inst mip.mind_sort
         | Some templ ->
           let () = assert (UVars.Instance.is_empty inst) in
           (* suspect, this is always Type currently *)
-          UVars.subst_instance_sort templ.template_defaults mip.mind_sort
+          UVars.subst_level_instance_sort templ.template_defaults mip.mind_sort
         in
         let u = Sorts.univ_of_sort ind_sort in
         (* This is an approximation: a [Relevant] variable might be of sort [Prop]

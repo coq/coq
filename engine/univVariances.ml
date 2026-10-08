@@ -16,7 +16,7 @@ open Names
 let cumulativity_transparent_state = Summary.ref ~name:"transparent state for cumulativity inference" TransparentState.empty
 
 let cache_cumulativity_transparent_state us =
-  cumulativity_transparent_state := TransparentState.union !cumulativity_transparent_state us
+  Summary.Ref.set cumulativity_transparent_state (TransparentState.union (Summary.Ref.get cumulativity_transparent_state) us)
 
 let cumulativity_transparent_state_obj =
   Libobject.declare_object {
@@ -36,7 +36,7 @@ let add_cumulativity_transparent_state gr =
   in
   Lib.add_leaf (cumulativity_transparent_state_obj st')
 
-let cumulativity_transparent_state () = !cumulativity_transparent_state
+let cumulativity_transparent_state () = Summary.Ref.get cumulativity_transparent_state
 
 let debug = CDebug.create ~name:"UnivVariances" ()
 
@@ -106,15 +106,15 @@ let compute_variances_context env sigma ?(position = fun x -> Position.InBinder 
   variances
 
 let compute_variances_named_context env sigma ?(position = fun x -> Position.InBinder x) ?(cumul_pb=Conv) ?(typing_pb=Conv) status ctx =
-  let fold_binder i binder (env, status) =
+  let fold_binder i binder status =
     let open Context.Named.Declaration in
     let status = match binder with
     | LocalAssum (na, ty) -> compute_variances_constr env sigma status (position i) (cumul_pb, typing_pb)
       (EConstr.to_constr sigma (EConstr.of_constr ty))
     | LocalDef _ -> status
-    in (Environ.push_named binder env, status)
+    in status
   in
-  let env, variances = CList.fold_right_i fold_binder 0 ctx (env, status) in
+  let variances = CList.fold_right_i fold_binder 0 ctx status in
   debug Pp.(fun () -> str"Variances in context: " ++ Inf.pr (Termops.pr_evd_level sigma) variances);
   variances
 

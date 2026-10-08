@@ -695,14 +695,14 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
     let (_, (p, _), _, _, br) =
       Inductive.expand_case_specif mib (ci, u, pms, p, NoInvert, mkProp, br)
     in
-    let infer c variances = infer_fterm CONV infos (IsTerm, Invariant) variances (mk_clos e c) [] in
+    let infer c variances = infer_fterm Conv (IsTerm, Invariant) infos  variances (mk_clos e c) [] in
     let variances = Array.fold_left (fun variances i ->
-        infer_fterm CONV infos (IsTerm, Invariant) variances i [])
+        infer_fterm Conv (IsTerm, Invariant) infos variances i [])
         variances (get_invert iv)
     in
     let variances = infer p variances in
     let variances = Array.fold_right infer br variances in
-    infer_stack infos variances stk
+    infer_stack variance infos variances stk
 
   (* | FCaseInvert (ci, u, _, p, _, _, br, e) -> *)
      (* infer_case cv_pb variance infos variances ci u p br e *)
@@ -807,18 +807,19 @@ let infer_term (cumul_cv_pb, typing_cv_pb) env ~evars variances c =
   debug_infer_term Pp.(fun () -> Inf.pr Level.raw_pr variances ++ fnl () ++ str" -> " ++ fnl () ++ Inf.pr Level.raw_pr status);
   status
 
+(* Assumes the context [ctx] is already in [env] *)
 let infer_named_context env ~evars variances ctx =
-  let infer_typ typ (env, i, variances) =
+  let infer_typ typ (i, variances) =
     let variances = Inf.set_position (Position.InBinder i) variances in
     match typ with
     | Context.Named.Declaration.LocalAssum (_, typ') ->
-      (Environ.push_named typ env, succ i,
+      (succ i,
        infer_term (Conv, Conv) env ~evars variances typ')
-    | Context.Named.Declaration.LocalDef _ ->
-      (Environ.push_named typ env, i, variances)
+    | Context.Named.Declaration.LocalDef (_, _, _) ->
+      (i, variances)
       (* Skip let-bound variables *)
   in
-  let _env, sec_binders, variances = Context.Named.fold_outside infer_typ ctx ~init:(env, 0, variances) in
+  let sec_binders, variances = Context.Named.fold_outside infer_typ ctx ~init:(0, variances) in
   sec_binders, variances
 
 let infer_context env ~evars ?(skip_lets=true) ?(shift = 0) ?(binder_pos = fun i -> Position.InBinder i) variances ctx =
@@ -828,7 +829,7 @@ let infer_context env ~evars ?(skip_lets=true) ?(shift = 0) ?(binder_pos = fun i
     | Context.Rel.Declaration.LocalAssum (_, typ') ->
       (Environ.push_rel typ env, succ i,
        infer_term (Conv, Conv) env ~evars variances typ')
-    | Context.Rel.Declaration.LocalDef _ -> 
+    | Context.Rel.Declaration.LocalDef (_, bdy, _) -> 
       if skip_lets then
         (* Skip let-bound variables *)
         (Environ.push_rel typ env, i, variances)

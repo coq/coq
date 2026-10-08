@@ -78,11 +78,11 @@ let check_strpos_context env uparams default cxt =
         aux (push_rel decl env) (List.map2 (&&) strpos_decl strpos) tel
   in aux env default (List.rev cxt)
 
-let get_inductive_sort (mib, mip) u = match mib.mind_template with
+let get_inductive_sort (mib, mip) u = match Declareops.inductive_template mib with
 | None -> UVars.subst_instance_sort u mip.mind_sort
 | Some templ ->
   let () = assert (UVars.Instance.is_empty u) in
-  UVars.subst_instance_sort templ.template_defaults mip.mind_sort
+  UVars.subst_level_instance_sort templ.template_defaults mip.mind_sort
 
 module Cache =
 struct

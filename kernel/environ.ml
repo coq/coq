@@ -366,11 +366,11 @@ let ind_relevance kn env = match Indmap.find_opt kn env.irr_inds with
     while replacing names using [nas] (order reversed)
 *)
 
-let get_template_instance mib u = match mib.mind_template with
+let get_template_instance mib u = match Declareops.inductive_template mib with
 | None -> u
 | Some templ ->
   let () = assert (UVars.Instance.is_empty u) in
-  templ.template_defaults
+  UVars.Instance.of_level_instance templ.template_defaults
 
 let instantiate_context u subst nas ctx =
   let open Context.Rel.Declaration in
@@ -403,7 +403,7 @@ let expand_arity (mib, mip) (ind, u) params nas =
   let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   let self =
     let u =
-      if Option.has_some mib.mind_template then UVars.Instance.empty
+      if Option.has_some (Declareops.inductive_template mib) then UVars.Instance.empty
       else UVars.Instance.of_level_instance @@ UVars.LevelInstance.abstract_instance (UVars.Instance.length u) in
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
     mkApp (mkIndU (ind, u), args)

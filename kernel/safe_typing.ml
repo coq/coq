@@ -1914,9 +1914,9 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) (mb, ob as spec
     check_nparams 2;
     check_nconstr 1;
     check_name 0 "pair";
-    let c = match mb.mind_template with
+    let c = match Declareops.inductive_template mb with
     | None -> ob.mind_user_lc.(0)
-    | Some templ -> Vars.subst_instance_constr templ.template_defaults ob.mind_user_lc.(0)
+    | Some templ -> Vars.subst_level_instance_constr templ.template_defaults ob.mind_user_lc.(0)
     in
     let s =  Pp.str "the constructor does not have the expected type" in
     begin match Term.decompose_prod c with

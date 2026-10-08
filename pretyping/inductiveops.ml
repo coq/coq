@@ -219,11 +219,11 @@ let inductive_nalldecls env ind =
 
 (* Others *)
 
-let get_template_instance mib u = match mib.mind_template with
+let get_template_instance mib u = match Declareops.inductive_template mib with
 | None -> u
 | Some templ ->
   let () = assert (UVars.Instance.is_empty (EConstr.Unsafe.to_instance u)) in
-  EInstance.make templ.template_defaults
+  EInstance.make (UVars.Instance.of_level_instance templ.template_defaults)
 
 let inductive_paramdecls env (ind,u) =
   let u = EConstr.Unsafe.to_instance u in

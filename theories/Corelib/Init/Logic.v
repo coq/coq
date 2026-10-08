@@ -71,7 +71,7 @@ Register conj as core.and.conj.
 Section Conjunction.
 
   Variables A B : Prop.
-
+Set Debug "backtrace".
   Theorem proj1 : A /\ B -> A.
   Proof.
     destruct 1; trivial.

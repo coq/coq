@@ -308,9 +308,9 @@ let pr_abstract_universe_binder evd auctx =
   let pp =
     if UContext.is_empty uctx then mt()
     else if PConstraints.is_empty (UContext.constraints uctx) then
-      h (Instance.pr printer (UContext.instance uctx))
+      h (LevelInstance.pr printer (UContext.instance uctx))
     else
-      h (Instance.pr printer (UContext.instance uctx) ++ str " | ") ++
+      h (LevelInstance.pr printer (UContext.instance uctx) ++ str " | ") ++
       h (v 0 (PConstraints.pr printer (UContext.constraints uctx)))
   in pp
 
