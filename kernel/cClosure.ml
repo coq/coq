@@ -414,12 +414,20 @@ end = struct
     | Symbol _ -> assert false
     (*  Should already be dealt with *)
 
-  let expand_global_fixpoint info cst c = match info.i_cache.i_mode with
+  let expand_global_fixpoint info cst c ty = match info.i_cache.i_mode with
   | Conversion -> None
   | Reduction ->
     let ctx, body = Term.decompose_lambda c in
     match destFix body with
-    | fix ->
+    | ((_, i), (_, tys, _)) as fix ->
+      let u = snd cst in
+      let fix_ty = subst_instance_constr u (Term.compose_prod ctx tys.(i)) in
+      let const_ty = subst_instance_constr u ty in
+      (** Refolding must preserve the recursive component's type. Structural
+          equality under the current universe graph is a conservative gate:
+          it neither reduces types nor adds universe constraints. *)
+      if not (eq_constr_univs (info_univs info) const_ty fix_ty) then None
+      else
       let nargs = List.length ctx in
       let args = Array.init nargs (fun i -> mkRel (nargs - i)) in
       let inst = UVars.Instance.abstract_instance @@ UVars.Instance.length @@ snd cst in
@@ -465,7 +473,7 @@ end = struct
         if TransparentState.is_transparent_constant ts cst then match cb.const_body with
         | Undef _ | Def _ | OpaqueDef _ | Primitive _ ->
           let body = constant_value_in u cb.const_body in
-          let gfix = expand_global_fixpoint info (cst, u) body in
+          let gfix = expand_global_fixpoint info (cst, u) body cb.const_type in
           let mask = match cb.const_body_code with
           | (Vmemitcodes.BCalias _ | Vmemitcodes.BCconstant | BCuncompiled) -> [||]
           | (Vmemitcodes.BCdefined (mask, _, _)) -> mask
