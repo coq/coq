@@ -827,6 +827,33 @@ let rec compile_lam env cenv lam sz cont =
     in
     compile_lam env cenv v sz cont
 
+  | Lblock (source, captures) ->
+    (* The source, not its body code, is a relocation of this compilation
+       unit. In particular, no body-only global is linked here. *)
+    let n = Array.length captures in
+    let make_capture =
+      if n = 0 then [Kconst (Const_b0 0)]
+      else comp_args (compile_lam env) cenv captures sz [Kmakeblock (n, 0)]
+    in
+    let instance = match env.uinstance with
+    | Global -> Kconst (Const_univ_instance UVars.Instance.empty)
+    | Bound size when UVars.eq_sizes size (0, 0) ->
+      Kconst (Const_univ_instance UVars.Instance.empty)
+    | Bound _ -> pos_instance cenv (sz + 1)
+    in
+    set_max_stack_size cenv (sz + max 2 n);
+    make_capture @ (Kpush :: instance :: Kblock source :: cont)
+
+  | Lrun args ->
+    set_max_stack_size cenv (sz + 5);
+    comp_args (compile_lam env) cenv args sz (Krun :: cont)
+
+  | Lprim (kn, (CPrimitives.Blocked_ind as op), args) ->
+    (* Retain the instantiated primitive head for stuck dependent eliminations. *)
+    set_max_stack_size cenv (sz + 6);
+    compile_get_global env cenv kn sz
+      (Kpush :: comp_args (compile_lam env) cenv args (sz + 1) (Kprim (op, kn) :: cont))
+
   | Lprim (kn, op, args) ->
 
     begin match get_caml_prim op with

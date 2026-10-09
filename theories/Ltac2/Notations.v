@@ -403,6 +403,10 @@ Ltac2 Notation "vm_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :
   Std.vm pl (default_on_concl cl).
 Ltac2 Abbreviation vm_compute := vm_compute.
 
+Ltac2 Notation "vm_compute_blocking" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
+  Std.vm_blocking pl (default_on_concl cl).
+Ltac2 Abbreviation vm_compute_blocking := vm_compute_blocking.
+
 Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
   Std.native pl (default_on_concl cl).
 Ltac2 Abbreviation native_compute := native_compute.
@@ -436,6 +440,9 @@ Ltac2 Notation "eval" "pattern" pl(list1(seq(constr, occurrences), ",")) "in" c(
 
 Ltac2 Notation "eval" "vm_compute" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
   Std.eval_vm pl c.
+
+Ltac2 Notation "eval" "vm_compute_blocking" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
+  Std.eval_vm_blocking pl c.
 
 Ltac2 Notation "eval" "native_compute" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
   Std.eval_native pl c.

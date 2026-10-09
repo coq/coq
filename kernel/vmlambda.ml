@@ -79,6 +79,7 @@ module Val =
 struct
   type value = int * structured_values
   let as_value = as_value
+  let preserve_blocks = true
   let check_inductive (_, i) mb =
     let { mind_typename=name; mind_nb_args; mind_nb_constant; _ } = mb.mind_packets.(i) in
     Vmerrors.check_compilable_ind ~name ~mind_nb_args ~mind_nb_constant

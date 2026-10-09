@@ -25,15 +25,20 @@ let warn_vm_disabled =
   (fun () ->
    strbrk "vm_compute disabled at configure time; falling back to cbv.")
 
-(* call by value normalisation function using the virtual machine *)
-let cbv_vm env sigma c =
+(* call by value normalisation functions using the virtual machine *)
+let cbv_vm_with_flags flags env sigma c =
   if (Environ.typing_flags env).enable_VM then
     let ctyp = Retyping.get_type_of env sigma c in
-    Vnorm.cbv_vm env sigma c ctyp
-  else begin
+    Vnorm.cbv_vm ~flags env sigma c ctyp
+  else if flags.Vnorm.vm_reduce_blocks then begin
     warn_vm_disabled ();
     compute env sigma c
-  end
+  end else
+    user_err (str "vm_compute_blocking reduction has been disabled.")
+
+let cbv_vm = cbv_vm_with_flags Vnorm.default_vm_flags
+let cbv_vm_blocking = cbv_vm_with_flags
+  Vnorm.{ default_vm_flags with vm_reduce_blocks = false }
 
 let warn_native_compute_disabled =
   CWarnings.create_in Nativeconv.w_native_disabled
@@ -318,7 +323,7 @@ let rec eval_red_expr env = function
   | e -> eval_red_expr env e
   | exception Not_found -> ExtraRedExpr s (* delay to runtime interpretation *)
   end
-| (Red | Hnf | Unfold _ | Fold _ | Pattern _ | CbvVm _ | CbvNative _ | UserRed _) as e -> e
+| (Red | Hnf | Unfold _ | Fold _ | Pattern _ | CbvVm _ | CbvVmBlocking _ | CbvNative _ | UserRed _) as e -> e
 
 let red_product_exn env sigma c = match red_product env sigma c with
   | None -> user_err Pp.(str "No head constant to reduce.")
@@ -356,6 +361,7 @@ let reduction_of_red_expr_val = function
            user_err
              (str "Unknown user-defined reduction \"" ++ str s ++ str "\"."))
   | CbvVm o -> (contextualize cbv_vm o, VMcast)
+  | CbvVmBlocking o -> (contextualize cbv_vm_blocking o, VMcast)
   | CbvNative o -> (contextualize cbv_native o, NATIVEcast)
   | UserRed usr -> eval_user_red_expr usr
 
@@ -415,13 +421,18 @@ let bind_red_expr_occurrences occs nbcl redexp =
           error_illegal_clause ()
         else
           CbvVm (Some (occs,c))
+    | CbvVmBlocking (Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          CbvVmBlocking (Some (occs,c))
     | CbvNative (Some (occl,c)) ->
         if occl != AllOccurrences then
           error_illegal_clause ()
         else
           CbvNative (Some (occs,c))
     | Red | Hnf | Cbv _ | Lazy _ | Cbn _
-    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None | UserRed _ ->
+    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvVmBlocking None | CbvNative None | UserRed _ ->
         error_at_in_occurrences_not_supported ()
     | Unfold [] | Pattern [] ->
         assert false
@@ -576,6 +587,7 @@ module Intern = struct
       Simpl (intern_flag ist f,
              Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
     | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+    | CbvVmBlocking o -> CbvVmBlocking (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
     | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
     | (Red | Hnf | ExtraRedExpr _ as r ) -> r
     | UserRed usr -> UserRed (intern_user_red_expr ist.ltac_sign usr)
@@ -657,6 +669,8 @@ module Interp = struct
                      Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
     | CbvVm o ->
       sigma , CbvVm (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
+    | CbvVmBlocking o ->
+      sigma , CbvVmBlocking (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
     | CbvNative o ->
       sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
     | (Red |  Hnf | ExtraRedExpr _  | UserRed _ as r) -> sigma , r

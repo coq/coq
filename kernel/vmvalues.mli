@@ -34,6 +34,24 @@ val switch_tag : tag
 val cofix_tag : tag
 val cofix_evaluated_tag : tag
 
+(** Inert source for a separately compiled and linked block body. *)
+type block_source = {
+  block_term : Constr.constr;
+  block_context : Constr.rel_context;
+  block_named_context : Constr.named_context;
+  block_rels : int array;
+  block_vars : Id.t array;
+}
+
+(** The source is never overwritten by the memoized, policy-independent VM
+    payload. Nested blocks in that payload remain suspensions. *)
+type blocked = {
+  blocked_source : block_source;
+  blocked_instance : UVars.Instance.t;
+  blocked_values : values array;
+  blocked_force : unit -> values;
+}
+
 type structured_constant =
   | Const_sort of Sorts.t
   | Const_ind of inductive
@@ -45,6 +63,7 @@ type structured_constant =
   | Const_uint of Uint63.t
   | Const_float of Float64.t
   | Const_string of Pstring.t
+  | Const_block of block_source
 
 val pp_struct_const : structured_constant -> Pp.t
 
@@ -104,6 +123,8 @@ type atom =
   | Aid of id_key
   | Aind of inductive
   | Asort of Sorts.t
+  | Ablock of blocked
+  | Arun of values * values * values * values
 
 val get_atom_rel : unit -> atom array
 (** Global table of rels *)

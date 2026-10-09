@@ -77,6 +77,8 @@ type instruction =
   | Kbranch of Label.t                  (* jump to label *)
   | Kprim of CPrimitives.t * pconstant
   | Kcamlprim of caml_prim * Label.t
+  | Kblock of block_source
+  | Krun
 
 and bytecodes = instruction list
 
@@ -165,6 +167,8 @@ let rec pp_instr i =
   | Ksetfield n -> str "setfield " ++ int n
 
   | Kstop -> str "stop"
+  | Kblock _ -> str "block fragment"
+  | Krun -> str "run"
 
   | Kbranch lbl -> str "branch " ++ pp_lbl lbl
 

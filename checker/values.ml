@@ -411,10 +411,15 @@ let v_non_subst_reloc = v_sum "vm_non_subst_reloc" 0 [|
   [|v_vm_caml_prim|];
 |]
 
+let v_vm_block_source = v_tuple "vm_block_source" [|
+    v_constr; v_rctxt; v_nctxt; v_array v_int; v_array v_id;
+  |]
+
 let v_reloc = v_sum "vm_reloc" 0 [|
     [|v_ind|];
     [|v_cst|];
     [|v_int|];
+    [|v_vm_block_source|];
   |]
 
 let v_vm_patches = v_tuple "vm_patches" [|v_array v_reloc|]

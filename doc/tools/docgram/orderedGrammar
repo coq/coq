@@ -521,6 +521,7 @@ red_expr: [
 | "cbv" OPT reductions
 | "compute" OPT delta_reductions
 | "vm_compute" OPT [ reference_occs | pattern_occs ]
+| "vm_compute_blocking" OPT [ reference_occs | pattern_occs ]
 | "native_compute" OPT [ reference_occs | pattern_occs ]
 | "red"
 | "hnf"
@@ -1632,6 +1633,7 @@ simple_tactic: [
 | "lazy" OPT reductions simple_occurrences
 | "compute" OPT delta_reductions simple_occurrences
 | "vm_compute" OPT [ reference_occs | pattern_occs ] OPT occurrences
+| "vm_compute_blocking" OPT [ reference_occs | pattern_occs ] OPT occurrences
 | "native_compute" OPT [ reference_occs | pattern_occs ] OPT occurrences
 | "unfold" LIST1 reference_occs SEP "," OPT occurrences
 | "fold" LIST1 one_term simple_occurrences

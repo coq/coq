@@ -1306,6 +1306,7 @@ let compile_prim env decl cond paux =
 
  let rec ml_of_lam env l t =
   match node t with
+  | Lblock _ | Lrun _ -> assert false (* VM-only forms *)
   | Lrel(id ,i) -> get_rel env id i
   | Lvar id -> get_var env id
   | Levar(evk, args) ->

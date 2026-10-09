@@ -45,6 +45,8 @@ type 'v node =
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive
+| Lblock        of Vmvalues.block_source * 'v lambda array
+| Lrun          of 'v lambda array
 
 and 'v lam_branches =
   { constant_branches : 'v lambda array;
@@ -172,6 +174,10 @@ let rec pp_lam lam =
        ++ str ")")
   | Lint i ->
     Pp.(str "(int:" ++ int i ++ str ")")
+  | Lblock (_, args) ->
+    str "(block fragment " ++ prlist_with_sep spc pp_lam (Array.to_list args) ++ str ")"
+  | Lrun args ->
+    str "(run " ++ prlist_with_sep spc pp_lam (Array.to_list args) ++ str ")"
 
 (*s Constructors *)
 
@@ -292,6 +298,12 @@ let map_lam_with_binders g f n lam =
   | Lprim(kn,op,args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else mknode @@ Lprim(kn,op,args')
+  | Lblock (source,args) ->
+    let args' = Array.Smart.map (f n) args in
+    if args == args' then lam else mknode @@ Lblock(source,args')
+  | Lrun args ->
+    let args' = Array.Smart.map (f n) args in
+    if args == args' then lam else mknode @@ Lrun args'
   | Lproj(p,arg) ->
     let arg' = f n arg in
     if arg == arg' then lam else mknode @@ Lproj(p,arg')
@@ -331,7 +343,7 @@ let free_rels lam =
     aux k accu def
   | Lmakeblock (_, _, args) ->
     Array.fold_left (fun accu lam -> aux k accu lam) accu args
-  | Lprim (_, _, args) ->
+  | Lprim (_, _, args) | Lblock (_, args) | Lrun args ->
     Array.fold_left (fun accu lam -> aux k accu lam) accu args
   | Lproj (_, arg) ->
     aux k accu arg
@@ -383,7 +395,7 @@ let can_subst lam = match node lam with
 | Lrel _ | Lvar _ | Lconst _ | Luint _
 | Lval _ | Lsort _ | Lind _ -> true
 | Levar _ | Lprod _ | Llam _ | Llet _ | Lapp _ | Lcase _ | Lfix _ | Lcofix _
-| Lparray _ | Lmakeblock _ | Lfloat _ | Lstring _ | Lprim _ | Lproj _ -> false
+| Lparray _ | Lmakeblock _ | Lfloat _ | Lstring _ | Lprim _ | Lproj _ | Lblock _ | Lrun _ -> false
 | Lint _ -> false (* TODO: allow substitution of integers *)
 
 let simplify lam =
@@ -477,7 +489,7 @@ let rec occurrence k kind lam =
     occurrence_args k (occurrence k kind f) args
   | Lparray (args, def) ->
     occurrence_args k (occurrence k kind def) args
-  | Lprim(_,_,args) | Lmakeblock(_, _,args) ->
+  | Lprim(_,_,args) | Lmakeblock(_, _,args) | Lblock(_,args) | Lrun args ->
     occurrence_args k kind args
   | Lcase(_, t, a, branches) ->
     let kind = occurrence k (occurrence k kind t) a in
@@ -511,7 +523,7 @@ let is_value lam = match node lam with
 | Lrel _ | Lvar _ | Lconst _ | Luint _
 | Lval _ | Lsort _ | Lind _ | Lint _ | Llam _ | Lfix _ | Lcofix _ | Lfloat _ | Lstring _ -> true
 | Levar _ | Lprod _ | Llet _ | Lapp _ | Lcase _
-| Lparray _ | Lmakeblock _ | Lprim _ | Lproj _ -> false
+| Lparray _ | Lmakeblock _ | Lprim _ | Lproj _ | Lblock _ | Lrun _ -> false
 
 let rec remove_let subst lam =
   match lam.node with
@@ -593,6 +605,7 @@ sig
   type value
   val as_value : int -> value lambda array -> value option
   val check_inductive : inductive -> mutual_inductive_body -> unit
+  val preserve_blocks : bool
 end
 
 module Make (Val : S) =
@@ -646,6 +659,55 @@ let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
     let env = Environ.push_rel (RelDecl.LocalAssum (na, dom)) env in
     get_fix_struct env (i - 1) t
 | _ -> assert false
+
+let rec normalize_fragment_evars sigma c =
+  match kind c with
+  | Evar ev ->
+    begin match evar_value sigma ev with
+    | CClosure.EvarDefined c -> normalize_fragment_evars sigma c
+    | CClosure.EvarUndefined _ -> Constr.map (normalize_fragment_evars sigma) c
+    end
+  | _ -> Constr.map (normalize_fragment_evars sigma) c
+
+let block_source env sigma c =
+  let c = normalize_fragment_evars sigma c in
+  let rels = ref Int.Set.empty in
+  let vars = ref Id.Set.empty in
+  let rec visit depth c =
+    match kind c with
+    | Rel i when i > depth -> add_rel (i - depth)
+    | Var id -> add_var id
+    | _ -> Constr.iter_with_binders succ visit depth c
+  and add_rel i =
+    if not (Int.Set.mem i !rels) then begin
+      rels := Int.Set.add i !rels;
+      let decl = Environ.lookup_rel i env in
+      visit 0 (Vars.lift i (RelDecl.get_type decl));
+      Option.iter (fun c -> visit 0 (Vars.lift i c)) (RelDecl.get_value decl)
+    end
+  and add_var id =
+    if not (Id.Set.mem id !vars) then begin
+      vars := Id.Set.add id !vars;
+      let decl = Environ.lookup_named id env in
+      visit 0 (Context.Named.Declaration.get_type decl);
+      Option.iter (visit 0) (Context.Named.Declaration.get_value decl)
+    end
+  in
+  visit 0 c;
+  let rels = Array.of_list (Int.Set.elements !rels) in
+  let vars = Array.of_list (Id.Set.elements !vars) in
+  let source = Vmvalues.{
+    block_term = c;
+    block_context = Environ.rel_context env;
+    block_named_context = Environ.named_context env;
+    block_rels = rels;
+    block_vars = vars;
+  } in
+  let captures = Array.append
+      (Array.map (fun i -> mknode @@ Lrel (RelDecl.get_name (Environ.lookup_rel i env), i)) rels)
+      (Array.map (fun id -> mknode @@ Lvar id) vars)
+  in
+  source, captures
 
 let rec lambda_of_constr cache env sigma c =
   match kind c with
@@ -768,10 +830,15 @@ let rec lambda_of_constr cache env sigma c =
     mknode @@ Lparray (lambda_of_args cache env sigma 0 t, def)
 
   | PBlock (_u,_ty,entries,t) ->
-    lambda_of_constr cache env sigma (Term.expand_pblock entries t)
+    if Val.preserve_blocks then
+      let source, captures = block_source env sigma c in
+      mknode @@ Lblock (source, captures)
+    else lambda_of_constr cache env sigma (Term.expand_pblock entries t)
 
-  | PRun (_ty,_k,b,cont) ->
-    mkLapp (lambda_of_constr cache env sigma cont) [|lambda_of_constr cache env sigma b|]
+  | PRun (ty,k,b,cont) ->
+    if Val.preserve_blocks then
+      mknode @@ Lrun (lambda_of_args cache env sigma 0 [|ty;k;b;cont|])
+    else mkLapp (lambda_of_constr cache env sigma cont) [|lambda_of_constr cache env sigma b|]
 
 and lambda_of_app cache env sigma f args =
   match kind f with

@@ -613,6 +613,8 @@ GRAMMAR EXTEND Gram
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbv (all_with ~head:false delta), cl)) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (CbvVm po, cl)) }
+      | IDENT "vm_compute_blocking"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+          { CAst.make ~loc @@ TacAtom (TacReduce (CbvVmBlocking po, cl)) }
       | IDENT "native_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (CbvNative po, cl)) }
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP ","; cl = clause_dft_concl ->

@@ -35,12 +35,30 @@ let crazy_val = (val_of_obj (Obj.repr 0))
 type tag = int
 
 let type_atom_tag = 2
-let max_atom_tag = 2
-let proj_tag = 3
-let fix_app_tag = 4
-let switch_tag = 5
-let cofix_tag = 6
-let cofix_evaluated_tag = 7
+let max_atom_tag = 4
+let proj_tag = 5
+let fix_app_tag = 6
+let switch_tag = 7
+let cofix_tag = 8
+let cofix_evaluated_tag = 9
+
+(** An inert block-body fragment. Constants in this syntax are deliberately
+    not relocations of the enclosing bytecode. Only local dependencies are
+    captured; the fragment is compiled and linked on its first force. *)
+type block_source = {
+  block_term : Constr.constr;
+  block_context : Constr.rel_context;
+  block_named_context : Constr.named_context;
+  block_rels : int array;
+  block_vars : Id.t array;
+}
+
+type blocked = {
+  blocked_source : block_source;
+  blocked_instance : UVars.Instance.t;
+  blocked_values : values array;
+  blocked_force : unit -> values;
+}
 
 (** Structured constants are constants whose construction is done once. Their
 occurrences share the same value modulo kernel name substitutions (for functor
@@ -58,6 +76,7 @@ type structured_constant =
   | Const_uint of Uint63.t
   | Const_float of Float64.t
   | Const_string of Pstring.t
+  | Const_block of block_source
 
 type reloc_table = (tag * int) array
 
@@ -119,6 +138,8 @@ let eq_structured_constant c1 c2 = match c1, c2 with
 | Const_float _, _ -> false
 | Const_string s1, Const_string s2 -> Pstring.equal s1 s2
 | Const_string _, _ -> false
+| Const_block b1, Const_block b2 -> b1 == b2
+| Const_block _, _ -> false
 
 let hash_structured_constant c =
   let open Hashset.Combine in
@@ -133,6 +154,7 @@ let hash_structured_constant c =
   | Const_uint i -> combinesmall 8 (Uint63.hash i)
   | Const_float f -> combinesmall 9 (Float64.hash f)
   | Const_string s -> combinesmall 10 (Pstring.hash s)
+  | Const_block b -> combinesmall 11 (Hashtbl.hash b.block_term)
 
 let eq_annot_switch asw1 asw2 =
   let eq_rlc (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2 in
@@ -157,6 +179,7 @@ let pp_struct_const = function
   | Const_uint i -> Pp.str (Uint63.to_string i)
   | Const_float f -> Pp.str (Float64.to_string f)
   | Const_string s -> Pp.str (Printf.sprintf "%S" (Pstring.to_string s))
+  | Const_block _ -> Pp.str "(block fragment)"
 
 (* Abstract data *)
 type vprod
@@ -267,6 +290,8 @@ type atom =
   | Aid of id_key
   | Aind of inductive
   | Asort of Sorts.t
+  | Ablock of blocked
+  | Arun of values * values * values * values
 
 (* Zippers *)
 
@@ -411,6 +436,7 @@ let obj_of_str_const str =
   | Const_uint i -> Obj.repr i
   | Const_float f -> Obj.repr f
   | Const_string s -> Obj.repr s
+  | Const_block _ -> invalid_arg "Vmvalues.obj_of_str_const: unlinked fragment"
 
 let val_of_block tag (args : structured_values array) =
   let nargs = Array.length args in
@@ -647,7 +673,9 @@ let rec pr_atom a =
                             | RelKey i -> str "#" ++ int i
                             | _ -> str "...") ++ str ")"
   | Aind (mi,i) -> str "Aind(" ++ MutInd.print mi ++ str "#" ++ int i ++ str ")"
-  | Asort _ -> str "Asort(")
+  | Asort _ -> str "Asort("
+  | Ablock _ -> str "Ablock"
+  | Arun _ -> str "Arun")
 and pr_kind w =
   let open Pp in
   match w with

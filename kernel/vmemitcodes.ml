@@ -153,11 +153,13 @@ type t =
 | SReloc_Const_ind of inductive
 | SReloc_getglobal of Names.Constant.t
 | SReloc_indirect of int (* index in the non-subst table *)
+| SReloc_block of block_source
 
 let to_reloc table = function
 | SReloc_Const_ind ind -> Reloc_const (Const_ind ind)
 | SReloc_getglobal cst -> Reloc_getglobal cst
 | SReloc_indirect i -> NonSubstReloc.to_reloc table.(i)
+| SReloc_block source -> Reloc_const (Const_block source)
 
 let subst s reloc = match reloc with
 | SReloc_Const_ind ind ->
@@ -167,6 +169,14 @@ let subst s reloc = match reloc with
   let cst' = Mod_subst.subst_constant s cst in
   if cst' == cst then reloc else SReloc_getglobal cst'
 | SReloc_indirect _ -> reloc
+| SReloc_block source ->
+  let subst = Mod_subst.subst_mps s in
+  let block_term = subst source.block_term in
+  let block_context = Context.Rel.map subst source.block_context in
+  let block_named_context = Context.Named.map subst source.block_named_context in
+  if block_term == source.block_term && block_context == source.block_context &&
+     block_named_context == source.block_named_context then reloc
+  else SReloc_block { source with block_term; block_context; block_named_context }
 
 end
 
@@ -544,6 +554,7 @@ let emit_instr env = function
   | Kproj p -> out env opPROJ; out_int env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
   | Kbranch lbl -> out env opBRANCH; out_label env lbl
+  | Kprim (Blocked_ind, _) -> out env opBLOCKEDIND
   | Kprim (op, (q,_u)) ->
       out env (check_prim_op op);
       slot_for_getglobal env q
@@ -554,6 +565,8 @@ let emit_instr env = function
     slot_for_caml_prim env op
 
   | Kstop -> out env opSTOP
+  | Kblock source -> out env opBLOCK; slot_for_const env (Const_block source)
+  | Krun -> out env opRUN
 
 (* Emission of a current list and remaining lists of instructions. Include some peephole optimization. *)
 
@@ -684,6 +697,7 @@ let to_memory fv code =
     | Reloc_const (Const_uint i) -> push (SReloc_Const_uint i)
     | Reloc_const (Const_float f) -> push (SReloc_Const_float f)
     | Reloc_const (Const_string s) -> push (SReloc_Const_string s)
+    | Reloc_const (Const_block source) -> Reloc.SReloc_block source
   in
   let reloc_infos = CArray.map_of_list map reloc in
   let positions = Positions.of_list (List.rev env.reloc_pos) in
