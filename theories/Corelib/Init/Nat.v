@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Notations Logic Datatypes.
+Require Import Notations Ltac Logic Datatypes.
 Require Decimal Hexadecimal Number.
 Local Open Scope nat_scope.
 
@@ -300,16 +300,37 @@ Infix "mod" := modulo (at level 40, no associativity) : nat_scope.
 
 (** ** Greatest common divisor *)
 
-(** We use Euclid algorithm, which is normally not structural,
-    but Rocq is now clever enough to accept this (behind modulo
-    there is a subtraction, which now preserves being a subterm)
-*)
+(** Euclid's algorithm with an explicit countdown: [gcd0 a k b]
+    computes [gcd (a - k) b]. Each recursive call is on the immediate
+    predecessor of [a], without traversing subterm analysis. *)
 
-Fixpoint gcd a b :=
+Fixpoint gcd0 a k b {struct a} :=
   match a with
-   | O => b
-   | S a' => gcd (b mod (S a')) (S a')
+  | 0 => b
+  | S a' =>
+      match k with
+      | 0 => gcd0 a' (snd (divmod b a' 0 a')) (S a')
+      | S k' => gcd0 a' k' b
+      end
   end.
+
+Definition gcd a b := gcd0 a 0 b.
+
+Lemma gcd0_spec a k b : gcd0 a k b = gcd (a - k) b.
+Proof.
+  unfold gcd; induction a in k, b |- *.
+  - reflexivity.
+  - destruct k; simpl.
+    + reflexivity.
+    + apply IHa.
+Qed.
+
+Definition gcd_0 b : gcd 0 b = b := eq_refl.
+
+Lemma gcd_S a' b : gcd (S a') b = gcd (b mod (S a')) (S a').
+Proof.
+  simpl. rewrite <- gcd0_spec. reflexivity.
+Qed.
 
 (** ** Square *)
 
