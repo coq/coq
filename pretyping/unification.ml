@@ -2524,6 +2524,13 @@ let w_unify_to_subterm ~metas env evd ?where ?(flags=default_unify_flags ()) (op
     | None -> raise (PretypeError (env,evd,NoOccurrenceFound (op, where)))
     | Some e -> raise e
 
+let w_unify_to_subterm ~metas env evd ?where ?flags (op, cl) = match EConstr.kind evd op with
+| Var id ->
+  if Termops.local_occur_var evd id (AConstr.proj cl) then (metas, evd), op
+  else w_unify_to_subterm ~metas env evd ?where ?flags (op, cl)
+| _ ->
+  w_unify_to_subterm ~metas env evd ?where ?flags (op, cl)
+
 (* Tries to find all instances of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] and return all the matches.
    Fails if no match is found *)
