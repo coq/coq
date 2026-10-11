@@ -179,6 +179,7 @@ bool_choice:
   forall [S : Set] [R1 R2 : S -> Prop],
   (forall x : S, {R1 x} + {R2 x}) ->
   {f : S -> bool | forall x : S, f x = true /\ R1 x \/ f x = false /\ R2 x}
+Nat.gcd_0: forall b : nat, Nat.gcd 0 b = b
 plus_n_O: forall n : nat, n = n + 0
 plus_O_n: forall n : nat, 0 + n = n
 mult_n_O: forall n : nat, 0 = n * 0
@@ -197,6 +198,9 @@ plus_Sn_m: forall n m : nat, S n + m = S (n + m)
 f_equal_nat: forall (B : Type) (f : nat -> B) (x y : nat), x = y -> f x = f y
 not_eq_S: forall n m : nat, n <> m -> S n <> S m
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
+Nat.gcd0_spec: forall a k b : nat, Nat.gcd0 a k b = Nat.gcd (a - k) b
+Nat.gcd_S:
+  forall a' b : nat, Nat.gcd (S a') b = Nat.gcd (Nat.modulo b (S a')) (S a')
 f_equal2_plus:
   forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2
 f_equal2_mult:
@@ -459,6 +463,7 @@ Nat.lxor: nat -> nat -> nat
 Nat.lor: nat -> nat -> nat
 Nat.ldiff: nat -> nat -> nat
 Nat.land: nat -> nat -> nat
+Nat.gcd: nat -> nat -> nat
 Nat.div: nat -> nat -> nat
 Nat.of_uint: Decimal.uint -> nat
 Nat.of_num_uint: Number.uint -> nat

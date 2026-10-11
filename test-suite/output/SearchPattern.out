@@ -55,6 +55,7 @@ Nat.of_hex_uint: Hexadecimal.uint -> nat
 Hexadecimal.nb_digits: Hexadecimal.uint -> nat
 Decimal.nb_digits: Decimal.uint -> nat
 Nat.tail_addmul: nat -> nat -> nat -> nat
+Nat.gcd0: nat -> nat -> nat -> nat
 Nat.of_uint_acc: Decimal.uint -> nat -> nat
 Nat.of_hex_uint_acc: Hexadecimal.uint -> nat -> nat
 Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
@@ -85,6 +86,7 @@ Nat.gcd: nat -> nat -> nat
 Nat.div: nat -> nat -> nat
 Nat.add: nat -> nat -> nat
 Nat.tail_addmul: nat -> nat -> nat -> nat
+Nat.gcd0: nat -> nat -> nat -> nat
 Nat.of_uint_acc: Decimal.uint -> nat -> nat
 Nat.of_hex_uint_acc: Hexadecimal.uint -> nat -> nat
 Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
