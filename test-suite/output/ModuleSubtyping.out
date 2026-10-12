@@ -3,22 +3,22 @@ The command has indeed failed with message:
 Signature components for field x do not match:
 the body of definitions differs: expected "0" but found 
 "1".
-File "./output/ModuleSubtyping.v", line 14, characters 2-30:
+File "./output/ModuleSubtyping.v", line 16, characters 2-30:
 The command has indeed failed with message:
 Signature components for field B.C.x do not match:
 the body of definitions differs: expected "0" but found 
 "1".
-File "./output/ModuleSubtyping.v", line 20, characters 2-31:
+File "./output/ModuleSubtyping.v", line 22, characters 2-31:
 The command has indeed failed with message:
 Signature components for field B.C.x in the 1st functor argument do not match:
 the body of definitions differs: expected "1" but found 
 "0".
-File "./output/ModuleSubtyping.v", line 30, characters 2-34:
+File "./output/ModuleSubtyping.v", line 32, characters 2-34:
 The command has indeed failed with message:
 Signature components for field B.C.x in the 1st functor argument
 of F do not match: the body of definitions differs: expected 
 "1" but found "0".
-File "./output/ModuleSubtyping.v", line 46, characters 2-38:
+File "./output/ModuleSubtyping.v", line 48, characters 2-38:
 The command has indeed failed with message:
 Signature components for field v do not match: expected type 
 "A1.t -> A1.t" but found type "A1.t -> Prop".

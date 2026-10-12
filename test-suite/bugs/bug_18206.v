@@ -93,7 +93,7 @@ Module Export aarch64.
 
   Module Import isa.
 
-Module Type aarch64.
+Module aarch64.
 
   Definition the_arch := A.
 End aarch64.
@@ -115,7 +115,7 @@ Module Type CPU_STS_BASE.
 
 End CPU_STS_BASE.
 
-Module Type CPU_STS_DERIVED (Import cpu_sts_base : CPU_STS_BASE).
+Module CPU_STS_DERIVED (Import cpu_sts_base : CPU_STS_BASE).
 
   Module Export regs.
 Definition t is_guest : Type.

@@ -68,6 +68,7 @@ Module Type SigOpaque.
 End SigOpaque.
 
 Module InclSigOpaque.
+ #[warnings="-include-module-type-in-module"]
  Include SigOpaque.
 End InclSigOpaque.
 

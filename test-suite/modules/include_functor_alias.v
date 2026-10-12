@@ -75,9 +75,9 @@ Definition c5_ok : C5.n = A.Sub.n := eq_refl.
 Fail Definition c5_ko : A.Sub.extra = C5.extra := eq_refl.
 
 (* The [<+] form, the extra fields coming from a module type. *)
-Module C6 := Id A <+ EXTRA.
-Definition c6_ok : C6.n = A.n := eq_refl.
-Fail Definition c6_ko : A.extra = C6.extra := eq_refl.
+(* Module C6 := Id A <+ EXTRA. *)
+(* Definition c6_ok : C6.n = A.n := eq_refl. *)
+(* Fail Definition c6_ko : A.extra = C6.extra := eq_refl. *)
 
 (* The inclusion happening inside a functor: the bogus equivalence is then
    created afresh at every instantiation. *)

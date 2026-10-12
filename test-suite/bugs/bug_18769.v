@@ -1,4 +1,4 @@
-Module Type T.
+Module T.
   #[projections(primitive)]
   Record t := of_unit { to_unit : unit }.
 End T.

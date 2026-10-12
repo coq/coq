@@ -20,9 +20,11 @@ Module Type Bp.
   Include B.
 End Bp.
 
+Declare Module Bp0 : Bp with Module M := A_impl.
+
 Module Bp_inst.
   (* Using instead "Include B with Module M := A_impl" also fixes the anomaly *)
-  Include Bp with Module M := A_impl.
+  Include Bp0.
 End Bp_inst.
 
 (* This Print works *)

@@ -4,7 +4,9 @@ First.bar: nat
 bar: nat
 First.bar_1: First.bar = 1
 bar_1: bar = 1
+B.bar_1: B.bar = 1
 bar_1: bar = 1
+B.bar_1: B.bar = 1
 one_bar: 1 = bar
 bar_1: bar = 1
 baz_foo: baz tt = foo
