@@ -63,7 +63,8 @@ val instantiate_template_constraints
   -> Declarations.template_universes
   -> PConstraints.t
 
-val instantiate_template_universes : mutual_inductive_body -> param_univs ->
+val instantiate_template_universes : mutual_inductive_body -> ?inst:UVars.Instance.t -> 
+  param_univs ->
   PConstraints.t * rel_context * template_subst
 
 val constrained_type_of_inductive : mind_specif puniverses -> types constrained

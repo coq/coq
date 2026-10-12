@@ -322,13 +322,14 @@ let instantiate_template_constraints subst templ =
   in
   PConstraints.fold (foldq, foldu) cstrs PConstraints.empty
 
-let instantiate_template_universes mib args =
+let instantiate_template_universes mib ?inst args =
   let templ = match Declareops.(inductive_template mib) with
   | None -> assert false
   | Some t -> t
   in
   let ctx = List.rev mib.mind_params_ctxt in
-  let subst = make_subst (Instance.of_level_instance templ.template_defaults) (ctx, templ.template_param_arguments, args) in
+  let inst = Option.default (Instance.of_level_instance templ.template_defaults) inst in
+  let subst = make_subst inst (ctx, templ.template_param_arguments, args) in
   let ctx = template_subst_ctx subst ctx templ.template_param_arguments in
   let cstrs = instantiate_template_constraints subst templ in
   (cstrs, ctx, subst)
