@@ -1303,14 +1303,10 @@ let entry_relative_level_of_constr_prod_entry from_level = function
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
    recvars allvars (entry,_) typs =
-  let eq_subscope (sc1, l1) (sc2, l2) =
-    List.equal String.equal sc1 sc2 &&
-    List.equal String.equal l1 l2
-  in
   let check (x, y) =
     let (_,scope1,_ntn_binding_ids1) = Id.Map.find x allvars in
     let (_,scope2,_ntn_binding_ids2) = Id.Map.find y allvars in
-    if not (eq_subscope scope1 scope2) then error_not_same_scope x y
+    if not (subscopes_eq scope1 scope2) then error_not_same_scope x y
     (* Note: binding_ids should currently be the same, and even with
       eventually more complex notations, such as e.g.
         Notation "!! x .. y , P .. Q" := (fun x => (P, .. (fun y => (Q, True)) ..)).

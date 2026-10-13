@@ -72,3 +72,14 @@ Parameter f : forall (xxxxxxxxxxxxxx : A) (xxxxxxxxxxxxxx' : nat) (xxxxxxxxxxxxx
 Print f.
 
 End Formatting.
+
+(* Testing shallow and deep scope arguments *)
+Notation "##" := True : foo_scope.
+Definition fp p : Prop := p.
+Definition gp p : Prop := p.
+Fail Check fp ##.
+Arguments fp p%_foo_scope.
+Check fp ##.
+Fail Check fp (gp ##).
+Arguments fp p%foo_scope.
+Check fp (gp ##).

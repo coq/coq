@@ -103,13 +103,13 @@ let extern_reference ?loc vars l = !my_extern_reference vars l
 (**********************************************************************)
 (* utilities                                                          *)
 
-let rec fill_arg_scopes args subscopes (_,scopes as all) =
+let rec fill_arg_scopes args (subscopes : Notation_term.subscopes list) scopes =
   match args, subscopes with
   | [], _ -> []
   | a :: args, scopt :: subscopes ->
-    (a, ((constr_some_level,None), (scopt, scopes))) :: fill_arg_scopes args subscopes all
+    (a, ((constr_some_level,None), scopt @ scopes)) :: fill_arg_scopes args subscopes scopes
   | a :: args, [] ->
-    (a, ((constr_some_level,None), ([], scopes))) :: fill_arg_scopes args [] all
+    (a, ((constr_some_level,None), scopes)) :: fill_arg_scopes args [] scopes
 
 let overlap_right_left {notation_entry = entry} lev_after ((typs,_):Notation_term.interpretation) =
   List.exists (fun (_id,(({notation_subentry = entry'; notation_relative_level = lev; notation_position = side},_),_,_)) ->
@@ -117,7 +117,7 @@ let overlap_right_left {notation_entry = entry} lev_after ((typs,_):Notation_ter
       | Some Right when notation_entry_eq entry entry' -> may_capture_cont_after lev_after lev
       | _ -> false) typs
 
-let update_with_subscope ~flags from_entry (entry,(scopt,scl)) lev_after closed scopes =
+let update_with_subscope ~flags from_entry (entry, scl) lev_after closed (scopes : Notation_term.subscopes) =
   let {notation_subentry = entry; notation_relative_level = lev; notation_position = side} = entry in
   let lev = if flags.ExternFlags.parentheses && side <> None then LevelLe 0 (* min level *) else lev in
   let lev_after =
@@ -126,7 +126,7 @@ let update_with_subscope ~flags from_entry (entry,(scopt,scl)) lev_after closed 
     | Some Right  -> if closed then None else lev_after
     | None -> None in
   let subentry' = {notation_subentry = entry; notation_relative_level = lev; notation_position = side} in
-  ((subentry',lev_after),(scopt,scl@scopes))
+  ((subentry',lev_after), scl @ scopes)
 
 let find_entry_coercion_with_application ?non_included custom entry is_empty_extra_args =
   if is_empty_extra_args then
@@ -330,7 +330,7 @@ let rec extern_cases_pattern_in_scope ~flags ((custom,(lev_after:int option)),sc
       insert_pat_coercion coercion pat
 
 and apply_notation_to_pattern ?loc ~flags gr ((terms,termlists,binders),(no_implicit,nb_to_drop,more_args))
-    ((custom, lev_after), (tmp_scope, scopes) as allscopes) vars pat rule =
+    ((custom, lev_after), (scopes : Notation_term.subscopes) as allscopes) vars pat rule =
   let lev_after = if List.is_empty more_args then lev_after else Some Notation.app_level in
   let extra_args =
     let subscopes = find_arguments_scope (Global.env ()) gr in
@@ -350,12 +350,12 @@ and apply_notation_to_pattern ?loc ~flags gr ((terms,termlists,binders),(no_impl
           if overlap_right_left entry lev_after pat then {entry with notation_level = max_int} else entry in
         let coercion, appcoercion = find_entry_coercion_with_application custom entry (List.is_empty extra_args) in
         let closed = not (List.is_empty coercion) in
-        match availability_of_notation specific_ntn (tmp_scope,scopes) with
+        match availability_of_notation specific_ntn scopes with
           (* Uninterpretation is not allowed in current context *)
           | None -> raise No_match
           (* Uninterpretation is allowed in current context *)
           | Some (scopt,key) ->
-            let scopes' = Option.List.cons scopt scopes in
+            let scopes' = scopt @ subscopes_unbounded scopes in
             let l =
               List.map (fun (c,subscope) ->
                 let scopes = update_with_subscope ~flags entry subscope lev_after closed scopes' in
@@ -386,8 +386,8 @@ and apply_notation_to_pattern ?loc ~flags gr ((terms,termlists,binders),(no_impl
       | Some coercion ->
       let qid = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
       let l1 =
-        List.rev_map (fun (c,(subentry,(scopt,scl))) ->
-          extern_cases_pattern_in_scope ~flags ((subentry,lev_after),(scopt,scl@scopes)) vars c)
+        List.rev_map (fun (c,(subentry, scl)) ->
+          extern_cases_pattern_in_scope ~flags ((subentry,lev_after), scl @ subscopes_unbounded scopes) vars c)
           terms in
       assert (List.is_empty termlists);
       assert (List.is_empty binders);
@@ -442,7 +442,7 @@ let extern_ind_pattern_in_scope ~flags (custom,scopes as allscopes) vars ind arg
       | None           -> CAst.make @@ CPatCstr (c, Some args, [])
 
 let extern_cases_pattern ~flags vars p =
-  extern_cases_pattern_in_scope ~flags ((constr_some_level,None),([],[])) vars p
+  extern_cases_pattern_in_scope ~flags ((constr_some_level,None), []) vars p
 
 (**********************************************************************)
 (* Externalising applications *)
@@ -1037,9 +1037,9 @@ let rec extern depth0 inctx scopes (eenv:extern_env) r =
   | GGenarg arg -> CGenargGlob arg
 
   | GCast (c, k, c') ->
-    let scl = Notation.compute_glob_type_scope c' in
+    let scl = subscopes_mk_tmp (Notation.compute_glob_type_scope c') in
     let c' = extern_typ depth scopes eenv c' in
-    let c = extern depth true (fst scopes,(scl, snd (snd scopes))) eenv c in
+    let c = extern depth true (fst scopes, scl @ subscopes_unbounded (snd scopes)) eenv c in
     CCast (c, k, c')
 
   | GInt i ->
@@ -1063,10 +1063,12 @@ let rec extern depth0 inctx scopes (eenv:extern_env) r =
 
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
-and extern_typ depth (subentry,(_,scopes)) =
-  extern depth true (subentry,(Notation.current_type_scope_names (),scopes))
+and extern_typ depth (subentry, scopes) =
+  let ty_sc = subscopes_mk_tmp (Notation.current_type_scope_names ()) in
+  extern depth true (subentry, ty_sc @ subscopes_unbounded scopes)
 
-and sub_extern depth inctx (subentry,(_,scopes)) = extern depth inctx (subentry,([],scopes))
+and sub_extern depth inctx (subentry, scopes) =
+  extern depth inctx (subentry, subscopes_unbounded scopes)
 
 and factorize_prod depth scopes eenv na r bk t c =
   let implicit_type = is_reserved_type ~flags:eenv.flags na t in
@@ -1249,7 +1251,7 @@ and extern_notation depth inctx ((custom,(lev_after: int option)),scopes as alls
                   (* Uninterpretation is allowed in current context *)
               | Some (scopt,key) ->
                   let closed = not (List.is_empty coercion) in
-                  let scopes' = Option.List.cons scopt (snd scopes) in
+                  let scopes' = scopt @ subscopes_unbounded scopes in
                   let l =
                     List.map (fun ((vars,c),subscope) ->
                       let scopes = update_with_subscope ~flags:eenv.flags entry subscope lev_after closed scopes' in
@@ -1282,8 +1284,8 @@ and extern_notation depth inctx ((custom,(lev_after: int option)),scopes as alls
                   insert_entry_coercion appcoercion (CAst.make ?loc @@ extern_applied_notation c extra_args))
           | AbbrevRule kn ->
               let l =
-                List.map (fun ((vars,c),(subentry,(scopt,scl))) ->
-                  extern depth true ((subentry,lev_after),(scopt,scl@snd scopes)) { eenv with vars } c)
+                List.map (fun ((vars,c),(subentry, scl)) ->
+                  extern depth true ((subentry,lev_after), scl @ subscopes_unbounded scopes) { eenv with vars } c)
                   terms
               in
               let cf = Nametab.shortest_qualid_of_abbreviation ?loc eenv.vars kn in
@@ -1311,11 +1313,11 @@ and extern_applied_proj depth inctx scopes eenv (cst,us) params c extraargs =
 let extern inctx scopes eenv c : constr_expr = extern (init_depth eenv.flags) inctx scopes eenv c
 
 let extern_glob_constr eenv c =
-  extern false ((constr_some_level,None),([],[])) eenv c
+  extern false ((constr_some_level,None), []) eenv c
 
 let extern_glob_type ?impargs eenv c =
   let c = Option.fold_right insert_impargs impargs c in
-  extern_typ (init_depth eenv.flags) ((constr_some_level,None),([],[])) eenv c
+  extern_typ (init_depth eenv.flags) ((constr_some_level,None), []) eenv c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -1323,8 +1325,8 @@ let extern_glob_type ?impargs eenv c =
 let extern_constr ?(inctx=false) ?scope ~(flags:PrintingFlags.t) env sigma t =
   let r = Detyping.detype Detyping.Later ~flags:flags.detype env sigma t in
   let eenv = extern_env ~flags:flags.extern env sigma in
-  let scope = Option.cata (fun x -> [x]) [] scope in
-  extern inctx ((constr_some_level,None),(scope,[])) eenv r
+  let scope = Option.cata (fun x -> [DelimOnlyTmpScope, x]) [] scope in
+  extern inctx ((constr_some_level,None), scope) eenv r
 
 let extern_constr_in_scope ?inctx scope ~flags env sigma t =
   extern_constr ?inctx ~scope ~flags env sigma t
@@ -1356,8 +1358,8 @@ let extern_closed_glob ?(goal_concl_style=false) ?(inctx=false) ?scope ~(flags:P
     Detyping.detype_closed_glob ~isgoal:goal_concl_style ~avoid ~flags:flags.detype env sigma t
   in
   let eenv = extern_env env sigma ~flags:flags.extern in
-  let scope = Option.cata (fun x -> [x]) [] scope in
-  extern inctx ((constr_some_level,None),(scope,[])) eenv r
+  let scope = Option.cata (fun x -> [DelimOnlyTmpScope, x]) [] scope in
+  extern inctx ((constr_some_level,None), scope) eenv r
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
@@ -1520,7 +1522,7 @@ let rec glob_of_pat
     GArray (None, Array.map glob_of t, glob_of def, glob_of ty)
 
 let extern_constr_pattern_gen of_extra ~flags env sigma pat =
-  extern true ((constr_some_level,None),([],[]))
+  extern true ((constr_some_level,None), [])
     (* XXX no vars? *)
     { vars = Id.Set.empty; uvars = Evd.universe_binders sigma; flags }
     (glob_of_pat of_extra (genset, Id.Set.empty) env sigma pat)
@@ -1537,4 +1539,4 @@ let extern_rel_context ~(flags:PrintingFlags.t) env sigma sign =
   let a = detype_rel_context Detyping.Later ~flags:flags.detype ([],env) sigma sign in
   let eenv = extern_env env sigma ~flags:flags.extern in
   let a = List.map (extended_glob_local_binder_of_decl) a in
-  pi3 (extern_local_binder (init_depth eenv.flags) ((constr_some_level,None),([],[])) eenv a)
+  pi3 (extern_local_binder (init_depth eenv.flags) ((constr_some_level,None), []) eenv a)

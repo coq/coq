@@ -70,8 +70,6 @@ let specific_notation_compare (scope1,ntn1) (scope2,ntn2) =
   if c <> 0 then c
   else notation_compare ntn1 ntn2
 
-let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
-
 let notation_binder_kind_eq k1 k2 = match k1, k2 with
 | AsIdent, AsIdent -> true
 | AsName, AsName -> true
@@ -92,9 +90,20 @@ let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeBinderList s1, NtnTypeBinderList s2 -> notation_binder_source_eq s1 s2
 | (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList _), _ -> false
 
+let delimiter_depth_eq d1 d2 = match d1, d2 with
+| DelimOnlyTmpScope, DelimOnlyTmpScope -> true
+| DelimUnboundedScope, DelimUnboundedScope -> true
+| (DelimOnlyTmpScope | DelimUnboundedScope), _ -> false
+
+let scope_delimiter_eq (d1, sc1) (d2, sc2) =
+  delimiter_depth_eq d1 d2 && String.equal sc1 sc2
+
+let subscopes_eq sc1 sc2 =
+  List.equal scope_delimiter_eq sc1 sc2
+
 let var_attributes_eq (_, ((entry1, sc1), binders1, tp1)) (_, ((entry2, sc2), binders2, tp2)) =
   notation_entry_relative_level_eq entry1 entry2 &&
-  pair_eq (List.equal String.equal) (List.equal String.equal) sc1 sc2 &&
+  subscopes_eq sc1 sc2 &&
   Id.Set.equal binders1 binders2 &&
   ntpe_eq tp1 tp2
 
@@ -102,6 +111,10 @@ let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =
   x1 == x2 ||
   List.equal var_attributes_eq vars1 vars2 &&
   Notation_ops.eq_notation_constr (List.map fst vars1, List.map fst vars2) t1 t2
+
+let subscopes_mk_tmp = List.map (fun sc -> DelimOnlyTmpScope, sc)
+
+let subscopes_unbounded = List.filter (fun (d, _) -> d = DelimUnboundedScope)
 
 type level = notation_entry_level * entry_relative_level list
 

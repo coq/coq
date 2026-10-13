@@ -148,3 +148,15 @@ nat -> xxxxxxxxxxxxxx' + xxxxxxxxxxxxxx' + xxxxxxxxxxxxxx'' = 0 ]
 
 Arguments f xxxxxxxxxxxxxx
   (xxxxxxxxxxxxxx' xxxxxxxxxxxxxx'' xxxxxxxxxxxxxx''')%_nat_scope
+File "./output/Arguments.v", line 80, characters 14-16:
+The command has indeed failed with message:
+Unknown interpretation for notation "##".
+This notation is available in foo_scope.
+fp ##
+     : Prop
+File "./output/Arguments.v", line 83, characters 18-20:
+The command has indeed failed with message:
+Unknown interpretation for notation "##".
+This notation is available in foo_scope.
+fp (gp ##)
+     : Prop

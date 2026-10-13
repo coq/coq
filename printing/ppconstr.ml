@@ -171,8 +171,7 @@ let pr_notation ~flags lev_after pr pr_patt pr_binders which s env =
   print_hunks ~flags level lev_after pr pr_patt pr_binders env unpl
 
 let pr_delimiters depth key strm =
-  let d = match depth with DelimOnlyTmpScope -> "%_" | DelimUnboundedScope -> "%" in
-  strm ++ str (d^key)
+  strm ++ Constrexpr_ops.pr_scope_delimiter (depth, key)
 
 let pr_generalization bk c =
   let hd, tl =

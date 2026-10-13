@@ -382,7 +382,7 @@ let rec main_implicits i renames recargs scopes impls =
       | [], (None::_ | []) -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
-      | scope :: _ -> List.map (fun s -> CAst.make (Constrexpr.DelimOnlyTmpScope, s)) scope
+      | scope :: _ -> List.map (fun s -> CAst.make s) scope
       | [] -> []
     in
     let status = {Vernacexpr.implicit_status; name; recarg_like; notation_scope} in
@@ -1059,24 +1059,19 @@ let print_about_global_reference ?loc env ref udecl =
     loc_info (TrueGlobal ref)])
 
 let print_abbreviation_argument_scopes kn =
-  let (vars,_) = Abbreviation.find_interp kn in
-  (* Print every scope of each argument, not just the first: temporary scopes
-     with the shallow [%_] delimiter and regular scopes with the deep [%] one,
-     mirroring the term syntax (per proux01's review of #22336). *)
-  let scopes_of (_entry,(tmp_scopes,scopes)) =
-    List.map (fun sc -> "%_" ^ sc) tmp_scopes @ List.map (fun sc -> "%" ^ sc) scopes in
+  let vars, _ = Abbreviation.find_interp kn in
   let scoped =
-    List.filter_map (fun (id,(subscopes,_,_)) ->
-        match scopes_of subscopes with
+    List.filter_map (fun (id,((_, scopes),_,_)) ->
+        match scopes with
         | [] -> None
         | l -> Some (id, l))
       vars in
-  if List.is_empty scoped then mt ()
-  else
+  if List.is_empty scoped then mt () else
     fnl () ++
     hov 0 (str "Arguments are in scopes:" ++ spc () ++
            prlist_with_sep pr_comma
-             (fun (id,scs) -> Id.print id ++ str (String.concat "" scs)) scoped)
+             (fun (id, scs) -> Id.print id ++ prlist Constrexpr_ops.pr_scope_delimiter scs)
+             scoped)
 
 let print_about_abbreviation env sigma kn =
   let (vars,c) = glob_constr_of_abbreviation kn in

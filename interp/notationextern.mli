@@ -16,6 +16,8 @@ open Constrexpr
 open Glob_term
 open Notation_term
 
+val subscopes_eq : subscopes -> subscopes -> bool
+
 val notation_entry_eq : notation_entry -> notation_entry -> bool
 (** Equality on [notation_entry]. *)
 
@@ -41,6 +43,10 @@ val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bo
 
 val notation_entry_relative_level_eq : notation_entry_relative_level -> notation_entry_relative_level -> bool
 (** Equality on [notation_entry_relative_level]. *)
+
+val subscopes_mk_tmp : scope_name list -> subscopes
+
+val subscopes_unbounded : subscopes -> subscopes
 
 type level = notation_entry_level * entry_relative_level list
 (** The "signature" of a rule: its level together with the levels of its subentries *)

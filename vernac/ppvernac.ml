@@ -266,12 +266,6 @@ let pr_search_where = function
   | InConcl, true -> str "headconcl:"
   | InConcl, false -> str "concl:"
 
-let pr_delimiter_depth = function
-  | DelimOnlyTmpScope -> str "%_"
-  | DelimUnboundedScope -> str "%"
-
-let pr_scope_delimiter (d, sc) = pr_delimiter_depth d ++ str sc
-
 let pr_assumption_token many discharge kind =
   match discharge, kind with
   | (NoDischarge,Decls.Logical) ->
@@ -296,7 +290,7 @@ let pr_logical_token discharge kind =
 let pr_search_item = function
   | SearchSubPattern (where,p) ->
     pr_search_where where ++ pr_constr_pattern_expr p
-  | SearchString (where,s,sc) -> pr_search_where where ++ qs s ++ pr_opt pr_scope_delimiter sc
+  | SearchString (where,s,sc) -> pr_search_where where ++ qs s ++ pr_opt Constrexpr_ops.pr_scope_delimiter sc
   | SearchKind (discharge, kind) -> str "is:" ++ pr_logical_token discharge kind
 
 let rec pr_search_request = function
@@ -1139,7 +1133,7 @@ let pr_synpure_vernac_expr v =
       hov 2 (
         keyword "Arguments" ++ spc() ++
         pr_smart_global q ++
-        let pr_s = prlist (fun {v=s} -> pr_scope_delimiter s) in
+        let pr_s = prlist (fun {v=s} -> Constrexpr_ops.pr_scope_delimiter s) in
         let pr_if b x = if b then x else str "" in
         let pr_one_arg (x,k) = pr_if k (str"!") ++ Name.print x in
         let pr_br imp force x =

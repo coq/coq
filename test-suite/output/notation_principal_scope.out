@@ -1,9 +1,9 @@
 File "./output/notation_principal_scope.v", line 4, characters 32-33:
 The command has indeed failed with message:
-Argument X was previously inferred to be in scope function_scope but is here
-used in the empty scope stack. Scope function_scope will be used at parsing
-time unless you override it by annotating the argument with an explicit scope
-of choice. [inconsistent-scopes,syntax,default]
+Argument X was previously inferred to be in scope %_function_scope but is
+here used in the empty scope stack. Scope %_function_scope will be used at
+parsing time unless you override it by annotating the argument with an
+explicit scope of choice. [inconsistent-scopes,syntax,default]
 File "./output/notation_principal_scope.v", line 6, characters 27-40:
 The command has indeed failed with message:
 Abbreviations don't support only printing

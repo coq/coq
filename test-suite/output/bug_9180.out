@@ -1,4 +1,4 @@
-Notation "n .+1" := (S n) (* n in scope _nat_scope *) : nat_scope
+Notation "n .+1" := (S n) (* n in scope %_nat_scope *) : nat_scope
   (default interpretation)
   (defined in library bug_9180, line 3, characters 9-16)
 forall x : nat, x.+1 = x.+1

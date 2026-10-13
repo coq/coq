@@ -358,7 +358,7 @@ let interp_index ist env sigma idx =
         | Some c ->
           let flags = PrintingFlags.Detype.current() in
           let rc = Detyping.detype Detyping.Now ~flags env sigma c in
-          begin match Notation.uninterp_prim_token ~print_float:false rc ([], []) with
+          begin match Notation.uninterp_prim_token ~print_float:false rc [] with
           | Constrexpr.Number n, _ when NumTok.Signed.is_int n ->
             int_of_string (NumTok.Signed.to_string n)
           | _ -> raise Not_found

@@ -66,25 +66,25 @@ Setting properties of a function's arguments
          .. exn:: The & modifier may only occur once.
             :undocumented:
 
-      :n:`( {+ @argument_spec } ) {* %_ @scope }`
-         :n:`(@name__1 @name__2 ...){* %@scope }` is shorthand for
-         :n:`@name__1{* %@scope } @name__2{* %@scope } ...`
+      :n:`( {+ @argument_spec } ) {* @scope_delimiter }`
+         :n:`(@name__1 @name__2 ...){* @scope_delimiter }` is shorthand for
+         :n:`@name__1{* @scope_delimiter } @name__2{* @scope_delimiter } ...`
 
-      :n:`[ {+ @argument_spec } ] {* %_ @scope }`
+      :n:`[ {+ @argument_spec } ] {* @scope_delimiter }`
          declares the enclosed names as implicit, non-maximally inserted.
-         :n:`[@name__1 @name__2 ... ]{* %_@scope }` is equivalent to
-         :n:`[@name__1]{* %_@scope } [@name__2]{* %_@scope } ...`
+         :n:`[@name__1 @name__2 ... ]{* @scope_delimiter }` is equivalent to
+         :n:`[@name__1]{* @scope_delimiter } [@name__2]{* @scope_delimiter } ...`
 
-      :n:`%{ {+ @argument_spec } %} {* %_ @scope }`
+      :n:`%{ {+ @argument_spec } %} {* @scope_delimiter }`
          declares the enclosed names as implicit, maximally inserted.
-         :n:`%{@name__1 @name__2 ... %}{* %_@scope }` is equivalent to
-         :n:`%{@name__1%}{* %_@scope } %{@name__2%}{* %_@scope } ...`
+         :n:`%{@name__1 @name__2 ... %}{* @scope_delimiter }` is equivalent to
+         :n:`%{@name__1%}{* @scope_delimiter } %{@name__2%}{* @scope_delimiter } ...`
 
       `!`
          the function will be unfolded only if all the arguments marked with `!`
          evaluate to constructors.  See :ref:`Args_effect_on_unfolding`.
 
-      :n:`@name {* %_ @scope }`
+      :n:`@name {* @scope_delimiter }`
          a *formal parameter* of the function :n:`@reference` (i.e.
          the parameter name used in the function definition).  Unless `rename` is specified,
          the list of :n:`@name`\s must be a prefix of the formal parameters, including all implicit
@@ -92,13 +92,9 @@ Setting properties of a function's arguments
          This construct declares :n:`@name` as
          non-implicit if `clear implicits` is specified or any
          other :n:`@name` in the :cmd:`Arguments` command is declared implicit.
-         :token:`scope` can be either scope names or their delimiting
+         :token:`scope_delimiter` can be either scope names or their delimiting
          keys. When multiple scopes are present, notations are interpreted in the
          leftmost scope containing them. See :ref:`binding_to_scope`.
-
-         .. deprecated:: 8.19
-            The :n:`% @scope` syntax is deprecated in favor of the currently equivalent :n:`%_ @scope`.
-            It will be reused in future versions with the same semantics as in terms.
 
          .. exn:: To rename arguments the 'rename' flag must be specified.
             :undocumented:
@@ -304,11 +300,12 @@ Binding arguments to scopes
 
    When interpreting a term, if some of the arguments of :token:`reference` are built
    from a notation, then this notation is interpreted in the scope stack
-   extended by the scopes bound (if any) to this argument. The effect of
+   extended by the scopes bound (if any) to this argument. When using ``%_``, the effect of
    these scopes is limited to the argument itself. It does not propagate to
    subterms but the subterms that, after interpretation of the notation,
    turn to be themselves arguments of a reference are interpreted
    according to the argument scopes bound to this reference.
+   When using ``%``, the scope propagates to subterms.
 
 .. note::
 

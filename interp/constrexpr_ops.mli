@@ -120,6 +120,10 @@ val map_constr_expr_with_binders :
   (Id.t -> 'a -> 'a) -> ('a -> constr_expr -> constr_expr) ->
       'a -> constr_expr -> constr_expr
 
+(** {6 Printers}*)
+
+val pr_scope_delimiter : scope_delimiter -> Pp.t
+
 (** {6 Miscellaneous}*)
 
 val replace_vars_constr_expr :

@@ -532,6 +532,12 @@ let map_constr_expr_with_binders g f e = CAst.map (function
     | CPrim _ | CRef _ as x -> x
   )
 
+let pr_delimiter_depth = function
+  | DelimOnlyTmpScope -> str "%_"
+  | DelimUnboundedScope -> str "%"
+
+let pr_scope_delimiter (d, sc) = pr_delimiter_depth d ++ str sc
+
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l r =
   match r with
