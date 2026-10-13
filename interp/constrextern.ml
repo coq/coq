@@ -1019,8 +1019,9 @@ let rec extern depth0 inctx scopes (eenv:extern_env) r =
         extern depth inctx scopes (List.fold_left add_vname eenv nal) b)
 
   | GIf (c,(na,typopt),b1,b2) ->
+      let c_inctx = not (Pretyping.old_if_wo_bool_coercion ()) in
       let inctx = inctx || typopt <> None in
-      CIf (sub_extern depth false scopes eenv c,
+      CIf (sub_extern depth c_inctx scopes eenv c,
         (Option.map (fun _ -> (CAst.make na)) typopt,
          Option.map (extern_typ depth scopes (add_vname eenv na)) typopt),
         sub_extern depth inctx scopes eenv b1, sub_extern depth inctx scopes eenv b2)

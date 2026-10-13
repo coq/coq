@@ -37,3 +37,9 @@ Print test.  (* printed as match (cannot use if) *)
 (* There are historic uses of the if syntax with sumbool, so don't warn for now *)
 Check if @left True False I then 1 else 0.
 Check if @inleft nat False 3 then 1 else 0.
+
+(* Coercions to bool are automatically introduced: *)
+Coercion is_S n := if n is S _ then true else false.
+Check if 4 then 1 else 0.
+Set Printing Coercions.
+Check if 4 then 1 else 0.
