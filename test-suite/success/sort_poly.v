@@ -92,11 +92,8 @@ Module Inference.
   (* implicit type of A gets unified to Univ@{s;Set} *)
   Definition zig@{s; |} A := zog@{s;} A.
 
-  (* Unfortunately casting a hole to a sort (while typing A on the
-     left of the arrow) produces a rigid univ level. It gets a
-     constraint "= Set" but rigids don't get substituted away for (bad)
-     reasons. This is why we need the 2 "+". *)
-  Definition zig'@{s; + | +} A := A -> zog@{s;} A.
+  Definition zig'@{s; |} A := A -> zog@{s;} A.
+  Definition zig''@{|} A := A -> zog@{Type;} A.
 
   (* different manually bound sort variables don't unify *)
   Fail Definition zog'@{s s'; |} (A:Univ@{s;Set}) := zog@{s';} A.

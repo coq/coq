@@ -107,7 +107,7 @@ End H.
 
 (* With recursively non-uniform arguments *)
 Module I.
-  Inductive T A := C : A -> T (option A) -> T A.
+  Inductive T (A:Type) := C : A -> T (option A) -> T A.
   Scheme Boolean Equality for T.
   Check eq_refl : T_beq =
     fix T_eqrec
