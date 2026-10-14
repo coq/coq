@@ -167,7 +167,7 @@ let build_branches_type env sigma mib mip (ind,u) params (pctx, p) =
     in
     let rec get_lift decls = match decls with
     | [] -> Esubst.el_id
-    | LocalDef _ :: decls -> Esubst.el_shft 1 (get_lift decls)
+    | LocalDef _ :: decls -> Esubst.el_shft 1 (Esubst.el_lift (get_lift decls))
     | LocalAssum _ :: decls -> Esubst.el_lift (get_lift decls)
     in
     decl, nas, get_lift decl_with_letin, codom
