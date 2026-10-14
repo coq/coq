@@ -1,0 +1,16 @@
+File "./output/bug_12589.v", line 3, characters 2-38:
+Warning: Closed notations (i.e. starting and ending with a terminal symbol)
+should usually be at level 0 (default).
+[closed-notation-not-level-0,parsing,default]
+File "./output/bug_12589.v", line 3, characters 2-38:
+Warning: Notation "!!" is already defined at level 0
+while this declaration is at level 1. The level recorded for printing is
+unchanged. [notation-incompatible-level,parsing,default]
+File "./output/bug_12589.v", line 8, characters 2-53:
+Warning: Closed notations (i.e. starting and ending with a terminal symbol)
+should usually be at level 0 (default).
+[closed-notation-not-level-0,parsing,default]
+File "./output/bug_12589.v", line 8, characters 2-53:
+Warning: Notation "!!" is already defined at level 0
+while this declaration is at level 1. It adds no parsing rule, so only
+printing with it is affected. [notation-incompatible-level,parsing,default]

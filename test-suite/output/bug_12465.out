@@ -1,0 +1,11 @@
+File "./output/bug_12465.v", line 9, characters 0-201:
+Warning: Notation "WITH _ : _ PRE [ ] _ POST [ ] _" is already defined
+at level 10 with arguments ident, constr, constr at level 100, constr
+at level 100 while this declaration is at level 10 with arguments
+strict pattern at level 9, constr, constr at level 100, constr at level 100.
+It adds no parsing rule, so only printing with it is affected.
+[notation-incompatible-level,parsing,default]
+File "./output/bug_12465.v", line 9, characters 0-201:
+Warning: Lonely notation "WITH _ : _ PRE [ ] _ POST [ ] _" was already
+defined with a different format.
+[notation-incompatible-format,parsing,default]

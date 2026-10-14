@@ -388,6 +388,17 @@ at the time of use of the notation.
    ``only printing`` can have multiple associated interpretations,
    even in the same scope.
 
+   An ``only printing`` notation may use notation and argument levels that
+   differ from other declarations for the same string. These differences
+   can prevent printed terms from being parsed back correctly.
+
+.. warn:: Notation @string is already defined at level @natural with arguments ... while this declaration is at level @natural with arguments ...
+   :name: notation-incompatible-level
+
+   The mismatch is accepted when either declaration has no parsing rule.
+   The warning is emitted because different printing levels can make printed
+   terms ambiguous or cause them to be parsed as different terms.
+
 .. note::
 
    When several notations can be used to print a given term, the
@@ -439,7 +450,7 @@ Reserving notations
 .. cmd:: Reserved Notation @string {? ( {+, @syntax_modifier } ) }
 
    A given notation may be used in different contexts. Rocq expects all
-   uses of the notation to be defined at the same precedence and with the
+   its parsing rules to be defined at the same precedence and with the
    same associativity. To avoid giving the precedence and associativity
    every time, this command declares a parsing rule (:token:`string`) in advance
    without giving its interpretation. Here is an example from the initial
@@ -464,6 +475,9 @@ Reserving notations
    :token:`syntax_modifier`), it is used by
    default by all subsequent interpretations of the corresponding
    notation. Individual interpretations can override the format.
+
+   A formatted ``only printing`` :cmd:`Reserved Notation` replaces the shared
+   printing rule, so its level affects how other interpretations print.
 
    .. warn:: Notations "a b" defined at level x and "a c" defined at level y have incompatible prefixes. One of them will likely not work.
       :name: notation-incompatible-prefix
