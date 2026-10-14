@@ -83,7 +83,7 @@ A formal presentation of constants and environments is given in
 Section :ref:`typing-rules`.
 
 .. cmd:: {| Definition | Example } @ident_decl @def_body
-   :name: Definition; Example
+   :name: Definition; Example; Eval (Definition)
 
    .. insertprodn def_body reduce
 

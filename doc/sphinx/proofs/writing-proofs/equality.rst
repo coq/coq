@@ -962,6 +962,9 @@ Evaluation of a term can be performed with:
    may reference hypotheses of the selected goal.  :cmd:`Eval` is
    a :token:`query_command`, so it may be prefixed with a goal selector.
 
+   The result of reduction can be assigned to a definition using command
+   :cmd:`Definition` (:n:`Definition @ident_decl := Eval @red_expr in @term`).
+
    .. cmd:: Compute @term
 
       Evaluates :n:`@term` using the bytecode-based virtual machine.
