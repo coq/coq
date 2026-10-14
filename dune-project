@@ -136,6 +136,7 @@ structured way."))
   (conf-findutils :build)
   conf-adwaita-icon-theme
   (rocqide-server (= :version))
+  rocq-core
   (cairo2 (>= 0.6.4))
   (lablgtk3-sourceview3 (and (>= 3.1.2) (or (>= 3.1.5) (<> :os-family "windows")))))
  (synopsis "The Rocq Prover --- GTK3 IDE")
