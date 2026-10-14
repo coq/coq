@@ -435,6 +435,7 @@ name: [
 
 reference: [
 | ident fields
+| fields
 | ident
 ]
 

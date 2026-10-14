@@ -189,7 +189,7 @@ module Error = struct
   type t = LibUnmappedDir | LibNotFound
 
   let unmapped_dir qid =
-    let prefix, _ = Libnames.repr_qualid qid in
+    let _, prefix, _ = Libnames.repr_qualid qid in
     CErrors.user_err
       Pp.(seq [ str "Cannot load "; Libnames.pr_qualid qid; str ":"; spc ()
               ; str "no physical path bound to"; spc ()
@@ -256,7 +256,7 @@ let locate_absolute_library dir : (CUnix.physical_path, Error.t) Result.t =
 let locate_qualified_library ?root qid :
   (DP.t * CUnix.physical_path, Error.t) Result.t =
   (* Search library in loadpath *)
-  let dir, base = Libnames.repr_qualid qid in
+  let dir, base = Libnames.repr_qualid_noabs qid in
   match expand_path ?root dir with
   | ([], []), ([], []) -> Error LibUnmappedDir
   | (full_installed, full_local), (installed, local) ->

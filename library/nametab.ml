@@ -346,10 +346,23 @@ let search_upto ~limit acc prefix tree dir =
   (* no warning here *)
   List.fold_left (fun acc (_,dir) -> search_upto ~limit acc prefix tree dir) acc dirs
 
+let find uname tab =
+  let l,id = repr_path uname in
+  let l = DirPath.repr l in
+  match search id (Id.Map.find id tab) l with
+  | Absolute (_,o) :: _ -> o
+  | _ -> raise Not_found
+
 let find_node qid tab =
   let loc = qid.CAst.loc in
-  let (dir,id) = repr_qualid qid in
-  search ?loc id (Id.Map.find id tab) (DirPath.repr dir)
+  let (abs, dir,id) = repr_qualid qid in
+  let nodes = search ?loc id (Id.Map.find id tab) (DirPath.repr dir) in
+  if not abs then nodes
+  else
+    let nodes = List.filter (function Absolute _ -> true | Relative _ -> false) nodes in
+    match nodes with
+    | []|[_] -> nodes
+    | _ -> assert false
 
 let locate qid tab =
   let o = match find_node qid tab with
@@ -359,7 +372,8 @@ let locate qid tab =
     o
 
 let locate_upto ~limit qid tab =
-  let (dir,id) = repr_qualid qid in
+  (* XXX abs ignored *)
+  let (abs,dir,id) = repr_qualid qid in
   let res =
     Id.Map.fold (fun id' tree acc ->
         let dist = CString.edit_distance ~limit:(limit+1) (Id.to_string id) (Id.to_string id') in
@@ -377,13 +391,6 @@ let locate_upto ~limit qid tab =
       in
       x, y)
     res
-
-let find uname tab =
-  let l,id = repr_path uname in
-  let l = DirPath.repr l in
-  match search id (Id.Map.find id tab) l with
-  | Absolute (_,o) :: _ -> o
-  | _ -> raise Not_found
 
 let exists uname tab =
   try
@@ -428,7 +435,8 @@ let rec search_prefixes tree = function
 
 let find_prefixes qid tab =
   try
-    let (dir,id) = repr_qualid qid in
+    (* XXX handle abs? *)
+    let (dir,id) = repr_qualid_noabs qid in
     search_prefixes (Id.Map.find id tab) (DirPath.repr dir)
   with Not_found -> []
 
@@ -436,7 +444,8 @@ let match_prefixes =
   let cprefix x y = CString.(compare x (sub y 0 (min (length x) (length y)))) in
   fun qid tab ->
     try
-      let (dir,id) = repr_qualid qid in
+      (* XXX handle abs? *)
+      let (dir,id) = repr_qualid_noabs qid in
       let id_prefix = cprefix Id.(to_string id) in
       let matches = Id.Map.filter_range (fun x -> id_prefix Id.(to_string x)) tab in
       let matches = Id.Map.mapi (fun _key tab -> search_prefixes tab (DirPath.repr dir)) matches in

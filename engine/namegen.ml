@@ -322,8 +322,7 @@ let visible_ids sigma (nenv, c) =
       let gseen = GlobRef.Set.add g gseen in
       let ids = match Nametab.shortest_qualid_of_global ~force_short:true Id.Set.empty g with
       | short ->
-        let dir, id = repr_qualid short in
-        if DirPath.is_empty dir then Id.Set.add id ids else ids
+        if qualid_is_ident short then Id.Set.add (qualid_basename short) ids else ids
       | exception Not_found ->
         (* This may happen if given pathological terms or when manipulating
            open modules *)

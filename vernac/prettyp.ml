@@ -979,9 +979,8 @@ let print_any_name access env sigma na udecl =
   | Other (obj, info) -> info.print obj
   | Undefined qid ->
   try  (* A goal variable which is not a section variable *)
-    let dir,str = repr_qualid qid in
-    if not (DirPath.is_empty dir) then raise Not_found;
-    print_named_decl env sigma true str
+    if not (qualid_is_ident qid) then raise Not_found;
+    print_named_decl env sigma true (qualid_basename qid)
   with Not_found -> user_err ?loc:qid.loc (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_notation_interpretation env sigma (entry,ntn) df sc c =
@@ -1294,9 +1293,8 @@ let print_located_qualid env name flags qid =
   in
   match located with
     | [] ->
-        let (dir,id) = repr_qualid qid in
-        if DirPath.is_empty dir then
-          str "No " ++ str name ++ str " of basename" ++ spc () ++ Id.print id
+        if qualid_is_ident qid then
+          str "No " ++ str name ++ str " of basename" ++ spc () ++ pr_qualid qid
         else
           str "No " ++ str name ++ str " of suffix" ++ spc () ++ pr_qualid qid
     | l ->

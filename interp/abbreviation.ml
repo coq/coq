@@ -72,8 +72,8 @@ let toggle_if ~on ~use filter =
 
 let is_alias_of_already_visible_name sp = function
   | _,Notation_term.NRef (ref,None) ->
-      let (dir,id) = repr_qualid (Nametab.shortest_qualid_of_global ~force_short:true Id.Set.empty ref) in
-      DirPath.is_empty dir && Id.equal id (basename sp)
+    let qid = Nametab.shortest_qualid_of_global ~force_short:true Id.Set.empty ref in
+    qualid_is_ident qid && Id.equal (qualid_basename qid) (basename sp)
   | _ ->
       false
 

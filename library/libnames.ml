@@ -148,28 +148,42 @@ let path_of_string s =
 
 let pr_path sp = Pp.str (string_of_path sp)
 
-(*s qualified names *)
-type qualid_r = full_path
+(*s qualified names, bool = is it absolute *)
+type qualid_r = bool * full_path
 type qualid = qualid_r CAst.t
 
-let make_qualid ?loc pa id = CAst.make ?loc (make_path pa id)
-let repr_qualid {CAst.v=qid} = repr_path qid
+let make_qualid ?loc ?(abs=false) pa id = CAst.make ?loc (abs, make_path pa id)
+let repr_qualid {CAst.v=abs, qid} = let dp, na = repr_path qid in abs, dp, na
+let repr_qualid_noabs {CAst.loc; v=abs, qid} =
+  if abs then CErrors.user_err ?loc Pp.(str "Absolute name not handled here.")
+  else repr_path qid
 
-let qualid_eq qid1 qid2 = eq_full_path qid1.CAst.v qid2.CAst.v
-let qualid_compare qid1 qid2 = compare_full_path qid1.CAst.v qid2.CAst.v
+let qualid_eq {CAst.v=abs1,qid1} {CAst.v=abs2,qid2} = Bool.equal abs1 abs2 && eq_full_path qid1 qid2
+let qualid_compare {CAst.v=abs1,qid1} {CAst.v=abs2,qid2} =
+  let c = Bool.compare abs1 abs2 in
+  if c <> 0 then c else
+  compare_full_path qid1 qid2
 
 let is_qualid_suffix_of_full_path
-    CAst.{v={dirpath=dirpath1;basename=basename1}} {dirpath=dirpath2;basename=basename2} =
+    CAst.{v=abs,{dirpath=dirpath1;basename=basename1}} {dirpath=dirpath2;basename=basename2} =
   let dir1 = DirPath.repr dirpath1 in
   let dir2 = DirPath.repr dirpath2 in
-  Id.equal basename1 basename2 && List.prefix_of Id.equal dir1 dir2
+  Id.equal basename1 basename2 &&
+  if abs then List.equal Id.equal dir1 dir2
+  else List.prefix_of Id.equal dir1 dir2
 
-let string_of_qualid qid = string_of_path qid.CAst.v
-let pr_qualid qid = pr_path qid.CAst.v
+let string_of_qualid {CAst.v=abs,qid} = (if abs then "." else "") ^ string_of_path qid
+let pr_qualid {CAst.v=abs,qid} = let open Pp in (if abs then str "." else mt()) ++ pr_path qid
 
-let qualid_of_string ?loc s = CAst.make ?loc @@ path_of_string s
+let qualid_of_string ?loc s =
+  let abs, s =
+    if String.length s >= 1 && s.[0] = '.' then
+      true, String.sub s 1 (String.length s - 1)
+    else false, s
+  in
+  CAst.make ?loc (abs, path_of_string s)
 
-let qualid_of_path ?loc sp = CAst.make ?loc sp
+let qualid_of_path ?loc sp = CAst.make ?loc (true, sp)
 let qualid_of_ident ?loc id = make_qualid ?loc DirPath.empty id
 let qualid_of_dirpath ?loc dir =
   let (l,a) = split_dirpath dir in
@@ -177,13 +191,13 @@ let qualid_of_dirpath ?loc dir =
 
 let qualid_of_lident lid = qualid_of_ident ?loc:lid.CAst.loc lid.CAst.v
 
-let qualid_is_ident qid = DirPath.is_empty (dirpath qid.CAst.v)
+let qualid_is_ident {CAst.v=abs,qid} = not abs && DirPath.is_empty (dirpath qid)
 
-let qualid_basename qid =
-  qid.CAst.v.basename
+let qualid_basename {CAst.v=_,qid} =
+  qid.basename
 
-let qualid_path qid =
-  qid.CAst.v.dirpath
+let qualid_path {CAst.v=_,qid} =
+  qid.dirpath
 
 let idset_mem_qualid qid s =
   qualid_is_ident qid && Id.Set.mem (qualid_basename qid) s

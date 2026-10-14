@@ -32,4 +32,8 @@ Search "use_foo".
 Search "use_bar".
 Search "use_nested".
 
+Fail Check .ax.
+Fail Check .Foo.ax.
+Check .PrintFullyQualified.Foo.ax.
+
 Unset Printing Fully Qualified.

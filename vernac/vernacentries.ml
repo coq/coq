@@ -1458,7 +1458,7 @@ let interp_names m ns =
   let ns =
     List.fold_left (fun ns (n,etc) ->
         let len, full_n =
-          let dp_n,n = repr_qualid n in
+          let dp_n,n = repr_qualid_noabs n in
           List.length (DirPath.repr dp_n), add_path_suffix (append_path dp_m dp_n) n
         in
         let ref = try importable_extended_global_of_path ?loc:n.loc full_n
@@ -2414,7 +2414,7 @@ let vernac_register ~atts qid r =
     | _ -> CErrors.user_err ?loc:qid.loc (Pp.str "Register Inline: expecting a constant.")
     end
   | RegisterCoqlib n ->
-    let ns, id = Libnames.repr_qualid n in
+    let ns, id = Libnames.repr_qualid_noabs n in
     if DirPath.equal (dirpath_of_string "kernel") ns then begin
       unsupported_attributes atts;
       let CPrimitives.PIE pind = match Id.to_string id with

@@ -243,7 +243,7 @@ let pr_sort_expr : sort_expr -> Pp.t = function
   | u -> hov 0 (tag_type (str "Univ") ++ pr_univ_annot pr_quality_univ u)
 
 let pr_qualid sp =
-  let (sl, id) = repr_qualid sp in
+  let (abs, sl, id) = repr_qualid sp in
   let id = tag_ref (Id.print id) in
   let sl = match List.rev (DirPath.repr sl) with
     | [] -> mt ()
@@ -251,7 +251,7 @@ let pr_qualid sp =
       let pr dir = tag_path (Id.print dir) ++ str "." in
       prlist pr sl
   in
-  sl ++ id
+  (if abs then str "." else mt()) ++ sl ++ id
 
 let pr_id = Id.print
 let pr_qualid = pr_qualid

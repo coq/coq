@@ -17,7 +17,7 @@ open Libnames
 
 open Procq.Prim
 
-let local_make_qualid loc l id = make_qualid ~loc (DirPath.make l) id
+let local_make_qualid ?(abs=false) loc l id = make_qualid ~abs ~loc (DirPath.make l) id
 
 let my_int_of_string ?loc s =
   try
@@ -86,7 +86,12 @@ GRAMMAR EXTEND Gram
   reference:
     [ [ id = ident; f = fields -> {
         let (l,id') = f in
-        local_make_qualid loc (l@[id]) id' }
+        local_make_qualid loc (l@[id]) id'
+        }
+      | f = fields -> {
+          let l, id = f in
+          local_make_qualid loc ~abs:true l id
+        }
       | id = ident -> { qualid_of_ident ~loc id }
       ] ]
   ;

@@ -1,6 +1,16 @@
 use_foo
 use_bar
 use_nested
-PrintFullyQualified.use_foo
-PrintFullyQualified.use_bar
-PrintFullyQualified.use_nested
+.PrintFullyQualified.use_foo
+.PrintFullyQualified.use_bar
+.PrintFullyQualified.use_nested
+File "./output/PrintFullyQualified.v", line 35, characters 11-14:
+The command has indeed failed with message:
+The reference .ax was not found in the current environment. Did you mean max,
+ex or ap?
+File "./output/PrintFullyQualified.v", line 36, characters 11-18:
+The command has indeed failed with message:
+The reference .Foo.ax was not found in the current environment. Did you mean
+Foo.ax?
+.PrintFullyQualified.Foo.ax
+     : .Corelib.Init.Logic.False

@@ -324,5 +324,4 @@ let is_constructor_id id =
     | _ -> false
 
 let is_constructor qid =
-  let (_, id) = repr_qualid qid in
-  is_constructor_id id
+  is_constructor_id (qualid_basename qid)

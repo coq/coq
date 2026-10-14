@@ -265,7 +265,7 @@ let deprecated_Coq from qidl =
     (* temporary hack to enable HoTT and UniMath to compile with rocq-core *)
     let qidl =
       let qid2idl qid =
-        let p, id = Libnames.repr_qualid qid in
+        let p, id = Libnames.repr_qualid_noabs qid in
         List.rev (id :: DirPath.repr p) in
       let from = match from with None -> [] | Some from -> qid2idl from in
       List.map (fun (qid, _) -> from @ qid2idl qid) qidl in
@@ -277,7 +277,7 @@ let deprecated_Coq from qidl =
   let repl_id id =
     if Id.equal id coq_id then true, stdlib_id else false, id in
   let repl_Coq_qid qid =
-    let p, id = Libnames.repr_qualid qid in
+    let p, id = Libnames.repr_qualid_noabs qid in
     let warn, p, id =
       if DirPath.is_empty p then let w, id = repl_id id in w, p, id else
         let warn, p = match List.rev (DirPath.repr p) with
@@ -302,7 +302,7 @@ let synterp_require ~intern from export qidl =
   let root = match from with
   | None -> None
   | Some from ->
-    let (hd, tl) = Libnames.repr_qualid from in
+    let (hd, tl) = Libnames.repr_qualid_noabs from in
     Some (Libnames.add_dirpath_suffix hd tl)
   in
   let locate (qid,_) =
@@ -357,7 +357,7 @@ let synterp_chdir = function
 let synterp_extra_dep ?loc from file id =
   if Lib.sections_are_opened () then
     user_err ?loc Pp.(str "Extra Dependencies cannot be declared inside sections.");
-  let hd, tl = Libnames.repr_qualid from in
+  let hd, tl = Libnames.repr_qualid_noabs from in
   let from = Libnames.add_dirpath_suffix hd tl in
   ComExtraDeps.declare_extra_dep ?loc ~from ~file id
 

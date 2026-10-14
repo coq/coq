@@ -436,7 +436,7 @@ let interface_search env sigma =
   let print_function ref env sigma constr =
     let fullpath = DirPath.repr (Nametab.dirpath_of_global ref) in
     let qualid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
-    let (shortpath, basename) = Libnames.repr_qualid qualid in
+    let (shortpath, basename) = Libnames.repr_qualid_noabs qualid in
     let shortpath = DirPath.repr shortpath in
     (* [shortpath] is a suffix of [fullpath] and we're looking for the missing
        prefix *)

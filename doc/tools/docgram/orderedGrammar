@@ -126,6 +126,7 @@ of_type: [
 
 qualid: [
 | ident LIST0 ( "." ident )
+| LIST1 ( "." ident )
 ]
 
 type: [

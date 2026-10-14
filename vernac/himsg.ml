@@ -1193,7 +1193,7 @@ let pr_modpath mp =
 let pr_modtype_subpath upper mp =
   let rec aux mp =
     try
-      let (dir,id) = Libnames.repr_qualid (Nametab.shortest_qualid_of_modtype mp) in
+      let (dir,id) = Libnames.repr_qualid_noabs (Nametab.shortest_qualid_of_modtype mp) in
       Libnames.add_dirpath_suffix dir id, []
     with Not_found ->
       match mp with
