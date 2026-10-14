@@ -2273,6 +2273,7 @@ type 'aconstr akind =
 type atyp =
 | ATySort
 | ATyProd
+| ATyInd of inductive
 | ATyOther
 
 module AConstr :
@@ -2356,7 +2357,7 @@ let rec make0 atyp sigma c0 = match EConstr.kind sigma c0 with
   let ald, al = make_array sigma al in
   { proj = c0; self = AApp (c, al); data = max c.data ald; atyp }
 | Proj (p, _, t) ->
-  let t = make sigma t in
+  let t = make0 (ATyInd (Projection.inductive p)) sigma t in
   { proj = c0; self = AOther [|t|]; data = t.data; atyp }
 | Evar (e, al) ->
   (* Unification doesn't recurse on the subterms in evar instances *)
@@ -2373,7 +2374,7 @@ let rec make0 atyp sigma c0 = match EConstr.kind sigma c0 with
   | NoInvert -> 0
   | CaseInvert { indices } -> get_max_rel_array sigma indices
   in
-  let c = make sigma c in
+  let c = make0 (ATyInd ci.ci_ind) sigma c in
   let fold accu (nas, p) =
     let p = make sigma p in
     max accu (liftn (Array.length nas) p.data), p
@@ -2411,7 +2412,7 @@ end
 type head_kind =
 | HeadSort
 | HeadProd
-| HeadInd
+| HeadInd of inductive
 | HeadOther
 
 let get_head_kind ~metas env sigma c =
@@ -2420,7 +2421,7 @@ let get_head_kind ~metas env sigma c =
   match EConstr.kind sigma hd with
   | Prod _ -> HeadProd
   | Sort _ -> HeadSort
-  | Ind _ -> HeadInd
+  | Ind (ind, _) -> HeadInd ind
   | _ ->
     (* We try again after reduction, this may be a bit expensive but it also
        reduces the subterm search space later on *)
@@ -2430,29 +2431,41 @@ let get_head_kind ~metas env sigma c =
     match EConstr.kind sigma hd with
     | Prod _ -> HeadProd
     | Sort _ -> HeadSort
-    | Ind _ -> HeadInd
+    | Ind (ind, _) -> HeadInd ind
     | _ -> HeadOther
 
 (* can c have a type of the same shape as knd? *)
-let fast_head_check sigma knd c = match EConstr.kind sigma c, knd with
-| Lambda _, (HeadInd | HeadSort) -> false
-| Sort _, (HeadInd | HeadProd) -> false
+let fast_head_check env sigma knd c = match EConstr.kind sigma c, knd with
+| Lambda _, (HeadInd _ | HeadSort) -> false
+| Sort _, (HeadInd _ | HeadProd) -> false
 | Construct _, HeadSort -> false
-| Prod _, (HeadInd | HeadProd) -> false
-| Ind _, HeadInd -> false
+| Construct (cstr, _), HeadInd ind ->
+  Environ.QInd.equal env (fst cstr) ind
+| Prod _, (HeadInd _ | HeadProd) -> false
+| Ind _, HeadInd _ -> false
 | App (hd, _), _ ->
   begin match EConstr.kind sigma hd, knd with
   | Construct _, HeadSort -> false
-  | Ind _, HeadInd -> false
+  | Ind _, HeadInd _ -> false
   | _ -> true
   end
-| _ -> true
+| Lambda _, (HeadProd | HeadOther)
+| Sort _, (HeadSort | HeadOther)
+| Construct _, (HeadProd | HeadOther)
+| Prod _, (HeadSort | HeadOther)
+| Ind _, (HeadSort | HeadProd | HeadOther) -> true
+| (Rel _ | Var _ | Meta _ | Cast _ | Evar _ | LetIn _ | Const _ | Case _
+  | Fix _ | CoFix _ | Proj _ | Int _ | Float _ | String _ | Array _), _ -> true
 
-let fast_atyp_check knd atyp = match knd, atyp with
-| HeadInd, (ATyProd | ATySort)
-| HeadSort, ATyProd
-| HeadProd, ATySort -> false
-| _ -> true
+(* Are the two type approximations compatible? *)
+let fast_atyp_check env knd atyp = match knd, atyp with
+| HeadInd _, (ATyProd | ATySort)
+| HeadSort, (ATyProd | ATyInd _)
+| HeadProd, (ATySort | ATyInd _) -> false
+| HeadInd ind, ATyInd ind' -> Environ.QInd.equal env ind ind'
+| HeadOther, (ATyProd | ATySort | ATyInd _ | ATyOther) -> true
+| HeadSort, ATySort | HeadProd, ATyProd
+| (HeadSort | HeadProd | HeadInd _), ATyOther -> true
 
 (* Tries to find an instance of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] until it finds a match.
@@ -2472,7 +2485,7 @@ let w_unify_to_subterm ~metas env evd ?where ?(flags=default_unify_flags ()) (op
       let is_closed = AConstr.closed0 cl in
       let atyp = AConstr.atyp cl in
       let cl = AConstr.proj cl in
-      if is_closed && not (isEvar evd cl) && keyed_unify env evd kop cl && fast_head_check evd knd cl && fast_atyp_check knd atyp then
+      if is_closed && not (isEvar evd cl) && keyed_unify env evd kop cl && fast_head_check env evd knd cl && fast_atyp_check env knd atyp then
         try
           if is_keyed_unification () then
             let f1, l1 = decompose_app evd op in
@@ -2493,7 +2506,7 @@ let w_unify_to_subterm ~metas env evd ?where ?(flags=default_unify_flags ()) (op
       | ACast _ -> assert false (* just got stripped *)
       | AApp (f, args) ->
         begin match knd with
-        | HeadInd | HeadSort ->
+        | HeadInd _ | HeadSort ->
           (* If an application matches, then assuming well-typedness no longer application could match *)
           begin match matchrec f with
           | Some _ as ans -> ans
