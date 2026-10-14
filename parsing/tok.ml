@@ -174,8 +174,7 @@ let match_pattern (type c) (p : c p) : t -> c option =
   | PFIELD (Some s) -> (function FIELD s' when seq s s' -> Some s' | _ -> None)
   | PNUMBER None -> (function NUMBER s -> Some s| _ -> None)
   | PNUMBER (Some n) ->
-    let s = NumTok.Unsigned.sprint n in
-    (function NUMBER n' when s = NumTok.Unsigned.sprint n' -> Some n' | _ -> None)
+    (function NUMBER n' when NumTok.Unsigned.equal n n' -> Some n' | _ -> None)
   | PSTRING None -> (function STRING s -> Some s | _ -> None)
   | PSTRING (Some s) -> (function STRING s' when seq s s' -> Some s' | _ -> None)
   | PLEFTQMARK -> (function LEFTQMARK -> Some () | _ -> None)
