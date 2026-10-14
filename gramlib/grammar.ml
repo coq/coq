@@ -1131,6 +1131,10 @@ let start_parser_of_entry gstate entry levn (strm:_ LStream.t) =
 let continue_parser_of_entry gstate entry levfrom levn bp a (strm:_ LStream.t) =
   (get_entry gstate.estate entry).econtinue gstate levfrom levn bp a strm
 
+let rec parse_list ps gstate al strm__ = match ps gstate strm__ with
+| Ok a -> parse_list ps gstate (a::al) strm__
+| Error () -> al
+
 (**
   nlevn: level for Snext
   alevn: level for recursive calls on the right-hand side of the rule (depending on associativity)
@@ -1293,19 +1297,15 @@ and parser_of_token_list : type s tr lt r.
          end
        | None -> Error ())
     | None -> Error ()
+
 and parser_of_symbol : type s tr a.
   s ty_entry -> int -> (s, tr, a) ty_symbol -> GState.t -> a parser_t =
   fun entry nlevn ->
   function
   | Slist0 s ->
       let ps = parser_of_symbol entry nlevn s in
-      let rec loop gstate al (strm__ : _ LStream.t) =
-        match ps gstate strm__ with
-        | Ok a -> loop gstate (a::al) strm__
-        | Error () -> al
-      in
       (fun gstate (strm__ : _ LStream.t) ->
-         let a = loop gstate [] strm__ in Ok (List.rev a))
+         let a = parse_list ps gstate [] strm__ in Ok (List.rev a))
   | Slist0sep (symb, sep) ->
       let ps = parser_of_symbol entry nlevn symb in
       let pt = parser_of_symbol entry nlevn sep in
@@ -1326,14 +1326,9 @@ and parser_of_symbol : type s tr a.
          | Error () -> Ok [])
   | Slist1 s ->
       let ps = parser_of_symbol entry nlevn s in
-      let rec loop gstate al (strm__ : _ LStream.t) =
-        match ps gstate strm__ with
-        | Ok a -> loop gstate (a::al) strm__
-        | Error () -> al
-      in
       (fun gstate (strm__ : _ LStream.t) ->
          let* a = ps gstate strm__ in
-         let a = loop gstate [a] strm__ in Ok (List.rev a))
+         let a = parse_list ps gstate [a] strm__ in Ok (List.rev a))
   | Slist1sep (symb, sep) ->
       let ps = parser_of_symbol entry nlevn symb in
       let pt = parser_of_symbol entry nlevn sep in
