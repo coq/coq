@@ -755,7 +755,7 @@ let fold_with_binders sigma g f e acc c =
     List.fold_left (fun acc c -> f e acc c) acc args
   | _ -> Constr.fold_constr_with_binders g f e acc c
 
-let compare_gen cmp nargs c1 c2 =
+let[@inline] compare_gen cmp nargs c1 c2 =
   (c1 == c2) || Constr.compare_head_gen_leq_with cmp nargs c1 c2
 
 let eq_existential sigma eq (evk1, args1) (evk2, args2) =

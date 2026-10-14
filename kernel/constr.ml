@@ -908,7 +908,7 @@ type ('v, 'sort, 'univs, 'r) comparison = {
   cmp_cumul : 'v constr_compare_fn;
 }
 
-let compare_head_gen_leq_with self nargs t1 t2 =
+let[@inline] compare_head_gen_leq_with self nargs t1 t2 =
   match kind_nocast_gen self.cmp_kind1 t1, kind_nocast_gen self.cmp_kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
   | Rel n1, Rel n2 -> Int.equal n1 n2
