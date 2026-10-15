@@ -21,11 +21,13 @@
 #define ATOM_ID_TAG 0
 #define ATOM_INDUCTIVE_TAG 1
 #define ATOM_TYPE_TAG 2
-#define ATOM_PROJ_TAG 3
-#define ATOM_FIX_TAG 4
-#define ATOM_SWITCH_TAG 5
-#define ATOM_COFIX_TAG 6
-#define ATOM_COFIXEVALUATED_TAG 7
+#define ATOM_BLOCK_TAG 3
+#define ATOM_RUN_TAG 4
+#define ATOM_PROJ_TAG 5
+#define ATOM_FIX_TAG 6
+#define ATOM_SWITCH_TAG 7
+#define ATOM_COFIX_TAG 8
+#define ATOM_COFIXEVALUATED_TAG 9
 
 #define Is_double(v) (Tag_val(v) == Double_tag)
 #define Is_tailrec_switch(v) (Field(v,1) == Val_true)

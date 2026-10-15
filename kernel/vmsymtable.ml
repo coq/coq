@@ -322,14 +322,17 @@ and slot_for_fv env sigma fv envcache table =
       | Some v -> v
       end
 
-and eval_to_patch env sigma code envcache table =
+and link_to_patch env sigma code envcache table =
   let slots = function
     | Reloc_annot a -> slot_for_annot a table
+    | Reloc_const (Const_block source) -> slot_for_block env sigma source table
     | Reloc_const sc -> slot_for_str_cst sc table
     | Reloc_getglobal kn -> slot_for_getglobal env sigma kn envcache table
     | Reloc_caml_prim op -> slot_for_caml_prim op table
   in
-  let tc, fv = patch code slots in
+  patch code slots
+
+and eval_code env sigma tc fv envcache table =
   let vm_env =
     (* Environment should look like a closure, so free variables start at slot 2. *)
     let a = Array.make (Array.length fv + 2) crazy_val in
@@ -345,10 +348,74 @@ and eval_to_patch env sigma code envcache table =
   let v = rocq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 in
   v
 
+and eval_to_patch env sigma code envcache table =
+  let tc, fv = link_to_patch env sigma code envcache table in
+  eval_code env sigma tc fv envcache table
+
 and val_of_constr env sigma c envcache table =
   match compile ~fail_on_error:true env sigma c with
   | Some (_, code, patch) -> eval_to_patch env sigma (code, patch) envcache table
   | None -> assert false
+
+and slot_for_block env sigma source table =
+  (* This slot holds an inert constructor, not a linked body. Each universe
+     instance has its own lazily compiled/linked fragment. Linking the parent
+     therefore cannot evaluate constants that occur only in the block. *)
+  let programs = ref [] in
+  let constructor instance captures =
+    let instance = uni_instance instance in
+    let captures =
+      if Obj.is_int (Obj.repr captures) then [||]
+      else (Obj.magic captures : values array)
+    in
+    assert (Array.length captures = Array.length source.block_rels + Array.length source.block_vars);
+    let envcache = {
+      named_cache = ref Id.Map.empty;
+      rel_cache = ref Int.Map.empty;
+      rel_adjust = 0;
+    } in
+    Array.iteri (fun j i -> cache_rel envcache i captures.(j)) source.block_rels;
+    let offset = Array.length source.block_rels in
+    Array.iteri (fun j id -> cache_named envcache id captures.(offset + j)) source.block_vars;
+    let program () =
+      match List.find_opt (fun (u, _) -> UVars.Instance.equal u instance) !programs with
+      | Some (_, program) -> Lazy.force program
+      | None ->
+        let program = lazy (
+          let subst = Vars.subst_instance_constr instance in
+          let relevance = UVars.subst_instance_relevance instance in
+          let rels = Context.Rel.map_with_relevance relevance subst source.block_context in
+          let named = Context.Named.map_with_relevance relevance subst source.block_named_context in
+          let env = Environ.reset_context env in
+          let env = Environ.push_named_context (List.map (fun d -> Environ.ProofVar, d) named) env in
+          let env = Environ.push_rel_context rels env in
+          let body = match Constr.kind (subst source.block_term) with
+          | Constr.PBlock (_, _, entries, body) -> Term.expand_pblock entries body
+          | _ -> assert false
+          in
+          match compile ~fail_on_error:true env sigma body with
+          | None -> assert false
+          | Some (_, code, patches) ->
+            let tc, fv = link_to_patch env sigma (code, patches) envcache table in
+            env, tc, fv)
+        in
+        programs := (instance, program) :: !programs;
+        Lazy.force program
+    in
+    (* The payload is policy independent: blocks reached by its bytecode are
+       themselves suspensions. Readback never overwrites this source. *)
+    let payload = lazy (
+      let env, tc, fv = program () in
+      eval_code env sigma tc fv envcache table)
+    in
+    val_of_atom (Ablock {
+      blocked_source = source;
+      blocked_instance = instance;
+      blocked_values = captures;
+      blocked_force = (fun () -> Lazy.force payload);
+    })
+  in
+  set_global (Obj.magic constructor) table
 
 let global_table =
   let glob_val = GlobVal.empty 4096 in
@@ -372,3 +439,33 @@ let val_of_constr env sigma c =
 
 let vm_interp code v env k =
   rocq_interprete code v (get_atom_rel ()) (get_global_data !global_table) env k
+
+(* Applying a continuation from an OCaml callback re-enters the VM. The C
+   caller refreshes its stack pointer and global/atom arrays afterwards. *)
+external push_ra : tcode -> unit = "rocq_push_ra"
+external push_vstack : vstack -> int -> unit = "rocq_push_vstack"
+external mk_stop : int -> tcode = "rocq_pushpop"
+let callback_stop = mk_stop 0
+
+let apply_value f args =
+  push_ra callback_stop;
+  push_vstack args 0;
+  let f = fun_of_val f in
+  vm_interp (fun_code f) (fun_val f) (fun_env f) (Array.length args - 1)
+
+let callback_result v = v, get_global_data !global_table, get_atom_rel ()
+
+let () = Callback.register "rocq_vm_run" (fun ty result_ty b continuation ->
+  let v = match whd_val b with
+  | Values.Vaccu (Ablock block, []) ->
+    apply_value continuation [|block.blocked_force ()|]
+  | _ -> val_of_atom (Arun (ty, result_ty, b, continuation))
+  in
+  callback_result v)
+
+let () = Callback.register "rocq_vm_blocked_ind" (fun ty predicate ih b head ->
+  let v = match whd_val b with
+  | Values.Vaccu (Ablock block, []) -> apply_value ih [|block.blocked_force ()|]
+  | _ -> apply_value head [|ty; predicate; ih; b|]
+  in
+  callback_result v)

@@ -101,6 +101,9 @@ term90: [
 term10: [
 | term10 LIST1 arg
 | "@" global univ_annot LIST0 term9
+| "__block" univ_annot term9 term9
+| "__unblock" term9
+| "__run" univ_annot term9 term9 term9 term9
 | "@" pattern_ident LIST1 identref
 | "forall" open_binders "," term200
 | "fun" open_binders "=>" term200
@@ -827,6 +830,7 @@ red_expr: [
 | "lazy" strategy_flag
 | "compute" delta_flag
 | "vm_compute" OPT ref_or_pattern_occ
+| "vm_compute_blocking" OPT ref_or_pattern_occ
 | "native_compute" OPT ref_or_pattern_occ
 | "unfold" LIST1 unfold_occ SEP ","
 | "fold" LIST1 constr
@@ -1959,6 +1963,7 @@ simple_tactic: [
 | "lazy" strategy_flag clause_dft_concl
 | "compute" delta_flag clause_dft_concl
 | "vm_compute" OPT ref_or_pattern_occ clause_dft_concl
+| "vm_compute_blocking" OPT ref_or_pattern_occ clause_dft_concl
 | "native_compute" OPT ref_or_pattern_occ clause_dft_concl
 | "unfold" LIST1 unfold_occ SEP "," clause_dft_concl
 | "fold" LIST1 constr clause_dft_concl

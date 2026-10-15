@@ -213,7 +213,7 @@ let type_of_apply env func funt argsv argstv =
   let infos = create_clos_infos RedFlags.all env in
   let tab = create_tab () in
   let rec apply_rec i typ =
-    if Int.equal i len then term_of_fconstr typ
+    if Int.equal i len then term_of_fconstr ~info:infos ~tab typ
     else
       let typ, stk = whd_stack infos tab typ [] in
       match fterm_of typ with
@@ -222,7 +222,7 @@ let type_of_apply env func funt argsv argstv =
         let () = assert (check_empty_stack stk) in
         let arg = argsv.(i) in
         let argt = argstv.(i) in
-        let c1 = term_of_fconstr c1 in
+        let c1 = term_of_fconstr ~info:infos ~tab c1 in
         begin match conv_leq env argt c1 with
         | Result.Ok () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
         | Result.Error () ->
@@ -278,6 +278,13 @@ let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match p
       Constr.mkProd(Context.anonR, ty , ty)
     | _ -> anomaly Pp.(str"universe instance for array type should have length 1")
     end
+  | CPrimitives.PT_blocked ->
+    begin match UVars.Instance.to_array u with
+    | [|q|], [|u|] ->
+      let ty = Constr.mkSort (Sorts.make q (Univ.Universe.make u)) in
+      Constr.mkProd(Context.anonR, ty , ty)
+    | _ -> anomaly Pp.(str"universe instance for blocked type should have length 1 and quality length 1")
+    end
 
 let type_of_int env =
   match (Environ.retroknowledge env).Retroknowledge.retro_int63 with
@@ -299,6 +306,25 @@ let type_of_array env u =
   match (Environ.retroknowledge env).Retroknowledge.retro_array with
   | Some c -> mkConstU (c,u)
   | None -> CErrors.user_err Pp.(str"The type array must be registered before this construction can be typechecked.")
+
+let type_of_blocked env u =
+  assert (UVars.Instance.length u = (1,1));
+  match (Environ.retroknowledge env).Retroknowledge.retro_blocked with
+  | Some c -> mkConstU (c,u)
+  | None -> CErrors.user_err Pp.(str"The type blocked terms must be registered before this construction can be typechecked.")
+
+let dest_type_of_blocked env ty =
+  let blocked_kn = match (Environ.retroknowledge env).Retroknowledge.retro_blocked with
+  | Some c -> c
+  | None -> CErrors.user_err Pp.(str"The type blocked terms must be registered before this construction can be typechecked.")
+  in
+  match kind (Reduction.whd_all env ty) with
+  | App (hd, [|arg|]) ->
+    begin match kind hd with
+    | Const (c,u) when Constant.UserOrd.equal c blocked_kn -> u, arg
+    | _ -> CErrors.user_err Pp.(str "Expected a blocked term.")
+    end
+  | _ -> CErrors.user_err Pp.(str "Expected a blocked term.")
 
 (* Type of product *)
 
@@ -798,6 +824,76 @@ and execute_aux tbl env cstr =
       in
       mkApp(ta, [|ty|])
 
+    | PBlock (u,ty,entries,t) ->
+      let q, ulev = match UVars.Instance.to_array u with
+        | [|q|], [|u|] -> q, u
+        | _ -> assert false
+      in
+      let tyty = execute tbl env ty in
+      let ty = self ty in
+      check_cast env ty tyty DEFAULTcast (mkSort (Sorts.make q (Universe.make ulev)));
+      let check_context env context =
+        Context.Rel.fold_outside
+          (fun decl (env, context) ->
+            match decl with
+            | LocalAssum (na, decl_ty) ->
+              let decl_tyty = execute tbl env decl_ty in
+              let decl_ty = self decl_ty in
+              let sort = check_type env decl_ty decl_tyty in
+              check_assum_annot env sort na decl_ty;
+              let decl = LocalAssum (na, decl_ty) in
+              push_rel decl env, decl :: context
+            | LocalDef (na, value, decl_ty) ->
+              let value_ty = execute tbl env value in
+              let decl_tyty = execute tbl env decl_ty in
+              let value = self value in
+              let decl_ty = self decl_ty in
+              check_cast env value value_ty DEFAULTcast decl_ty;
+              let sort = check_type env decl_ty decl_tyty in
+              check_let_annot env sort na value decl_ty;
+              let decl = LocalDef (na, value, decl_ty) in
+              push_rel decl env, decl :: context)
+          context ~init:(env, [])
+      in
+      let body_env = Array.fold_left
+        (fun hidden_env entry ->
+          let entry_env, context = check_context hidden_env entry.pbe_context in
+          ignore (execute_is_type tbl entry_env entry.pbe_type);
+          let entry_type = self entry.pbe_type in
+          let value_type = execute tbl entry_env entry.pbe_value in
+          let blocked_u, _ = dest_type_of_blocked entry_env value_type in
+          check_cast entry_env (self entry.pbe_value) value_type DEFAULTcast
+            (mkApp (type_of_blocked entry_env blocked_u, [|entry_type|]));
+          let hidden_type = it_mkProd_or_LetIn entry_type context in
+          let hidden_sort = execute_is_type tbl hidden_env (HConstr.of_constr hidden_env hidden_type) in
+          let annot = Context.make_annot Anonymous entry.pbe_relevance in
+          check_assum_annot hidden_env hidden_sort annot hidden_type;
+          push_rel (LocalAssum (annot, hidden_type)) hidden_env)
+        env entries
+      in
+      let tt = execute tbl body_env t in
+      check_cast body_env (self t) tt DEFAULTcast (Vars.lift (Array.length entries) ty);
+      mkApp (type_of_blocked env u, [|ty|])
+
+    | PRun (ty,k,b,cont) ->
+      let tyty = execute tbl env ty in
+      let ty = self ty in
+      let ty_sort = check_type env ty tyty in
+      let kt = execute tbl env k in
+      let k = self k in
+      let k_sort = check_type env k kt in
+      let bt = execute tbl env b in
+      let blocked_u, _ = dest_type_of_blocked env bt in
+      check_cast env (self b) bt DEFAULTcast (mkApp (type_of_blocked env blocked_u, [|ty|]));
+      let contt = execute tbl env cont in
+      check_cast env (self cont) contt DEFAULTcast (mkProd (Context.anonR, ty, Vars.lift 1 k));
+      let qsty = Sorts.quality ty_sort in
+      let qsk = Sorts.quality k_sort in
+      if Quality.equal qsty Quality.qtype || Quality.equal qsty Quality.qprop ||
+         Inductive.eliminates_to (Environ.qualities env) qsty qsk
+      then k
+      else CErrors.user_err Pp.(str "This run eliminates into an invalid sort.")
+
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
         anomaly (Pp.str "the kernel does not support metavariables.")
@@ -899,12 +995,34 @@ let type_of_prim_const env _u c =
   | CPrimitives.Stringmaxlength ->
     int_ty ()
 
+let type_of_blocked_ind env u =
+  match UVars.Instance.to_array u with
+  | [|s; sp|], [|ul; upl|] ->
+    let blocked_u = UVars.Instance.of_array ([|s|], [|ul|]) in
+    let blocked = type_of_blocked env blocked_u in
+    let t_sort = mkSort (Sorts.make s (Universe.make ul)) in
+    let p_sort = mkSort (Sorts.make sp (Universe.make upl)) in
+    let blocked_t t = mkApp (blocked, [|t|]) in
+    let p_type = mkProd (Context.anonR, blocked_t (mkRel 1), p_sort) in
+    let ih_type =
+      let block_t = mkPBlock (blocked_u, mkRel 3, [||], mkRel 1) in
+      mkProd (Context.nameR (Id.of_string "t"), mkRel 2, mkApp (mkRel 2, [|block_t|]))
+    in
+    let b_type = blocked_t (mkRel 3) in
+    let ret = mkApp (mkRel 3, [|mkRel 1|]) in
+    mkProd (Context.nameR (Id.of_string "T"), t_sort,
+      mkProd (Context.nameR (Id.of_string "P"), p_type,
+        mkProd (Context.nameR (Id.of_string "IH"), ih_type,
+          mkProd (Context.nameR (Id.of_string "b"), b_type, ret))))
+  | _ -> anomaly Pp.(str"universe instance for blocked_ind should have length 2 and quality length 2")
+
 let type_of_prim env u t =
   let module UM = UnsafeMonomorphic in
   let int_ty () = type_of_int env in
   let float_ty () = type_of_float env in
   let string_ty () = type_of_string env in
   let array_ty u a = mkApp(type_of_array env u, [|a|]) in
+  let blocked_ty u a = mkApp(type_of_blocked env u, [|a|]) in
   let bool_ty () =
     match (Environ.retroknowledge env).Retroknowledge.retro_bool with
     | Some ((ind,_),_) -> UM.mkInd ind
@@ -936,11 +1054,15 @@ let type_of_prim env u t =
     | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
   in
   let open CPrimitives in
+  match t with
+  | Blocked_ind -> type_of_blocked_ind env u
+  | _ ->
   let tr_prim_type (tr_type : ind_or_type -> constr) (type a) (ty : a prim_type) (t : a) = match ty with
     | PT_int63 -> int_ty t
     | PT_float64 -> float_ty t
     | PT_string -> string_ty t
     | PT_array -> array_ty (fst t) (tr_type (snd t))
+    | PT_blocked -> blocked_ty (fst t) (tr_type (snd t))
   in
   let tr_ind (tr_type : ind_or_type -> constr) (type t) (i : t prim_ind) (a : t) = match i, a with
     | PIT_bool, () -> bool_ty ()
@@ -953,13 +1075,20 @@ let type_of_prim env u t =
   let rec tr_type n = function
     | PITT_ind (i, a) -> tr_ind (tr_type n) i a
     | PITT_type (ty,t) -> tr_prim_type (tr_type n) ty t
-    | PITT_param i -> Constr.mkRel (n+i)
+    | PITT_param (i, xs) ->
+        let h = Constr.mkRel (n+i) in
+        if xs = [] then h else
+        let xs = Array.of_list (List.map (fun i -> Constr.mkRel (n+i)) xs) in
+        Constr.mkApp (h, xs)
+    | PITT_prod (x, a, b) ->
+        let a = tr_type n a in
+        let b = tr_type n b in
+        Constr.mkProd (x, a, b)
   in
   let rec nary_op n ret_ty = function
     | [] -> tr_type n ret_ty
-    | arg_ty :: r ->
-        Constr.mkProd (Context.nameR (Id.of_string "x"),
-                       tr_type n arg_ty, nary_op (n + 1) ret_ty r)
+    | (x, arg_ty) :: r ->
+        Constr.mkProd (x, tr_type n arg_ty, nary_op (n + 1) ret_ty r)
   in
   let params, args_ty, ret_ty = types t in
   assert (UVars.AbstractContext.size (univs t) = UVars.Instance.length u);

@@ -177,6 +177,9 @@ and constr_expr_r =
   | CPrim of prim_token
   | CDelimiters of delimiter_depth * string * constr_expr
   | CArray of instance_expr option * constr_expr array * constr_expr * constr_expr
+  | CBlock of instance_expr option * constr_expr * constr_expr
+  | CUnblock of constr_expr
+  | CRun of instance_expr option * constr_expr * constr_expr * constr_expr * constr_expr
 and constr_expr = constr_expr_r CAst.t
 
 and case_expr = constr_expr                 (* expression that is being matched *)

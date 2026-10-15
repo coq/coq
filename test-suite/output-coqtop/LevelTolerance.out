@@ -895,6 +895,7 @@ Entry simple_tactic is
   | IDENT "lazy"; strategy_flag; clause
   | IDENT "compute"; delta_flag; clause
   | IDENT "vm_compute"; OPT ref_or_pattern_occ; clause
+  | IDENT "vm_compute_blocking"; OPT ref_or_pattern_occ; clause
   | IDENT "native_compute"; OPT ref_or_pattern_occ; clause
   | IDENT "unfold"; LIST1 unfold_occ SEP ","; clause
   | IDENT "fold"; LIST1 constr; clause

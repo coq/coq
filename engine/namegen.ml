@@ -155,6 +155,8 @@ let hdchar env sigma c =
     | Float _ -> "f"
     | String _ -> "s"
     | Array _ -> "a"
+    | PBlock _ -> "b"
+    | PRun _ -> "r"
   in
   hdrec 0 c
 

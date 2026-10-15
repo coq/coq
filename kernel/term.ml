@@ -129,6 +129,17 @@ let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
 let it_mkProd_wo_LetIn   = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
 let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
 
+let expand_pblock entries body =
+  Array.fold_right
+    (fun entry body ->
+      let annot = Context.make_annot Anonymous entry.pbe_relevance in
+      let identity = mkLambda (annot, entry.pbe_type, mkRel 1) in
+      let forced = mkPRun (entry.pbe_type, entry.pbe_type, entry.pbe_value, identity) in
+      let value = it_mkLambda_or_LetIn forced entry.pbe_context in
+      let typ = it_mkProd_or_LetIn entry.pbe_type entry.pbe_context in
+      mkLetIn (annot, value, typ, body))
+    entries body
+
 (* Application with expected on-the-fly reduction *)
 
 let lambda_applist c l =

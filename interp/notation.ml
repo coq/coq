@@ -963,7 +963,7 @@ let compute_telescope env sigma typ =
     let typ, stk = whd_stack infos tab typ [] in
     match fterm_of typ with
     | FProd (na, c1, c2, e) ->
-      let c1 = EConstr.of_constr @@ term_of_fconstr c1 in
+      let c1 = EConstr.of_constr @@ term_of_fconstr ~info:infos ~tab c1 in
       let c2 = mk_clos (CClosure.usubs_lift e) c2 in
       apply_rec c2 ((EConstr.of_binder_annot na, c1) :: accu)
     | _ -> List.rev accu

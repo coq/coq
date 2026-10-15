@@ -13,7 +13,12 @@ open Environ
 
 type vm_flags = {
   vm_normalize_params : bool;
+  vm_reduce_blocks : bool;
+  (** If false, preserve ordinary block-body syntax, but still force captured
+      unblocks. The flag affects readback, not globally cached VM values. *)
 }
+
+val default_vm_flags : vm_flags
 
 (** {6 Reduction functions } *)
 val cbv_vm : ?flags:vm_flags -> env -> Evd.evar_map -> constr -> types -> constr

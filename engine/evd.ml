@@ -1631,7 +1631,7 @@ let rec kind sigma h c = match Constr.kind c with
   end
 | Meta _ | Sort _ | Cast _  | Prod _ | Lambda _ | LetIn _ | App _
 | Const _ | Ind _ | Construct _ | Case _ | Fix _ | CoFix _ | Proj _
-| Int _ | Float _ | String _ | Array _ as c0 ->
+| Int _ | Float _ | String _ | Array _ | PBlock _ | PRun _ as c0 ->
   (h, c0)
 
 let expand0 sigma h c =

@@ -163,6 +163,39 @@ let map_universes_opt_subst_with_binders next aux frel fqual funiv k c =
     let ty' = aux k ty in
     if u == u' && elems == elems' && def == def' && ty == ty' then c
     else mkArray (u',elems',def',ty')
+  | PBlock (u,ty,entries,t) ->
+    let u' = Instance.subst_fn flevel u in
+    let ty' = aux k ty in
+    let entries' = Array.mapi (fun hidden entry ->
+      let entry_k = iterate next hidden k in
+      let context' = Context.Rel.map_with_binders
+        (fun depth term -> aux (iterate next (depth - 1) entry_k) term)
+        entry.pbe_context
+      in
+      let context' = CList.Smart.map
+        (Context.Rel.Declaration.map_relevance frel) context'
+      in
+      let body_k = iterate next (Context.Rel.length entry.pbe_context) entry_k in
+      let type' = aux body_k entry.pbe_type in
+      let value' = aux body_k entry.pbe_value in
+      let relevance' = frel entry.pbe_relevance in
+      if context' == entry.pbe_context && type' == entry.pbe_type &&
+         value' == entry.pbe_value && relevance' == entry.pbe_relevance
+      then entry
+      else { pbe_context = context'; pbe_type = type'; pbe_value = value';
+             pbe_relevance = relevance' }) entries
+    in
+    let entries' = if Array.for_all2 (==) entries entries' then entries else entries' in
+    let t' = aux (iterate next (Array.length entries) k) t in
+    if u == u' && ty == ty' && entries == entries' && t == t' then c
+    else mkPBlock (u',ty',entries',t')
+  | PRun (ty,kty,b,cont) ->
+    let ty' = aux k ty in
+    let kty' = aux k kty in
+    let b' = aux k b in
+    let cont' = aux k cont in
+    if ty == ty' && kty == kty' && b == b' && cont == cont' then c
+    else mkPRun (ty',kty',b',cont')
   | Prod (na, t, u) ->
     let na' = Context.map_annot_relevance frel na in
     let t' = aux k t in

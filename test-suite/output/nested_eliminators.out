@@ -1657,7 +1657,7 @@ ArrowTrie_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
                        (ArrowTrie_all@{α ; u u0 u1 u2} A PA))
                     (l H)) ->
                  ArrowTrie_all@{α ; u u0 u1 u2} A PA (ATNode@{u u0} A a l).
-(* α ; =u =u0 *u1 *u2 | Set <= u2
+(* α ; =u =u0 *u1 =u2 | Set <= u2
                         u <= u0
                         u0 <= u2
                         u1 <= u2 *)

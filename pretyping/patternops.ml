@@ -225,6 +225,12 @@ let pattern_of_constr ~broken env sigma t =
     | String s -> PString s
     | Array (_u, t, def, ty) ->
       PArray (Array.map (pattern_of_constr env) t, pattern_of_constr env def, pattern_of_constr env ty)
+    | PBlock (_u, ty, entries, t) ->
+      let t = Term.expand_pblock entries t in
+      PApp (PVar (Id.of_string "__block"), [|pattern_of_constr env ty; pattern_of_constr env t|])
+    | PRun (ty, k, b, cont) ->
+      PApp (PVar (Id.of_string "__run"),
+            [|pattern_of_constr env ty; pattern_of_constr env k; pattern_of_constr env b; pattern_of_constr env cont|])
     in
   pattern_of_constr env t
 
@@ -590,7 +596,8 @@ let rec pat_of_raw metas vars : _ -> _ constr_pattern_r = DAst.with_loc_val (fun
   | GInt i -> PInt i
   | GFloat f -> PFloat f
   | GString s -> PString s
-  | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ | GArray _ ->
+  | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ | GArray _
+  | GPBlock _ | GPUnblock _ | GPRun _ ->
       err ?loc (Pp.str "Non supported pattern."))
 
 and pat_of_glob_in_context metas vars decls c =

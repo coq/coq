@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Ind Ltac2.Array.
+Require Ltac2.Ind Ltac2.Array Ltac2.List.
 
 Ltac2 @ external type : constr -> constr := "rocq-runtime.plugins.ltac2" "constr_type".
 (** Return the type of a term *)
@@ -92,6 +92,20 @@ tells Rocq which reduction rule to use for the pattern match *)
       [SProp] documentation in the refman for more information. *)
 ].
 
+Ltac2 Type pblock_decl := [
+  | PBlockAssum (binder)
+  (** A telescope assumption. Telescope declarations are stored outermost first. *)
+  | PBlockDef (binder, constr)
+  (** A telescope local definition, represented by its binder and value. *)
+].
+
+Ltac2 Type pblock_entry := [
+  | PBlockEntry (pblock_decl array, constr, constr, Relevance.t)
+  (** [PBlockEntry ctx ty value relevance] captures [value : Blocked ty]
+      under [ctx] and binds a hidden variable of the corresponding function
+      type with [relevance] in later entries and the block body. *)
+].
+
 Ltac2 Type kind := [
   | Rel (int)
   (** de Bruijn local variable, bound by a surrounding binder such as [forall], [fun], etc.
@@ -164,6 +178,11 @@ Ltac2 Type kind := [
   | String (pstring)
   | Array (instance, constr array, constr, constr)
    (** [Array u vals def t] is the primitive array literal [[|vals | def : t|]@{u}]. *)
+  | PBlock (instance, constr, pblock_entry array, constr)
+  (** [PBlock u ty entries body] binds one hidden variable per entry in
+      [body]. Entries are ordered from the outermost hidden binder to the
+      innermost one. *)
+  | PRun (constr, constr, constr, constr)
 ].
 
 Ltac2 @ external kind : constr -> kind := "rocq-runtime.plugins.ltac2" "constr_kind".
@@ -244,6 +263,59 @@ Local Ltac2 iter_invert (f : constr -> unit) (ci : case_invert) : unit :=
   | CaseInvert indices => Array.iter f indices
   end.
 
+Local Ltac2 binder_map (f : constr -> constr) (b : binder) : binder :=
+  Binder.unsafe_make (Binder.name b) (Binder.relevance b) (f (Binder.type b)).
+
+Local Ltac2 pblock_decl_binder (decl : pblock_decl) : binder :=
+  match decl with
+  | PBlockAssum binder => binder
+  | PBlockDef binder _ => binder
+  end.
+
+Local Ltac2 pblock_hidden_binder (entry : pblock_entry) : binder :=
+  match entry with
+  | PBlockEntry context ty _ relevance =>
+      let ty := Array.fold_right
+        (fun decl body =>
+          match decl with
+          | PBlockAssum binder => make (Prod binder body)
+          | PBlockDef binder value => make (LetIn binder value body)
+          end)
+        context ty
+      in
+      Binder.unsafe_make None relevance ty
+  end.
+
+Local Ltac2 iter_pblock_decl (f : constr -> unit) (decl : pblock_decl) : unit :=
+  match decl with
+  | PBlockAssum binder => f (Binder.type binder)
+  | PBlockDef binder value => f value; f (Binder.type binder)
+  end.
+
+Local Ltac2 iter_pblock_entry (f : constr -> unit) (entry : pblock_entry) : unit :=
+  match entry with
+  | PBlockEntry context ty value _ =>
+      Array.iter (iter_pblock_decl f) context;
+      f ty;
+      f value
+  end.
+
+Local Ltac2 iter_pblock_context_with_binders
+    (g : 'a -> binder -> 'a) (f : 'a -> constr -> unit)
+    (n : 'a) (context : pblock_decl array) : 'a :=
+  Array.fold_left
+    (fun n decl =>
+      match decl with
+      | PBlockAssum binder =>
+          f n (Binder.type binder);
+          g n binder
+      | PBlockDef binder value =>
+          f n value;
+          f n (Binder.type binder);
+          g n binder
+      end)
+    n context.
+
 (** [iter f c] iterates [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)
@@ -271,6 +343,10 @@ Ltac2 iter (f : constr -> unit) (c : constr) : unit :=
       Array.iter f bl
   | Array _u t def ty =>
       f ty; Array.iter f t; f def
+  | PBlock _u ty entries t =>
+      f ty; Array.iter (iter_pblock_entry f) entries; f t
+  | PRun ty k b cont =>
+      f ty; f k; f b; f cont
   end.
 
 (** [iter_with_binders g f n c] iterates [f n] on the immediate
@@ -306,15 +382,63 @@ Ltac2 iter_with_binders (g : 'a -> binder -> 'a) (f : 'a -> constr -> unit) (n :
       f n ty;
       Array.iter (f n) t;
       f n def
+  | PBlock _u ty entries t =>
+      f n ty;
+      let n := Array.fold_left
+        (fun n entry =>
+          match entry with
+          | PBlockEntry context ty value _ =>
+              let entry_n := iter_pblock_context_with_binders g f n context in
+              f entry_n ty;
+              f entry_n value;
+              g n (pblock_hidden_binder entry)
+          end)
+        n entries
+      in
+      f n t
+  | PRun ty k b cont =>
+      f n ty; f n k; f n b; f n cont
   end.
-
-Local Ltac2 binder_map (f : constr -> constr) (b : binder) : binder :=
-  Binder.unsafe_make (Binder.name b) (Binder.relevance b) (f (Binder.type b)).
 
 Local Ltac2 map_invert (f : constr -> constr) (iv : case_invert) : case_invert :=
   match iv with
   | NoInvert => NoInvert
   | CaseInvert indices => CaseInvert (Array.map f indices)
+  end.
+
+Local Ltac2 map_pblock_decl (f : constr -> constr) (decl : pblock_decl) : pblock_decl :=
+  match decl with
+  | PBlockAssum binder => PBlockAssum (binder_map f binder)
+  | PBlockDef binder value => PBlockDef (binder_map f binder) (f value)
+  end.
+
+Local Ltac2 map_pblock_entry (f : constr -> constr) (entry : pblock_entry) : pblock_entry :=
+  match entry with
+  | PBlockEntry context ty value relevance =>
+      PBlockEntry (Array.map (map_pblock_decl f) context) (f ty) (f value) relevance
+  end.
+
+Local Ltac2 map_pblock_context_with_binders
+    (lift : 'a -> binder -> 'a) (f : 'a -> constr -> constr)
+    (n : 'a) (context : pblock_decl array) : pblock_decl array * 'a :=
+  let result := Array.fold_left
+    (fun result decl =>
+      match result with
+      | (n, context) =>
+          match decl with
+          | PBlockAssum binder =>
+              let binder := binder_map (f n) binder in
+              (lift n binder, PBlockAssum binder :: context)
+          | PBlockDef binder value =>
+              let value := f n value
+              with binder := binder_map (f n) binder in
+              (lift n binder, PBlockDef binder value :: context)
+          end
+      end)
+    (n, []) context
+  in
+  match result with
+  | (n, context) => (Array.of_list (List.rev context), n)
   end.
 
 (** [map f c] maps [f] on the immediate subterms of [c]; it is
@@ -370,6 +494,17 @@ Ltac2 map (f : constr -> constr) (c : constr) : constr :=
       with t := Array.map f t
       with def := f def in
       make (Array u t def ty)
+  | PBlock u ty entries t =>
+      let ty := f ty
+      with entries := Array.map (map_pblock_entry f) entries
+      with t := f t in
+      make (PBlock u ty entries t)
+  | PRun ty k b cont =>
+      let ty := f ty
+      with k := f k
+      with b := f b
+      with cont := f cont in
+      make (PRun ty k b cont)
   end.
 
 (** [map_with_binders g f n c] maps [f n] on the immediate subterms of [c];
@@ -428,6 +563,38 @@ Ltac2 map_with_binders (lift : 'a -> binder -> 'a) (f : 'a -> constr -> constr) 
       with t := Array.map (f n) t
       with def := f n def in
       make (Array u t def ty)
+  | PBlock u ty entries t =>
+      let ty := f n ty in
+      let result := Array.fold_left
+        (fun result entry =>
+          match result with
+          | (n, entries) =>
+              match entry with
+              | PBlockEntry context entry_ty value relevance =>
+                  let mapped := map_pblock_context_with_binders lift f n context in
+                  match mapped with
+                  | (context, entry_n) =>
+                      let entry_ty := f entry_n entry_ty
+                      with value := f entry_n value in
+                      let entry := PBlockEntry context entry_ty value relevance in
+                      (lift n (pblock_hidden_binder entry), entry :: entries)
+                  end
+              end
+          end)
+        (n, []) entries
+      in
+      match result with
+      | (body_n, entries) =>
+          let entries := Array.of_list (List.rev entries)
+          with t := f body_n t in
+          make (PBlock u ty entries t)
+      end
+  | PRun ty k b cont =>
+      let ty := f n ty
+      with k := f n k
+      with b := f n b
+      with cont := f n cont in
+      make (PRun ty k b cont)
   end.
 
 End Unsafe.

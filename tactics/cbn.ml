@@ -405,6 +405,21 @@ struct
       | s -> None
     in aux n [] s
 
+  let split_n_app n s =
+    let rec aux n out s =
+      match s with
+      | _ when n = 0 -> Some (CList.rev out, s)
+      | App (i,a,j) as e :: s ->
+         let nb = j  - i + 1 in
+         if n >= nb then
+           aux (n - nb) (e::out) s
+         else
+           let p = i+n in
+           let out = CList.rev (App (i,a,p-1) :: out) in
+           Some (out, if j >= p then App(p,a,j)::s else s)
+      | s -> None
+    in aux n [] s
+
   let will_expose_iota args =
     List.exists
       (function (Fix (_,_,_,l) | Case (_,_,l) |
@@ -538,12 +553,6 @@ struct
       zip (inject (mkConstU c), args @ append_app [|f|] s)
   in
   zip s
-
-  (* Check if there is enough arguments on [stk] w.r.t. arity of [op] *)
-  let check_native_args op stk =
-    let nargs = CPrimitives.arity op in
-    let rargs = args_size stk in
-    nargs <= rargs
 
   let get_next_primitive_args kargs stk =
     let rec nargs = function
@@ -992,10 +1001,13 @@ let rec whd_state_gen ?csts flags env sigma =
             (match reduce_array_primitive sigma u p args with
              | Some t -> whrec cst_l' (t,s)
              | None ->
-               let args = Array.map CbnClos.force args in
-               match CredNative.red_prim env sigma p u args with
+               let forced_args = Array.map CbnClos.force args in
+               match CredNative.red_prim env sigma (env, sigma, flags) p u forced_args with
                | Some t -> whrec cst_l' (CbnClos.inject t,s)
-               | None -> ((CbnClos.inject (mkApp (mkConstU kn, args)), s), cst_l))
+               | None ->
+                 let t = CbnClos.mk_app (CbnClos.inject (mkConstU kn))
+                     (Array.to_list args) in
+                 ((t, s), cst_l))
       | _ -> None
     in
     let fold () =
@@ -1020,8 +1032,11 @@ let rec whd_state_gen ?csts flags env sigma =
          (lazy (Stack.zip sigma (x,fst (Stack.strip_app stack))));
       if RedFlags.red_set flags (RedFlags.fCONST c) then
        let u' = EInstance.kind sigma u in
-       match constant_value_in env sigma (c, u) with
-       | body ->
+       match
+         try Ok (constant_value_in env sigma (c, u))
+         with NotEvaluableConst e -> Error e
+       with
+       | Ok body ->
          begin
           (* Looks for ReductionBehaviour *)
             match ReductionBehaviour.get c with
@@ -1090,14 +1105,48 @@ let rec whd_state_gen ?csts flags env sigma =
                     whrec Cst_stack.empty (arg,cst_l::s')
                 end
               end
+
           end
-       | exception NotEvaluableConst (IsPrimitive (u,p)) when Stack.check_native_args p stack ->
-         let kargs = CPrimitives.kind p in
-         let (kargs,o) = Stack.get_next_primitive_args kargs stack in
-         (* Should not fail thanks to [check_native_args] *)
-         let (before,a,after) = Option.get o in
-         whrec Cst_stack.empty (a,Stack.Primitive(p,const,before,kargs,cst_l)::after)
-       | exception NotEvaluableConst (HasRules (u', b, r)) ->
+       | Error (IsPrimitive (_u,p)) ->
+         begin
+         let p_arity = CPrimitives.arity p in
+         let n_args = Stack.args_size stack in
+         (* Make sure we have enough arguments for the primitive. *)
+         if p_arity > n_args then fold () else
+         (* Find the first argument that must be reduced to weak-head normal form. *)
+         let nb_no_eval, kargs =
+           let rec nb_leading_no_eval_args n = function
+             | (CPrimitives.Kparam | CPrimitives.Karg) :: kargs ->
+               nb_leading_no_eval_args (n + 1) kargs
+             | (CPrimitives.Kwhnf :: _ | []) as kargs -> n, kargs
+           in
+           nb_leading_no_eval_args 0 (CPrimitives.kind p)
+         in
+         match kargs with
+         | _ :: kargs ->
+           let before, arg, after =
+             Option.get (Stack.strip_n_app nb_no_eval stack)
+           in
+           whrec Cst_stack.empty
+             (arg, Stack.Primitive (p, const, before, kargs, cst_l) :: after)
+         | [] ->
+           (* No argument needs head reduction; try the primitive immediately. *)
+           let args, stack = Option.get (Stack.split_n_app nb_no_eval stack) in
+           let args = Array.of_list (Option.get (Stack.list_of_app_stack args)) in
+           begin match reduce_array_primitive sigma (snd const) p args with
+           | Some t -> whrec cst_l (t, stack)
+           | None ->
+             let forced_args = Array.map CbnClos.force args in
+             match CredNative.red_prim env sigma (env, sigma, flags) p
+                     (snd const) forced_args with
+             | Some t -> whrec cst_l (CbnClos.inject t, stack)
+             | None ->
+               let t = CbnClos.mk_app (CbnClos.inject (mkConstU const))
+                   (Array.to_list args) in
+               ((t, stack), cst_l)
+           end
+         end
+       | Error (HasRules (u', b, r)) ->
          begin try
            let red_fun ctx =
              let env = push_rel_context ctx env in
@@ -1114,7 +1163,7 @@ let rec whd_state_gen ?csts flags env sigma =
                reduce_and_refold_fix whrec env sigma cst_l subs f out_sk
              | _ -> fold ()
          end
-       | exception NotEvaluableConst _ -> fold ()
+       | Error _ -> fold ()
       else fold ()
     | subs, Proj (p, r, c) when RedFlags.red_projection flags p ->
       (let npars = Projection.npars p in
@@ -1252,13 +1301,25 @@ let rec whd_state_gen ?csts flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | _, (Int _ | Float _ | String _ | Array _) ->
+    | subs, PRun (_ty, _k, b, cont) ->
+      let b = mk_clos subs b in
+      let cont = mk_clos subs cont in
+      let ((b', bstack), _) = whrec Cst_stack.empty (b, Stack.empty) in
+      begin match bstack, CbnClos.kind sigma b' with
+      | [], (body_subs, PBlock (_, _, entries, body)) ->
+        let body = EConstr.expand_pblock entries body in
+        let body = mk_clos body_subs body in
+        whrec cst_l (cont, Stack.append_app [|body|] stack)
+      | _ -> fold ()
+      end
+
+    | _, (Int _ | Float _ | String _ | Array _ | PBlock _) ->
       begin match reduce_primitive_value () with
       | Some res -> res
       | None ->
       begin match Stack.strip_app stack with
-        |args, (Stack.Cst {const;curr;remains;volatile;refold_after_iota;params=s';cst_l} :: s'') ->
-          let x' = clos_of_app_stack sigma x args in
+      | args, (Stack.Cst {const;curr;remains;volatile;refold_after_iota;params=s';cst_l} :: s'') ->
+        let x' = clos_of_app_stack sigma x args in
           begin match remains with
           | [] ->
             (match const with

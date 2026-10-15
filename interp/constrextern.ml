@@ -1061,6 +1061,21 @@ let rec extern depth0 inctx scopes (eenv:extern_env) r =
       extern depth inctx scopes eenv def,
       extern_typ depth scopes eenv ty)
 
+  | GPBlock (u,ty,c) ->
+    CBlock (extern_instance eenv.uvars u,
+            extern_typ depth scopes eenv ty,
+            extern depth true scopes eenv c)
+
+  | GPUnblock c ->
+    CUnblock (extern depth true scopes eenv c)
+
+  | GPRun (u,ty,k,b,cont) ->
+    CRun (extern_instance eenv.uvars u,
+          extern_typ depth scopes eenv ty,
+          extern_typ depth scopes eenv k,
+          extern depth true scopes eenv b,
+          extern depth true scopes eenv cont)
+
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
 and extern_typ depth (subentry, scopes) =

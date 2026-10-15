@@ -57,6 +57,20 @@ type constr = t
 
 type types = constr
 
+(** One occurrence captured from block-local [__unblock] syntax.  Entries are
+    ordered by occurrence.  [pbe_context], [pbe_type], and [pbe_value] are under
+    all earlier hidden entries; the type and value are additionally under the
+    whole (innermost-first) relative context.  The entry binds a hidden variable
+    of type [forall pbe_context, pbe_type] in later entries and the block body. *)
+type ('constr, 'types, 'r) pblock_entry = {
+  pbe_context : ('constr, 'types, 'r) Context.Rel.pt;
+  pbe_type : 'types;
+  pbe_value : 'constr;
+  pbe_relevance : 'r;
+}
+
+type block_entry = (constr, types, Sorts.relevance) pblock_entry
+
 (** {5 Functions for dealing with constr terms. }
   The following functions are intended to simplify and to uniform the
   manipulation of terms. Some of these functions may be overlapped with
@@ -75,6 +89,12 @@ val mkInt : Uint63.t -> constr
 
 (** Constructs an array *)
 val mkArray : UVars.Instance.t * constr array * constr * types -> constr
+
+(** Constructs a blocked value. *)
+val mkPBlock : UVars.Instance.t * types * block_entry array * constr -> constr
+
+(** Constructs a run elimination. *)
+val mkPRun : types * types * constr * constr -> constr
 
 (** Constructs a machine float number *)
 val mkFloat : Float64.t -> constr
@@ -289,6 +309,8 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Float     of Float64.t
   | String    of Pstring.t
   | Array     of 'univs * 'constr array * 'constr * 'types
+  | PBlock    of 'univs * 'types * ('constr, 'types, 'r) pblock_entry array * 'constr
+  | PRun      of 'types * 'types * 'constr * 'constr
   (** [Array (u,vals,def,t)] is an array of [vals] in type [t] with default value [def].
       [u] is a universe containing [t]. *)
 

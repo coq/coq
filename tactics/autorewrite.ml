@@ -217,6 +217,7 @@ struct
     | String s -> Some (DString s, [])
     | Array (_u,t,def,ty) ->
       Some (DArray, Array.to_list t @ [def ; ty])
+    | PBlock _ | PRun _ -> None
     in
     pat_of_constr c
 

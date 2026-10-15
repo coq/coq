@@ -292,6 +292,20 @@ let matches_core env sigma allow_bound_rels (binding_vars, pat) c =
   | PApp (PApp (h, a1), a2), _ ->
     sorec ctx env subst (PApp (h, Array.append a1 a2)) t
 
+  (* [pattern_of_constr] represents force primitives as virtual applications.
+     Match their operands structurally, just as ordinary application operands.
+     Block captures are expanded by the pattern producer, so expand them on
+     the term side as well. *)
+  | PApp (PVar id, [|pty; pbody|]), PBlock (_, ty, entries, body)
+      when Id.equal id (Id.of_string "__block") ->
+    let body = EConstr.expand_pblock entries body in
+    sorec ctx env (sorec ctx env subst pty ty) pbody body
+
+  | PApp (PVar id, [|pty; pk; pb; pcont|]), PRun (ty, k, b, cont)
+      when Id.equal id (Id.of_string "__run") ->
+    Array.fold_left2 (sorec ctx env) subst
+      [|pty; pk; pb; pcont|] [|ty; k; b; cont|]
+
   | PApp (PMeta meta, args1), App (c2, args2) ->
     let diff = Array.length args2 - Array.length args1 in
     if diff >= 0 then
@@ -614,6 +628,19 @@ let sub_match ?(closed=true) env sigma pat c =
     in
     let sub = (env,def) :: (env,ty) :: subargs env t in
     try_aux sub next_mk_ctx next
+  | PBlock (u,ty,entries,t) ->
+    let t = EConstr.expand_pblock entries t in
+    let next_mk_ctx = function
+    | [ty; t] -> mk_ctx (mkPBlock (u, ty, [||], t))
+    | _ -> assert false
+    in
+    try_aux [(env,ty); (env,t)] next_mk_ctx next
+  | PRun (ty,k,b,cont) ->
+    let next_mk_ctx = function
+    | [ty; k; b; cont] -> mk_ctx (mkPRun (ty, k, b, cont))
+    | _ -> assert false
+    in
+    try_aux [(env,ty); (env,k); (env,b); (env,cont)] next_mk_ctx next
   | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _|String _ ->
     next ()
   in

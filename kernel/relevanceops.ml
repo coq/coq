@@ -43,6 +43,12 @@ let relevance_of_projection_repr env (p, u) =
 let relevance_of_projection env (p,u) =
   relevance_of_projection_repr env (Names.Projection.repr p,u)
 
+let relevance_of_quality = function
+  | Sorts.Quality.QConstant Sorts.Quality.QSProp -> Sorts.Irrelevant
+  | Sorts.Quality.QConstant (Sorts.Quality.QProp | Sorts.Quality.QType)
+  | Sorts.Quality.QGlobal _ -> Sorts.Relevant
+  | Sorts.Quality.QVar q -> Sorts.RelevanceVar q
+
 let rec relevance_of_term_extra env extra lft c =
   match kind c with
   | Rel n ->
@@ -64,6 +70,13 @@ let rec relevance_of_term_extra env extra lft c =
   | Proj (_, r, _) -> r
   | Int _ | Float _ | String _ -> Sorts.Relevant
   | Array _ -> Sorts.Relevant
+  | PBlock (u, _, _, _) ->
+    let qualities, _ = UVars.Instance.to_array u in
+    begin match qualities with
+    | [|quality|] -> relevance_of_quality quality
+    | _ -> CErrors.anomaly Pp.(str "Malformed PBlock universe instance")
+    end
+  | PRun _ -> Sorts.Relevant
 
   | Meta _ | Evar _ -> Sorts.Relevant (* let's assume metas and evars are relevant for now *)
 

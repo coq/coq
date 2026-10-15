@@ -76,6 +76,8 @@ type instruction =
   | Kbranch of Label.t                  (** jump to label, is it needed ? *)
   | Kprim of CPrimitives.t * pconstant
   | Kcamlprim of caml_prim * Label.t
+  | Kblock of block_source
+  | Krun
 
 and bytecodes = instruction list
 

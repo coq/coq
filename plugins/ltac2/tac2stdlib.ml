@@ -410,6 +410,11 @@ let () =
     Tac2tactics.vm
 
 let () =
+  define "vm_blocking"
+    (red_context @-> ret reduction)
+    Tac2tactics.vm_blocking
+
+let () =
   define "native"
     (red_context @-> ret reduction)
     Tac2tactics.native

@@ -2033,6 +2033,67 @@ value rocq_interprete
         Next;
       }
 
+      Instruct(RUN) {
+        static const value *callback = NULL;
+        value args[4];
+        print_instr("RUN");
+        if (callback == NULL) callback = caml_named_value("rocq_vm_run");
+        args[0] = accu;
+        args[1] = sp[0];
+        args[2] = sp[1];
+        args[3] = sp[2];
+        Setup_for_caml_call;
+        accu = caml_callbackN_exn(*callback, 4, args);
+        /* Forcing can re-enter the VM, grow its stack, and extend globals. */
+        sp = rocq_sp;
+        Restore_after_caml_call;
+        Handle_potential_exception(accu);
+        rocq_global_data = Field(accu, 1);
+        rocq_atom_tbl = Field(accu, 2);
+        accu = Field(accu, 0);
+        sp += 3;
+        Next;
+      }
+
+      Instruct(BLOCK) {
+        value captures;
+        print_instr("BLOCK");
+        captures = sp[0];
+        Setup_for_caml_call;
+        accu = caml_callback2_exn(Field(rocq_global_data, *pc++), accu, captures);
+        Restore_after_caml_call;
+        Handle_potential_exception(accu);
+        sp++;
+        Next;
+      }
+
+      Instruct(UNBLOCK) {
+        print_instr("UNBLOCK");
+        caml_failwith("Coq VM: UNBLOCK not implemented");
+      }
+
+      Instruct(BLOCKEDIND) {
+        static const value *callback = NULL;
+        value args[5];
+        print_instr("BLOCKEDIND");
+        if (callback == NULL) callback = caml_named_value("rocq_vm_blocked_ind");
+        args[0] = accu;
+        args[1] = sp[0];
+        args[2] = sp[1];
+        args[3] = sp[2];
+        args[4] = sp[3];
+        Setup_for_caml_call;
+        accu = caml_callbackN_exn(*callback, 5, args);
+        sp = rocq_sp;
+        Restore_after_caml_call;
+        Handle_potential_exception(accu);
+        rocq_global_data = Field(accu, 1);
+        rocq_atom_tbl = Field(accu, 2);
+        accu = Field(accu, 0);
+        sp += 4;
+        Next;
+      }
+
 /* Debugging and machine control */
 
       Instruct(STOP){

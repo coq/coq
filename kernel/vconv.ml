@@ -11,6 +11,7 @@ open Vmsymtable
 type 'a fail = { fail : 'r. 'a -> 'r }
 
 exception NotConvertible
+exception BlockedPrimitive
 
 let fail_check state check box = match state with
 | Result.Ok state -> (state, check, box)
@@ -76,6 +77,10 @@ let rec conv_val env pb k v1 v2 cu =
 and conv_whd env pb k whd1 whd2 cu =
 (*  Pp.(msg_debug (str "conv_whd(" ++ pr_whd whd1 ++ str ", " ++ pr_whd whd2 ++ str ")")) ; *)
   match whd1, whd2 with
+  | Vaccu ((Ablock _ | Arun _), _), _
+  | _, Vaccu ((Ablock _ | Arun _), _) ->
+    (* Strong VM readback is not the kernel's structural block conversion. *)
+    raise BlockedPrimitive
   | Vprod p1, Vprod p2 ->
       let cu = conv_val env CONV k (dom p1) (dom p2) cu in
       conv_fun env pb k (codom p1) (codom p2) cu
@@ -168,6 +173,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
     else raise NotConvertible
   | Asort s1, Asort s2 ->
     sort_cmp_universes pb s1 s2 cu
+  | Ablock _, _ | Arun _, _ -> raise BlockedPrimitive
   | Asort _ , _ | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =
@@ -254,6 +260,9 @@ let vm_conv_gen (type err) cv_pb sigma env univs t1 t2 =
   with
   | NotConvertible -> Result.Error None
   | Error e -> Result.Error (Some e)
+  | BlockedPrimitive ->
+    Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val
+      TransparentState.full env univs t1 t2
   | Not_found | Invalid_argument _ | Vmerrors.CompileError _ ->
     warn_bytecode_compiler_failed ();
     Conversion.generic_conv cv_pb ~l2r:false ~evars:sigma.Genlambda.evars_val

@@ -664,7 +664,7 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
           | _ -> do_finalize dyn_infos )
         | Cast (t, _, _) -> build_proof do_finalize {dyn_infos with info = t}
         | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _
-         |Int _ | Float _ | String _ ->
+         |Int _ | Float _ | String _ | PBlock _ | PRun _ ->
           do_finalize dyn_infos
         | App (_, _) -> (
           let f, args = decompose_app_list sigma dyn_infos.info in
@@ -677,7 +677,7 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
             assert false (* we have collected all the app in decompose_app *)
           | Proj _ -> assert false (*FIXME*)
           | Var _ | Construct _ | Rel _ | Evar _ | Meta _ | Ind _ | Sort _
-           |Prod _ ->
+           |Prod _ | PBlock _ | PRun _ ->
             let new_infos = {dyn_infos with info = (f, args)} in
             build_proof_args env sigma do_finalize new_infos
           | Const (c, _) when not (List.exists (fun kn -> Environ.QConstant.equal env c kn) fnames) ->

@@ -64,6 +64,9 @@ val set_strategy :
 (** call by value normalisation function using the virtual machine *)
 val cbv_vm : reduction_function
 
+(** VM normalisation preserving ordinary block-body syntax. *)
+val cbv_vm_blocking : reduction_function
+
 (** [subst_red_expr sub c] performs the substitution [sub] on all kernel
    names appearing in [c] *)
 val subst_red_expr : Mod_subst.substitution -> red_expr -> red_expr

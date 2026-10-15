@@ -622,6 +622,9 @@ type pretyper = {
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
   pretype_string : pretyper -> Pstring.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_instance option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_block : pretyper -> glob_instance option * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_unblock : pretyper -> glob_constr -> unsafe_judgment pretype_fun;
+  pretype_run : pretyper -> glob_instance option * glob_constr * glob_constr * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_type : pretyper -> glob_constr -> unsafe_type_judgment pretype_fun;
 }
 
@@ -671,6 +674,12 @@ let eval_pretyper self ~flags tycon env sigma t =
     self.pretype_string self s ?loc ~flags tycon env sigma
   | GArray (u,t,def,ty) ->
     self.pretype_array self (u,t,def,ty) ?loc ~flags tycon env sigma
+  | GPBlock (u,ty,c) ->
+    self.pretype_block self (u,ty,c) ?loc ~flags tycon env sigma
+  | GPUnblock c ->
+    self.pretype_unblock self c ?loc ~flags tycon env sigma
+  | GPRun (u,ty,kty,b,k) ->
+    self.pretype_run self (u,ty,kty,b,k) ?loc ~flags tycon env sigma
 
 let eval_type_pretyper self ~flags tycon env sigma t =
   self.pretype_type self t ~flags tycon env sigma
@@ -1605,6 +1614,58 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
         in
         discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon
 
+  let check_leq_sort_with_quality sigma s1 s2 =
+    let sigma = Evd.set_leq_sort sigma s1 s2 in
+    let q1 = Sorts.quality (ESorts.kind sigma s1) in
+    let q2 = Sorts.quality (ESorts.kind sigma s2) in
+    Evd.add_constraints sigma (UnivProblem.Set.singleton (UnivProblem.QLeq (q1, q2)))
+
+  let force_instance_length_error ?loc actual expect =
+    user_err ?loc Pp.(str "Wrong number of universes for Force primitive: got " ++
+                      int actual ++ str ", expected " ++ int expect ++ str ".")
+
+  let explicit_force_instance ?loc sigma actual_sorts (qs,us) =
+    let actual = List.length qs + List.length us in
+    let expect = 2 * Array.length actual_sorts in
+    if not (Int.equal actual expect) then force_instance_length_error ?loc actual expect;
+    let qs = Array.of_list qs in
+    let us = Array.of_list us in
+    let sigma, qs = Array.fold_left_map (glob_quality ?loc) sigma qs in
+    let sigma, us = Array.fold_left_map (glob_level ?loc) sigma us in
+    let sigma = Array.fold_left2 (fun sigma s (q,u) ->
+        let expected = ESorts.make (Sorts.make q (Univ.Universe.make u)) in
+        check_leq_sort_with_quality sigma s expected)
+        sigma actual_sorts (Array.map2 (fun q u -> q,u) qs us)
+    in
+    sigma, UVars.Instance.of_array (qs, us)
+
+  let implicit_force_instance ?loc env sigma actual_sorts =
+    let fold sigma s =
+      let s = ESorts.kind sigma s in
+      let q = match Sorts.quality s with
+        | Sorts.Quality.QVar _ as q when not (QGraph.mem q (Environ.qualities !!env)) -> Sorts.Quality.qtype
+        | q -> q
+      in
+      let u = Sorts.univ_of_sort s in
+      if Univ.Universe.is_type0 u then sigma, (q, Univ.Level.set)
+      else match Univ.Universe.level u with
+      | Some u -> sigma, (q, u)
+      | None ->
+        let sigma, u = new_univ_level_variable ?loc UState.univ_flexible sigma in
+        let expected = ESorts.make (Sorts.make q (Univ.Universe.make u)) in
+        let sigma = check_leq_sort_with_quality sigma (ESorts.make s) expected in
+        sigma, (q, u)
+    in
+    let sigma, qls = Array.fold_left_map fold sigma actual_sorts in
+    let qs = Array.map fst qls in
+    let us = Array.map snd qls in
+    let u = UVars.Instance.of_array (qs, us) in
+    sigma, EInstance.kind sigma (Evd.normalize_universe_instance sigma (EInstance.make u))
+
+  let force_instance ?loc env sigma actual_sorts = function
+    | Some u -> explicit_force_instance ?loc sigma actual_sorts u
+    | None -> implicit_force_instance ?loc env sigma actual_sorts
+
   let pretype_array self (u,t,def,ty) =
     fun ?loc ~flags tycon env sigma ->
     let array_kn = match (Environ.retroknowledge !!env).Retroknowledge.retro_array with
@@ -1647,6 +1708,386 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     } in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
+  let blocked_type env = match (Environ.retroknowledge !!env).Retroknowledge.retro_blocked with
+    | Some c -> c
+    | None -> CErrors.user_err Pp.(str "The type blocked terms must be registered before this construction can be typechecked.")
+
+  let dest_blocked_type ?loc env sigma ty =
+    let blocked_kn = blocked_type env in
+    match EConstr.kind sigma (whd_all !!env sigma ty) with
+    | App (hd, [|arg|]) ->
+      begin match EConstr.kind sigma hd with
+      | Const (c,u) when Constant.UserOrd.equal c blocked_kn ->
+        EInstance.kind sigma u, arg
+      | _ -> user_err ?loc Pp.(str "Expected a blocked term.")
+      end
+    | _ -> user_err ?loc Pp.(str "Expected a blocked term.")
+
+  let is_type_hole c = match DAst.get c with
+    | GHole _ -> true
+    | _ -> false
+
+  let marker_evar sigma markers continuation =
+    match EConstr.kind sigma continuation with
+    | Evar (key, _) when Evar.Set.mem key markers -> Some key
+    | _ -> None
+
+  let count_unblocks sigma markers c =
+    let rec count c =
+      match EConstr.kind sigma c with
+      | PRun (ty, _, value, continuation)
+        when Option.has_some (marker_evar sigma markers continuation) ->
+        count ty + count value + 1
+      | PBlock (_, ty, _, _) -> count ty
+      | _ -> EConstr.fold sigma (fun total child -> total + count child) 0 c
+    in
+    count c
+
+  let force_sort_of env sigma ty =
+    if UnivGen.QualityOrSet.is_set (Retyping.get_sort_quality_or_set_of env sigma ty)
+    then ESorts.make Sorts.set
+    else Retyping.get_sort_of env sigma ty
+
+  let blockify_unblocks env sigma markers body =
+    let total = count_unblocks sigma markers body in
+    if Int.equal total 0 then [||], body
+    else
+      let dummy_annot = Context.make_annot Anonymous ERelevance.relevant in
+      let rec push_dummies n env =
+        if Int.equal n 0 then env
+        else push_dummies (n - 1)
+          (EConstr.push_rel (Context.Rel.Declaration.LocalAssum (dummy_annot, EConstr.mkProp)) env)
+      in
+      let root_env = push_dummies total env in
+      let entries_rev = ref [] in
+      let hidden_env () =
+        List.fold_left
+          (fun env entry ->
+            let hidden_type = EConstr.it_mkProd_or_LetIn entry.pbe_type entry.pbe_context in
+            let annot = Context.make_annot Anonymous entry.pbe_relevance in
+            EConstr.push_rel (Context.Rel.Declaration.LocalAssum (annot, hidden_type)) env)
+          env (List.rev !entries_rev)
+      in
+      let push_context env visible context =
+        List.fold_right
+          (fun decl (env, visible) -> EConstr.push_rel decl env, decl :: visible)
+          context (env, visible)
+      in
+      let thin_visible_context visible terms =
+        let declarations = Array.of_list visible in
+        let depth = Array.length declarations in
+        let selected = Array.make (depth + 1) false in
+        let processed = Array.make (depth + 1) false in
+        let mark_term ~start ~length term =
+          let rec scan binders term =
+            match EConstr.kind sigma term with
+            | Rel index ->
+              let index = index - binders in
+              if 0 < index && index <= length then
+                selected.(start + index) <- true
+            | _ -> EConstr.iter_with_binders sigma succ scan binders term
+          in
+          scan 0 term
+        in
+        List.iter (mark_term ~start:0 ~length:depth) terms;
+        let rec close_dependencies () =
+          let changed = ref false in
+          for index = 1 to depth do
+            if selected.(index) && not processed.(index) then begin
+              processed.(index) <- true;
+              changed := true;
+              let outer = depth - index in
+              Context.Rel.Declaration.iter_constr
+                (mark_term ~start:index ~length:outer)
+                declarations.(index - 1)
+            end
+          done;
+          if !changed then close_dependencies ()
+        in
+        close_dependencies ();
+        let thin_scope selected term =
+          let length = Array.length selected - 1 in
+          let prefix = Array.make (length + 1) 0 in
+          for index = 1 to length do
+            prefix.(index) <- prefix.(index - 1) + if selected.(index) then 1 else 0
+          done;
+          let dropped = length - prefix.(length) in
+          let rec thin binders term =
+            match EConstr.kind sigma term with
+            | Rel index ->
+              let index = index - binders in
+              if index <= 0 then term
+              else if index <= length then begin
+                assert selected.(index);
+                EConstr.mkRel (binders + prefix.(index))
+              end
+              else EConstr.mkRel (binders + index - dropped)
+            | _ -> EConstr.map_with_binders sigma succ thin binders term
+          in
+          thin 0 term
+        in
+        let context, arguments =
+          let rec build index context arguments = function
+            | [] -> List.rev context, Array.of_list arguments
+            | declaration :: rest ->
+              if not selected.(index) then build (index + 1) context arguments rest
+              else
+                let outer_length = depth - index in
+                let outer_selected = Array.make (outer_length + 1) false in
+                for outer_index = 1 to outer_length do
+                  outer_selected.(outer_index) <- selected.(index + outer_index)
+                done;
+                let declaration = Context.Rel.Declaration.map_constr
+                  (thin_scope outer_selected) declaration
+                in
+                let arguments = match declaration with
+                  | Context.Rel.Declaration.LocalAssum _ -> EConstr.mkRel index :: arguments
+                  | Context.Rel.Declaration.LocalDef _ -> arguments
+                in
+                build (index + 1) (declaration :: context) arguments rest
+          in
+          build 1 [] [] visible
+        in
+        context, List.map (thin_scope selected) terms, arguments
+      in
+      let rec transform env visible c =
+        match EConstr.kind sigma c with
+        | Rel _ | Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _
+        | Int _ | Float _ | String _ -> c
+        | Cast (value, kind, ty) ->
+          EConstr.mkCast (transform env visible value, kind, transform env visible ty)
+        | Prod (na, domain, codomain) ->
+          let domain = transform env visible domain in
+          let decl = Context.Rel.Declaration.LocalAssum (na, domain) in
+          let codomain = transform (EConstr.push_rel decl env) (decl :: visible) codomain in
+          EConstr.mkProd (na, domain, codomain)
+        | Lambda (na, domain, body) ->
+          let domain = transform env visible domain in
+          let decl = Context.Rel.Declaration.LocalAssum (na, domain) in
+          let body = transform (EConstr.push_rel decl env) (decl :: visible) body in
+          EConstr.mkLambda (na, domain, body)
+        | LetIn (na, value, ty, body) ->
+          let value = transform env visible value in
+          let ty = transform env visible ty in
+          let decl = Context.Rel.Declaration.LocalDef (na, value, ty) in
+          let body = transform (EConstr.push_rel decl env) (decl :: visible) body in
+          EConstr.mkLetIn (na, value, ty, body)
+        | App (head, args) ->
+          let head = transform env visible head in
+          let args = Array.map (transform env visible) args in
+          EConstr.mkApp (head, args)
+        | Proj (projection, relevance, value) ->
+          EConstr.mkProj (projection, relevance, transform env visible value)
+        | Evar existential ->
+          EConstr.mkEvar (EConstr.map_existential sigma (transform env visible) existential)
+        | Case (ci, u, pms, (predicate, predicate_relevance), inversion, scrutinee, branches) ->
+          let pms = Array.map (transform env visible) pms in
+          let inversion = match inversion with
+            | NoInvert -> NoInvert
+            | CaseInvert { indices } ->
+              CaseInvert { indices = Array.map (transform env visible) indices }
+          in
+          let scrutinee = transform env visible scrutinee in
+          let case = (ci, u, pms, (predicate, predicate_relevance), inversion, scrutinee, branches) in
+          let ci, _, pms, (annotated_predicate, _), _, _, annotated_branches =
+            EConstr.annotate_case env sigma case
+          in
+          let transform_scoped (names, _) (context, scoped_body) =
+            let scoped_env, scoped_visible = push_context env visible context in
+            names, transform scoped_env scoped_visible scoped_body
+          in
+          let predicate = transform_scoped predicate annotated_predicate in
+          let branches = Array.map2 transform_scoped branches annotated_branches in
+          EConstr.mkCase (ci, u, pms, (predicate, predicate_relevance), inversion, scrutinee, branches)
+        | Fix (index, (names, types, bodies)) ->
+          let types = Array.map (transform env visible) types in
+          let recursive = Array.map2_i
+            (fun i name ty ->
+              Context.Rel.Declaration.LocalAssum (name, EConstr.Vars.lift i ty))
+            names types
+          in
+          let body_env, body_visible = Array.fold_left
+            (fun (env, visible) decl -> EConstr.push_rel decl env, decl :: visible)
+            (env, visible) recursive
+          in
+          let bodies = Array.map (transform body_env body_visible) bodies in
+          EConstr.mkFix (index, (names, types, bodies))
+        | CoFix (index, (names, types, bodies)) ->
+          let types = Array.map (transform env visible) types in
+          let recursive = Array.map2_i
+            (fun i name ty ->
+              Context.Rel.Declaration.LocalAssum (name, EConstr.Vars.lift i ty))
+            names types
+          in
+          let body_env, body_visible = Array.fold_left
+            (fun (env, visible) decl -> EConstr.push_rel decl env, decl :: visible)
+            (env, visible) recursive
+          in
+          let bodies = Array.map (transform body_env body_visible) bodies in
+          EConstr.mkCoFix (index, (names, types, bodies))
+        | Array (u, values, default, ty) ->
+          EConstr.mkArray (u, Array.map (transform env visible) values,
+            transform env visible default, transform env visible ty)
+        | PBlock (u, ty, entries, nested_body) ->
+          EConstr.mkPBlock (u, transform env visible ty, entries, nested_body)
+        | PRun (ty, _result_ty, value, continuation)
+          when Option.has_some (marker_evar sigma markers continuation) ->
+          capture_unblock env visible ty value
+        | PRun (ty, result_ty, blocked, continuation) ->
+          EConstr.mkPRun (transform env visible ty, transform env visible result_ty,
+            transform env visible blocked, transform env visible continuation)
+      and capture_unblock env visible ty value =
+          let ty = transform env visible ty in
+          let value = transform env visible value in
+          let previous = List.length !entries_rev in
+          let remove = total - previous in
+          let depth = Context.Rel.length visible in
+          let visible = EConstr.Vars.lift_rel_context (-remove) visible in
+          let ty = EConstr.Vars.liftn (-remove) (depth + 1) ty in
+          let value = EConstr.Vars.liftn (-remove) (depth + 1) value in
+          let context, terms, args = thin_visible_context visible [ty; value] in
+          let ty, value = match terms with
+            | [ty; value] -> ty, value
+            | _ -> assert false
+          in
+          let entry_env = EConstr.push_rel_context context (hidden_env ()) in
+          let relevance = ESorts.relevance_of_sort (force_sort_of entry_env sigma ty) in
+          let entry = {
+            pbe_context = context;
+            pbe_type = ty;
+            pbe_value = value;
+            pbe_relevance = relevance;
+          } in
+          entries_rev := entry :: !entries_rev;
+          let hidden = EConstr.mkRel (depth + total - previous) in
+          if Array.is_empty args then hidden else EConstr.mkApp (hidden, args)
+      in
+      let body = EConstr.Vars.lift total body in
+      let body = transform root_env [] body in
+      let entries = Array.of_list (List.rev !entries_rev) in
+      assert (Int.equal total (Array.length entries));
+      entries, body
+
+  let rec pretype_block self (u,ty,c) =
+    fun ?loc ~flags tycon env sigma ->
+    let markers = ref Evar.Set.empty in
+    let block_self = {
+      self with pretype_unblock = pretype_unblock_in_block markers
+    } in
+    let sigma, tyj, cj =
+      if is_type_hole ty then
+        let sigma, cj = eval_pretyper block_self ~flags empty_tycon env sigma c in
+        let sigma, tyj = eval_type_pretyper self ~flags (mk_valcon cj.uj_type) env sigma ty in
+        sigma, tyj, cj
+      else
+        let sigma, tyj = eval_type_pretyper self ~flags empty_valcon env sigma ty in
+        let sigma, cj = eval_pretyper block_self ~flags (mk_tycon tyj.utj_val) env sigma c in
+        sigma, tyj, cj
+    in
+    let ty = nf_evar sigma tyj.utj_val in
+    let sigma = check_actual_type !!env sigma cj ty in
+    let s = force_sort_of !!env sigma ty in
+    let sigma, u = force_instance ?loc env sigma [|s|] u in
+    let blocked = EConstr.of_constr (Typeops.type_of_blocked !!env u) in
+    let entries, body = blockify_unblocks !!env sigma !markers cj.uj_val in
+    let sigma = Evar.Set.fold (fun key sigma -> Evd.remove sigma key) !markers sigma in
+    let j = {
+      uj_val = EConstr.mkPBlock(EInstance.make u, ty, entries, body);
+      uj_type = EConstr.mkApp(blocked,[|ty|])
+    } in
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
+
+  and pretype_unblock_in_block markers self b =
+    fun ?loc ~flags tycon env sigma ->
+    let sigma, bj = eval_pretyper self ~flags empty_tycon env sigma b in
+    let _u0, bty = dest_blocked_type ?loc env sigma bj.uj_type in
+    let ty = nf_evar sigma bty in
+    let relevance = ESorts.relevance_of_sort (force_sort_of !!env sigma ty) in
+    let annot = Context.make_annot Anonymous relevance in
+    let continuation_type = EConstr.mkProd
+      (annot, ty, EConstr.Vars.lift 1 ty)
+    in
+    let sigma, continuation = Evarutil.new_evar
+      ~src:(loc, Evar_kinds.InternalHole) ~candidates:[] !!env sigma continuation_type
+    in
+    let marker = match EConstr.kind sigma continuation with
+      | Evar (key, _) -> key
+      | _ -> assert false
+    in
+    markers := Evar.Set.add marker !markers;
+    let j = {
+      uj_val = EConstr.mkPRun(ty, ty, bj.uj_val, continuation);
+      uj_type = ty
+    } in
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
+
+  let pretype_unblock _self _b =
+    fun ?loc ~flags:_ _tycon _env _sigma ->
+      user_err ?loc Pp.(str "__unblock may only appear inside the body of __block.")
+
+  let pretype_run self (u,ty,kty,b,k) =
+    fun ?loc ~flags tycon env sigma ->
+    let sigma, bj = eval_pretyper self ~flags empty_tycon env sigma b in
+    let _u0, bty = dest_blocked_type ?loc env sigma bj.uj_type in
+    let sigma, tyj =
+      if is_type_hole ty then eval_type_pretyper self ~flags (mk_valcon bty) env sigma ty
+      else eval_type_pretyper self ~flags empty_valcon env sigma ty
+    in
+    let sigma =
+      try Evarconv.unify_leq_delay !!env sigma tyj.utj_val bty
+      with Evarconv.UnableToUnify (sigma,e) -> error_actual_type ?loc !!env sigma bj tyj.utj_val e
+    in
+    let ty = nf_evar sigma tyj.utj_val in
+    let unblocked =
+      let relevance = ESorts.relevance_of_sort (force_sort_of !!env sigma bty) in
+      let annot = Context.make_annot Anonymous relevance in
+      let identity = EConstr.mkLambda (annot, bty, EConstr.mkRel 1) in
+      EConstr.mkPRun (bty, bty, bj.uj_val, identity)
+    in
+    let sigma, kty, kj =
+      if is_type_hole kty then
+        let r = ESorts.relevance_of_sort (force_sort_of !!env sigma ty) in
+        let _var, env' =
+          push_rel sigma (LocalAssum (Context.make_annot Anonymous r, ty)) env
+        in
+        let sigma, dep_kty = new_type_evar env' sigma ~src:(loc,Evar_kinds.InternalHole) in
+        let sigma, kj = eval_pretyper self ~flags (mk_tycon (EConstr.mkProd (EConstr.anonR, ty, dep_kty))) env sigma k in
+        let res_ty = nf_evar sigma (EConstr.Vars.subst1 unblocked dep_kty) in
+        let sigma, ktyj = eval_type_pretyper self ~flags (mk_valcon res_ty) env sigma kty in
+        sigma, nf_evar sigma ktyj.utj_val, kj
+      else
+        let sigma, ktyj = eval_type_pretyper self ~flags empty_valcon env sigma kty in
+        let kty = nf_evar sigma ktyj.utj_val in
+        let sigma, kj = eval_pretyper self ~flags (mk_tycon (EConstr.mkProd (EConstr.anonR, ty, EConstr.Vars.lift 1 kty))) env sigma k in
+        sigma, kty, kj
+    in
+    let sty = force_sort_of !!env sigma ty in
+    let sk = force_sort_of !!env sigma kty in
+    let sigma =
+      let qsty = Sorts.quality (ESorts.kind sigma sty) in
+      let qsk = Sorts.quality (ESorts.kind sigma sk) in
+      if Sorts.Quality.equal qsty Sorts.Quality.qtype || Sorts.Quality.equal qsty Sorts.Quality.qprop then sigma
+      else
+        try Evd.set_elim_to sigma qsty qsk
+        with QGraph.EliminationError _ | UGraph.UniverseInconsistency _ ->
+          user_err ?loc Pp.(str "This run eliminates into an invalid sort.")
+    in
+    let sigma = match u with
+      | None -> sigma
+      | Some _ ->
+        let sigma, u = force_instance ?loc env sigma [|sty; sk|] u in
+        let qsu, usu = UVars.Instance.to_array u in
+        let uty = UVars.Instance.of_array ([|qsu.(0)|], [|usu.(0)|]) in
+        let blocked = EConstr.of_constr (Typeops.type_of_blocked !!env uty) in
+        check_actual_type !!env sigma bj (EConstr.mkApp(blocked,[|ty|]))
+    in
+    let sigma = check_actual_type !!env sigma kj (EConstr.mkProd (EConstr.anonR, ty, EConstr.Vars.lift 1 kty)) in
+    let j = {
+      uj_val = EConstr.mkPRun(ty, kty, bj.uj_val, kj.uj_val);
+      uj_type = kty
+    } in
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
+
 end
 
 (* [pretype tycon env sigma lvar lmeta cstr] attempts to type [cstr] *)
@@ -1677,6 +2118,9 @@ let default_pretyper =
     pretype_float = pretype_float;
     pretype_string = pretype_string;
     pretype_array = pretype_array;
+    pretype_block = pretype_block;
+    pretype_unblock = pretype_unblock;
+    pretype_run = pretype_run;
     pretype_type = pretype_type;
   }
 

@@ -49,6 +49,7 @@ struct
   type value = Nativevalues.t
   let as_value = as_value
   let check_inductive _ _ = ()
+  let preserve_blocks = false
 end
 
 module Lambda = Genlambda.Make(Val)

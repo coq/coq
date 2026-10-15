@@ -473,6 +473,7 @@ let subst_retro_action subst action =
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind c with
+      | PBlock _ | PRun _ | Array _ -> Constr.map func c
       | Const kn -> (try f' kn with No_subst -> c)
       | Proj (p,r,t) ->
           let p' = Projection.map f p in

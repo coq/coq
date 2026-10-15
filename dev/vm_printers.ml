@@ -63,6 +63,8 @@ and ppstack s =
 and ppatom a =
   match a with
   | Aid idk -> print_idkey idk
+  | Ablock _ -> print_string "Block(...)"
+  | Arun _ -> print_string "Run(...)"
   | Asort u -> print_string "Sort(...)"
   | Aind(sp,i) ->  print_string "Ind(";
       print_string (MutInd.to_string sp);

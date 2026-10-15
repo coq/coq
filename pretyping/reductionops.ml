@@ -226,13 +226,13 @@ sig
   val append_app_list : EConstr.t list -> t -> t
   val strip_app : t -> t * t
   val strip_n_app : int -> t -> (t * EConstr.t * t) option
+  val split_n_app : int -> t -> (t * t) option
   val not_purely_applicative : t -> bool
   val list_of_app_stack : t -> constr list option
   val args_size : t -> int
   val tail : int -> t -> t
   val nth : t -> int -> EConstr.t
   val zip : evar_map -> constr * t -> constr
-  val check_native_args : CPrimitives.t -> t -> bool
   val get_next_primitive_args : CPrimitives.args_red -> t -> CPrimitives.args_red * (t * EConstr.t * t) option
   val expand_case : env -> evar_map -> case_stk -> case_info * EInstance.t * constr array * ((rel_context * constr) * ERelevance.t) * (rel_context * constr) array
 end =
@@ -374,6 +374,22 @@ struct
       | s -> None
     in aux n [] s
 
+  let split_n_app n s =
+    let rec split n out s =
+      match s with
+      | _ when n = 0 -> Some (CList.rev out, s)
+      | App (i,a,j) as e :: s ->
+        let nb = j - i + 1 in
+        if n >= nb then
+          split (n - nb) (e :: out) s
+        else
+          let p = i + n in
+          let out = CList.rev (App (i,a,p-1) :: out) in
+          Some (out, if j >= p then App (p,a,j) :: s else s)
+      | _ -> None
+    in
+    split n [] s
+
   let decomp s =
     match strip_n_app 0 s with
     | Some (_,a,s) -> Some (a,s)
@@ -429,17 +445,10 @@ struct
   in
   zip s
 
-  (* Check if there is enough arguments on [stk] w.r.t. arity of [op] *)
-  let check_native_args op stk =
-    let nargs = CPrimitives.arity op in
-    let rargs = args_size stk in
-    nargs <= rargs
-
   let get_next_primitive_args kargs stk =
     let rec nargs = function
-      | [] -> 0
-      | (CPrimitives.Kwhnf | CPrimitives.Karg) :: _ -> 0
-      | CPrimitives.Kparam :: s -> 1 + nargs s
+      | (CPrimitives.Kparam | CPrimitives.Karg) :: s -> 1 + nargs s
+      | CPrimitives.Kwhnf :: _ | [] -> 0
     in
     let n = nargs kargs in
     (List.skipn (n+1) kargs, strip_n_app n stk)
@@ -546,9 +555,13 @@ struct
   type elem = EConstr.t
   type args = EConstr.t array
   type evd = evar_map
+  type lazy_info = Environ.env * Evd.evar_map * RedFlags.reds
   type uinstance = EConstr.EInstance.t
 
   let get = Array.get
+  let set arr i e =
+    let arr = Array.copy arr in
+    Array.set arr i e; arr
 
   let get_int evd e =
     match EConstr.kind evd e with
@@ -569,6 +582,11 @@ struct
     match EConstr.kind evd e with
     | Array(_u,t,def,_ty) -> Parray.of_array t def
     | _ -> raise Primred.NativeDestKO
+
+  let get_blocked _env evd e =
+    match EConstr.kind evd e with
+    | PBlock (_, _, entries, t) -> Some (EConstr.expand_pblock entries t)
+    | _ -> None
 
   let mkInt env i =
     mkInt i
@@ -675,6 +693,39 @@ struct
   let mkArray env u t ty =
     let (t,def) = Parray.to_array t in
     mkArray(u,t,def,ty)
+
+  (* The [flgs] are forwarded form the calling tactic, which might not be what
+     we want. This means that [Eval hnf let_lazy _ _ (1 + 1) (fun n => n + n)]
+     is reduced to [S (0 + 1 + (1 + 1))] and not [S (1 + 2)] or [4] as one may
+     expect. *)
+  let eval_full_lazy (env, sigma, flgs) t = (* FIXME make it full. *)
+    let ci = Evarutil.create_clos_infos env sigma flgs in
+    let ct = CClosure.create_tab () in
+    let s = (Esubst.subs_id 0, UVars.Instance.empty) in
+    let t = EConstr.Unsafe.to_constr t in
+    let v = CClosure.norm_term ~mode:CClosure.RedState.normal_full ci ct s t in
+    EConstr.of_constr v
+
+  (* Evaluate the run, not a strongly normalized snapshot of its operand.
+     The closure machine exposes the operand in full mode, but hands its
+     payload to the continuation in the caller's mode. It also retains the
+     special forcing semantics of block-local captures. *)
+  let eval_whd_lazy (env, sigma, flgs) t =
+    let ci = Evarutil.create_clos_infos env sigma flgs in
+    let ct = CClosure.create_tab () in
+    let v = CClosure.inject (EConstr.Unsafe.to_constr t) in
+    EConstr.of_constr (CClosure.whd_val ci ct v)
+
+  let eval_id_lazy (env, sigma, flgs) t = (* FIXME make it id. *)
+    let ci = Evarutil.create_clos_infos env sigma flgs in
+    let ct = CClosure.create_tab () in
+    let s = (Esubst.subs_id 0, UVars.Instance.empty) in
+    let t = EConstr.Unsafe.to_constr t in
+    let v = CClosure.norm_term ~mode:CClosure.RedState.identity ci ct s t in
+    EConstr.of_constr v
+
+  let mkApp t args =
+    mkApp(t, args)
 
 end
 
@@ -863,12 +914,41 @@ let rec whd_state_gen flags ?metas env sigma =
          begin
           whrec (body, stack)
           end
-       | exception NotEvaluableConst (IsPrimitive (u,p)) when Stack.check_native_args p stack ->
-          let kargs = CPrimitives.kind p in
-          let (kargs,o) = Stack.get_next_primitive_args kargs stack in
-          (* Should not fail thanks to [check_native_args] *)
-          let (before,a,after) = Option.get o in
-          whrec (a,Stack.Primitive(p,const,before,kargs)::after)
+       | exception NotEvaluableConst (IsPrimitive (u,p)) ->
+          begin
+            let p_arity = CPrimitives.arity p in
+            let n_args = Stack.args_size stack in
+            (* Make sure we have enough arguments for the primitive. *)
+            if p_arity > n_args then fold () else
+            (* How many leading arguments need not be evaluated? *)
+            let (nb_no_eval, kargs) =
+              let rec nb_leading_no_eval_args n kargs =
+                let open CPrimitives in
+                match kargs with
+                | (Kparam | Karg) :: s -> nb_leading_no_eval_args (n + 1) s
+                | Kwhnf :: _ | [] -> (n, kargs)
+              in
+              nb_leading_no_eval_args 0 (CPrimitives.kind p)
+            in
+            match kargs with
+            | _ :: kargs ->
+              (* Some arguments need to be evaluated. *)
+              let (before, a, after) =
+                (* Should not fail since we have enough arguments. *)
+                Option.get (Stack.strip_n_app nb_no_eval stack)
+              in
+              whrec (a, Stack.Primitive(p,const,before,kargs) :: after)
+            | [] ->
+              (* The arguments of the primitive need not be evaluated. *)
+              let (args, stack) =
+                Option.get (Stack.split_n_app nb_no_eval stack)
+              in
+              let args = Option.get (Stack.list_of_app_stack args) in
+              let args = Array.of_list args in
+              match CredNative.red_prim env sigma (env, sigma, flags) p (snd const) args with
+              | Some t -> whrec (t, stack)
+              | _ -> (mkApp (mkConstU const, args), stack)
+          end
        | exception NotEvaluableConst (HasRules (u', b, r)) ->
           begin try
             let red_fun ctx =
@@ -939,7 +1019,12 @@ let rec whd_state_gen flags ?metas env sigma =
         |_ -> fold ()
       else fold ()
 
-    | Int _ | Float _ | String _ | Array _ ->
+    | PRun _ ->
+      let x' = CNativeEntries.eval_whd_lazy (env, sigma, flags) x in
+      if EConstr.eq_constr sigma x x' then fold ()
+      else whrec (x', stack)
+
+    | Int _ | Float _ | String _ | Array _ | PBlock _ ->
       begin match Stack.strip_app stack with
        | (_, Stack.Primitive(p,(_, u as kn),rargs,kargs)::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in
@@ -957,9 +1042,9 @@ let rec whd_state_gen flags ?metas env sigma =
            in
            let args = Array.of_list (Option.get (Stack.list_of_app_stack (rargs @ Stack.append_app [|x|] args))) in
            let s = extra_args @ s in
-           begin match CredNative.red_prim env sigma p u args with
+           begin match CredNative.red_prim env sigma (env, sigma, flags) p u args with
              | Some t -> whrec (t,s)
-             | None -> ((mkApp (mkConstU kn, args), s))
+             | _ -> ((mkApp (mkConstU kn, args), s))
            end
        | _ -> fold ()
       end
@@ -1027,8 +1112,13 @@ let local_whd_state_gen flags ?metas env sigma =
         |_ -> s
       else s
 
+    | PRun _ ->
+      let x' = CNativeEntries.eval_whd_lazy (env, sigma, flags) x in
+      if EConstr.eq_constr sigma x x' then s
+      else whrec (x', stack)
+
     | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _
-      | Int _ | Float _ | String _ | Array _ -> s
+      | Int _ | Float _ | String _ | Array _ | PBlock _ -> s
 
   in
   whrec
@@ -1041,7 +1131,7 @@ let red_of_state_red ?metas ~delta f env sigma x =
   let rec is_whnf c = match Constr.kind c with
     | Const _ | Var _ -> not delta
     | Construct _ | Ind _ | Int _ | Float _ | String _
-    | Sort _ | Prod _ -> true
+    | Sort _ | Prod _ | PBlock _ -> true
     | App (h,_) -> is_whnf h
     | _ -> false
   in
@@ -1122,7 +1212,8 @@ let shrink_eta sigma c =
         | _ -> x
       else x
     | Meta _ | App _ | Case _ | Fix _ | Construct _ | CoFix _ | Evar _ | Rel _ | Var _ | Sort _ | Prod _
-    | LetIn _ | Const _  | Ind _ | Proj _ | Int _ | Float _ | String _ | Array _ -> x
+    | LetIn _ | Const _  | Ind _ | Proj _ | Int _ | Float _ | String _ | Array _
+    | PBlock _ | PRun _ -> x
   in
   whrec c
 
@@ -1609,7 +1700,7 @@ let whd_betaiota_deltazeta_for_iota_state ts ?metas env sigma s =
     match fterm_of c with
     | (FConstruct _ | FCoFix _) ->
       (* Non-neutral normal, can trigger reduction below *)
-      let c = EConstr.of_constr (term_of_process c stk) in
+      let c = EConstr.of_constr (term_of_process ~info:infos ~tab c stk) in
       Some (decompose_app sigma c)
     | _ -> None
   in

@@ -70,6 +70,7 @@ type t =
   | Stringsub
   | Stringcat
   | Stringcompare
+  | Blocked_ind
 
 (** Can raise [Not_found].
     Beware that this is not exactly the reverse of [to_string] below. *)
@@ -107,6 +108,7 @@ type 'a prim_type =
   | PT_float64 : unit prim_type
   | PT_string : unit prim_type
   | PT_array : (UVars.Instance.t * ind_or_type) prim_type
+  | PT_blocked : (UVars.Instance.t * ind_or_type) prim_type
 
 and 'a prim_ind =
   | PIT_bool : unit prim_ind
@@ -119,7 +121,8 @@ and 'a prim_ind =
 and ind_or_type =
   | PITT_ind : 'a prim_ind * 'a -> ind_or_type
   | PITT_type : 'a prim_type * 'a -> ind_or_type
-  | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
+  | PITT_param : int * int list -> ind_or_type (* DeBruijn index of prenex type quantifier applied to variables (given by their index as well). *)
+  | PITT_prod : Names.Name.t Constr.binder_annot * ind_or_type * ind_or_type -> ind_or_type (* Dependent product *)
 
 val typ_univs : 'a prim_type -> UVars.AbstractContext.t
 
@@ -149,7 +152,7 @@ val parse_op_or_type : ?loc:Loc.t -> string -> op_or_type
 
 val univs : t -> UVars.AbstractContext.t
 
-val types : t -> Constr.rel_context * ind_or_type list * ind_or_type
+val types : t -> Constr.rel_context * (Names.Name.t Constr.binder_annot * ind_or_type) list * ind_or_type
 (** Parameters * Reduction relevant arguments * output type
 
   XXX we could reify universes in ind_or_type (currently polymorphic types

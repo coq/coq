@@ -81,6 +81,11 @@ val it_mkLambda_or_LetIn : constr -> Constr.rel_context -> constr
 val it_mkProd_wo_LetIn : types -> Constr.rel_context -> types
 val it_mkProd_or_LetIn : types -> Constr.rel_context -> types
 
+(** Expand the hidden binders of a block into ordinary let-bindings whose
+    values force the corresponding blocked entries through [PRun]. The input
+    body is scoped under all entries, in array order. *)
+val expand_pblock : Constr.block_entry array -> constr -> constr
+
 (** In [lambda_applist c args], [c] is supposed to have the form
     [λΓ.c] with [Γ] without let-in; it returns [c] with the variables
     of [Γ] instantiated by [args]. *)

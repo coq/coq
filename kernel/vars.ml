@@ -293,7 +293,17 @@ let map_constr_relevance f c =
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _
-  | Int _ | Float _ | String _ | Array _ -> c
+  | Int _ | Float _ | String _ | Array _ | PRun _ -> c
+
+  | PBlock (u, ty, entries, body) ->
+    let map_entry entry =
+      let context' = CList.Smart.map (RelDecl.map_relevance f) entry.pbe_context in
+      let relevance' = f entry.pbe_relevance in
+      if context' == entry.pbe_context && relevance' == entry.pbe_relevance then entry
+      else { entry with pbe_context = context'; pbe_relevance = relevance' }
+    in
+    let entries' = CArray.Smart.map map_entry entries in
+    if entries' == entries then c else mkPBlock (u, ty, entries', body)
 
   | Prod (na,x,y) ->
     let na' = map_annot_relevance f na in
@@ -340,7 +350,16 @@ let fold_kind_relevance f acc c =
   | Rel _ | Var _ | Meta _ | Evar _
   |  Sort _ | Cast _ | App _
   | Const _ | Ind _ | Construct _
-  | Int _ | Float _ | String _ | Array _ -> acc
+  | Int _ | Float _ | String _ | Array _ | PRun _ -> acc
+
+  | PBlock (_, _, entries, _) ->
+    Array.fold_left
+      (fun acc entry ->
+        let acc = f acc entry.pbe_relevance in
+        List.fold_left
+          (fun acc decl -> fold_annot_relevance f acc (RelDecl.get_annot decl))
+          acc entry.pbe_context)
+      acc entries
 
   | Prod (na,_,_) | Lambda (na,_,_) | LetIn (na,_,_,_) ->
     fold_annot_relevance f acc na
@@ -406,6 +425,34 @@ let subst_univs_level_constr subst c =
         if u == u' && elems == elems' && def == def' && ty == ty' then t
         else (changed := true; mkArray (u',elems',def',ty'))
 
+      | PBlock (u,ty,entries,b) ->
+        let u' = f u in
+        let ty' = aux ty in
+        let entries' = CArray.Smart.map (fun entry ->
+          let context' = CList.Smart.map (fun decl ->
+            let decl = RelDecl.map_relevance (UVars.subst_sort_level_relevance subst) decl in
+            RelDecl.map_constr aux decl) entry.pbe_context
+          in
+          let type' = aux entry.pbe_type in
+          let value' = aux entry.pbe_value in
+          let relevance' = UVars.subst_sort_level_relevance subst entry.pbe_relevance in
+          if context' == entry.pbe_context && type' == entry.pbe_type &&
+             value' == entry.pbe_value && relevance' == entry.pbe_relevance
+          then entry
+          else { pbe_context = context'; pbe_type = type'; pbe_value = value';
+                 pbe_relevance = relevance' }) entries
+        in
+        let b' = aux b in
+        if u == u' && ty == ty' && entries == entries' && b == b' then t
+        else (changed := true; mkPBlock (u',ty',entries',b'))
+      | PRun (ty,k,b,cont) ->
+        let ty' = aux ty in
+        let k' = aux k in
+        let b' = aux b in
+        let cont' = aux cont in
+        if ty == ty' && k == k' && b == b' && cont == cont' then t
+        else (changed := true; mkPRun (ty',k',b',cont'))
+
       | _ -> Constr.map aux t
     in
     let c' = aux c in
@@ -460,6 +507,34 @@ let subst_instance_constr subst c =
         let ty' = aux ty in
         if u == u' && elems == elems' && def == def' && ty == ty' then t
         else mkArray (u',elems',def',ty')
+
+      | PBlock (u,ty,entries,b) ->
+        let u' = f u in
+        let ty' = aux ty in
+        let entries' = CArray.Smart.map (fun entry ->
+          let context' = CList.Smart.map (fun decl ->
+            let decl = RelDecl.map_relevance (UVars.subst_instance_relevance subst) decl in
+            RelDecl.map_constr aux decl) entry.pbe_context
+          in
+          let type' = aux entry.pbe_type in
+          let value' = aux entry.pbe_value in
+          let relevance' = UVars.subst_instance_relevance subst entry.pbe_relevance in
+          if context' == entry.pbe_context && type' == entry.pbe_type &&
+             value' == entry.pbe_value && relevance' == entry.pbe_relevance
+          then entry
+          else { pbe_context = context'; pbe_type = type'; pbe_value = value';
+                 pbe_relevance = relevance' }) entries
+        in
+        let b' = aux b in
+        if u == u' && ty == ty' && entries == entries' && b == b' then t
+        else mkPBlock (u',ty',entries',b')
+      | PRun (ty,k,b,cont) ->
+        let ty' = aux ty in
+        let k' = aux k in
+        let b' = aux b in
+        let cont' = aux cont in
+        if ty == ty' && k == k' && b == b' && cont == cont' then t
+        else mkPRun (ty',k',b',cont')
 
       | _ -> Constr.map aux t
     in
@@ -523,6 +598,9 @@ let visit_kind_univs visit acc c =
   | Const (_, u) | Ind (_, u) | Construct (_,u) -> visit.visit_instance acc u
   | Sort s -> visit.visit_sort acc s
   | Array (u,_,_,_) ->
+    let acc = visit.visit_instance acc u in
+    acc
+  | PBlock (u,_,_,_) ->
     let acc = visit.visit_instance acc u in
     acc
   | Case (_, u, _, _, _,_ ,_) ->

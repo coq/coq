@@ -218,6 +218,9 @@ GRAMMAR EXTEND Gram
     | "10" LEFTA
       [ f = term; args = LIST1 arg -> { CAst.make ~loc @@ CApp(f,args) }
       | "@"; f = global; i = univ_annot; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((f,i),args) }
+      | "__block"; i = univ_annot; ty = NEXT; c = NEXT -> { CAst.make ~loc @@ CBlock(i,ty,c) }
+      | "__unblock"; c = NEXT -> { CAst.make ~loc @@ CUnblock c }
+      | "__run"; i = univ_annot; ty = NEXT; kty = NEXT; b = NEXT; k = NEXT -> { CAst.make ~loc @@ CRun(i,ty,kty,b,k) }
       | "@"; lid = pattern_ident; args = LIST1 identref ->
         { let { CAst.loc = locid; v = id } = lid in
           let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in

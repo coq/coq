@@ -113,6 +113,9 @@ module Interner : sig
   ; prim : t -> prim_token fn
   ; delimiters : t -> (delimiter_depth * string * constr_expr) fn
   ; array : t -> (instance_expr option * constr_expr array * constr_expr * constr_expr) fn
+  ; block : t -> (instance_expr option * constr_expr * constr_expr) fn
+  ; unblock : t -> constr_expr fn
+  ; run : t -> (instance_expr option * constr_expr * constr_expr * constr_expr * constr_expr) fn
   }
 
   val eval : t -> constr_expr_r fn

@@ -44,6 +44,8 @@ type 'v node =
 | Lval          of 'v
 | Lsort         of Sorts.t
 | Lind          of pinductive
+| Lblock        of Vmvalues.block_source * 'v lambda array
+| Lrun          of 'v lambda array
 
 and 'v lam_branches =
   { constant_branches : 'v lambda array;
@@ -79,6 +81,7 @@ sig
   type value
   val as_value : int -> value lambda array -> value option
   val check_inductive : inductive -> Declarations.mutual_inductive_body -> unit
+  val preserve_blocks : bool
 end
 
 module Make (Val : S) :

@@ -30,16 +30,18 @@ module NamedDecl = Context.Named.Declaration
 
 let e_whd_all env sigma t = match EConstr.kind sigma t with
 | Sort _ | Meta _ | Ind _ | Construct _ | Prod _| Lambda _ | Fix _
-| CoFix _ | Int _ | Float _ | String _ | Array _ as kind ->
+| CoFix _ | Int _ | Float _ | String _ | Array _ | PBlock _ as kind ->
   EConstr.of_kind kind (* ensure head evar normalization *)
 | App (c, _) as kind ->
   begin match EConstr.kind sigma c with
-  | Ind _ | Construct _ | Meta _ | Int _ | Float _ | String _ | Array _ -> EConstr.of_kind kind
+  | Ind _ | Construct _ | Meta _ | Int _ | Float _ | String _ | Array _
+  | PBlock _ -> EConstr.of_kind kind
   | Sort _ | Rel _ | Var _ | Evar _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
-  | Const _ | Case _ | Fix _ | CoFix _ | Proj _ ->
+  | Const _ | Case _ | Fix _ | CoFix _ | Proj _ | PRun _ ->
     Reductionops.clos_whd_flags RedFlags.all env sigma t
   end
-| Rel _ | Evar _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _ ->
+| Rel _ | Evar _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _
+| PRun _ ->
   Reductionops.clos_whd_flags RedFlags.all env sigma t
 
 let crazy_type =  mkSet
@@ -82,6 +84,7 @@ let find_rectype_a env sigma c =
 type env = {
   env : Environ.env;
   norm_params : bool;
+  reduce_blocks : bool;
 }
 
 let push_rel decl env =
@@ -251,6 +254,65 @@ and nf_whd env sigma whd typ =
      nf_univ_args ~nb_univs mk env sigma stk
   | Vaccu (Asort s, stk) ->
     assert (List.is_empty stk); mkSort s
+  | Vaccu (Ablock block, stk) ->
+    assert (List.is_empty stk);
+    nf_block env sigma block
+  | Vaccu (Arun (ty, result_ty, b, continuation), stk) ->
+    let ty = nf_vtype env sigma ty in
+    let result_ty = nf_vtype env sigma result_ty in
+    (* The operand is neutral; its atom supplies its own typing information. *)
+    let b = nf_vtype env sigma b in
+    let continuation_ty = mkProd (Context.anonR, ty, Vars.lift 1 result_ty) in
+    let continuation = nf_val env sigma continuation continuation_ty in
+    nf_stk env sigma (mkPRun (ty, result_ty, b, continuation)) result_ty stk
+
+and nf_block_source env sigma block =
+  let source = block.blocked_source in
+  let subst_univs = Vars.subst_instance_constr block.blocked_instance in
+  let context = Array.of_list source.block_context in
+  let rel_values = ref Int.Map.empty in
+  let named_values = ref Id.Map.empty in
+  Array.iteri (fun j i -> rel_values := Int.Map.add i block.blocked_values.(j) !rel_values) source.block_rels;
+  let offset = Array.length source.block_rels in
+  Array.iteri (fun j id -> named_values := Id.Map.add id block.blocked_values.(offset + j) !named_values) source.block_vars;
+  let rel_terms = ref Int.Map.empty in
+  let named_terms = ref Id.Map.empty in
+  let rec instantiate depth c = match kind c with
+  | Rel i when i > depth -> Vars.lift depth (rel_term (i - depth))
+  | Var id when Id.Map.mem id !named_values -> Vars.lift depth (named_term id)
+  | _ -> Constr.map_with_binders succ instantiate depth c
+  and rel_term i = match Int.Map.find_opt i !rel_terms with
+  | Some c -> c
+  | None ->
+    let ty = RelDecl.get_type context.(i - 1) in
+    let ty = instantiate 0 (subst_univs (Vars.lift i ty)) in
+    let c = nf_val env sigma (Int.Map.find i !rel_values) ty in
+    rel_terms := Int.Map.add i c !rel_terms;
+    c
+  and named_term id = match Id.Map.find_opt id !named_terms with
+  | Some c -> c
+  | None ->
+    let decl = List.find (fun d -> Id.equal id (NamedDecl.get_id d)) source.block_named_context in
+    let ty = instantiate 0 (subst_univs (NamedDecl.get_type decl)) in
+    let c = nf_val env sigma (Id.Map.find id !named_values) ty in
+    named_terms := Id.Map.add id c !named_terms;
+    c
+  in
+  instantiate 0 (subst_univs source.block_term)
+
+and nf_block env sigma block =
+  let source = nf_block_source env sigma block in
+  if env.reduce_blocks then
+    match kind source with
+    | PBlock (u, ty, _, _) ->
+      mkPBlock (u, ty, [||], nf_val env sigma (block.blocked_force ()) ty)
+    | _ -> assert false
+  else
+    (* The kernel's block-aware weak-head readback processes captured entries
+       while leaving ordinary body syntax intact, including under binders. *)
+    let infos = Evarutil.create_clos_infos !!env sigma RedFlags.all in
+    let tab = CClosure.create_tab () in
+    CClosure.whd_val infos tab (CClosure.inject source)
 
 and nf_univ_args ~nb_univs mk env sigma stk =
   let u =
@@ -406,7 +468,7 @@ and nf_telescope env sigma len f typ =
     match fterm_of typ with
     | FProd (na, dom, codom, e) ->
       let arg = f i in
-      let dom = term_of_fconstr dom in
+      let dom = term_of_fconstr ~info:infos ~tab dom in
       let arg = nf_val env sigma arg dom in
       let () = t := mk_clos (CClosure.usubs_cons (inject arg) e) codom in
       arg
@@ -419,7 +481,9 @@ and nf_args env sigma vargs ?from:(f=0) t =
   let len = nargs vargs - f in
   let fargs i = arg vargs (f + i) in
   let typ, args = nf_telescope env sigma len fargs t in
-  CClosure.term_of_fconstr typ, args
+  let info = Evarutil.create_clos_infos !!env sigma RedFlags.all in
+  let tab = CClosure.create_tab () in
+  CClosure.term_of_fconstr ~info ~tab typ, args
 
 and nf_bargs env sigma b ofs (ctx, typ) =
   let rec norm i accu subst = function
@@ -506,10 +570,12 @@ let evars_of_evar_map sigma =
 
 type vm_flags = {
   vm_normalize_params : bool;
+  vm_reduce_blocks : bool;
 }
 
 let default_vm_flags = {
   vm_normalize_params = false;
+  vm_reduce_blocks = true;
 }
 
 let cbv_vm ?(flags = default_vm_flags) env sigma c t  =
@@ -521,5 +587,6 @@ let cbv_vm ?(flags = default_vm_flags) env sigma c t  =
   let c = EConstr.Unsafe.to_constr c in
   let t = EConstr.Unsafe.to_constr t in
   let v = Vmsymtable.val_of_constr env (evars_of_evar_map sigma) c in
-  let env = { env; norm_params = flags.vm_normalize_params } in
+  let env = { env; norm_params = flags.vm_normalize_params;
+    reduce_blocks = flags.vm_reduce_blocks } in
   EConstr.of_constr (nf_val env sigma v t)
