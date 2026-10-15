@@ -476,7 +476,8 @@ let infer_cumulative_instance gr cv_pb (is_type, typing_v) nargs gvariances vari
     Names.GlobRef.print gr ++ (match nargs with FullyApplied -> str"fully applied" | NumArgs n -> str" applied to " ++ int n ++ str" arguments:") ++
     Instance.pr Sorts.raw_printer u ++
     str" in typing variance position " ++ Variance.pr typing_v ++
-    str " is_type = " ++ if is_type == IsType then str "IsType" else str "IsTerm");
+    str " is_type = " ++ (if is_type == IsType then str "IsType" else str "IsTerm") ++ 
+    str" conv_pb = " ++ pr_cumul_pb cv_pb) ;
   Array.fold_left2 (fun variances vocc u ->
     let input_univ, VariancePair.{ cumul_variance; typing_variance } = VarianceOccurrence.typing_and_cumul_variance_app ~with_type:false nargs vocc in
     debug_infer_term_variances Pp.(fun () -> str"infer_cumulative_instance, for: " ++ Universe.raw_pr u ++
@@ -589,6 +590,14 @@ let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
 let with_zeta env = 
   (Environ.typing_flags env).Declarations.cumulativity_zeta
 
+let rec is_top_stack stk = 
+  let open CClosure in
+  match stk with
+  | Zupdate _ :: stk -> is_top_stack stk
+  | Zshift _ :: stk -> is_top_stack stk
+  | [] -> true
+  | _ -> false
+
 exception Expand
 
 let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd stk =
@@ -603,30 +612,30 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
   | FAtom a ->
     begin match kind a with
       | Sort s -> infer_sort cv_pb variance variances s
-      | Meta _ -> infer_stack variance infos variances stk
+      | Meta _ -> infer_stack cv_pb variance infos variances stk
       | _ -> assert false
     end
   | FEvar (_, _, usubs, _) ->
     let variances = infer_generic_instance_eq None variances (snd usubs) in
-    infer_stack variance infos variances stk
-  | FRel _ -> infer_stack variance infos variances stk
-  | FInt _ -> infer_stack variance infos variances stk
-  | FFloat _ -> infer_stack variance infos variances stk
-  | FString _ -> infer_stack variance infos variances stk
+    infer_stack cv_pb variance infos variances stk
+  | FRel _ -> infer_stack cv_pb variance infos variances stk
+  | FInt _ -> infer_stack cv_pb variance infos variances stk
+  | FFloat _ -> infer_stack cv_pb variance infos variances stk
+  | FString _ -> infer_stack cv_pb variance infos variances stk
   | FFlex Names.(RelKey _ | VarKey _ as fl) ->
     if with_zeta (info_env (fst infos)) then
       (* We could try to lazily unfold but then we have to analyse the
         universes in the bodies, not worth coding at least for now. *)
       begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
       | Some (hd,stk) -> infer_fterm cv_pb variance infos variances hd stk
-      | None -> infer_stack variance infos variances stk
+      | None -> infer_stack cv_pb variance infos variances stk
       end
-    else infer_stack variance infos variances stk
+    else infer_stack cv_pb variance infos variances stk
   | FFlex (Names.ConstKey con as fl) ->
     begin
       if not (Environ.mem_constant (fst con) (info_env (fst infos))) then
         let variances = infer_generic_instance_eq (Some (ConstRef (fst con))) variances (snd con) in
-        let variances = infer_stack variance infos variances stk in
+        let variances = infer_stack cv_pb variance infos variances stk in
         variances
       else
       let def = unfold_ref_with_args (fst infos) (snd infos) fl stk in
@@ -636,7 +645,7 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
         let nargs = stack_args_size stk in
         let variances = infer_constant cv_pb variance (info_env (fst infos)) (UVars.NumArgs nargs) variances (Option.has_some def) con in
         let variances = set_infer_mode infer_mode variances in
-        infer_stack variance infos variances stk
+        infer_stack cv_pb variance infos variances stk
       with BadVariance _ | Expand | NotInferring as e ->
       match def with
       | None -> raise e
@@ -646,7 +655,7 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
     end
   | FProj (_,_,c) ->
     let variances = infer_fterm Conv variance infos variances c [] in
-    infer_stack variance infos variances stk
+    infer_stack cv_pb variance infos variances stk
   | FLambda _ ->
     let (na,ty,bd) = destFLambda mk_clos hd in
     let variances = infer_fterm Conv (IsType, Invariant) infos variances ty [] in
@@ -660,14 +669,14 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
       let nargs = stack_args_size stk in
       infer_inductive_instance cv_pb variance (info_env (fst infos)) variances ind nargs u
     in
-    infer_stack variance infos variances stk
+    infer_stack cv_pb variance infos variances stk
   | FConstruct ((ctor,u),args) ->
     assert (List.is_empty stk);
     let variances =
       let nargs = Array.length args in
       infer_constructor_instance_eq (info_env (fst infos)) variance variances ctor nargs u
     in
-    infer_stack (fst variance, Invariant) infos variances (append_stack args stk)
+    infer_stack Conv (fst variance, Invariant) infos variances (append_stack args stk)
   | FFix ((_,(na,tys,cl)),e) | FCoFix ((_,(na,tys,cl)),e) ->
     let n = Array.length cl in
     let variances = infer_vect Conv variance infos variances (Array.map (mk_clos e) tys) in
@@ -677,7 +686,7 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
       let infos = push_relevances infos na in
       infer_vect Conv variance infos variances (Array.map (mk_clos le) cl)
     in
-    infer_stack variance infos variances stk
+    infer_stack cv_pb variance infos variances stk
   | FArray (u,elemsdef,ty) ->
     let variances =
       infer_cumulative_instance (Names.GlobRef.VarRef (Names.Id.of_string "array")) cv_pb (IsType, snd variance) FullyApplied CPrimitives.array_variances variances u
@@ -686,23 +695,23 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
     let elems, def = Parray.to_array elemsdef in
     let variances = infer_fterm Conv (IsTerm, Invariant) infos variances def [] in
     let variances = infer_vect Conv (IsTerm, Invariant) infos variances elems in
-    infer_stack variance infos variances stk
+    infer_stack cv_pb variance infos variances stk
 
 
   | FCaseInvert (ci, u, pms, p, iv, _, br, e) ->
-    (* don't check discriminee: inductive is guaranteed proof irrelevant *)    
+    (* don't check discriminee: inductive is guaranteed proof irrelevant *) 
     let mib = Environ.lookup_mind (fst ci.ci_ind) (info_env (fst infos)) in
-    let (_, (p, _), _, _, br) =
+    let (_, (_p, _), _, _, br) =
       Inductive.expand_case_specif mib (ci, u, pms, p, NoInvert, mkProp, br)
     in
-    let infer c variances = infer_fterm Conv (IsTerm, Invariant) infos  variances (mk_clos e c) [] in
+    let infer c variances = infer_fterm Conv (IsTerm, Invariant) infos variances (mk_clos e c) [] in
     let variances = Array.fold_left (fun variances i ->
         infer_fterm Conv (IsTerm, Invariant) infos variances i [])
         variances (get_invert iv)
     in
-    let variances = infer p variances in
+    (* let variances = infer_fterm cv_pb variance infos variances (mk_clos e p) [] in *)
     let variances = Array.fold_right infer br variances in
-    infer_stack variance infos variances stk
+    infer_stack cv_pb variance infos variances stk
 
   (* | FCaseInvert (ci, u, _, p, _, _, br, e) -> *)
      (* infer_case cv_pb variance infos variances ci u p br e *)
@@ -727,17 +736,20 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
 
 and infer_case cv_pb variance infos variances ci u p br e =
   let ind = ci.ci_ind in
+  debug Pp.(fun () -> str"computing variance of case with conv_pb = " ++ pr_cumul_pb cv_pb ++ 
+   Inf.pr Level.raw_pr variances);
   let variances =
     let u = CClosure.usubst_instance e u in
     match inductive_variances (CClosure.info_env (fst infos)) ind u with
     | None -> infer_generic_instance_eq (Some (IndRef ind)) variances u
     | Some (mind_variances, u) ->
-      infer_cumulative_instance (Names.GlobRef.IndRef ind) cv_pb (IsType, snd variance) FullyApplied mind_variances variances u
+      infer_cumulative_instance (Names.GlobRef.IndRef ind) Cumul (IsType, snd variance) FullyApplied mind_variances variances u
   in
   let open CClosure in
   let push_relevances (infos, tab) n = (push_relevances infos n, tab) in
   let orig_pos = get_position variances in
-  debug Pp.(fun () -> str"computing variance of case with conv_pb = " ++ pr_cumul_pb cv_pb ++ str " and position " ++ Position.pr orig_pos);
+  debug Pp.(fun () -> str"computing variance of case with conv_pb = " ++ pr_cumul_pb cv_pb ++ str " and position " ++ Position.pr orig_pos ++ 
+  Inf.pr Level.raw_pr variances);
   let variances =
     let (ctx, arity), _r = p in
     let ctx = Array.map (usubst_binder e) ctx in
@@ -754,20 +766,21 @@ and infer_case cv_pb variance infos variances ci u p br e =
   in
   Array.fold_right infer_br br variances
 
-and infer_stack variance infos variances (stk:CClosure.stack) =
+and infer_stack cv_pb top_variance infos variances (stk:CClosure.stack) =
   match stk with
   | [] -> variances
   | z :: stk ->
     let open CClosure in
-    let variance = fst variance, Invariant in
+    let variance = fst top_variance, Invariant in
     let variances = match z with
       | Zapp v -> infer_vect Conv variance infos variances v
       | Zproj _ -> variances
       | Zfix (fx,par) ->
         let variances = infer_fterm Conv variance infos variances fx [] in
-        infer_stack variance infos variances par
+        infer_stack cv_pb variance infos variances par
       | ZcaseT (ci,u,_,p,br,e) ->
-        infer_case Conv variance infos variances ci u p br e
+        debug Pp.(fun () -> str " Stack length: " ++ int (List.length stk));
+        infer_case (if is_top_stack stk then cv_pb else Conv) variance infos variances ci u p br e
       | Zshift _ -> variances
       | Zupdate _ -> variances
       | Zprimitive (_,_,rargs,kargs) ->
@@ -775,7 +788,7 @@ and infer_stack variance infos variances (stk:CClosure.stack) =
         let variances = List.fold_left (fun variances (_,c) -> infer_fterm Conv variance infos variances c []) variances kargs in
         variances
     in
-    infer_stack variance infos variances stk
+    infer_stack cv_pb variance infos variances stk
 
 and infer_vect cv_pb variance infos variances v =
   Array.fold_left (fun variances c -> infer_fterm cv_pb variance infos variances c []) variances v
