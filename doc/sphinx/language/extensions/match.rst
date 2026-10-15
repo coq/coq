@@ -628,6 +628,35 @@ notation :n:`({+| @pattern})`, as in:
      | _ => (0,0)
      end.
 
+Default pattern (degenerate match)
+----------------------------------
+
+A match whose only pattern is a default pattern (wildcard `_` or a variable name)
+does not produce a match term and is directly elaborated to its only branch.
+
+For instance, the following generate different terms:
+
+.. rocqtop:: all reset
+
+   Check fun x : nat => match x with _ => 0 end.
+   Check fun x : nat => match x with 0 | S _ => 0 end.
+
+In particular the first function is definitionally equal to `fun x =>
+0`, but the second only evaluates to `0` when passed an argument which
+evaluates to a constructor.
+
+This can be used to bind a term to a name without generating a letin, for instance
+
+.. rocqtop:: all
+
+   Check fun x : nat => match x + x with y => y + y end.
+
+and it works even when the match is not on an inductive type
+
+.. rocqtop:: all
+
+   Check match nat with nat_alias => 0 : nat_alias end.
+
 About patterns of parametric types
 ----------------------------------
 
