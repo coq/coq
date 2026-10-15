@@ -270,9 +270,9 @@ module Proof : sig
   (** Sets the tactic to be used when a tactic line is closed with [...] *)
   val set_endline_tactic : Gentactic.glob_generic_tactic -> t -> t
 
-  (** Explicit: explicit Proof command, Implicit: no Proof command,
+  (** Explicit: explicit Proof command (with loc of "Proof"), Implicit: no Proof command,
       NotRequired: opened by Next Obligation or similar *)
-  type late_init = Explicit | Implicit | NotRequired
+  type late_init = Explicit of Loc.t option | Implicit | NotRequired
 
   val finish_late_init : t -> late_init -> t
   val has_late_init : t -> late_init option

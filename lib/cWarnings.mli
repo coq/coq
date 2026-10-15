@@ -46,6 +46,7 @@ val create_hybrid : ?from:category list -> ?default:status -> name:string -> uni
 val create_msg : warning -> unit -> 'a msg
 (** A message with data ['a] in the given warning. *)
 
+type 'a quickfix_gen = ?loc:Loc.t -> 'a -> Quickfix.t list
 type 'a quickfix = loc:Loc.t -> 'a -> Quickfix.t list
 (** Type of quickfix generator from ['a]. *)
 
@@ -56,6 +57,7 @@ val create_in : warning -> ?quickfix:'a quickfix ->
 val register_printer : 'a msg -> ('a -> Pp.t) -> unit
 (** Register the printer for a given message. If a printer is already registered it is replaced. *)
 
+val register_quickfix_gen : 'a msg -> 'a quickfix_gen -> unit
 val register_quickfix : 'a msg -> 'a quickfix -> unit
 (** Register a quickfix generator for a given message. If a quickfix
     generator is already registered it is combined with the new

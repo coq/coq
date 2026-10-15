@@ -71,14 +71,12 @@ type _ tag = ..
 type w = W : Loc.t option * 'a tag * 'a -> w
 exception WarnError of w
 
+type 'a quickfix_gen = ?loc:Loc.t -> 'a -> Quickfix.t list
 type 'a quickfix = loc:Loc.t -> 'a -> Quickfix.t list
-(* XXX accept optional loc? In principle we could have a loc in the
-   ['a] while the warning as a whole is unlocated but not clear if
-   that ever really happens. *)
 
 module DMap = PolyMap.Make (struct type nonrec 'a tag = 'a tag = .. end)
 module PrintMap = DMap.Map(struct type 'a t = 'a -> Pp.t end)
-module QFMap = DMap.Map(struct type 'a t = 'a quickfix list end)
+module QFMap = DMap.Map(struct type 'a t = 'a quickfix_gen list end)
 
 module Msg = struct
   type 'a t = {
@@ -99,8 +97,11 @@ let register_printer { Msg.tag; warning} pp =
   let pp x = wrap_pp warning pp x in
   printers := PrintMap.add tag pp !printers
 
-let register_quickfix { Msg.tag } qf =
+let register_quickfix_gen { Msg.tag } qf =
   quickfixes := QFMap.update tag (fun v -> Some (qf :: Option.default [] v)) !quickfixes
+
+let register_quickfix msg qf =
+  register_quickfix_gen msg (fun ?loc v -> Option.cata (fun loc -> qf ~loc v) [] loc)
 
 let create_msg warning () =
   let v = { Msg.tag = DMap.make(); warning; } in
@@ -111,11 +112,8 @@ let print (W (_loc, tag, w)) =
   pp w
 
 let quickfix (W (loc, tag, w)) =
-  match loc with
-  | None -> []
-  | Some loc ->
   let pp = try QFMap.find tag !quickfixes with Not_found -> [] in
-  List.concat_map (fun f -> f ~loc w) pp
+  List.concat_map (fun f -> f ?loc w) pp
 
 let () = CErrors.register_handler (function
     | WarnError w -> Some (print w)

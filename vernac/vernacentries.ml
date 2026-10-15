@@ -2642,7 +2642,7 @@ let vernac_validate_proof ~pstate =
     in
     CErrors.user_err msg
 
-let vernac_proof pstate tac using =
+let vernac_proof loc pstate tac using =
   let is_let = match Declare.Proof.definition_scope pstate with
     | Discharge -> true
     | Global _ -> false
@@ -2659,7 +2659,7 @@ let vernac_proof pstate tac using =
     (* currently Next Obligation is accepted both with and without following Proof
        not sure we want to keep it that way
        also not sure how well Proof using works with obligations *)
-    | Some Explicit ->
+    | Some Explicit _ ->
       CErrors.user_err Pp.(str "Multiple \"Proof\" commands not supported.")
     | Some Implicit ->
       CErrors.user_err Pp.(str "\"Proof\" must be the first command in an interactive proof.")
@@ -2669,7 +2669,8 @@ let vernac_proof pstate tac using =
   Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
   let pstate = Option.fold_left vernac_set_end_tac pstate tac in
   let pstate = Declare.Proof.set_proof_using pstate using in
-  let pstate = Declare.Proof.finish_late_init pstate Explicit in
+  let proofloc = Option.map (fun loc -> Loc.sub loc 0 (String.length "Proof")) loc in
+  let pstate = Declare.Proof.finish_late_init pstate (Explicit proofloc) in
   pstate
 
 let translate_vernac_synterp ?loc ~atts v = let open Vernactypes in match v with
@@ -3048,7 +3049,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
   | VernacProof (tac, using) ->
     vtmodifyproof ~check_late_init:false (fun ~pstate ->
     unsupported_attributes atts;
-    vernac_proof pstate tac using)
+    vernac_proof loc pstate tac using)
 
   | VernacEndProof pe ->
     unsupported_attributes atts;

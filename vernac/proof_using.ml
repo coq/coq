@@ -143,7 +143,7 @@ let debug_proof_using = CDebug.create ~name:"proof-using" ()
 (* Variables in [skip] come from after the definition, so don't count
    for "All". Used in the variable case since the env contains the
    variable itself. *)
-let suggest_common env ppid used ids_typ skip =
+let suggest_common env used ids_typ skip =
   let module S = Id.Set in
   let open Pp in
   let pr_set parens s =
@@ -170,45 +170,73 @@ let suggest_common env ppid used ids_typ skip =
   if S.equal all_needed fwd_typ then valid (str "Type*");
   if S.equal all all_needed then valid(str "All");
   valid (pr_set false needed);
-  Feedback.msg_info (
-    str"The proof of "++ ppid ++ spc() ++
-    str "should start with one of the following commands:"++spc()++
-    v 0 (
-    prlist_with_sep cut (fun x->str"Proof using " ++x++ str". ") !valid_exprs));
-  if Aux_file.recording ()
-  then
-    let s = string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs) in
-    record_proof_using s
+  let () =
+    if Aux_file.recording () then
+      let s = string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs) in
+      record_proof_using s
+  in
+  !valid_exprs
 
-let suggest_proof_using = ref false
+let warn_proof_using_flag = CWarnings.create_warning ~default:Disabled ~name:"proof-using" ()
+
+let warn_proof_using_msg = CWarnings.create_msg warn_proof_using_flag ()
 
 let () =
-  Goptions.(declare_bool_option
+  CWarnings.register_quickfix_gen warn_proof_using_msg
+    (fun ?loc:_ (proofloc,_,valid) ->
+       match proofloc with
+       | None -> []
+       | Some proofloc ->
+         List.map Pp.(fun valid ->
+             Quickfix.make ~loc:proofloc @@
+             str "Proof using " ++ valid) valid)
+
+let () =
+  CWarnings.register_printer warn_proof_using_msg
+    Pp.(fun (proofloc,ppid,valid_exprs) ->
+        str"The proof of "++ ppid ++ spc() ++
+        str "should start with one of the following commands:"++spc()++
+        v 0 (
+          prlist_with_sep cut (fun x->str"Proof using " ++x++ str". ") valid_exprs))
+
+let warn_proof_using ?loc v = CWarnings.warn warn_proof_using_msg ?loc v
+
+let suggest_on () =
+  match CWarnings.warning_status warn_proof_using_flag with
+  | Disabled -> false
+  | Enabled | AsError -> true
+
+let () =
+  Goptions.(declare_option ~no_summary:true ~kind:BoolKind
     { optstage = Summary.Stage.Interp;
       optdepr  = None;
       optkey   = ["Suggest";"Proof";"Using"];
-      optread  = (fun () -> !suggest_proof_using);
-      optwrite = ((:=) suggest_proof_using) })
+      optread  = suggest_on;
+      optwrite = (fun b ->
+          if b then CWarnings.set_flags "proof-using" else CWarnings.set_flags "-proof-using");
+    })
 
-let suggest_constant env kn =
-  if !suggest_proof_using
+let suggest_constant ~proofloc env kn =
+  if suggest_on()
   then begin
     let open Declarations in
     let body = lookup_constant kn env in
     let used = Id.Set.of_list @@ List.map NamedDecl.get_id body.const_hyps in
     let ids_typ = global_vars_set env body.const_type in
-    suggest_common env (Printer.pr_constant env kn) used ids_typ Id.Set.empty
+    let valid_exprs = suggest_common env used ids_typ Id.Set.empty in
+    warn_proof_using (proofloc,Printer.pr_constant env kn,valid_exprs)
   end
 
-let suggest_variable env id =
-  if !suggest_proof_using
+let suggest_variable ~proofloc env id =
+  if suggest_on()
   then begin
     match lookup_named id env with
     | LocalDef (_,body,typ) ->
       let ids_typ = global_vars_set env typ in
       let ids_body = global_vars_set env body in
       let used = Id.Set.union ids_body ids_typ in
-      suggest_common env (Id.print id) used ids_typ (Id.Set.singleton id)
+      let valid_exprs = suggest_common env used ids_typ (Id.Set.singleton id) in
+      warn_proof_using (proofloc,Id.print id,valid_exprs)
     | LocalAssum _ -> assert false
   end
 

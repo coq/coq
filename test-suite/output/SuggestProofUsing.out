@@ -1,17 +1,28 @@
 File "./output/SuggestProofUsing.v", line 8, characters 31-43:
 Warning: "Proof term." is deprecated. Use "Proof. exact term. Qed." instead.
 [deprecated-exact-proof,deprecated-since-9.2,deprecated,default]
-The proof of Nat should start with one of the following commands:
+File "./output/SuggestProofUsing.v", line 23, characters 2-6:
+Warning: The proof of Nat should start with one of the following commands:
 Proof using . 
 Proof using Type*. 
-Proof using Type. 
-The proof of foo should start with one of the following commands:
+Proof using Type.  [proof-using]
+Quickfix:
+Replace File "./output/SuggestProofUsing.v", line 21, characters 2-7 with Proof using 
+Replace File "./output/SuggestProofUsing.v", line 21, characters 2-7 with Proof using Type*
+Replace File "./output/SuggestProofUsing.v", line 21, characters 2-7 with Proof using Type
+File "./output/SuggestProofUsing.v", line 30, characters 2-6:
+Warning: The proof of foo should start with one of the following commands:
 Proof using A B. 
-Proof using All. 
+Proof using All.  [proof-using]
+Quickfix:
+Replace File "./output/SuggestProofUsing.v", line 28, characters 2-7 with Proof using A B
+Replace File "./output/SuggestProofUsing.v", line 28, characters 2-7 with Proof using All
 File "./output/SuggestProofUsing.v", line 53, characters 31-42:
 Warning: "Proof term." is deprecated. Use "Proof. exact term. Qed." instead.
 [deprecated-exact-proof,deprecated-since-9.2,deprecated,default]
-The proof of sec_exactproof should start with one of the following commands:
+File "./output/SuggestProofUsing.v", line 53, characters 31-42:
+Warning: The proof of sec_exactproof
+should start with one of the following commands:
 Proof using . 
 Proof using Type*. 
-Proof using Type. 
+Proof using Type.  [proof-using]

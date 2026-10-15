@@ -179,10 +179,23 @@ type 'eff proof_body =
   | DeferredOpaque of 'eff deferred_opaque_proof_body
   | Default of default_proof_body
 
+type proof_using =
+  | ExplicitUsing of Id.Set.t
+  | MissingUsing of Loc.t option
+  (* loc of the [Proof] command if any *)
+
+let make_using = function
+  | Some using -> ExplicitUsing using
+  | None -> MissingUsing None
+
+let get_using = function
+  | ExplicitUsing using -> Some using
+  | MissingUsing _ -> None
+
 (* A proof entry, parameterized with its kind of proof body *)
 type 'body pproof_entry = {
   proof_entry_body   : 'body;
-  proof_entry_secctx : Id.Set.t option;
+  proof_entry_secctx : proof_using;
   (* List of section variables *)
   proof_entry_type        : Constr.types option;
   (* the initial type if deferred *)
@@ -328,7 +341,7 @@ let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~ef
 let definition_entry_core ?using ?(inline=false) ?types
     ?(univs=default_named_univ_entry) body =
   { proof_entry_body = body;
-    proof_entry_secctx = using;
+    proof_entry_secctx = Option.default (MissingUsing None) using;
     proof_entry_type = types;
     proof_entry_universes = univs;
     proof_entry_inline_code = inline}
@@ -338,7 +351,7 @@ let pure_definition_entry ?(opaque=Transparent) ?using ?inline ?types ?univs bod
 
 let definition_entry ?(opaque=false) ?using ?inline ?types ?univs body =
   let opaque = if opaque then Opaque (Univ.ContextSet.empty, SideEff.empty) else Transparent in
-  definition_entry_core ?using ?inline ?types ?univs (Default { body; opaque })
+  definition_entry_core ~using:(make_using using) ?inline ?types ?univs (Default { body; opaque })
 
 let delayed_definition_entry ?feedback_id ?using ~univs ?types body =
   definition_entry_core ?using ?types ~univs (DeferredOpaque { body; feedback_id })
@@ -543,7 +556,7 @@ let record_aux env s_ty s_bo =
 let cast_pure_proof_entry (e : Constr.constr pproof_entry) =
   let usubst, univ_entry, ctx = extract_monomorphic (fst (e.proof_entry_universes)) in
   { Entries.definition_entry_body = Vars.subst_univs_level_constr usubst e.proof_entry_body;
-    definition_entry_secctx = e.proof_entry_secctx;
+    definition_entry_secctx = get_using e.proof_entry_secctx;
     definition_entry_type = Option.map (fun c -> Vars.subst_univs_level_constr usubst c) e.proof_entry_type;
     definition_entry_universes = univ_entry;
     definition_entry_inline_code = e.proof_entry_inline_code;
@@ -586,8 +599,8 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a ppro
   | Some typ -> typ
   in
   let secctx = match e.proof_entry_secctx with
-  | None -> section_context_of_opaque_proof_entry entry e.proof_entry_body typ
-  | Some hyps -> hyps
+  | MissingUsing _ -> section_context_of_opaque_proof_entry entry e.proof_entry_body typ
+  | ExplicitUsing hyps -> hyps
   in
   let usubst, univ_entry, ctx = extract_monomorphic (fst (e.proof_entry_universes)) in
   let body : b = match entry with
@@ -786,7 +799,7 @@ let declare_variable ~name ~kind ~typing_flags d =
           let cname = Namegen.next_global_ident_away (Global.safe_env ()) cname Id.Set.empty in
           let de = {
             proof_entry_body = DeferredOpaque { body = Future.from_val ((body, Univ.ContextSet.empty), SideEff.empty); feedback_id };
-            proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
+            proof_entry_secctx = MissingUsing None; (* de.proof_entry_secctx is NOT respected *)
             proof_entry_type = de.proof_entry_type;
             proof_entry_universes = univs;
             proof_entry_inline_code = de.proof_entry_inline_code;
@@ -866,12 +879,12 @@ type proof_object =
   | DefaultProof of
       { proof : closed_proof_output
       ; opaque : bool
-      ; using : Names.Id.Set.t option
+      ; using : proof_using
       ; keep_body_ucst_separate : UState.t option
       }
   | DeferredOpaqueProof of
       { deferred_proof : closed_proof_output Future.computation
-      ; using : Names.Id.Set.t option
+      ; using : proof_using
       ; initial_proof_data : Proof.data
       ; feedback_id : Stateid.t
       ; initial_euctx : UState.t
@@ -899,7 +912,7 @@ let process_proof ~info:Info.({ udecl; poly }) ?(is_telescope=false) = function
     snd (List.fold_left2_map (fun used_univs (body, typ) opaque ->
         let uctx, univs, used_univs, body =
           make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff ~used_univs body typ in
-        (used_univs, (definition_entry_core ?using ~univs ?types:typ body, uctx))) Univ.Level.Set.empty entries opaques)
+        (used_univs, (definition_entry_core ~using ~univs ?types:typ body, uctx))) Univ.Level.Set.empty entries opaques)
   | DeferredOpaqueProof { deferred_proof = bodies; using; initial_proof_data; feedback_id; initial_euctx } ->
     let { Proof.poly; entry; sigma } = initial_proof_data in
     (* Deferred multiple entries currently assume either a mutual
@@ -916,7 +929,7 @@ let process_proof ~info:Info.({ udecl; poly }) ?(is_telescope=false) = function
            let body = Future.chain body_typ_uctx (fun ((body, _typ), uctx, eff) ->
                let uctx = make_univs_deferred_private_mono ~initial_euctx ~uctx ~udecl body (Some initial_typ) in
                ((body, uctx), eff)) in
-           (delayed_definition_entry ?using ~univs ~types:initial_typ ~feedback_id body, initial_euctx))
+           (delayed_definition_entry ~using ~univs ~types:initial_typ ~feedback_id body, initial_euctx))
 
 let declare_definition_scheme ~univs ~role ~name ~effs c =
   let entry = pure_definition_entry ~univs c in
@@ -934,20 +947,23 @@ let register_definition_scheme ~internal ~name ~const:kn ~univs ?loc () =
 (* Locality stuff *)
 let declare_entry ~loc ~name ?(scope=Locality.default_scope) ?(clearbody=false) ~kind ~typing_flags ~user_warns ?hook ?(obls=[]) ~impargs ~uctx entry =
   let should_suggest =
-    ProofEntry.get_opacity entry
+    if ProofEntry.get_opacity entry
     && not (List.is_empty (Global.named_context()))
-    && Option.is_empty entry.proof_entry_secctx
+    then match entry.proof_entry_secctx with
+      | ExplicitUsing _ -> None
+      | MissingUsing loc -> Some loc
+    else None
   in
   let dref = match scope with
   | Locality.Discharge ->
     let () = declare_variable ~typing_flags ~name ~kind (SectionLocalDef {clearbody; entry}) in
-    if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
+    Option.iter (fun proofloc -> Proof_using.suggest_variable ~proofloc (Global.env ()) name) should_suggest;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
     assert (not clearbody);
     let kn = declare_constant ~loc ~name ~local ~kind ~typing_flags ?user_warns (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
-    if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
+    Option.iter (fun proofloc -> Proof_using.suggest_constant ~proofloc (Global.env ()) kn) should_suggest;
     gr
   in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
@@ -1077,7 +1093,7 @@ let declare_mutual_definitions ~info ~cinfo ~opaque ~eff ~uctx ~bodies ~possible
   let uctx = Evd.ustate sigma in
   let entries = List.map (fun (body, typ) -> (body, Some typ)) bodies_types in
   let entries_for_using = List.map (fun (body, typ) -> (body, Some typ)) bodies_types in
-  let using = interp_mutual_using env cinfo entries_for_using using in
+  let using = make_using @@ interp_mutual_using env cinfo entries_for_using using in
   let proof = { output_entries = entries; output_ustate = uctx; output_sideff = SideEff.make eff } in
   let obj = DefaultProof { proof; opaque; using; keep_body_ucst_separate = None } in
   let refs = declare_possibly_mutual_definitions ~info ~cinfo ~obls:[] obj in
@@ -1114,7 +1130,7 @@ let declare_definition ~info ~cinfo ~opaque ~obls ~body ?using sigma =
   let typ = Option.map (EConstr.to_constr sigma) typ in
   let uctx = Evd.ustate sigma in
   let eff = SideEff.make @@ Evd.eval_side_effects sigma in
-  let using = interp_mutual_using env [cinfo] [body,typ] using in
+  let using = make_using @@ interp_mutual_using env [cinfo] [body,typ] using in
   let proof = { output_entries = [(body, typ)]; output_ustate = uctx; output_sideff = eff } in
   let obj = DefaultProof { proof; opaque; using; keep_body_ucst_separate = None } in
   let gref = List.hd (declare_possibly_mutual_definitions ~info ~cinfo:[cinfo] ~obls obj) in
@@ -1795,11 +1811,11 @@ module Proof = struct
 type nonrec closed_proof_output = closed_proof_output
 type proof_object = Proof_object.t
 
-type late_init = Explicit | Implicit | NotRequired
+type late_init = Explicit of Loc.t option | Implicit | NotRequired
 
 type t =
   { endline_tactic : Gentactic.glob_generic_tactic option
-  ; using : Id.Set.t option
+  ; using : proof_using
   ; has_late_init : late_init option
   (** Explicit if Proof was used, Implicit if we started modifying the proof before Proof was used *)
   ; proof : Proof.t
@@ -1834,7 +1850,17 @@ let compact pf = map ~f:Proof.compact pf
 let set_endline_tactic tac ps =
   { ps with endline_tactic = Some tac }
 
-let finish_late_init ps explicit = { ps with has_late_init = Some explicit }
+let finish_late_init ps explicit =
+  let using = match ps.using with
+    | ExplicitUsing _ -> ps.using
+    | MissingUsing _ ->
+      let proofloc = match explicit with
+        | Explicit loc -> loc
+        | NotRequired | Implicit -> None
+      in
+      MissingUsing proofloc
+  in
+  { ps with using; has_late_init = Some explicit }
 
 let has_late_init ps = ps.has_late_init
 
@@ -1860,7 +1886,7 @@ let start_proof_core ~name ~pinfo ?using sigma goals =
   { proof
   ; has_late_init = None
   ; endline_tactic = None
-  ; using
+  ; using = make_using using
   ; initial_euctx
   ; pinfo
   ; sideff = SideEff.empty
@@ -1886,7 +1912,7 @@ let start_dependent ~info ~cinfo ~name ~proof_ending goals =
   { proof
   ; has_late_init = None
   ; endline_tactic = None
-  ; using = None
+  ; using = make_using None
   ; initial_euctx
   ; pinfo
   ; sideff = SideEff.empty
@@ -1991,7 +2017,7 @@ let start_mutual_definitions_refine ~info ~cinfo ~bodies ~possible_guard ?using 
       List.iter (Metasyntax.add_notation_interpretation ~local:(info.scope=Locality.Discharge) ntn_env) info.ntns in
     lemma
 
-let get_used_variables pf = pf.using
+let get_used_variables pf = get_using pf.using
 
 let definition_scope ps = ps.pinfo.info.scope
 
@@ -2003,11 +2029,11 @@ let { Goptions.get = auto_clear } =
 let set_used_variables ps ~using =
   let open Context.Named.Declaration in
   let using = match ps.using, using with
-    | None, Some using -> Some using
-    | Some using, None -> Some using
-    | Some _, Some _ ->
+    | MissingUsing _, Some using -> Some using
+    | ExplicitUsing using, None -> Some using
+    | ExplicitUsing _, Some _ ->
       CErrors.user_err Pp.(str "Used section variables can be declared only once.")
-    | None, None -> None
+    | MissingUsing _, None -> None
   in
   match using with
   | None -> ps
@@ -2029,7 +2055,7 @@ let set_used_variables ps ~using =
     Environ.fold_named_context aux env ~init:kept
   in
   let proof = if auto_clear() then Proof.set_used_variables env ~kept ps.proof else ps.proof in
-  { ps with proof; using = Some kept }
+  { ps with proof; using = ExplicitUsing kept }
 
 let interpret_proof_using pstate using =
   let env = Global.env () in
@@ -2391,7 +2417,10 @@ let save_lemma_admitted_delayed ~pm ~proof =
   let typs = List.map (function { proof_entry_type }, uctx -> Option.get proof_entry_type, uctx) entries in
   (* Note: an alternative would be to compute sec_vars of the partial
      proof as a Future computation, as in compute_proof_using_for_admitted *)
-  let sec_vars = if get_keep_admitted_vars () then (fst (List.hd entries)).proof_entry_secctx else None in
+  let sec_vars = if get_keep_admitted_vars () then
+      get_using (fst (List.hd entries)).proof_entry_secctx
+    else None
+  in
   (* If the proof is partial, do we want to take the (restriction on
      visible uvars of) uctx so far or (as done below) the initial ones
      that refers to only the types *)

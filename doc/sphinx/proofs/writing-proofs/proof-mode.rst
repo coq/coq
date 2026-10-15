@@ -470,10 +470,15 @@ The following options modify the behavior of ``Proof using``.
    takes effect at the :cmd:`Proof` command. If that command is left
    implicit, no clearing occurs even when the flag is on.
 
+.. warn:: The proof of @ident should start with one of the following commands (Proof using)
+   :name: proof-using
+
+   This warning makes :cmd:`Qed` suggest a `using` annotation when the
+   user did not provide one.
+
 .. flag:: Suggest Proof Using
 
-   When this :term:`flag` is on, :cmd:`Qed` suggests
-   a ``using`` annotation if the user did not provide one.
+   This flag turns on the above :warn:`proof-using` warning.
 
 .. flag:: Keep Admitted Variables
 
