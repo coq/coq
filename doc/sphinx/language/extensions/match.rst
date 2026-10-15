@@ -483,23 +483,6 @@ does not build a match expression.
                        | y => y
                        end).
 
-
-.. _aliasing-subpatterns:
-
-Aliasing subpatterns
---------------------
-
-We can also use :n:`as @ident` to associate a name to a sub-pattern:
-
-.. rocqtop:: in reset
-
-   Fixpoint max (n m:nat) {struct n} : nat :=
-     match n, m with
-     | O, _ => m
-     | S n' as p, O => p
-     | S n', S m' => S (max n' m')
-     end.
-
 .. _nested-patterns:
 
 Nested patterns
@@ -577,6 +560,34 @@ example:
                  | x => true
                  end).
 
+.. _aliasing-subpatterns:
+
+Aliasing subpatterns
+--------------------
+
+We can also use :n:`as @ident` to associate a name to a sub-pattern:
+
+.. rocqtop:: in reset
+
+   Fixpoint max (n m:nat) {struct n} : nat :=
+     match n, m with
+     | O, _ => m
+     | S n' as p, O => p
+     | S n', S m' => S (max n' m')
+     end.
+
+This is particularly useful with nested patterns:
+
+.. rocqtop:: in reset
+
+   Fixpoint fib n :=
+     match n with
+     | 0 | 1 => 1
+     | S (S k as p) => fib k + fib p
+     end.
+
+Recursing on `S k` instead of `p` would not work as constructors are
+never considered subterms of the structural argument.
 
 Disjunctive patterns
 --------------------
