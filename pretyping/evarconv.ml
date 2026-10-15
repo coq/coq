@@ -48,6 +48,7 @@ let default_flags env =
   default_flags_of ts
 
 let debug_unification = CDebug.create ~name:"unification" ()
+let debug_cs_unification = CDebug.create ~name:"unification-cs" ()
 
 let debug_ho_unification = CDebug.create ~name:"ho-unification" ()
 
@@ -299,6 +300,18 @@ let apply_hooks env sigma proj pat =
     try CString.Map.get name !all_hooks env sigma proj pat
     with e when CErrors.noncritical e -> anomaly Pp.(str "CS hook " ++ str name ++ str " exploded")) (Summary.Ref.get active_hooks)
 
+let refold_primproj env sigma (t1, sk1) =
+  let open Reductionops.Stack in
+  let args, stk = strip_app sk1 in
+  match stk with
+  | Proj (p, r) :: stk -> 
+    let pr = EConstr.mkProj (p, r, Stack.zip sigma (t1, args)) in
+    Some (pr, stk)
+  | _ -> None
+
+let refold_primproj_cs env flags sigma (t1, sk1) =
+  if flags.with_cs then refold_primproj env sigma (t1, sk1) else None
+
 let decompose_proj ?metas env sigma (t1, sk1) =
    (* I only recognize ConstRef projections since these are the only ones for which
       I know how to obtain the number of parameters. *)
@@ -355,9 +368,15 @@ let decompose_proj ?metas env sigma (t1, sk1) =
    projection would have been reduced) *)
 
 let check_conv_record env sigma ((proji, u), (params1, c1, extra_args1)) (t2,sk2) =
+  let t2, sk2 = Option.default (t2, sk2) (refold_primproj env sigma (t2, sk2)) in
   let h2, sk2' = decompose_app sigma (shrink_eta sigma t2) in
   let sk2 = Stack.append_app sk2' sk2 in
   let k = Reductionops.Stack.args_size sk2 - Reductionops.Stack.args_size extra_args1 in
+  debug_cs_unification Pp.(fun () -> str"check_conv_record " ++ 
+    Names.GlobRef.(print (ConstRef proji)) ++ str" , " ++
+     Termops.Internal.print_constr_env env sigma (Stack.zip sigma (h2, sk2)) ++ 
+     str" stack sizes " ++ int k);
+
   (* Knowing the shape of extra_args1, I can cut sk2 into pieces, extracting extra_args2 from it. *)
   let args2, extra_args2 =
     if k = 0 then [], sk2
@@ -370,11 +389,17 @@ let check_conv_record env sigma ((proji, u), (params1, c1, extra_args1)) (t2,sk2
      (* N.B. In the `Proj` case, the subject needs to be added in args2. *)
     try begin
       try
+        debug_cs_unification Pp.(fun () -> str"Looking for " ++ Names.GlobRef.(print (ConstRef proji)) ++ str" , " ++ ValuePattern.print pat);
          let () = if pat = Default_cs then raise Not_found else () in
          let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, pat) in
+        debug_cs_unification Pp.(fun () -> str"Solution " ++ CanonicalSolution.print env sigma solution);
+
          if List.length solution.cvalue_arguments = k + (List.length args2') then (sigma, solution), args2' @ args2 else raise Not_found
        with | Not_found ->
+        debug_cs_unification Pp.(fun () -> str"backtrack to 
+        Not_found");
          let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, Default_cs) in
+        debug_cs_unification Pp.(fun () -> str"Solution " ++ CanonicalSolution.print env sigma solution);
          (* We have to drop the arguments args2 because the default solution does not have them. *)
          if List.length solution.cvalue_arguments = 0 then (sigma, solution), [] else raise Not_found
       end
@@ -385,6 +410,7 @@ let check_conv_record env sigma ((proji, u), (params1, c1, extra_args1)) (t2,sk2
   in
   let t2 = Stack.zip sigma (h2, (Stack.append_app_list args2 Stack.empty)) in
   let h, _ = decompose_app sigma solution.body in
+  debug_cs_unification Pp.(fun () -> str"check_conv_record success ");
     sigma,(h, h2),solution.constant,solution.abstractions_ty,(solution.params,params1),
     (solution.cvalue_arguments, sk2_effective),(extra_args1,extra_args2),c1,
     (solution.cvalue_abstraction, t2)
@@ -693,8 +719,18 @@ struct
 
   let flip (c1, c2) = (c2, c1)
 
+  let find_key env sigma t =
+    let open GlobRef in
+    match EConstr.kind sigma t with
+    | Var id -> VarRef id
+    | Const (cst, u) -> ConstRef cst
+    | Ind (ind, u) -> IndRef ind
+    | Construct (cstr, u) -> ConstructRef cstr
+    | Proj (p, _, c) -> ConstRef (Environ.projection_repr_constant env (Projection.repr p))
+    | _ -> raise DestKO
+
   let add_left env sigma appr (((c1, m1), c2) as c) =
-    match fst @@ EConstr.destRef sigma (fst appr) with
+    match find_key env sigma (fst appr) with
     | k ->
       let k = QGlobRef.canonize env k in
       if not (Names.GlobRef.Map.mem k m1) then
@@ -717,6 +753,36 @@ end
 
 type orig = { left : state; right : state }
 
+let pr_flex env evd (flex : flex_kind_of_term) = 
+  let open Pp in
+    match flex with
+  | Rigid -> str"rigid"
+  | Flexible _ -> str "flexible"
+  | MaybeFlexible _ -> str "maybe-flexible"
+
+let pr_result sigma x = 
+  let open Pp in
+  match x with
+   | UnifFailure (ev, error) ->
+    (match error with
+     | OccurCheck _ -> str"occur_check"
+     | NotClean _ -> str"not clean"
+     | IncompatibleInstances _ -> str"incompat instances"
+     | NotSameArgSize -> str"not same arg size"
+     | NotSameHead -> str"not same head"
+     | NoCanonicalStructure -> str"no cs"
+     | ConversionFailed _ -> str"conv failed"
+     | MetaOccurInBody _ -> str "meta occurs"
+     | InstanceNotSameType (ev, env, t1, t2) ->
+       str"instance not same type: " ++ pr_opt (Termops.Internal.print_constr_env env sigma) t1 ++ str " and " ++
+        Termops.Internal.print_constr_env env sigma t2
+     | InstanceNotFunctionalType _ -> str"instance not functional type"
+     | UnifUnivInconsistency _ -> str "univ inconsistency"
+     | CannotSolveConstraint _ -> str "cannot solve constraint" 
+     | ProblemBeyondCapabilities -> str "problem beyond")
+  | Success _ -> str"success"
+
+
 let rec evar_conv_x flags env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
   let term2 = whd_head_evar evd term2 in
@@ -738,16 +804,16 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
         let default () =
           let hd1 = (whd_nored_state env evd (term1,Stack.empty)) in
           let hd2 = (whd_nored_state env evd (term2,Stack.empty)) in
-        match
-          evar_eqappr_x flags env evd pbty (Cs_keys_cache.empty ()) None
-            { left = hd1; right = hd2 } hd1 hd2
-        with
-        | UnifFailure _ as x ->
-           if Retyping.is_term_irrelevant env evd term1 ||
-              Retyping.is_term_irrelevant env evd term2
-           then Success evd
-           else x
-        | Success _ as x -> x
+          match
+            evar_eqappr_x flags env evd pbty (Cs_keys_cache.empty ()) None
+              { left = hd1; right = hd2 } hd1 hd2
+          with
+          | UnifFailure _ as x ->
+            if Retyping.is_term_irrelevant env evd term1 ||
+               Retyping.is_term_irrelevant env evd term2
+            then Success evd
+            else x
+          | Success _ as x -> x
         in
           begin match EConstr.kind evd term1, EConstr.kind evd term2 with
           | Evar ev, _ when Evd.is_undefined evd (fst ev) && is_evar_allowed flags evd (fst ev) ->
@@ -760,7 +826,11 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
                    NotClean: pruning in solve_simple_eqn is incomplete wrt
                      Miller patterns *)
                 default ()
-              | x -> x)
+              | x ->
+                
+                debug_unification Pp.(fun () -> str"solve_simple_eqn returned" ++ 
+                  pr_result evd x);
+                   x)
           | _, Evar ev when Evd.is_undefined evd (fst ev) && is_evar_allowed flags evd (fst ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
               (position_problem false pbty,ev,term1) with
@@ -770,7 +840,10 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
                    NotClean: pruning in solve_simple_eqn is incomplete wrt
                      Miller patterns *)
                 default ()
-              | x -> x)
+              | x ->
+                debug_unification Pp.(fun () -> str"solve_simple_eqn returned" ++ 
+                  pr_result evd x);
+                x)
           | _ -> default ()
         end
 
@@ -1013,9 +1086,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   let keys = Cs_keys_cache.add env evd true appr1 keys in
   let keys = Cs_keys_cache.add env evd false appr2 keys in
   let get_cs env sigma l2r keys nokey appr1 appr2 =
+    let () = debug_cs_unification (fun () -> Pp.(v 0 (str " get_cs " ++ pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ()))) in
+    
     let appr1, appr2 = if l2r then appr1, appr2 else appr2, appr1 in
     try
-      let (_, (_, c1, _)) as p1 = decompose_proj env sigma appr1 in
+      let (_, (_, c1, s1)) as p1 = decompose_proj env sigma appr1 in
       let kill, reduce =
         (* TOTHINK: Should I keep c1 simplified? *)
         let c1 = whd_all env sigma c1 in
@@ -1045,9 +1120,20 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
       let () = Cs_keys_cache.clear (not l2r) keys in
       match x with | Success _ -> Inl x | _ -> Inr false
     with _ -> Inr false in
+  let try_refold_cs evd l2r appr1 appr2 fail =
+    match refold_primproj_cs env flags evd (if l2r then appr1 else appr2) with
+      | Some appr' -> 
+        let appr1, appr2 = if l2r then appr', appr2 else appr1, appr' in
+        (match get_cs env evd l2r keys (lastUnfolded = Some true) appr1 appr2 with
+        | Inl x -> x
+        | Inr b -> fail evd)
+      | None -> fail evd
+  in
   let () = debug_unification (fun () -> Pp.(v 0 (pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ()))) in
-  match (flex_kind_of_term flags env evd term1 sk1,
-         flex_kind_of_term flags env evd term2 sk2) with
+  let flex1 = flex_kind_of_term flags env evd term1 sk1 in
+  let flex2 = flex_kind_of_term flags env evd term2 sk2 in
+  let () = debug_unification (fun () -> Pp.(v 0 (pr_flex env evd flex1 ++ cut () ++ pr_flex env evd flex2 ++ cut ()))) in
+  match flex1, flex2 with
     | Flexible (sp1,al1), Flexible (sp2,al2) ->
         let k1 = if lastUnfolded = Some true && not (Stack.not_purely_applicative sk1) then let (t, sk) = orig.left in flex_kind_of_term flags env evd t sk else Flexible (sp1, al1) in
         let k2 = if lastUnfolded = Some false && not (Stack.not_purely_applicative sk2) then let (t, sk) = orig.right in flex_kind_of_term flags env evd t sk else Flexible (sp2, al2) in
@@ -1093,15 +1179,21 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           match consume true appr1 appr2 i with
           | Success _ as x -> x
           | UnifFailure _ -> quick_fail i
+        and f6 i = 
+          try_refold_cs i true appr1 appr2
+            (fun i -> try_refold_cs i false appr1 appr2 quick_fail)
         in
-        ise_try evd [f1; f2; f3; f4; f5]
+        ise_try evd [f1; f2; f3; f4; f5; f6]
         end
 
     | Flexible ev1, MaybeFlexible v2 ->
-      flex_maybeflex true ev1 appr1 appr2 (if Stack.not_purely_applicative sk1 then appr2 else orig.right)
-
+      let f1 _ = flex_maybeflex true ev1 appr1 appr2 (if Stack.not_purely_applicative sk1 then appr2 else orig.right) in
+      try_refold_cs evd true appr1 appr2 f1
+        
     | MaybeFlexible vsk1, Flexible ev2 ->
-      flex_maybeflex false ev2 appr2 appr1 (if Stack.not_purely_applicative sk2 then appr1 else orig.left)
+      let f1 _ = 
+        flex_maybeflex false ev2 appr2 appr1 (if Stack.not_purely_applicative sk2 then appr1 else orig.left)
+      in try_refold_cs evd false appr1 appr2 f1
 
     | MaybeFlexible (v1', sk1' as vsk1'), MaybeFlexible (v2', sk2' as vsk2') -> begin
         match EConstr.kind evd term1, EConstr.kind evd term2 with
@@ -1254,7 +1346,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
            (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
 
     | Flexible ev1, Rigid ->
-        if Stack.not_purely_applicative sk1 then flex_rigid true ev1 appr1 appr2 else
+        if Stack.not_purely_applicative sk1 then 
+          try_refold_cs evd true appr1 appr2 
+          (fun _ -> flex_rigid true ev1 appr1 appr2)
+        else
         let (t2, sk2) as appr2 = orig.right in
         begin match flex_kind_of_term flags env evd t2 sk2 with
         | Flexible ev2 -> anomaly (Pp.str "rigid terms can not fold to flexible ones")
@@ -1262,7 +1357,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | Rigid -> flex_rigid true ev1 appr1 appr2
         end
     | Rigid, Flexible ev2 ->
-        if Stack.not_purely_applicative sk2 then flex_rigid false ev2 appr2 appr1 else
+        if Stack.not_purely_applicative sk2 then
+          try_refold_cs evd false appr1 appr2 
+            (fun _ -> flex_rigid false ev2 appr2 appr1)
+        else
         let (t1, sk1) as appr1 = orig.left in
         begin match flex_kind_of_term flags env evd t1 sk1 with
         | Flexible ev1 -> anomaly (Pp.str "rigid terms can not fold to flexible ones")
