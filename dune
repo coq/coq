@@ -4,9 +4,9 @@
  (dev     (flags :standard -w +a-4-9-27-40..42-44-45-48-58-67-68-70 -warn-error +a \ -short-paths)
           (rocq (flags :standard -w +default)))
  (release (flags :standard)
-          (ocamlopt_flags :standard -O3 -unbox-closures))
+          (ocamlopt_flags :standard -O3))
  (ireport (flags :standard -w -9-27+60-70)
-          (ocamlopt_flags :standard -O3 -unbox-closures -inlining-report)))
+          (ocamlopt_flags :standard -O3 -inlining-report)))
 
 ; Information about flags for release mode:
 ;
