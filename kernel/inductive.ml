@@ -1224,7 +1224,7 @@ let restrict_spec ?evars env spec p =
 
 (* [filter_stack_domain env spec p] restricts the size information in stack to
    what is allowed to enter under a match with predicate p in environment env. *)
-let filter_stack_domain stack_element_specif not_subterm ?nr ?evars env p stack =
+let filter_stack_domain stack_element_specif ?nr ?evars env p stack =
   let absctx, ar = Term.decompose_lambda_decls p in
   let absctxlen = Context.Rel.length absctx in
   (* Optimization: if the predicate is not dependent, no restriction is needed
@@ -1245,16 +1245,18 @@ let filter_stack_domain stack_element_specif not_subterm ?nr ?evars env p stack 
         let ty, args = decompose_app_list (whd_all ?evars env a) in
         let elt = match kind ty with
         | Ind ind ->
-          let spec = Option.fold_right Subterm.make_internal nr (stack_element_specif ?evars elt) in
+          let spec = stack_element_specif ?evars elt in
           if has_constant_parameters env absctxlen (k + List.length ctx) ind args then
             spec
           else
             lazy (Subterm.prune_path ?evars env (Lazy.force spec) ind args)
-        | _ -> not_subterm
+        | _ -> lazy Subterm.not_subterm
         in
+        let elt = Option.fold_right Subterm.make_internal nr elt in
         SArg elt :: filter_stack (push_rel d env) (k + 1) c0 stack'
       | _ ->
-        List.map (fun _ -> SArg not_subterm) stack
+        let elt = SArg (Option.fold_right Subterm.make_internal nr (lazy Subterm.not_subterm)) in
+        List.map (fun _ -> elt) stack
   in
   filter_stack env 0 ar stack
 
@@ -1272,7 +1274,7 @@ let rec subterm_specif ?evars renv stack t =
     | Case (ci, u, pms, p, iv, c, lbr) -> (* iv ignored: it's just a cache *)
       let (ci, (p,_), _iv, c, lbr) = expand_case renv.env (ci, u, pms, p, iv, c, lbr) in
       let stack' = push_stack_closures renv l stack in
-      let stack' = filter_stack_domain stack_element_specif (lazy Subterm.not_subterm) ?evars renv.env p stack' in
+      let stack' = filter_stack_domain stack_element_specif ?evars renv.env p stack' in
       let cases_spec = Subterm.on_branches renv.env ci.ci_ind (lazy_subterm_specif ?evars renv [] c) in
       let stl =
         Array.mapi (fun i br' ->
@@ -1607,25 +1609,47 @@ let check_one_fix ?evars renv recpos trees def =
             let needreduce_c_0, rs = check_rec_call renv rs c_0 in
             let rs = check_inert_subterm_rec_call renv rs p in
             (* compute the recarg info for the arguments of each branch *)
-            let rs' = NoNeedReduce::rs in
-            let nr = redex_level rs' in
+            let rs' = NoNeedReduce :: NoNeedReduce :: rs in
+            let nr = 1 + redex_level rs in
             let c_spec = Subterm.make_internal nr (lazy_subterm_specif ?evars renv [] c_0) in
             let case_spec = Subterm.on_branches renv.env ci.ci_ind c_spec in
-            let stack' = filter_stack_domain stack_element_specif (Lazy.from_val (Subterm.internal nr)) ~nr ?evars renv.env p stack in
+            let stack' = filter_stack_domain stack_element_specif ~nr ?evars renv.env p stack in
             let rs' =
               Array.fold_left_i (fun k rs' br' ->
                   let stack_br = push_stack_args (case_spec k) stack' in
                   check_rec_call_stack renv stack_br rs' br') rs' brs in
-            let needreduce_br, rs = List.sep_first rs' in
-            check_rec_call_state renv (needreduce_br ||| needreduce_c_0) stack rs (fun () ->
+            let needreduce_stack, rs' = List.sep_first rs' in
+            let needreduce_c_0', rs = List.sep_first rs' in
+            begin match needreduce_stack, needreduce_c_0' ||| needreduce_c_0 ||| needreduce_of_stack stack with
+            | NoNeedReduce, NoNeedReduce -> rs
+            | r, r' ->
               (* we try hard to reduce the match away by looking for a
                  constructor in c_0 (we unfold definitions too) *)
               let hd, args = reduce_and_contract_cofix ?evars renv.env c_0 in
               match kind hd with
-              | Construct cstr -> Reduce (apply_branch cstr (Array.to_list args) ci brs, [])
+              | Construct cstr ->
+                check_rec_call_stack renv stack rs (apply_branch cstr (Array.to_list args) ci brs)
               | CoFix _ | Ind _ | Lambda _ | Prod _ | LetIn _
               | Sort _ | Int _ | Float _ | String _ | Array _ | Meta _ -> assert false
-              | _ -> find_neutral_head renv.env hd)
+              | _ ->
+                match r, r' with
+                | NoNeedReduce, NoNeedReduce -> assert false
+                | NeedReduce (env, err), NoNeedReduce ->
+                  set_need_reduce_top env err rs
+                | _, NeedReduce (env, err) ->
+                (* Expand if possible, otherwise, last chance, propagate need
+                  for expansion, in the hope to be eventually erased *)
+                match find_neutral_head renv.env hd with
+                | Reduce (c, stack') -> check_rec_call_stack renv (stack'@stack) rs c
+                | HeadRel n ->
+                  begin match subterm_var n renv with
+                  | Vars l -> set_need_reduce env l err rs
+                  | DeadCode -> set_need_reduce_top env err rs
+                  | NotSubterm | Subterm (_, _, _) -> raise (FixGuardError (env, err))
+                  end
+                | HeadStuck -> set_need_reduce_top env err rs
+                | NoHead -> raise (FixGuardError (env, err))
+                end
 
         (* Enables to traverse Fixpoint definitions in a more intelligent
            way, ie, the rule :
