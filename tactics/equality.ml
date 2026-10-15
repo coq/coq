@@ -929,7 +929,7 @@ let find_positions env sigma ~keep_proofs ~no_discr ~eqsort ~goalsort t1 t2 =
     let hd2,args2 = whd_all_stack env sigma t2 in
     let ty1 = get_type_of env sigma t1 in
     let s1 = get_sort_quality_of env sigma ty1 in
-    let g = Environ.qualities env in
+    let g = Evd.elim_graph sigma in
     let allowed_elim_on_sort = eliminates_to g s s1 in
     match (EConstr.kind sigma hd1, EConstr.kind sigma hd2) with
       | Construct ((ind1,i1 as sp1),u1), Construct (sp2,_)
