@@ -981,21 +981,28 @@ let explain_bad_variance env sigma ~lev ~expected ~actual =
     (fun () -> UVars.Variance.pr expected)
     (fun () -> UVars.Variance.pr actual)
 
-let explain_undeclared_used_variables env sigma ~declared_vars ~inferred_vars =
-  let l = Id.Set.elements (Id.Set.diff inferred_vars declared_vars) in
-  let n = List.length l in
-  let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_vars) in
-  let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_vars) in
-  let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
-  Pp.(prlist str
-        ["The following section "; (String.plural n "variable"); " ";
-         (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
-      missing_vars ++ str "." ++ fnl () ++ fnl () ++
-      str "You can either update your proof to not depend on " ++ missing_vars ++
-      str ", or you can update your Proof line from" ++ fnl () ++
-      str "Proof using " ++ declared_vars ++ fnl () ++
-      str "to" ++ fnl () ++
-      str "Proof using " ++ inferred_vars)
+let explain_undeclared_used_variables env sigma ~declared_vars ~type_vars ~inferred_vars =
+  let valid_exprs = Proof_using.valid_exprs env ~type_vars ~used:inferred_vars in
+  let missing_vars_set = Id.Set.diff inferred_vars declared_vars in
+  (* filter the named context instead of doing Id.Set.elements
+     to get the right order *)
+  let missing_vars = List.rev @@ List.filter_map (fun d ->
+      let na = Context.Named.Declaration.get_id d in
+      if Id.Set.mem na missing_vars_set then Some na
+      else None)
+      (Environ.named_context env)
+  in
+  let n = List.length missing_vars in
+  let () = assert (Int.equal n (Id.Set.cardinal missing_vars_set)) in
+  let missing_vars  = hov 2 @@ Pp.pr_sequence Id.print missing_vars in
+  str "The following section " ++ str (String.plural n "variable") ++ str " " ++
+  str (String.conjugate_verb_to_be n) ++ str " used but not declared:" ++ spc () ++
+  missing_vars ++ str "." ++ fnl () ++ fnl () ++
+  str "You can either update your proof to not depend on " ++
+  (if n = 1 then str "it" else str "them") ++ pr_comma() ++
+  str "or you can update your Proof line to" ++
+  (if List.length valid_exprs > 1 then str " one of the following:" else mt()) ++ fnl () ++
+  prlist_with_sep fnl (fun expr -> str "Proof using " ++ expr) valid_exprs
 
 let explain_ill_formed_constant env sigma cst kn =
   strbrk "Ill-formed constant" ++ spc () ++ pr_constant env cst ++ str ":" ++ spc () ++
@@ -1061,8 +1068,8 @@ let explain_type_error env sigma err =
   | BadCaseRelevance (rlv, case) -> explain_bad_case_relevance env sigma rlv case
   | BadInvert -> explain_bad_invert env
   | BadVariance {lev;expected;actual} -> explain_bad_variance env sigma ~lev ~expected ~actual
-  | UndeclaredUsedVariables {declared_vars;inferred_vars} ->
-      explain_undeclared_used_variables env sigma ~declared_vars ~inferred_vars
+  | UndeclaredUsedVariables {declared_vars; type_vars;inferred_vars} ->
+      explain_undeclared_used_variables env sigma ~declared_vars ~type_vars ~inferred_vars
   | IllFormedConstant (cst, kn) ->
     explain_ill_formed_constant env sigma cst kn
   | IllFormedInductive (mind, kn) ->

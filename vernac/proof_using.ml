@@ -143,7 +143,7 @@ let debug_proof_using = CDebug.create ~name:"proof-using" ()
 (* Variables in [skip] come from after the definition, so don't count
    for "All". Used in the variable case since the env contains the
    variable itself. *)
-let suggest_common env used ids_typ skip =
+let valid_exprs env ~used ~ids_typ ~skip =
   let module S = Id.Set in
   let open Pp in
   let pr_set parens s =
@@ -170,12 +170,20 @@ let suggest_common env used ids_typ skip =
   if S.equal all_needed fwd_typ then valid (str "Type*");
   if S.equal all all_needed then valid(str "All");
   valid (pr_set false needed);
+  !valid_exprs
+
+let suggest_common env used ids_typ skip =
+  let valid_exprs = valid_exprs env ~used ~ids_typ ~skip in
+  let open Pp in
   let () =
     if Aux_file.recording () then
-      let s = string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs) in
+      let s = string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) valid_exprs) in
       record_proof_using s
   in
-  !valid_exprs
+  valid_exprs
+
+let valid_exprs env ~type_vars ~used =
+  valid_exprs env ~used ~ids_typ:type_vars ~skip:Id.Set.empty
 
 let warn_proof_using_flag = CWarnings.create_warning ~default:Disabled ~name:"proof-using" ()
 

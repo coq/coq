@@ -1,12 +1,11 @@
 File "./output/bug_19861.v", line 8, characters 2-6:
-Error:
-The following section variable is used but not declared:
+Error: The following section variable is used but not declared:
 HypFalse.
 
-You can either update your proof to not depend on HypFalse, or you can update your Proof line from
-Proof using 
-to
+You can either update your proof to not depend on it,
+or you can update your Proof line to one of the following:
 Proof using HypFalse
+Proof using All
 
 
 coqc exited with code 1

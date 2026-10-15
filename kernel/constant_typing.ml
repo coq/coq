@@ -35,15 +35,15 @@ let check_section_variables env declared_vars body typ =
     declared_vars
   end
   else
-  let tyvars = global_vars_set env typ in
-  let declared_vars = Environ.really_needed env (Id.Set.union declared_vars tyvars) in
+  let type_vars = global_vars_set env typ in
+  let declared_vars = Environ.really_needed env (Id.Set.union declared_vars type_vars) in
   let () = match body with
   | None -> ()
   | Some body ->
     let ids_def = global_vars_set env body in
-    let inferred_vars = Environ.really_needed env (Id.Set.union declared_vars ids_def) in
+    let inferred_vars = Environ.really_needed env (Id.Set.union type_vars ids_def) in
     if not (Id.Set.subset inferred_vars declared_vars) then
-      Type_errors.error_undeclared_used_variables env ~declared_vars ~inferred_vars
+      Type_errors.error_undeclared_used_variables env ~declared_vars ~type_vars ~inferred_vars
   in
   declared_vars
 

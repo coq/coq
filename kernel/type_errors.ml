@@ -81,7 +81,7 @@ type ('constr, 'types, 'r) ptype_error =
   | BadCaseRelevance of 'r * 'constr
   | BadInvert
   | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
-  | UndeclaredUsedVariables of { declared_vars : Id.Set.t; inferred_vars : Id.Set.t }
+  | UndeclaredUsedVariables of { declared_vars : Id.Set.t; type_vars : Id.Set.t; inferred_vars : Id.Set.t }
   | IllFormedConstant of Constant.t * KerName.t
   | IllFormedInductive of MutInd.t * KerName.t
 
@@ -185,8 +185,8 @@ let error_bad_invert env =
 let error_bad_variance env ~lev ~expected ~actual =
   raise (TypeError (env, BadVariance {lev;expected;actual}))
 
-let error_undeclared_used_variables env ~declared_vars ~inferred_vars =
-  raise (TypeError (env, UndeclaredUsedVariables {declared_vars; inferred_vars}))
+let error_undeclared_used_variables env ~declared_vars ~type_vars ~inferred_vars =
+  raise (TypeError (env, UndeclaredUsedVariables {declared_vars; type_vars; inferred_vars}))
 
 let error_ill_formed_constant env cst kn =
   raise (TypeError (env, IllFormedConstant (cst, kn)))
