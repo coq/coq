@@ -1530,7 +1530,12 @@ let rec find_neutral_head env c =
   | Evar _ -> HeadStuck
   | Fix _ | CoFix _ -> HeadStuck
   | Const (c, _) ->
-    if Environ.is_symbol env c then NoHead else HeadStuck
+    let cb = Environ.lookup_constant c env in
+    begin match cb.const_body with
+    | Def _ -> assert false
+    | Undef _ | Symbol _ -> NoHead
+    | OpaqueDef _ | Primitive _ -> HeadStuck
+    end
   | Meta _ -> assert false
   | LetIn _ -> assert false (* only whnf terms *)
   | Sort _ | Prod _ | Lambda _ | Ind _ | Construct _
@@ -1673,10 +1678,13 @@ let check_one_fix ?evars renv recpos trees def =
               | Array _ -> assert false
               | _ -> find_neutral_head renv.env hd)
 
-        | Const (kn,_u as cu) ->
+        | Const cu ->
             check_rec_call_state renv NoNeedReduce stack rs (fun () ->
-                if evaluable_constant kn renv.env then Reduce (constant_value_in renv.env cu, [])
-                else if is_symbol renv.env kn then NoHead else HeadStuck)
+              match constant_value_in renv.env cu with
+              | def -> Reduce (def, [])
+              | exception NotEvaluableConst (NoBody | HasRules _) -> NoHead
+              (* Symbols can reduce whenever, axioms can be instantiated and then reduce *)
+              | exception NotEvaluableConst (Opaque | IsPrimitive _) -> HeadStuck)
 
         | Lambda (x,a,b) ->
             begin
