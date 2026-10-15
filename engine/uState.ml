@@ -42,6 +42,7 @@ let template_default_univs () =
   !template_default_univs
 
 let _debug_ustate_flag, debug = CDebug.create_full ~name:"ustate" ()
+let _debug_ustate_restrict_flag, debug_restrict = CDebug.create_full ~name:"ustate_restrict" ()
 let _debug_ustate_model_flag, debug_model = CDebug.create_full ~name:"ustate_model" ()
 
 type universes_entry =
@@ -1649,7 +1650,7 @@ let merge_graph_context g (us, csts) =
   UGraph.merge_constraints csts g
 
 let restrict_universe_context (univs, univ_csts) keep =
-  debug Pp.(fun () -> str"Restricting universe context set: "  ++ Univ.ContextSet.pr Level.raw_pr (univs, univ_csts) ++
+  debug_restrict Pp.(fun () -> str"Restricting universe context set: "  ++ Univ.ContextSet.pr Level.raw_pr (univs, univ_csts) ++
     str " to " ++ Level.Set.pr Level.raw_pr keep);
   let removed = Level.Set.diff univs keep in
   if Level.Set.is_empty removed then univs, univ_csts
@@ -1663,11 +1664,11 @@ let restrict_universe_context (univs, univ_csts) keep =
   let univ_csts = UnivConstraints.filter (fun (l,d,r) -> not (Universe.is_type0 l && d == Le)) univ_csts in
   let uctx = (Level.Set.inter univs keep, univ_csts) in
   (* debug Pp.(fun () -> str"Extras" ++ Level.Set.pr Level.raw_pr extras); *)
-  debug Pp.(fun () -> str"Restricted universe context" ++ Univ.ContextSet.pr Level.raw_pr uctx);
+  debug_restrict Pp.(fun () -> str"Restricted universe context" ++ Univ.ContextSet.pr Level.raw_pr uctx);
   uctx
 
 let restrict_universe_context_away (univs, univ_csts) removed =
-  debug Pp.(fun () -> str"Restricting universe context set: "  ++ Univ.ContextSet.pr Level.raw_pr (univs, univ_csts) ++
+  debug_restrict Pp.(fun () -> str"Restricting universe context set: "  ++ Univ.ContextSet.pr Level.raw_pr (univs, univ_csts) ++
     str " away from " ++ Level.Set.pr Level.raw_pr removed);
   if Level.Set.is_empty removed then univs, univ_csts
   else
@@ -1682,11 +1683,11 @@ let restrict_universe_context_away (univs, univ_csts) removed =
   let univ_csts = UGraph.constraints_for ~kept:allkept g in
   let univ_csts = UnivConstraints.filter (fun (l,d,r) -> not (Universe.is_type0 l && d == Le)) univ_csts in
   let uctx = (Level.Set.diff univs removed, univ_csts) in
-  debug Pp.(fun () -> str"Restricted universe context" ++ Univ.ContextSet.pr Level.raw_pr uctx);
+  debug_restrict Pp.(fun () -> str"Restricted universe context" ++ Univ.ContextSet.pr Level.raw_pr uctx);
   uctx
 
 let restrict_uctx uctx keep =
-  debug Pp.(fun () -> str"Restricting universe context: "  ++ pr ~local:true uctx ++
+  debug_restrict Pp.(fun () -> str"Restricting universe context: "  ++ pr ~local:true uctx ++
     str " to " ++ Level.Set.pr Level.raw_pr keep);
   let removed = Level.Set.diff uctx.local_variables keep in
   if Level.Set.is_empty removed then uctx
@@ -1699,7 +1700,7 @@ let restrict_uctx uctx keep =
       variances = Option.map (fun v -> Level.Set.fold Level.Map.remove removed v) uctx.variances;
       minim_extra = UnivMinim.remove_from_extra removed uctx.minim_extra;
       universes } in
-    debug Pp.(fun () -> str"Restricted universe context" ++ pr ~local:true uctx');
+    debug_restrict Pp.(fun () -> str"Restricted universe context" ++ pr ~local:true uctx');
     uctx'
 
 let restrict uctx vars =
