@@ -41,6 +41,7 @@ val lift_tycon : int -> type_constraint -> type_constraint
 val define_evar_as_product : env -> evar_map -> ?name:Names.Id.t -> existential -> evar_map * types
 val define_evar_as_lambda : env -> evar_map -> ?name:Names.Id.t -> existential -> evar_map * types
 val define_evar_as_sort : env -> evar_map -> existential -> evar_map * ESorts.t
+val define_evar_as_inductive : env -> evar_map -> existential -> Names.inductive -> evar_map * types
 
 (** {6 debug pretty-printer:} *)
 

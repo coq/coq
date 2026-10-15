@@ -227,6 +227,28 @@ let split_as_array env sigma0 = function
       sigma, Some ty
     | _ -> sigma0, None
 
+let define_evar_as_inductive env sigma (evk, _) ind =
+  let evi = Evd.find_undefined sigma evk in
+  let evenv = evar_env env evi in
+  let evksrc = evar_source evi in
+  let src = subterm_source evk ~where:Domain evksrc in
+  let spec = Inductive.lookup_mind_specif env ind in
+  let (_, u as indu), ctx = UnivGen.fresh_inductive_instance env ind in
+  let sigma = Evd.merge_sort_context_set Evd.univ_flexible sigma ctx in
+  let ty = Inductive.type_of_inductive (spec, u) in
+  let rec instantiate_arity sigma ty args = 
+    match EConstr.kind sigma (Reductionops.whd_all env sigma ty) with
+    | Prod (na, dom, rng) ->
+      let sigma, arg = new_evar evenv sigma ~typeclass_candidate:false ~src ~filter:(evar_filter evi) dom in
+      instantiate_arity sigma (subst1 arg rng) (arg :: args)
+    | _ -> sigma, Array.of_list (List.rev args)
+  in
+  let sigma, args = instantiate_arity sigma (EConstr.of_constr ty) [] in
+  let u = EConstr.EInstance.make u in
+  let term = mkApp (EConstr.mkIndU (ind, u), args) in
+  let sigma = Evd.define evk term sigma in
+  sigma, term
+
 let valcon_of_tycon x = x
 let lift_tycon n = Option.map (lift n)
 
