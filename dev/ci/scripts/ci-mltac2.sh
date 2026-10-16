@@ -10,6 +10,6 @@ git_download mltac2
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/mltac2"
-  dune build --root . --only-packages=mltac2 @install
-  dune install --root . mltac2 --prefix="$CI_INSTALL_DIR"
+  dune build --root . --only-packages=rocq-mltac2 @install
+  dune install --root . rocq-mltac2 --prefix="$CI_INSTALL_DIR"
 )
