@@ -176,7 +176,7 @@ val from_ustate : UState.t -> evar_map
     (e.g. after having interpreted a Theorem statement and preparing
     to open a goal). *)
 
-val from_auctx : Environ.env -> UVars.AbstractContext.t -> evar_map
+val from_auctx : ?of_template:bool -> Environ.env -> UVars.AbstractContext.t -> evar_map
 (** The empty evar map with given universe context, taking its initial universes
     from both the env and the variables in the universe context.
     This is the entry point when restarting from an already finalized declaration

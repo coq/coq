@@ -18,9 +18,10 @@ option is template universe polymorphic
 Arguments option A%_type_scope
 Expands to: Inductive Corelib.Init.Datatypes.option
 Declared in library Corelib.Init.Datatypes, line 209, characters 10-16
-option : Type@{option.u0} -> Type@{max(Set,option.u0)}
+option : Type@{u} -> Type@{max(Set,u)}
+(* u |  *)
 
-option is template universe polymorphic on option.u0 (cannot be instantiated to Prop)
+option is template universe polymorphic (default instance: {option.u0})
 Arguments option A%_type_scope
 Expands to: Inductive Corelib.Init.Datatypes.option
 Declared in library Corelib.Init.Datatypes, line 209, characters 10-16

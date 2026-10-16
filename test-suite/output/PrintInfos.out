@@ -1,4 +1,4 @@
-existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
+existT : forall [A : Univ] (P : A -> Univ) (x : A), P x -> {x : A & P x}
 
 existT is template universe polymorphic
 Arguments existT [A]%_type_scope P%_function_scope x _
@@ -9,7 +9,7 @@ Inductive sigT (A : Type) (P : A -> Type) : Type :=
 
 Arguments sigT [A]%_type_scope P%_type_scope
 Arguments existT [A]%_type_scope P%_function_scope x _
-existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
+existT : forall [A : Univ] (P : A -> Univ) (x : A), P x -> {x : A & P x}
 
 Argument A is implicit
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
