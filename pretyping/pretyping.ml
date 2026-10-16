@@ -913,7 +913,11 @@ struct
       let qs = List.map (UState.nf_quality (Evd.ustate !sigma)) qs in
       match List.fold_left max_quality_opt (Some Sorts.Quality.qprop) qs with
       | Some q -> q
-      | None -> match qs with
+      | None ->
+        (* all qvars or qprop with at least 2 different qvars, unify the qvars
+           (alternatively: return qtype?) *)
+        let qs = List.filter (fun q -> not Sorts.Quality.(equal q qprop)) qs in
+        match qs with
         | [] -> assert false
         | q :: rest ->
           (* all qvars or qprop with at least 2 different qvars, unify the qvars
