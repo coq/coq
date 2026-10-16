@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-w" "ambiguous-paths") -*- *)
 Module test1.
 Section test1.
 

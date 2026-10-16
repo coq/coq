@@ -334,6 +334,7 @@ let warning_ambiguous_path = "ambiguous-paths"
 
 let warn_ambiguous_path =
   CWarnings.create ~name:warning_ambiguous_path ~category:CWarnings.CoreCategories.coercions
+    ~default:CWarnings.Disabled
     (fun l -> prlist_with_sep fnl (fun (c,p,q) ->
          str"New coercion path " ++ print_path (c,p) ++
          if List.is_empty q then

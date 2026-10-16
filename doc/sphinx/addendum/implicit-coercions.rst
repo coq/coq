@@ -73,7 +73,8 @@ We then write :g:`f : C >-> D`.
 .. _ambiguous-paths:
 
 When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion
-paths with the same classes as existing ones are ignored. Rocq will generate
+paths with the same classes as existing ones are ignored. When activating
+the ``ambiguous-paths`` warning (off by default), rocq will generate
 a warning when the two paths may be non convertible. When the :g:`x₁..xₖ` are exactly
 the :g:`v₁..vₙ` (in the same order), the coercion is said to satisfy
 the :gdef:`uniform inheritance condition`. When possible, we recommend

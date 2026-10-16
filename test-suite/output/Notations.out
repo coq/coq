@@ -97,10 +97,6 @@ fun f : nat -> nat -> nat -> nat => {|f; 0; 1; 2|} : nat
      : nat
 {|op; 0; 1|}
      : nat
-File "./output/Notations.v", line 196, characters 0-26:
-Warning:
-New coercion path [c] : nat >-> bool is ambiguous with existing 
-[of_nat] : nat >-> bool. [ambiguous-paths,coercions,default]
 false = 0
      : Prop
 fun x : option nat => match x with

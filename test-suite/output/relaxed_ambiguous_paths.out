@@ -1,11 +1,11 @@
-File "./output/relaxed_ambiguous_paths.v", line 13, characters 0-29:
-Warning:
-New coercion path [g1; f2] : A >-> B' is ambiguous with existing 
-[f1; g2] : A >-> B'. [ambiguous-paths,coercions,default]
 File "./output/relaxed_ambiguous_paths.v", line 14, characters 0-29:
 Warning:
+New coercion path [g1; f2] : A >-> B' is ambiguous with existing 
+[f1; g2] : A >-> B'. [ambiguous-paths,coercions]
+File "./output/relaxed_ambiguous_paths.v", line 15, characters 0-29:
+Warning:
 New coercion path [h1; f3] : B >-> C' is ambiguous with existing 
-[f2; h2] : B >-> C'. [ambiguous-paths,coercions,default]
+[f2; h2] : B >-> C'. [ambiguous-paths,coercions]
 [f1] : A >-> A'
 [g1] : A >-> B
 [f1; g2] : A >-> B'
@@ -19,10 +19,10 @@ New coercion path [h1; f3] : B >-> C' is ambiguous with existing
 [h2] : B' >-> C'
 [f3] : C >-> C'
 [reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
-File "./output/relaxed_ambiguous_paths.v", line 33, characters 0-28:
+File "./output/relaxed_ambiguous_paths.v", line 34, characters 0-28:
 Warning:
 New coercion path [ab; bc] : A >-> C is ambiguous with existing 
-[ac] : A >-> C. [ambiguous-paths,coercions,default]
+[ac] : A >-> C. [ambiguous-paths,coercions]
 [ab] : A >-> B
 [ac] : A >-> C
 [ac; cd] : A >-> D
@@ -30,15 +30,15 @@ New coercion path [ab; bc] : A >-> C is ambiguous with existing
 [bc; cd] : B >-> D
 [cd] : C >-> D
 [reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
-File "./output/relaxed_ambiguous_paths.v", line 50, characters 0-28:
+File "./output/relaxed_ambiguous_paths.v", line 51, characters 0-28:
 Warning:
 New coercion path [ab; bc] : A >-> C is ambiguous with existing 
-[ac] : A >-> C. [ambiguous-paths,coercions,default]
-File "./output/relaxed_ambiguous_paths.v", line 51, characters 0-28:
+[ac] : A >-> C. [ambiguous-paths,coercions]
+File "./output/relaxed_ambiguous_paths.v", line 52, characters 0-28:
 Warning:
 New coercion path [ba; ab] : B >-> B is not definitionally an identity function.
 New coercion path [ab; ba] : A >-> A is not definitionally an identity function.
-[ambiguous-paths,coercions,default]
+[ambiguous-paths,coercions]
 [ab] : A >-> B
 [ac] : A >-> C
 [ba] : B >-> A
@@ -60,10 +60,10 @@ New coercion path [ab; ba] : A >-> A is not definitionally an identity function.
 [D_B; B_A'] : D >-> A'
 [D_B] : D >-> B
 [D_C] : D >-> C
-File "./output/relaxed_ambiguous_paths.v", line 147, characters 0-86:
+File "./output/relaxed_ambiguous_paths.v", line 148, characters 0-86:
 Warning:
 New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing 
-[D_B; B_A'] : D >-> A'. [ambiguous-paths,coercions,default]
+[D_B; B_A'] : D >-> A'. [ambiguous-paths,coercions]
 [reverse_coercion] : ReverseCoercionSource >-> ReverseCoercionTarget
 [A'_A] : A' >-> A
 [B_A'; A'_A] : B >-> A
@@ -74,15 +74,15 @@ New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing
 [D_B; B_A'] : D >-> A'
 [D_B] : D >-> B
 [D_C] : D >-> C
-File "./output/relaxed_ambiguous_paths.v", line 156, characters 0-47:
+File "./output/relaxed_ambiguous_paths.v", line 157, characters 0-47:
 Warning:
 New coercion path [unwrap_nat; wrap_nat] : NAT >-> NAT is not definitionally an identity function.
-[ambiguous-paths,coercions,default]
-File "./output/relaxed_ambiguous_paths.v", line 157, characters 0-64:
+[ambiguous-paths,coercions]
+File "./output/relaxed_ambiguous_paths.v", line 158, characters 0-64:
 Warning:
 New coercion path [unwrap_list; wrap_list] : LIST >-> LIST is not definitionally an identity function.
-[ambiguous-paths,coercions,default]
-File "./output/relaxed_ambiguous_paths.v", line 158, characters 0-51:
+[ambiguous-paths,coercions]
+File "./output/relaxed_ambiguous_paths.v", line 159, characters 0-51:
 Warning:
 New coercion path [unwrap_Type; wrap_Type] : TYPE >-> TYPE is not definitionally an identity function.
-[ambiguous-paths,coercions,default]
+[ambiguous-paths,coercions]
