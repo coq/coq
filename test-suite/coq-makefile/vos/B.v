@@ -23,7 +23,7 @@ Module M.
 End M.
 
 
-Module Type T.
+Module T.
   Lemma x : True.
   Proof. trivial. Qed.
 End T.

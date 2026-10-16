@@ -1580,6 +1580,11 @@ let end_modtype l senv =
 
 (** {6 Inclusion of module or module type } *)
 
+let warn_modtype_include =
+  CWarnings.create ~name:"include-module-type-in-module" ~category:CWarnings.CoreCategories.deprecated ~default:AsError
+    (fun (mp, mp') ->
+      Pp.(str "Inclusion of the module type " ++ ModPath.print mp ++ str " in the plain module " ++ ModPath.print mp' ++ str " is deprecated."))
+
 let add_include me is_module inl senv =
   let open Mod_typing in
   let mp_sup = senv.modpath in
@@ -1589,6 +1594,16 @@ let add_include me is_module inl senv =
   let self_delta = Mod_subst.forget_inline_delta_resolver senv.modresolver in
   (* The module being built for [Include Self], its fields are already part of [senv.env]. *)
   let self = make_module_body self self_delta in
+  let () = match senv.modvariant with
+  | NONE | SIG _-> ()
+  | STRUCT _ | LIBRARY ->
+    let rec head = function
+    | MEident mp -> mp
+    | MEapply (me, _) | MEwith (me, _) -> head me
+    in
+    if not is_module then
+      warn_modtype_include (head me, senv.modpath)
+  in
   let str, resolver, _, vmtab =
     translate_mse_include is_module state vmstate senv.env mp_sup self inl me
   in

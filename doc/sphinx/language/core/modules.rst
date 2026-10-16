@@ -192,6 +192,18 @@ are now available through the dot notation.
    Including multiple modules in a single :cmd:`Include` is equivalent to including each module
    in a separate :cmd:`Include` command.
 
+   .. warn:: Inclusion of the module type @qualid in the plain module @qualid is deprecated.
+      :name: include-module-type-in-module
+
+      It is now discouraged to directly include a module type into a module,
+      because of the ambiguity of Qed proofs in module types, as they are
+      equivalent to abstract parameters. When including them, they could be
+      handled either as actual opaque proofs (the current default) or as
+      abstract parameters (the ideal semantics). To emulate the deprecated
+      behaviour, we recommend defining the included module type as a module
+      instead, and if needed defining a wrapper module type that includes
+      that module.
+
 .. cmd:: Include Type {+<+ @module_type_inl }
 
    .. deprecated:: 8.3

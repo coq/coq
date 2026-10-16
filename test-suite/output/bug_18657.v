@@ -10,7 +10,7 @@ Module Import Second.
   Lemma one_bar : 1 = bar. Proof. rewrite bar_1. reflexivity. Qed.
 End Second.
 
-Module Type B.
+Module B.
   Definition bar := 1.
   Lemma bar_1 : bar = 1. Proof. reflexivity. Qed.
 End B.
