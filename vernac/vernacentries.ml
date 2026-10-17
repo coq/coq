@@ -2023,6 +2023,14 @@ let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
       optdepr  = None;
+      optkey   = ["Guard"; "Checking";"Option";"Traversing";"Subterm";"Analysis"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.guard_checking_options.traversing_subterm_analysis);
+      optwrite = (fun b -> Global.set_guard_checking_option_subterm b) }
+
+let () =
+  declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
       optkey   = ["Positivity"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_positive);
       optwrite = (fun b -> Global.set_check_positive b) }

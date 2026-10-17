@@ -100,7 +100,8 @@ Section :ref:`typing-rules`.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
 
-   These commands also support the :attr:`universes(polymorphic)`, :attr:`refine`,
+   These commands also support the :attr:`global`, :attr:`universes(polymorphic)`,
+   :attr:`universes(collapse_sort_variables)`, :attr:`refine`,
    :attr:`program` (see :ref:`program_definition`), :attr:`canonical`,
    :attr:`bypass_check(universes)`, :attr:`bypass_check(guard)`, :attr:`deprecated`,
    :attr:`warn` and :attr:`using` attributes.

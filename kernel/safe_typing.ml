@@ -329,6 +329,11 @@ let set_check_guarded b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with check_guarded = b } senv
 
+let set_guard_checking_option_subterm b senv =
+  let flags = Environ.typing_flags senv.env in
+  let new_options = { traversing_subterm_analysis = b} in
+  set_typing_flags { flags with guard_checking_options = new_options } senv
+
 let set_check_positive b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with check_positive = b } senv
@@ -371,11 +376,18 @@ let with_typing_flags ?typing_flags senv ~f =
     let res, senv = f (set_typing_flags typing_flags senv) in
     res, set_typing_flags orig_typing_flags senv
 
+let stricter_guard_options f1 f2 =
+  let impl b1 b2 = if b1 then b2 else true in
+  let { traversing_subterm_analysis = traversing_subterm_analysis1 } = f1 in
+  let { traversing_subterm_analysis = traversing_subterm_analysis2 } = f2 in
+  impl traversing_subterm_analysis1 traversing_subterm_analysis2
+
 (* f1 is stricter than f2 if terms typed with f1 also type with f2 *)
 let stricter_flags f1 f2 =
   let impl b1 b2 = if b1 then b2 else true in
   let {
     check_guarded = check_guarded1;
+    guard_checking_options = guard_checking_options1;
     check_positive = check_positive1;
     check_universes = check_universes1;
     check_eliminations = check_eliminations1;
@@ -393,6 +405,7 @@ let stricter_flags f1 f2 =
   in
   let {
     check_guarded = check_guarded2;
+    guard_checking_options = guard_checking_options2;
     check_positive = check_positive2;
     check_universes = check_universes2;
     check_eliminations = check_eliminations2;
@@ -409,6 +422,7 @@ let stricter_flags f1 f2 =
   } = f2
   in
   impl check_guarded2 check_guarded1 &&
+  stricter_guard_options guard_checking_options1 guard_checking_options2 &&
   impl check_positive2 check_positive1 &&
   impl check_universes2 check_universes1 &&
   impl check_eliminations2 check_eliminations1 &&

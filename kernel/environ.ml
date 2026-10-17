@@ -685,9 +685,15 @@ let push_subgraph (levels, univ_csts) env =
 
 let push_subgraph us env = NewProfile.profile "push_subgraph" (fun () -> push_subgraph us env) ()
 
+let same_guard_options {
+  traversing_subterm_analysis
+} alt =
+  traversing_subterm_analysis == alt.traversing_subterm_analysis
+
 (* It's convenient to use [{flags with foo = bar}] so we're smart wrt to it. *)
 let same_flags {
      check_guarded;
+     guard_checking_options;
      check_positive;
      check_universes;
      check_eliminations;
@@ -702,6 +708,7 @@ let same_flags {
      allow_uip;
   } alt =
   check_guarded == alt.check_guarded &&
+  same_guard_options guard_checking_options alt.guard_checking_options &&
   check_positive == alt.check_positive &&
   check_universes == alt.check_universes &&
   check_eliminations == alt.check_eliminations &&

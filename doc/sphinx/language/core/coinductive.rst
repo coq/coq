@@ -128,6 +128,8 @@ their positive counterparts.
 .. index::
    single: cofix
 
+.. _prim-cofix:
+
 Co-recursive functions: cofix
 -----------------------------
 

@@ -406,45 +406,26 @@ useful.  Use the :cmd:`Scheme` command to generate a useful induction principle.
 .. index::
    single: fix
 
-Recursive functions: fix
-------------------------
+Writing Recursive Functions using Fixpoints
+-------------------------------------------
 
-.. insertprodn term_fix fixannot
+Rocq provides primitive support for defining recursive functions over
+inductive types using fixpoints. The recommended way to declare such functions
+is the top-level :cmd:`Fixpoint` command. Recursive functions can also be
+written directly within a term using a :ref:`fix <prim-fix>` expression, which is the
+construction to which :cmd:`Fixpoint` declarations are elaborated.
 
-.. prodn::
-   term_fix ::= let fix @fix_decl in @term
-   | fix @fix_decl {? {+ with @fix_decl } for @ident }
-   fix_decl ::= @ident {* @binder } {? @fixannot } {? : @type } := @term
-   fixannot ::= %{ struct @ident %}
-   | %{ wf @one_term @ident %}
-   | %{ measure @one_term {? @ident } {? @one_term } %}
-
-
-The expression ":n:`fix @ident__1 @binder__1 : @type__1 := @term__1 with … with @ident__n @binder__n : @type__n := @term__n for @ident__i`" denotes the
-:math:`i`-th component of a block of functions defined by mutual structural
-recursion. It is the local counterpart of the :cmd:`Fixpoint` command. When
-:math:`n=1`, the ":n:`for @ident__i`" clause is omitted.
-
-The association of a single fixpoint and a local definition have a special
-syntax: :n:`let fix @ident {* @binder } := @term in` stands for
-:n:`let @ident := fix @ident {* @binder } := @term in`. The same applies for cofixpoints.
-
-Some options of :n:`@fixannot` are only supported in specific constructs.  :n:`fix` and :n:`let fix`
-only support the :n:`struct` option, while :n:`wf` and :n:`measure` are only supported in
-commands such as :cmd:`Fixpoint` (with the :attr:`program` attribute) and :cmd:`Function`.
-
-.. todo explanation of struct: see text above at the Fixpoint command, also
-   see https://github.com/rocq-prover/rocq/pull/12936#discussion_r510716268 and above.
-   Consider whether to move the grammar for fixannot elsewhere
+The following subsections describe these two forms and their use.
+Rocq only accepts terminating recursive functions to preserve consistency.
+Termination checking is performed by the :ref:`guard condition <guard-condition>`.
 
 .. _Fixpoint:
 
 Top-level recursive functions
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section describes the primitive form of definition by recursion over
-inductive objects. See the :cmd:`Function` command for more advanced
-constructions.
+The :cmd:`Fixpoint` command declares functions defined by structural recursion
+over inductive types.
 
 .. cmd:: Fixpoint @fix_definition {* with @fix_definition }
 
@@ -452,6 +433,13 @@ constructions.
 
    .. prodn::
       fix_definition ::= @ident_decl {* @binder } {? @fixannot } {? : @type } {? := @term } {? @decl_notations }
+
+   .. insertprodn fixannot fixannot
+
+   .. prodn::
+      fixannot ::= %{ struct @ident %}
+      | %{ wf @one_term @ident %}
+      | %{ measure @one_term {? @ident } {? @one_term } %}
 
    Allows defining functions by pattern matching over inductive
    objects using a fixed point construction. The meaning of this declaration is
@@ -462,158 +450,781 @@ constructions.
    consequently :n:`forall {* @binder }, @type` and its value is equivalent
    to :n:`fun {* @binder } => @term`.
 
-   This command accepts the :attr:`program`,
-   :attr:`bypass_check(universes)`, and :attr:`bypass_check(guard)` attributes.
+   This command accepts the same attributes as :cmd:`Definition`.
+   The :attr:`bypass_check(guard)` attribute disables termination checking for
+   this definition.
 
-   To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
-   constraints on a special argument called the decreasing argument. They
-   are needed to ensure that the :cmd:`Fixpoint` definition always terminates.
-   The point of the :n:`{struct @ident}` annotation (see :n:`@fixannot`) is to
-   let the user tell the system which argument decreases along the recursive calls.
+   With the :attr:`program` attribute, :cmd:`Fixpoint` also supports
+   well-founded recursion: :n:`wf` specifies a well-founded relation on an
+   argument, while :n:`measure` specifies a measure that must decrease at
+   recursive calls. Program generates obligations to prove the decrease and
+   well-foundedness of the relation. These annotations are not supported
+   without :attr:`program`. See :ref:`program_fixpoint` for their syntax,
+   defaults, and examples.
 
-   The :n:`{struct @ident}` annotation may be left implicit, in which case the
-   system successively tries arguments from left to right until it finds one
-   that satisfies the decreasing condition.
+   The :n:`{struct @ident}` annotation (see :n:`@fixannot`) selects the
+   *structural argument*, also called the decreasing argument. Definitions
+   must satisfy the :ref:`guard condition <guard-condition>` for that
+   argument. A fixpoint is unfolded only when the structural argument is
+   instantiated with a term starting with a constructor.
 
-   :cmd:`Fixpoint` without the :attr:`program` attribute does not support the
-   :n:`wf` or :n:`measure` clauses of :n:`@fixannot`. See :ref:`program_fixpoint`.
+   If the :n:`{struct @ident}` annotation is omitted, Rocq tries arguments from
+   left to right until it finds one that satisfies the guard condition.
+   If no argument satisfies it, the definition is rejected.
+   Specifying the structural argument explicitly can therefore significantly speed up
+   type checking of large mutual fixpoints.
 
-   The :n:`with` clause allows simultaneously defining several mutual fixpoints.
-   It is especially useful when defining functions over mutually defined
-   inductive types.  Example: :ref:`Mutual Fixpoints<example_mutual_fixpoints>`.
+   .. _example_minimum:
 
-   If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
-   This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
-   In this case, the proof should be terminated with :cmd:`Defined` in order to define a :term:`constant`
-   for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
+   .. example:: Minimum of two natural numbers
 
-   This command accepts the :attr:`using` attribute.
+      The following function computes the minimum of two natural numbers.
+      It matches both arguments: if both are successors, it adds one to the
+      minimum of their predecessors; otherwise, it returns zero. The structural
+      argument is inferred to be :g:`n`.
 
-   .. note::
+      .. rocqtop:: in
 
-      + Some fixpoints may have several arguments that fit as decreasing
-        arguments, and this choice influences the reduction of the fixpoint.
-        Hence an explicit annotation must be used if the leftmost decreasing
-        argument is not the desired one. Writing explicit annotations can also
-        speed up type checking of large mutual fixpoints.
+         Fixpoint min_left (n m : nat) : nat :=
+           match n with
+           | 0 => 0
+           | S p =>
+             match m with
+             | 0 => 0
+             | S q => S (min_left p q)
+             end
+           end.
 
-      + In order to keep the strong normalization property, the fixed point
-        reduction will only be performed when the argument in position of the
-        decreasing argument (which type should be in an inductive definition)
-        starts with a constructor.
+      The function unfolds when its first argument starts with a constructor.
+      For :g:`0`, it reduces to :g:`0`, even when :g:`m` is a variable:
 
+      .. rocqtop:: in
 
-   .. example::
-
-      One can define the addition function as :
-
-      .. rocqtop:: all
-
-         Fixpoint add (n m:nat) {struct n} : nat :=
-         match n with
-         | O => m
-         | S p => S (add p m)
-         end.
-
-      The match operator matches a value (here :g:`n`) with the various
-      constructors of its (inductive) type. The remaining arguments give the
-      respective values to be returned, as functions of the parameters of the
-      corresponding constructor. Thus here when :g:`n` equals :g:`O` we return
-      :g:`m`, and when :g:`n` equals :g:`(S p)` we return :g:`(S (add p m))`.
-
-      The match operator is formally described in
-      Section :ref:`match-construction`.
-      The system recognizes that in the inductive call :g:`(add p m)` the first
-      argument actually decreases because it is a *pattern variable* coming
-      from :g:`match n with`.
-
-   .. example::
-
-      The following definition is not correct and generates an error message:
-
-      .. rocqtop:: all
-
-         Fail Fixpoint wrongplus (n m:nat) {struct n} : nat :=
-         match m with
-         | O => n
-         | S p => S (wrongplus n p)
-         end.
-
-      because the declared decreasing argument :g:`n` does not actually
-      decrease in the recursive call.
-
-      .. _reversed_add_example:
-
-      The function computing the addition over the second argument should rather be written:
-
-      .. rocqtop:: all
-
-         Fixpoint plus (n m:nat) {struct m} : nat :=
-         match m with
-         | O => n
-         | S p => S (plus n p)
-         end.
-
-      **Aside**: Observe that `plus n 0` is reducible but `plus 0 n` is not,
-      the reverse of `Nat.add`, for which `0 + n` is reducible and `n + 0` is not.
-
-      .. rocqtop:: all
-
-         Goal forall n:nat, plus n 0 = plus 0 n.
+         Goal forall m : nat, min_left 0 m = 0.
          Proof.
-         intros; simpl.  (* plus 0 n not reducible *)
+           reflexivity.
+         Qed.
 
-      .. rocqtop:: none
+      For :g:`S p`, it reduces to the inner match on :g:`m`. This match returns
+      :g:`0` when :g:`m` is :g:`0`, and :g:`S (min_left p q)` when :g:`m` is
+      :g:`S q`:
 
-         Abort.
+      .. rocqtop:: in
 
-      .. rocqtop:: all
-
-         Goal forall n:nat, n + 0 = 0 + n.
+         Goal forall p m : nat,
+           min_left (S p) m =
+             match m with
+             | 0 => 0
+             | S q => S (min_left p q)
+             end.
          Proof.
-         intros; simpl.  (* n + 0 not reducible *)
+           reflexivity.
+         Qed.
 
-      .. rocqtop:: none
+   .. example:: Inferring or selecting the structural argument
 
-         Abort.
+      In this addition function, the recursive call leaves :g:`n` unchanged
+      and decreases :g:`m`. Rocq therefore selects :g:`m` as the structural
+      argument:
 
-   .. example::
+      .. rocqtop:: in
 
-      The recursive call may not only be on direct subterms of the recursive
-      variable :g:`n` but also on a deeper subterm and we can directly write
-      the function :g:`mod2` which gives the remainder modulo 2 of a natural
-      number.
+         Fixpoint plus_second (n m : nat) : nat :=
+           match m with
+           | 0 => n
+           | S p => S (plus_second n p)
+           end.
+
+      Explicitly selecting :g:`n` prevents this choice. Since only :g:`m`
+      decreases, the following definition is rejected. Selecting :g:`m`
+      instead would allow this definition.
 
       .. rocqtop:: all
 
-         Fixpoint mod2 (n:nat) : nat :=
-         match n with
-         | O => O
-         | S p => match p with
-                  | O => S O
-                  | S q => mod2 q
-                  end
-         end.
+         Fail Fixpoint wrongplus (n m : nat) {struct n} : nat :=
+           match m with
+           | 0 => n
+           | S p => S (wrongplus n p)
+           end.
 
-.. _example_mutual_fixpoints:
+      When no argument decreases, inference cannot find a structural
+      argument, and the definition is rejected:
+
+      .. rocqtop:: all
+
+         Fail Fixpoint unchanged (n : nat) : nat := unchanged n.
+
+   Some fixpoints satisfy the guard condition for more than one argument.
+   The choice affects reduction, since a fixpoint unfolds only when its structural
+   argument starts with a constructor. An explicit annotation is needed to
+   select an argument other than the first one accepted by Rocq.
+
+   .. _reversed_add_example:
+
+   .. _alternative_struct_example:
+
+   .. example:: Choosing another structural argument
+
+      In :g:`min_left`, the recursive call decreases both :g:`n` and :g:`m`.
+      The same body can therefore use :g:`m` as its structural argument.
+
+      .. rocqtop:: in
+
+         Fixpoint min_right (n m : nat) {struct m} : nat :=
+           match n with
+           | 0 => 0
+           | S p =>
+             match m with
+             | 0 => 0
+             | S q => S (min_right p q)
+             end
+           end.
+
+      Both functions compute the same minimum, but :g:`m` now controls unfolding.
+      Unlike :g:`min_left 0 m` in the :ref:`previous example <example_minimum>`,
+      :g:`min_right 0 m` cannot unfold while :g:`m` is a variable.
+      Its value can still be shown to be zero by case analysis on :g:`m`:
+
+      .. rocqtop:: in
+
+         Goal forall m : nat, min_right 0 m = 0.
+         Proof.
+           Fail reflexivity.
+           destruct m; reflexivity.
+         Qed.
+
+      Conversely, :g:`min_right` unfolds when :g:`m` starts with a constructor,
+      even when :g:`n` is a variable, whereas :g:`min_left` does not:
+
+      .. rocqtop:: in
+
+         Goal forall n : nat,
+           min_right n 0 = match n with 0 => 0 | S _ => 0 end.
+         Proof.
+           reflexivity.
+         Qed.
+
+   The :n:`with` clause enables users to declare mutually recursive functions.
+   In particular, it can be used to declare functions over mutually defined
+   inductive types.
+
+   .. _example_mutual_fixpoints:
 
    .. example:: Mutual fixpoints
 
-      The size of trees and forests can be defined the following way:
+      For the mutually defined types :g:`tree` and :g:`forest`, the size
+      functions call each other when traversing their recursive arguments:
+
+      .. rocqtop:: in
+
+         Fixpoint tree_size (t:tree) : nat :=
+           match t with
+           | node a f => S (forest_size f)
+           end
+         with forest_size (f:forest) : nat :=
+           match f with
+           | leaf b => 1
+           | cons t f' => (tree_size t + forest_size f')
+           end.
+
+   If :n:`@term` is omitted, :n:`@type` is required and Rocq enters proof mode.
+   This allows the body to be constructed incrementally using tactics.
+   Moreover, the :attr:`refine` attribute allows specific parts of the body to be
+   constructed in proof mode by replacing them with :g:`_`.
+   Closing the definition with :cmd:`Defined` keeps the resulting
+   :term:`constant` transparent, allowing the function to unfold and compute.
+   Closing it with :cmd:`Qed` instead makes it opaque.
+
+   .. example:: Constructing a fixpoint in proof mode
+
+      The following definition doubles a natural number. Case analysis creates
+      a goal for each constructor, and :tacn:`exact` supplies the corresponding
+      branch of the body. The successor branch makes a recursive call on the
+      predecessor :g:`p`.
+
+      .. rocqtop:: in
+
+         Fixpoint double (n : nat) : nat.
+         Proof.
+           destruct n as [|p].
+           - exact 0.
+           - exact (S (S (double p))).
+         Defined.
 
       .. rocqtop:: all
 
-         Fixpoint tree_size (t:tree) : nat :=
-         match t with
-         | node a f => S (forest_size f)
-         end
-         with forest_size (f:forest) : nat :=
-         match f with
-         | leaf b => 1
-         | cons t f' => (tree_size t + forest_size f')
-         end.
+         Compute double 3.
+
+      .. rocqtop:: in
+
+         #[refine]
+         Fixpoint double' (n : nat) : nat :=
+           match n with
+           | 0 => 0
+           | S p => _
+           end.
+         Proof.
+           exact (S (S (double' p))).
+         Defined.
+
+      .. rocqtop:: all
+
+         Compute double' 3.
+
+.. _prim-fix:
+
+Primitive fix construction
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rocq provides primitive fixpoints through the :n:`fix` term constructor,
+to which top-level :cmd:`Fixpoint` declarations are elaborated.
+
+.. insertprodn term_fix fix_decl
+
+.. prodn::
+   term_fix ::= let fix @fix_decl in @term
+   | fix @fix_decl {? {+ with @fix_decl } for @ident }
+   fix_decl ::= @ident {* @binder } {? @fixannot } {? : @type } := @term
+
+The expression ":n:`fix @ident__1 @binder__1 : @type__1 := @term__1 with … with @ident__n @binder__n : @type__n := @term__n for @ident__i`" denotes the
+:math:`i`-th component of a block of functions defined by mutual structural
+recursion. It is the local counterpart of the :cmd:`Fixpoint` command. When
+:math:`n=1`, the ":n:`for @ident__i`" clause is omitted.
+
+A local definition of a single recursive function has a special syntax:
+:n:`let fix @ident {* @binder } := @term in` stands for
+:n:`let @ident := fix @ident {* @binder } := @term in`. The same abbreviation
+is available for :ref:`cofixpoints <prim-cofix>`.
+
+The :n:`fix` and :n:`let fix` expressions support only the :n:`struct` form of
+:n:`@fixannot`. The :n:`wf` and :n:`measure` forms are supported by commands
+such as :cmd:`Fixpoint` with the :attr:`program` attribute and :cmd:`Function`.
+
+The :n:`{struct @ident}` annotation selects the structural argument as for
+:cmd:`Fixpoint`; it can also be omitted to let Rocq infer that argument.
+Local fixpoints satisfy the same :ref:`guard condition <guard-condition>`
+as top-level definitions.
+
+.. warning::
+
+   Unfolding definitions containing local fixpoints can duplicate those
+   fixpoints in proof terms and cause repeated type and guard checking.
+   Local fixpoints are commonly used in functional programming to write
+   tail-recursive functions. Unfolding such definitions during Rocq proofs
+   can drastically increase the size of the proof term and make it much
+   longer to type-check, as each occurrence of the fixpoint must be
+   type-checked and checked for termination.
+   Defining the helper as a separate top-level :cmd:`Fixpoint` allows it to remain
+   a constant when the enclosing definition is unfolded, avoiding repeated guard
+   checking unless the helper itself is unfolded.
+
+.. example:: Tail-recursive list reversal with a local fixpoint
+
+   The function :g:`rev` uses a local helper :g:`aux` to accumulate the
+   reversed list. The structural argument is the remaining input list;
+   the accumulator grows with each recursive call.
+
+   .. rocqtop:: in
+
+      Local Open Scope list_scope.
+
+      Definition rev {T : Type} (l : list T) : list T :=
+        let fix aux (p acc : list T) {struct p} : list T :=
+          match p with
+          | nil => acc
+          | x :: p => aux p (x :: acc)
+          end
+        in aux l nil.
+
+   In the following proof, :tacn:`cbn` unfolds :g:`rev` on both sides of
+   the equality and performs the first recursive call, adding :g:`n + 0`
+   and :g:`n` to the respective accumulators. Since the remaining list :g:`l`
+   is a variable,
+   :g:`aux` cannot reduce further and remains exposed in the goal:
+
+   .. rocqtop:: in
+
+      Goal forall n l, rev ((n + 0) :: l) = rev (n :: l).
+      Proof.
+        intros n l.
+
+   .. rocqtop:: all
+
+        cbn.
+
+   .. rocqtop:: in
+
+        rewrite <- plus_n_O.
+        reflexivity.
+
+   .. rocqtop:: all
+
+        Show Proof.
+
+   .. rocqtop:: in
+
+      Qed.
+
+   The proof term produced by :tacn:`reflexivity` contains the exposed fixpoint.
+   Type-checking this term therefore type-checks :g:`aux` and checks its
+   guard condition twice, even though it was already checked when :g:`rev`
+   was defined.
+
+   In contrast, if we define :g:`rev'` with a real auxiliary function,
+   the fixpoint does not unfold when simplifying the goal with :tacn:`cbn`,
+   thus producing a much smaller proof term and avoiding type-checking
+   and checking termination of :g:`rev_acc` twice more.
+
+   .. rocqtop:: in
+
+      Local Open Scope list_scope.
+
+      Fixpoint rev_acc {T : Type} (p acc : list T) {struct p} : list T :=
+        match p with
+        | nil => acc
+        | x :: p => rev_acc p (x :: acc)
+        end.
+
+      Definition rev' {T : Type} (l : list T) : list T := rev_acc l nil.
+
+   .. rocqtop:: in
+
+      Goal forall n l, rev' ((n + 0) :: l) = rev' (n :: l).
+      Proof.
+        intros n l.
+
+   .. rocqtop:: all
+
+        cbn.
+
+   .. rocqtop:: in
+
+        rewrite <- plus_n_O.
+        reflexivity.
+
+   .. rocqtop:: all
+
+        Show Proof.
+
+   .. rocqtop:: in
+
+      Qed.
 
 .. extracted from CIC chapter
+
+.. _guard-condition:
+
+The Guard Condition
+-------------------
+
+Rocq checks termination of fixpoints using a *guard condition*: a syntactic
+check triggered every time a fixpoint is type-checked. It can also be
+tested earlier in proof mode using the :cmd:`Guarded` command.
+
+The guard condition ensures that each recursive call is performed on a strict
+subterm of the structural argument, and hence, that the function terminates.
+Pattern-matching on the structural argument or one of its subterms introduces
+variables for strictly smaller recursive constructor arguments, on which
+recursive calls are allowed.
+
+The guard condition consists of a minimal guard and several mostly independent
+extensions, described below:
+
++ Checking fixpoints up to reduction
++ Propagating subterm information through beta-iota cuts
++ An advanced subterm analysis that traverses fixpoints and pattern-matching
+
+Guard checking can be disabled with :flag:`Guard Checking` or the
+:attr:`bypass_check(guard)` attribute. Disabling it risks breaking consistency
+and subject reduction, so it should be used with caution.
+
+.. example:: Disabling guard checking breaks consistency
+
+   With guard checking disabled, Rocq accepts the following fixpoint even
+   though its recursive call uses the unchanged argument :g:`n`.
+   The function does not terminate, and its declared return type allows us
+   to prove :g:`False` by applying it to :g:`0`.
+
+   .. rocqtop:: in
+
+      #[bypass_check(guard)]
+      Fixpoint loop (n : nat) : False := loop n.
+
+      Unset Guard Checking.
+
+      Fixpoint loop' (n : nat) : False := loop' n.
+
+      Goal False.
+      Proof.
+        exact (loop 0).
+      Qed.
+
+Re-enabling guard checking does not recheck previously accepted definitions:
+:g:`loop` remains in the environment. It is therefore possible to reason about
+a function whose termination is not established by the guard condition.
+
+.. example:: Using a previously accepted definition
+
+   .. rocqtop:: in
+
+      Set Guard Checking.
+
+      Goal forall n, loop n = loop n.
+      Proof.
+        reflexivity.
+      Qed.
+
+However, locally disabling and then re-enabling the guard condition, or one
+of its features, is not stable under reduction.
+Unfolding a definition exposes its body, which must satisfy the current guard
+condition when the resulting term is type-checked.
+A definition accepted with weaker checks may therefore be rejected after unfolding.
+
+.. example:: Unfolding a definition accepted without guard checking
+
+   Unfolding :g:`loop` inserts its fixpoint into the proof term. Checking the
+   guard condition of this proof term rejects the fixpoint, since guard
+   checking has been re-enabled.
+
+   .. rocqtop:: in
+
+      Goal forall n, loop n = loop n.
+      Proof.
+
+   .. rocqtop:: all
+
+        unfold loop.
+
+   .. rocqtop:: all
+
+        reflexivity.
+
+   .. rocqtop:: all
+
+      Fail Qed.
+
+   Although :tacn:`reflexivity` leaves no goals, the resulting proof term
+   contains the body of :g:`loop`, which does not satisfy the guard condition.
+   The proof term is therefore rejected by :cmd:`Qed` with the current flags:
+
+   .. rocqtop:: all
+
+      Show Proof.
+
+   .. rocqtop:: none
+
+      Abort.
+
+Disabling and re-enabling guard checking also preserves the settings of its
+individual features, as illustrated in the
+:ref:`example below <preserving-subterm-analysis-settings>`.
+
+.. _minimal-guard-condition:
+
+Minimal Guard Condition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The minimal guard condition requires the structural argument of every recursive
+call to be a *strict subterm* of the current function's structural argument. A
+strict subterm is a smaller part obtained by exposing recursive constructor
+arguments through pattern-matching or primitive projections, possibly in
+several steps. A *large*, or non-strict, subterm is either a strict subterm or
+the structural argument itself. The guard checker tracks these subterm
+relationships when analyzing the fixpoint body.
+
+Under the minimal guard condition, the recursive call's structural argument
+must reduce to a variable or a primitive projection recognized as a strict
+subterm of the current function's structural argument.
+
+Pattern-matching the structural argument or one of its strict subterms
+introduces variables for recursive constructor arguments. These variables
+are recognized as strict subterms of the structural argument. Matching a
+term not recognized as a subterm of the structural argument does not give
+its constructor arguments this relationship to the structural argument.
+
+.. example:: An eliminator for natural numbers
+
+   The eliminator of :g:`nat` is recursively defined by matching the structural
+   argument :g:`n` as :g:`S p`. The variable :g:`p` is a strict subterm of
+   :g:`n`, so the recursive call on :g:`p` is accepted.
+
+   .. rocqtop:: in
+
+      Fixpoint nat_elim (P : nat -> Type) (P0 : P 0) (PS : forall n, P n -> P (S n))
+        (n : nat) {struct n} : P n :=
+        match n as m return P m with
+        | 0 => P0
+        | S p => PS p (nat_elim P P0 PS p)
+        end.
+
+Matching a strict subterm of the structural argument exposes further strict
+subterms of that same structural argument. Recursive calls can therefore
+use subterms exposed by successive pattern matches.
+
+.. example:: Recursion on a subterm exposed by successive matches
+
+   The function :g:`mod2` computes the remainder modulo two by matching its
+   argument twice before making a recursive call:
+
+   .. rocqtop:: in
+
+      Fixpoint mod2 (n : nat) : nat :=
+        match n with
+        | 0 => 0
+        | S p =>
+          match p with
+          | 0 => 1
+          | S q => mod2 q
+          end
+        end.
+
+   The first match exposes :g:`p` as a strict subterm of :g:`n`. The second
+   exposes :g:`q` as a strict subterm of :g:`p`, and hence of :g:`n`.
+   The recursive call :g:`mod2 q` is therefore accepted.
+
+In a mutual fixpoint, each recursive call must pass a strict subterm of the
+caller's structural argument as the called function's structural argument.
+Recursive constructor arguments of any inductive type in the mutual block
+can be recognized as strict subterms of the caller's structural argument.
+
+.. example:: Structural decrease in mutual fixpoints
+
+   In the :ref:`mutual fixpoint example <example_mutual_fixpoints>`, matching
+   :g:`t` as :g:`node a f` exposes :g:`f` as a strict subterm of :g:`t`,
+   so :g:`tree_size` may call :g:`forest_size f`. Likewise, matching
+   :g:`f` as :g:`cons t f'` exposes both :g:`t` and :g:`f'` as strict
+   subterms of :g:`f`, allowing the calls :g:`tree_size t` and
+   :g:`forest_size f'`. In each call, the smaller part is passed as the
+   structural argument of the called function.
+
+.. example:: Recursive call on a subterm exposed by weak-head reduction
+
+   In the following function, recursion is performed upon :g:`(fun x => x) p`
+   rather than :g:`p` itself. Recursive calls are checked after weak-head
+   reduction, which reduces this expression to :g:`p`, a strict subterm of
+   the structural argument :g:`n`.
+
+   .. rocqtop:: in
+
+      Fixpoint rid (n : nat) : nat :=
+        match n with
+        | 0 => 0
+        | S p => S (rid ((fun x => x) p))
+        end.
+
+.. _traversing-subterm-analysis:
+
+Traversing Subterm Analysis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The guard condition features an advanced subterm analysis that traverses fixpoints
+and pattern-matching to determine whether the term recursion is performed upon
+is strictly smaller than the structural argument.
+This analysis traverses the definitions of the terms recursion is performed
+upon.
+
+A :n:`match` is a (strict) subterm provided every branch is a (strict) subterm,
+introducing the recursive arguments using the subterm specification of the
+term that is matched, as for checking termination.
+
+An application of a mutual fixpoint :n:`fix` is a (strict) subterm provided
+the fixpoint that is focussed returns an inductive type and its body is a (strict) subterm.
+The body of the focussed fixpoint is analyzed using the subterm specification of
+the instantiation of the structural argument, and with recursive calls to the
+focussed fixpoint treated as strict subterms.
+Calls to the other fixpoints in the mutual block are not considered subterms.
+
+.. _computed-subterm-example:
+
+.. example:: Recursive call on a computed subterm
+
+   In the following function, recursion is performed upon :g:`z - y`, which
+   does not reduce to a variable while :g:`z` is a variable.
+
+   .. rocqtop:: in
+
+      Fixpoint foo x y {struct x} : nat :=
+        match x with
+        | 0 => 0
+        | S z => foo (z - y) y
+        end.
+
+   This function is accepted thanks to traversing subterm analysis, which
+   unfolds :g:`Nat.sub` and traverses its definition to establish that
+   :g:`z - y` is strictly smaller than the structural argument :g:`x`.
+
+   .. rocqtop:: all
+
+      Print Nat.sub.
+
+   Subtraction :g:`z - y` returns :g:`z` unchanged when :g:`z` or :g:`y`
+   is zero. Otherwise, recursion is performed upon the predecessor of :g:`z`.
+   Since :g:`z` is already a strict subterm of :g:`x`, the unchanged result
+   is strictly smaller than :g:`x`. The recursive result is also recognized
+   as strictly smaller. All branches of the :n:`match` are strictly smaller;
+   hence, so are the :n:`match`, the result of the fixpoint, and :g:`z - y`.
+
+However, constructors cannot be subterms. This restriction is tied to the
+reduction rule for fixpoints, which unfolds them whenever their structural
+argument starts with a constructor. Allowing recursive calls on reconstructed
+constructors could produce infinitely many unfoldings even on open terms,
+breaking strong normalization.
+
+.. example:: Constructors are not Subterms
+
+   Rebuilding a term with constructors does not preserve its subterm
+   information. The following identity function returns :g:`0` or :g:`S p`
+   instead of the variable :g:`n` being matched:
+
+   .. rocqtop:: in
+
+      Definition id (n : nat) :=
+       match n with
+       | 0 => 0
+       | S p => S p
+       end.
+
+   Although :g:`id n` is propositionally equal to :g:`n`, it is not equal to it
+   by definition, and the subterm analysis cannot recognize it as a subterm.
+   Matching its result therefore does not introduce a variable known to be
+   smaller than the structural argument, and the following recursive call is
+   rejected because :g:`id n` is not recognized as a subterm of :g:`n`:
+
+   .. rocqtop:: all
+
+      Fail Fixpoint zero (n : nat) : nat :=
+        match (id n) with
+        | 0 => 0
+        | S n => zero n
+        end.
+
+   The same restriction applies when the recursive argument is itself the
+   result of :g:`id`. Although matching :g:`n` exposes :g:`p` as a strict
+   subterm, reconstructing :g:`p` through :g:`id p` loses that information:
+
+   .. rocqtop:: all
+
+      Fail Fixpoint zero_id (n : nat) : nat :=
+        match n with
+        | 0 => 0
+        | S p => zero_id (id p)
+        end.
+
+   Returning the variable :g:`n` in both branches preserves its subterm
+   information, as in :g:`Nat.sub` in the
+   :ref:`computed-subterm example <computed-subterm-example>` above.
+   The analysis can then recognize :g:`id' n` as a subterm of :g:`n`.
+   In the successor branch of the outer match, recursion is performed upon
+   the strictly smaller variable introduced by that match:
+
+   .. rocqtop:: in
+
+      Definition id' (n : nat) :=
+       match n with
+       | 0 => n
+       | S p => n
+       end.
+
+      Fixpoint zero (n : nat) : nat :=
+        match (id' n) with
+        | 0 => 0
+        | S n => zero n
+        end.
+
+.. flag:: Guard Checking Option Traversing Subterm Analysis
+
+   This flag is on by default. Unsetting it disables the subterm analysis
+   traversing fixpoints and pattern-matching. Recursive arguments are still
+   reduced to weak-head normal form, but their heads must then be variables or
+   primitive projections, as described in the
+   :ref:`minimal guard condition <minimal-guard-condition>`.
+
+   .. example:: Disabling traversing subterm analysis
+
+      With this flag disabled, the subtraction in :g:`z - y` cannot be analyzed
+      through its fixpoint. Its weak-head normal form is a fixpoint application
+      blocked on the variable :g:`z`, so the following variant of :g:`foo` is
+      rejected:
+
+      .. rocqtop:: all
+
+         Unset Guard Checking Option Traversing Subterm Analysis.
+
+         Fail Fixpoint foo' x y {struct x} : nat :=
+           match x with
+           | 0 => 0
+           | S z => foo' (z - y) y
+           end.
+
+   Disabling and re-enabling guard checking preserves the settings of its
+   individual features.
+
+   .. _preserving-subterm-analysis-settings:
+
+   .. example:: Preserving subterm-analysis settings when disabling guard checking
+
+      Traversing subterm analysis remains disabled after guard checking is
+      disabled and re-enabled. Since recursion is performed upon :g:`z - y`,
+      the following definition is still rejected:
+
+      .. rocqtop:: in
+
+         Unset Guard Checking.
+         Set Guard Checking.
+
+         Fail Fixpoint foo' x y {struct x} : nat :=
+           match x with
+           | 0 => 0
+           | S z => foo' (z - y) y
+           end.
+
+   .. warning::
+
+      Existing definitions, such as :g:`Fix_F` used in some support for defining
+      functions by well-founded recursion, may rely on traversing subterm analysis.
+      Disabling the subterm analysis can therefore cause definitions or proof terms
+      obtained by unfolding such constants to be rejected, even if the constants
+      were originally accepted with the flag enabled.
+
+   .. example:: Unfolding well-founded recursion with subterm analysis disabled
+
+      The following definition of :g:`f` is accepted, but unfolding it
+      with :tacn:`cbv` in the proof of :g:`fid` produces a proof term that
+      is rejected when checked by :cmd:`Qed`.
+
+      .. rocqtop:: in reset
+
+         Require Import Program.Wf.
+
+         Unset Guard Checking Option Traversing Subterm Analysis.
+
+         Program Fixpoint f x {wf lt x} :=
+           match x with 0 => 0 | S n => S (f n) end.
+         Final Obligation.
+           intros ?. constructor. unfold MR.
+           induction a.
+           all: unfold MR; cbn; intros.
+           all: inversion H; eauto.
+           now constructor.
+         Defined.
+
+         Definition fid n : f n = n.
+         Proof.
+           induction n; try reflexivity.
+           transitivity (S (f n)). 2: now f_equal.
+           cbv; reflexivity.
+
+      .. rocqtop:: all
+
+         Fail Qed.
+
+      .. rocqtop:: none
+
+         Abort.
+
+      Although this failure can be avoided in this simple case, unfolding
+      definitions that rely on traversing subterm analysis can require
+      re-enabling the flag.
 
 .. _inductive-definitions:
 
@@ -1616,9 +2227,9 @@ The reduction for fixpoints is:
 .. math::
    (\Fix~f_i \{F\}~a_1 …a_{k_i}) ~\triangleright_ι~ \subst{t_i}{f_k}{\Fix~f_k \{F\}}_{k=1… n} ~a_1 … a_{k_i}
 
-when the structural argument :math:`a_{k_i}` starts with a constructor. 
-This last restriction is needed in order to keep strong normalization 
-and corresponds to the reduction for primitive recursive operators. 
+when the structural argument :math:`a_{k_i}` starts with a constructor.
+This last restriction is needed in order to keep strong normalization
+and corresponds to the reduction for primitive recursive operators.
 The following reductions are now possible:
 
 .. math::

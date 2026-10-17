@@ -34,6 +34,7 @@ val set_impredicative_set : bool -> unit
 val set_indices_matter : bool -> unit
 val set_typing_flags : typing_flags -> unit
 val set_check_guarded : bool -> unit
+val set_guard_checking_option_subterm : bool -> unit
 val set_check_positive : bool -> unit
 val set_check_universes : bool -> unit
 val typing_flags : unit -> typing_flags
