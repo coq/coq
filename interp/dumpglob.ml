@@ -14,6 +14,18 @@ open Util
 
 type glob_file = { vfile : string; vofile : string }
 
+type ref_type =
+| Inductive
+| Recursive
+| Method
+| Variable
+
+let string_of_refty = function
+| Inductive -> "ind"
+| Recursive -> "def"
+| Method -> "meth"
+| Variable -> "var"
+
 type glob_output =
   | NoGlob
   | Feedback
@@ -195,19 +207,22 @@ let dump_ref ?loc filepath modpath ident ty =
       Cache.with_cache ch.cache payload dump_string
     ) loc
 
-let dump_reference ?loc modpath ident ty =
+let dump_reference ?loc ident ty =
   let filepath = Names.DirPath.to_string (Lib.library_dp ()) in
-  dump_ref ?loc filepath modpath ident ty
+  dump_ref ?loc filepath "<>" ident (string_of_refty ty)
 
 let dump_secvar ?loc id =
-  dump_reference ?loc "<>" (Libnames.string_of_qualid (Decls.variable_secpath id)) "var"
+  dump_reference ?loc (Libnames.string_of_qualid (Decls.variable_secpath id)) Variable
+
+let dump_end_section ?loc modpath =
+  let filepath = Names.DirPath.to_string (Lib.library_dp ()) in
+  dump_ref ?loc filepath modpath "<>" "sec"
 
 let dump_modref ?loc mp ty =
   let (dp, l) = Lib.split_modpath mp in
   let filepath = Names.DirPath.to_string dp in
   let modpath = Names.DirPath.to_string (Names.DirPath.make l) in
-  let ident = "<>" in
-  dump_ref ?loc filepath modpath ident ty
+  dump_ref ?loc filepath modpath "<>" ty
 
 let dump_libref ?loc dp ty =
   dump_ref ?loc (Names.DirPath.to_string dp) "<>" "<>" ty
