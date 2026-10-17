@@ -61,6 +61,18 @@ type universes =
   | Monomorphic
   | Polymorphic of UVars.AbstractContext.t
 
+type guard_options = {
+  reduction : bool;
+  (** Allow reduction to instantiate or erase delayed recursive calls.
+      Weak-head reduction during subterm analysis is independent of this option.
+  *)
+  traversing_subterm_analysis : bool;
+  (** If [false], recursion is only accepted on term which weak-head is a variable.
+      If [true], the subterm analysis goes through fixpoint and pattern-matching.
+      Even in this case, constructors are never subterms.
+  *)
+}
+
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
     of a constant are tracked in their {!constant_body} so that they
@@ -69,6 +81,8 @@ type typing_flags = {
   check_guarded : bool;
   (** If [false] then fixed points and co-fixed points are assumed to
       be total. *)
+
+  guard_checking_options : guard_options;
 
   check_positive : bool;
   (** If [false] then inductive types are assumed positive and co-inductive

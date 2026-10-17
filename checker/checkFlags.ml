@@ -16,6 +16,7 @@ let set_local_flags flags env =
   let flags = {
     (* These flags may be overridden *)
     check_guarded = flags.check_guarded;
+    guard_checking_options = flags.guard_checking_options;
     check_positive = flags.check_positive;
     check_universes = flags.check_universes;
     check_eliminations = flags.check_eliminations;

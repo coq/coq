@@ -1336,6 +1336,8 @@ Generation of induction principles with ``Scheme``
       Scheme Case for Nat Sort Set.
       About Nat_case_nodep.
 
+.. _eliminators-nested-inductive-types:
+
 Eliminators for Nested Inductive Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -40,7 +40,7 @@ There are multiple notions of :gdef:`equality` in Rocq:
   Using the standard library definitions of `+` for `nat` and `Z`, `1 + 2` will be reduced to `3`.
   But the conversion rules don't do all the reductions that a person might.  For example,
   for the mentioned definitions, `n + 0` is not reducible due to how the add function is defined
-  (see the aside :ref:`here <reversed_add_example>`).  `n + 1 + 2` isn't reducible because it's
+  (see the :ref:`fixpoint reduction rule <guard-condition>`).  `n + 1 + 2` isn't reducible because it's
   represented as `(n + 1) + 2` and convertibility doesn't consider associativity.
 
   In contrast, for type `R`, `1 + 2` is not reduced at all.

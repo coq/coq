@@ -23,8 +23,14 @@ let configure_enabled_native = match Coq_config.native_compiler with
   | NativeOff -> false
   | NativeOn _ -> true
 
+let default_guard_optons = {
+  reduction = true;
+  traversing_subterm_analysis = true;
+}
+
 let safe_flags oracle = {
   check_guarded = true;
+  guard_checking_options = default_guard_optons;
   check_positive = true;
   check_eliminations = true;
   check_universes = true;
