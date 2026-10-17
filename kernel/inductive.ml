@@ -1225,6 +1225,11 @@ let restrict_spec ?evars env spec p =
 (* [filter_stack_domain env spec p] restricts the size information in stack to
    what is allowed to enter under a match with predicate p in environment env. *)
 let filter_stack_domain stack_element_specif not_subterm ?evars env p stack =
+  (* Forget incoming subterm information while retaining the caller's
+     deferred-reduction status: reducing the match may still validate a call. *)
+  if not (Environ.typing_flags env).guard_checking_options.beta_iota_cut then
+    List.map (fun _ -> SArg not_subterm) stack
+  else
   let absctx, ar = Term.decompose_lambda_decls p in
   let absctxlen = Context.Rel.length absctx in
   (* Optimization: if the predicate is not dependent, no restriction is needed
@@ -1266,9 +1271,21 @@ let filter_stack_domain stack_element_specif not_subterm ?evars env p stack =
 
 let rec subterm_specif ?evars renv stack t =
   (* maybe reduction is not always necessary! *)
+  let flags = Environ.typing_flags renv.env in
   let f,l = decompose_app_list (whd_all ?evars renv.env t) in
     match kind f with
     | Rel k -> subterm_var k renv
+
+    | Proj (p, _, c) ->
+      let subt = subterm_specif ?evars renv [] c in
+      Subterm.on_projection subt (Projection.arg p)
+
+    (* Evars are considered OK *)
+    | Evar _ -> Subterm.dead_code
+
+    (* Disable traversing subterm analysis *)
+    | _ when not flags.guard_checking_options.traversing_subterm_analysis -> Subterm.not_subterm
+
     | Case (ci, u, pms, p, iv, c, lbr) -> (* iv ignored: it's just a cache *)
       let (ci, (p,_), _iv, c, lbr) = expand_case renv.env (ci, u, pms, p, iv, c, lbr) in
       let stack' = push_stack_closures renv l stack in
@@ -1327,13 +1344,6 @@ let rec subterm_specif ?evars renv stack t =
       let spec,stack' = extract_stack ?evars stack in
         subterm_specif ?evars (push_var renv (x,a,spec)) stack' b
 
-      (* Evars are considered OK *)
-    | Evar _ -> Subterm.dead_code
-
-    | Proj (p, _, c) ->
-      let subt = subterm_specif ?evars renv [] c in
-      Subterm.on_projection subt (Projection.arg p)
-
     | Const c ->
       begin try
         let _ = Environ.constant_value_in renv.env c in Subterm.not_subterm
@@ -1345,12 +1355,10 @@ let rec subterm_specif ?evars renv stack t =
 
     | Meta _ -> assert false
 
+  (* Other terms are not subterms *)
     | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Ind _
       | Construct _ | CoFix _ | Int _ | Float _ | String _
       | Array _ -> Subterm.not_subterm
-
-
-      (* Other terms are not subterms *)
 
 and lazy_subterm_specif ?evars renv stack t =
   lazy (subterm_specif ?evars renv stack t)

@@ -172,6 +172,8 @@ val set_typing_flags : Declarations.typing_flags -> safe_transformer0
 val set_share_reduction : bool -> safe_transformer0
 val set_unfold_dep_heuristic : bool -> safe_transformer0
 val set_check_guarded : bool -> safe_transformer0
+val set_guard_checking_option_subterm : bool -> safe_transformer0
+val set_guard_checking_option_beta_iota_cut : bool -> safe_transformer0
 val set_check_positive : bool -> safe_transformer0
 val set_check_universes : bool -> safe_transformer0
 val set_VM : bool -> safe_transformer0
