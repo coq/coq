@@ -376,8 +376,8 @@ let v_cst_def =
 let v_typing_flags =
   v_tuple "typing_flags"
     [|v_bool; v_bool; v_bool; v_bool;
-      v_oracle; v_bool; v_bool;
-      v_bool; v_bool; v_bool; v_bool; v_bool; v_bool|]
+      v_oracle; v_bool; v_bool; v_bool; v_bool;
+      v_bool; v_bool; v_bool; v_bool; v_bool|]
 
 let v_univs = v_sum "universes" 1 [|[|v_abs_context|]|]
 
@@ -442,7 +442,8 @@ let v_cb = v_tuple "constant_body"
     v_vm_indirect_code;
     v_univs;
     v_bool;
-    v_typing_flags|]
+    v_typing_flags;
+    v_opt v_int|]
 
 let v_recarg_type = v_sum "recarg_type" 0
   [|[|v_ind|] (* Mrec *);[|v_cst|] (* NestedPrimitive *)|]

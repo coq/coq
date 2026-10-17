@@ -75,6 +75,7 @@ type printable =
   | PrintImplicit of qualid or_by_notation
   | PrintAssumptions of bool * bool * qualid or_by_notation list
   | PrintStrategy of qualid or_by_notation option
+  | PrintHeight of qualid or_by_notation option
   | PrintRegistered
   | PrintRegisteredSchemes
   | PrintNotation of qualid Constrexpr.notation_entry_gen * string

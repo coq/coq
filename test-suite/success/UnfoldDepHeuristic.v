@@ -1,5 +1,9 @@
 (* Test for the Kernel Conversion Dep Heuristic flag *)
 
+(* Deactivate Height Heuristic to avoid setting strategy levels for
+   definitions, which would render Dep Heuristic useless. *)
+Unset Kernel Conversion Height Heuristic.
+
 (* Define a factorial function *)
 Fixpoint fact (n : nat) := match n with O => 1 | S n => (S n) * fact n end.
 

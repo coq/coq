@@ -370,6 +370,30 @@ let print_strategy r =
     let lvl = get_strategy oracle (Evaluable.to_kevaluable key) in
     pr_strategy (r, lvl)
 
+let print_height r =
+  let pr_height ref =
+    let env = Global.env () in
+    let cb = Environ.lookup_constant ref env in
+    let dh = match cb.const_def_height with
+      | None -> user_err Pp.(str "The reference is not unfoldable.")
+      | Some h -> int h
+    in
+    pr_constant env ref ++ str " : " ++ dh in
+  match r with
+  | None ->
+    let env = Global.env () in
+    let pr_height_acc kn (cb : Declarations.constant_body) acc = match cb.const_def_height with
+      | None -> acc
+      | Some def_h -> pr_constant env kn ++ str " : " ++  int def_h ++ fnl () ++ acc
+    in
+    Environ.fold_constants pr_height_acc env (mt ())
+  | Some r ->
+    let r = Smartlocate.smart_global r in
+    let open GlobRef in match r with
+    | ConstRef cst -> pr_height cst
+    | VarRef id -> user_err Pp.(str "Definitional heights are not computed for variables.")
+    | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable.")
+
 let print_registered () =
   let pr_lib_ref (s,r) =
     pr_global r ++ str " registered as " ++ str s
@@ -1948,6 +1972,14 @@ let () =
       optwrite = Global.set_unfold_dep_heuristic }
 
 let () =
+  declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
+      optkey   = ["Kernel"; "Conversion"; "Height"; "Heuristic"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.unfold_height_heuristic);
+      optwrite = Global.set_unfold_height_heuristic }
+
+let () =
   declare_int_option
     { optstage = Summary.Stage.Interp;
       optdepr  = None;
@@ -2368,6 +2400,7 @@ let vernac_print =
       Assumptions.assumptions opaque_access st ~add_opaque:o ~add_transparent:t grs in
     Printer.pr_assumptionset env sigma theory nassums
   | PrintStrategy r -> no_state @@ fun () -> print_strategy r
+  | PrintHeight r -> no_state @@ fun () -> print_height r
   | PrintRegistered -> no_state print_registered
   | PrintRegisteredSchemes -> no_state print_registered_schemes
 

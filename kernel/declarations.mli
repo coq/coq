@@ -89,6 +89,11 @@ type typing_flags = {
   unfold_dep_heuristic : bool;
   (** If [true], use dependency heuristic when unfolding constants during conversion *)
 
+  unfold_height_heuristic : bool;
+  (** If [true], use definitional height heuristic when unfolding constants during conversion.
+      A strategy level is assigned to each constant when it's defined.
+      The level is [-h] where [h] is the definitional height of the constant. *)
+
   enable_VM : bool;
   (** If [false], all VM conversions fall back to interpreted ones *)
 
@@ -126,6 +131,7 @@ type ('opaque, 'bytecode) pconstant_body = {
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for
                                            type-checking. *)
+    const_def_height : int option
 }
 
 type constant_body = (Opaqueproof.opaque, Vmlibrary.indirect_code) pconstant_body

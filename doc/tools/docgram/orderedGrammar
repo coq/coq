@@ -812,6 +812,8 @@ command: [
 | "Print" "All" "Dependencies" LIST1 reference
 | "Print" "Strategy" reference
 | "Print" "Strategies"
+| "Print" "Height" reference
+| "Print" "Heights"
 | "Print" "Registered"
 | "Print" "Registered" "Schemes"
 | "Print" OPT "Term" LIST1 [ reference OPT univ_name_list ] SEP ","

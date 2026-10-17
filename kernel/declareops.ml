@@ -31,6 +31,7 @@ let safe_flags oracle = {
   conv_oracle = oracle;
   share_reduction = true;
   unfold_dep_heuristic = false;
+  unfold_height_heuristic = false;
   enable_VM = Coq_config.bytecode_compiler;
   enable_native_compiler = configure_enabled_native;
   indices_matter = true;
@@ -113,7 +114,9 @@ let subst_const_body subst cb =
         const_universes = cb.const_universes;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
-        const_typing_flags = cb.const_typing_flags }
+        const_typing_flags = cb.const_typing_flags;
+        (* FIXME: Does not reflect reality for functorized code. Beware when using modules and sections. *)
+        const_def_height = cb.const_def_height }
 
 (** {7 Hash-consing of constants } *)
 

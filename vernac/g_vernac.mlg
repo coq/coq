@@ -1190,6 +1190,8 @@ GRAMMAR EXTEND Gram
       | IDENT "All"; IDENT "Dependencies"; qids = LIST1 smart_global -> { PrintAssumptions (true, true, qids) }
       | IDENT "Strategy"; qid = smart_global -> { PrintStrategy (Some qid) }
       | IDENT "Strategies" -> { PrintStrategy None }
+      | IDENT "Height"; qid = smart_global -> { PrintHeight (Some qid) }
+      | IDENT "Heights" -> { PrintHeight None }
       | IDENT "Registered" -> { PrintRegistered }
       | IDENT "Registered"; IDENT "Schemes" -> { PrintRegisteredSchemes }
     ] ]

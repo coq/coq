@@ -727,6 +727,10 @@ let pr_printable = function
     keyword "Print Strategies"
   | PrintStrategy (Some qid) ->
     keyword "Print Strategy" ++ pr_smart_global qid
+  | PrintHeight None ->
+    keyword "Print Heights"
+  | PrintHeight (Some qid) ->
+    keyword "Print Height" ++ pr_smart_global qid
   | PrintRegistered ->
     keyword "Print Registered"
   | PrintRegisteredSchemes ->

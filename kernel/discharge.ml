@@ -55,7 +55,7 @@ let cook_opaque_proofterm info c =
 (********************************)
 (* Discharging constant         *)
 
-let cook_constant _env info cb =
+let cook_constant env info cb =
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
   let info, univ_hyps, univs = lift_univs info cb.const_univ_hyps cb.const_universes in
   let cache = create_cache info in
@@ -81,6 +81,7 @@ let cook_constant _env info cb =
     const_relevance =  lift_relevance info cb.const_relevance;
     const_inline_code = cb.const_inline_code;
     const_typing_flags = cb.const_typing_flags;
+    const_def_height = Some (Environ.constant_definitional_height env body);
   }
 
 (********************************)

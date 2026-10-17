@@ -560,3 +560,11 @@ module Internal : sig
   (** Overwriting variant of Modops.add_structure, see above. *)
 
 end
+
+(** {5 Definitional height of constants } *)
+
+(** [constant_definitional_height env cdef] computes the maximum number of constants
+    that must be unfolded until we get a term with no further constants to unfold.
+*)
+val constant_definitional_height : env -> (Constr.constr, Opaqueproof.opaque, bool) Declarations.constant_def -> int
+val constant_higher_than : env -> Constant.t -> Constant.t -> bool

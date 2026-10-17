@@ -1460,6 +1460,8 @@ printable: [
 | "All" "Dependencies" LIST1 smart_global
 | "Strategy" smart_global
 | "Strategies"
+| "Height" smart_global
+| "Heights"
 | "Registered"
 | "Registered" "Schemes"
 ]

@@ -348,6 +348,10 @@ let set_unfold_dep_heuristic b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with unfold_dep_heuristic = b } senv
 
+let set_unfold_height_heuristic b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with unfold_height_heuristic = b} senv
+
 let set_VM b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with enable_VM = b } senv
@@ -387,6 +391,7 @@ let stricter_flags f1 f2 =
     conv_oracle = _;
     share_reduction = _;
     unfold_dep_heuristic = _;
+    unfold_height_heuristic = _;
     enable_VM = _;
     enable_native_compiler = _;
   } = f1
@@ -404,6 +409,7 @@ let stricter_flags f1 f2 =
     conv_oracle = _;
     share_reduction = _;
     unfold_dep_heuristic = _;
+    unfold_height_heuristic = _;
     enable_VM = _;
     enable_native_compiler = _;
   } = f2

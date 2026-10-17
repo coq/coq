@@ -695,6 +695,7 @@ let same_flags {
      indices_matter;
      share_reduction;
      unfold_dep_heuristic;
+     unfold_height_heuristic;
      enable_VM;
      enable_native_compiler;
      impredicative_set;
@@ -709,6 +710,7 @@ let same_flags {
   indices_matter == alt.indices_matter &&
   share_reduction == alt.share_reduction &&
   unfold_dep_heuristic == alt.unfold_dep_heuristic &&
+  unfold_height_heuristic == alt.unfold_height_heuristic &&
   enable_VM == alt.enable_VM &&
   enable_native_compiler == alt.enable_native_compiler &&
   impredicative_set == alt.impredicative_set &&
@@ -1387,3 +1389,29 @@ module Internal = struct
     overwrite_module (MPbound mbid) (module_body_of_type mtb) env
 
 end
+
+(** Definitional height heuristic for conversion. *)
+
+let constant_definitional_height env def =
+  match def with
+  | Declarations.Def c ->
+    let rec height acc c = match Constr.kind c with
+      | Constr.Const (kn, _) ->
+        let cb = lookup_constant kn env in
+        let h = match cb.const_def_height with
+        | Some def_h -> def_h
+        | None -> 0
+        in
+        max acc h
+      | _ -> Constr.fold height acc c
+    in
+    1 + height 0 c
+  | Declarations.(Undef _ | OpaqueDef _ | Primitive _ | Symbol _) -> 0
+
+let constant_higher_than env kn1 kn2 =
+  let cb1 = lookup_constant kn1 env in
+  let cb2 = lookup_constant kn2 env in
+  match cb1.const_def_height, cb2.const_def_height with
+  | Some h1, Some h2 -> h1 > h2
+  | Some _, None -> true
+  | _, _ -> false
