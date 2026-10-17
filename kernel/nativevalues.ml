@@ -213,8 +213,6 @@ let force_cofix (cofix : t) =
     Lazy.force v
   | _ -> cofix
 
-let mk_const tag = Obj.magic tag
-
 let mk_block tag args =
   let nargs = Array.length args in
   let r = Obj.new_block tag nargs in
@@ -223,24 +221,13 @@ let mk_block tag args =
   done;
   (Obj.magic r : t)
 
-let cast_accu v = (Obj.magic v:accumulator)
-[@@ocaml.inline always]
-
-let mk_int (x : int) = (Obj.magic x : t)
-[@@ocaml.inline always]
-
-(* Rocq's booleans are reversed... *)
-let mk_bool (b : bool) = (Obj.magic (not b) : t)
-[@@ocaml.inline always]
-
-let mk_uint (x : Uint63.t) = (Obj.magic x : t)
-[@@ocaml.inline always]
-
-let mk_float (x : Float64.t) = (Obj.magic x : t)
-[@@ocaml.inline always]
-
-let mk_string (x : Pstring.t) = (Obj.magic x : t)
-[@@ocaml.inline always]
+external cast_accu : t -> accumulator = "%identity"
+external mk_const : tag -> t = "%identity"
+external mk_int : int -> t = "%identity"
+external mk_uint : Uint63.t -> t = "%identity"
+external mk_float : Float64.t -> t = "%identity"
+external mk_string : Pstring.t -> t = "%identity"
+external mk_bool : bool -> t = "%boolnot" (* Rocq's booleans are reversed... *)
 
 let block_size (b:block) =
   Obj.size (Obj.magic b)

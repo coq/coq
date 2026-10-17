@@ -89,19 +89,17 @@ val mk_cofix_accu : int -> t array -> t array -> (unit -> t) -> t array -> t
 val mk_evar_accu : Evar.t -> t array -> t
 val mk_proj_accu : (inductive * int) -> accumulator -> t
 val force_cofix : t -> t
-val mk_const : tag -> t
+external mk_const : tag -> t = "%identity"
 val mk_block : tag -> t array -> t
 val mk_prod : Name.t -> t -> t -> t
 
-val mk_bool : bool -> t
+external mk_int : int -> t = "%identity"
 
-val mk_int : int -> t
+external mk_uint : Uint63.t -> t = "%identity"
 
-val mk_uint : Uint63.t -> t
+external mk_float : Float64.t -> t = "%identity"
 
-val mk_float : Float64.t -> t
-
-val mk_string : Pstring.t -> t
+external mk_string : Pstring.t -> t = "%identity"
 
 val napply : t -> t array -> t
 (* Functions over accumulators *)
@@ -110,7 +108,7 @@ val atom_of_accu : accumulator -> atom
 val args_of_accu : accumulator -> t list
 val accu_nargs : accumulator -> int
 
-val cast_accu : t -> accumulator
+external cast_accu : t -> accumulator = "%identity"
 
 (* Functions over block: i.e constructors *)
 
