@@ -1658,6 +1658,7 @@ let general_apply ?(with_classes=true) ?(respect_opaque=false) with_delta with_d
     clear_flag {CAst.loc;v=(c,lbind : EConstr.constr with_bindings)} =
   Proofview.Goal.enter begin fun gl ->
   let concl = Proofview.Goal.concl gl in
+  let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let id = try Some (destVar sigma c) with DestKO -> None in
   let concl_nprod = nb_prod_modulo_zeta sigma concl in
@@ -1717,9 +1718,13 @@ let general_apply ?(with_classes=true) ?(respect_opaque=false) with_delta with_d
       (try_red_apply thm_ty)
     end
   in
-    Tacticals.tclTHEN
-      (try_main_apply with_destruct c)
-      (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
+  let trace () = let open Pp in
+    hov 2 (str "apply" ++ spc() ++ Printer.pr_econstr_env env sigma c)
+  in
+  Tacticals.tclTHEN
+    (try_main_apply with_destruct c)
+    ((Proofview.Trace.name_tactic trace (Proofview.tclUNIT ())) <*>
+     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id))
   end
 
 let rec apply_with_bindings_gen ?with_classes b e = function
