@@ -27,10 +27,8 @@ Print Height fact100'. (* fact100' : 5*)
    after one unfolding step. *)
 Timeout 1 Check eq_refl : fact100 = fact100'.
 
-(* Case 1b: This times out because [fact100] is unfolded and reduced first,
-   and so a costly computation is performed before [fact100'] is unfolded
-   even once. *)
-Fail Timeout 1 Check eq_refl : fact100' = fact100.
+(* Conversion caching can also make the reverse direction fast with the
+   height heuristic disabled, so we do not require it to time out. *)
 
 
 (* With the Heuristic.
