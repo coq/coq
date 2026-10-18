@@ -31,12 +31,6 @@ module type S = sig
   type 'a with_gstate
   (** Reader of grammar state *)
 
-  type 'a with_kwstate
-  (** Read keyword state *)
-
-  type 'a with_estate
-  (** Read entry state *)
-
   type 'a mod_estate
   (** Read/write entry state *)
 
@@ -55,7 +49,7 @@ module type S = sig
     val loc : t -> Loc.t
     (** [loc pa] Return parsing position for [pa] *)
 
-    val consume : t -> int -> unit with_kwstate
+    val consume : t -> int -> unit with_gstate
     (** [consume pa n] Discard [n] tokens from [pa], updating the
        parsing position *)
 
@@ -69,11 +63,11 @@ module type S = sig
     type 'a parser_fun = { parser_fun : keyword_state -> (keyword_state,te) LStream.t -> 'a parser_v }
     val of_parser : string -> 'a parser_fun -> 'a t mod_estate
     val parse_token_stream : 'a t -> (keyword_state,te) LStream.t -> 'a parser_v with_gstate
-    val print : flatten:bool -> Format.formatter -> 'a t -> unit with_kwstate with_estate
-    val is_empty : 'a t -> bool with_estate
+    val print : flatten:bool -> Format.formatter -> 'a t -> unit with_gstate
+    val is_empty : 'a t -> bool with_gstate
     type any_t = Any : 'a t -> any_t
-    val accumulate_in : any_t list -> any_t list CString.Map.t with_estate
-    val all_in : unit -> any_t list CString.Map.t with_estate
+    val accumulate_in : any_t list -> any_t list CString.Map.t with_gstate
+    val all_in : unit -> any_t list CString.Map.t with_gstate
   end
 
   module rec Symbol : sig
@@ -154,8 +148,6 @@ module type ExtS = sig
   include S
     with type keyword_state := keyword_state
      and type 'a with_gstate := GState.t -> 'a
-     and type 'a with_kwstate := keyword_state -> 'a
-     and type 'a with_estate := EState.t -> 'a
      and type 'a mod_estate := EState.t -> EState.t * 'a
 
   val safe_extend : EState.t -> 'a Entry.t -> 'a extend_statement -> EState.t
@@ -294,7 +286,7 @@ end = struct
 end
 open GState
 
-let get_entry estate e = try EState.find (DMap.tag_of_onetag e.etag) estate
+let get_entry gstate e = try EState.find (DMap.tag_of_onetag e.etag) gstate.estate
   with Not_found -> assert false
 
 type 'a ty_rules =
@@ -910,10 +902,10 @@ let print_levels ~flatten kwstate ppf elev =
        print_level ~flatten kwstate ppf pp_force_newline rules)
     ppf elev
 
-let print_entry ~flatten estate kwstate ppf e =
+let print_entry ~flatten gstate ppf e =
   fprintf ppf "@[<v 0>[ ";
-  begin match (get_entry estate e).edesc with
-    Dlevels elev -> print_levels ~flatten kwstate ppf elev
+  begin match (get_entry gstate e).edesc with
+    Dlevels elev -> print_levels ~flatten gstate.kwstate ppf elev
   | Dparser _ -> fprintf ppf "<parser>"
   end;
   fprintf ppf " ]@]"
@@ -1126,10 +1118,10 @@ let empty_entry ename levn strm =
   raise (ParseError ("entry [" ^ ename ^ "] is empty"))
 
 let start_parser_of_entry gstate entry levn (strm:_ LStream.t) =
-  (get_entry gstate.estate entry).estart gstate levn strm
+  (get_entry gstate entry).estart gstate levn strm
 
 let continue_parser_of_entry gstate entry levfrom levn bp a (strm:_ LStream.t) =
-  (get_entry gstate.estate entry).econtinue gstate levfrom levn bp a strm
+  (get_entry gstate entry).econtinue gstate levfrom levn bp a strm
 
 let rec parse_list ps gstate al strm__ = match ps gstate strm__ with
 | Ok a -> parse_list ps gstate (a::al) strm__
@@ -1375,7 +1367,7 @@ and parser_of_symbol : type s tr a.
   | Snterm e -> (fun gstate (strm__ : _ LStream.t) -> start_parser_of_entry gstate e 0 strm__)
   | Snterml (e, l) ->
     (fun gstate (strm__ : _ LStream.t) ->
-       start_parser_of_entry gstate e (level_number (get_entry gstate.estate e) l) strm__)
+       start_parser_of_entry gstate e (level_number (get_entry gstate e) l) strm__)
   | Sself -> (fun gstate (strm__ : _ LStream.t) -> start_parser_of_entry gstate entry 0 strm__)
   | Snext -> (fun gstate (strm__ : _ LStream.t) -> start_parser_of_entry gstate entry nlevn strm__)
   | Stoken tok -> let p = parser_of_token entry tok in (fun gstate strm -> p gstate.kwstate strm)
@@ -1635,7 +1627,7 @@ module Parsable = struct
   let drop_comments p = p.lexer_state := L.State.drop_comments !(p.lexer_state)
 
   let loc t = LStream.current_loc t.pa_tok_strm
-  let consume { pa_tok_strm } len kwstate = LStream.njunk kwstate len pa_tok_strm
+  let consume { pa_tok_strm } len gstate = LStream.njunk gstate.kwstate len pa_tok_strm
 end
 
 module Entry = struct
@@ -1676,7 +1668,7 @@ module Entry = struct
     let estate = add_entry otag estate e (of_parser_val e p) in
     estate, e
 
-  let print ~flatten ppf e estate kwstate = fprintf ppf "%a@." (print_entry ~flatten estate kwstate) e
+  let print ~flatten ppf e gstate = fprintf ppf "%a@." (print_entry ~flatten gstate) e
 
   let is_empty e estate = match (get_entry estate e).edesc with
   | Dparser _ -> failwith "Arbitrary parser entry"
@@ -1713,13 +1705,13 @@ module Entry = struct
 
   let same_entry (Any e) (Any e') = Option.has_some (eq_entry e e')
 
-  let all_in () estate =
+  let all_in () gstate =
     let add_entry (Any e as a) acc = String.Map.update e.ename (function
         | None -> Some [a]
         | Some l -> Some (a::l))
         acc
     in
-    EState.fold { fold = fun _ data acc -> add_entry (Any data.eentry) acc} estate String.Map.empty
+    EState.fold { fold = fun _ data acc -> add_entry (Any data.eentry) acc} gstate.estate String.Map.empty
 
   let accumulate_in initial estate =
     let add_visited visited (Any e as any) =

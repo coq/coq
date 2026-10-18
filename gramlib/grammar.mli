@@ -47,12 +47,6 @@ module type S = sig
   type 'a with_gstate
   (** Reader of grammar state *)
 
-  type 'a with_kwstate
-  (** Read keyword state *)
-
-  type 'a with_estate
-  (** Read entry state *)
-
   type 'a mod_estate
   (** Read/write entry state *)
 
@@ -62,7 +56,7 @@ module type S = sig
     val comments : t -> ((int * int) * string) list
     val drop_comments : t -> unit
     val loc : t -> Loc.t
-    val consume : t -> int -> unit with_kwstate
+    val consume : t -> int -> unit with_gstate
   end
 
   module Entry : sig
@@ -73,12 +67,12 @@ module type S = sig
     type 'a parser_fun = { parser_fun : keyword_state -> (keyword_state,te) LStream.t -> 'a parser_v }
     val of_parser : string -> 'a parser_fun -> 'a t mod_estate
     val parse_token_stream : 'a t -> (keyword_state,te) LStream.t -> 'a parser_v with_gstate
-    val print : flatten:bool -> Format.formatter -> 'a t -> unit with_kwstate with_estate
-    val is_empty : 'a t -> bool with_estate
+    val print : flatten:bool -> Format.formatter -> 'a t -> unit with_gstate
+    val is_empty : 'a t -> bool with_gstate
 
     type any_t = Any : 'a t -> any_t
-    val accumulate_in : any_t list -> any_t list CString.Map.t with_estate
-    val all_in : unit -> any_t list CString.Map.t with_estate
+    val accumulate_in : any_t list -> any_t list CString.Map.t with_gstate
+    val all_in : unit -> any_t list CString.Map.t with_gstate
   end
 
   module rec Symbol : sig
@@ -163,8 +157,6 @@ module type ExtS = sig
   include S
     with type keyword_state := keyword_state
      and type 'a with_gstate := GState.t -> 'a
-     and type 'a with_kwstate := keyword_state -> 'a
-     and type 'a with_estate := EState.t -> 'a
      and type 'a mod_estate := EState.t -> EState.t * 'a
 
   val safe_extend : EState.t -> 'a Entry.t -> 'a extend_statement -> EState.t
