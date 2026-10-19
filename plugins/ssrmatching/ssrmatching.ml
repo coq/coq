@@ -242,6 +242,8 @@ let rec same_hd env ise metas p c =
   | Proj(p1,_,x), Proj(p2,_,y) when Environ.QProjection.equal env p1 p2 ->
     let metas, ise = unif_FO_skip_impl env ise metas x y in
     CompareArgs (ise,metas,[])
+  | Proj (p1, _, _), _ when Structures.Structure.is_projection 
+    (Environ.projection_repr_constant env (Projection.repr p1)) -> CanonicalInfRequired
   | _ -> Different
 and unif_FO_skip_impl env ise metas p c =
   match EConstr.kind ise p, EConstr.kind ise c with
@@ -543,7 +545,7 @@ let nb_cs_proj_args env ise pc f u =
   | Sort s -> na (Sort_cs (ESorts.quality_or_set ise s))
   | Const (c',_) when Environ.QConstant.equal env c' pc -> nargs_of_proj u.up_f
   | Proj (c',_,_) when Environ.QConstant.equal env ((Environ.projection_repr_constant env (Projection.repr c'))) pc -> nargs_of_proj u.up_f
-  | Proj (c',_,_) -> let _ = na (Proj_cs (Names.Projection.repr c')) in 0
+  | Proj (c',_,_) -> na (Proj_cs (Names.Projection.repr c')) - 1
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef ise f))
   | _ -> -1
   with Not_found -> -1
@@ -729,6 +731,9 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
                 * the type of the arguments to retrieve that information *)
                let tuf = Retyping.get_type_of ~lax:true env ise u.up_f in
                let tfa = Retyping.get_type_of ~lax:true env ise fa in
+               pp(lazy(str"match_upats_HO, unifying types of projections: " ++ 
+                pr_econstr_env env ise u.up_f ++ str" = " ++ pr_econstr_env env ise f ++ spc () ++
+                pr_econstr_env env ise tuf ++ str" = " ++ pr_econstr_env env ise tfa));
                unif_HO env ise tuf tfa
             | _ -> ise in
           pp(lazy(str"FLEX " ++ pr_econstr_env env ise u.up_f ++ str" = " ++ pr_econstr_env env ise fa));
