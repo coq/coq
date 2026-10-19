@@ -103,7 +103,6 @@ let check_constant_declaration env opac kn cb opacify =
     let opac = { opac with st_retro = (ind_retro, Cmap_env.remove kn cst_retro) } in
     Some retro, opac
   in
-  let () = Subtyping.check_constant_alias env kn cb in
   match body with
   | Some body when opacify -> retro, register_opacified_constant env opac kn body
   | Some _ | None -> retro, opac
@@ -328,7 +327,9 @@ and check_structure_field env opac mp lab res opacify = function
   | SFBconst cb ->
       let kn = KerName.make mp lab in
       let kn = Mod_subst.constant_of_delta_kn res kn in
-      check_constant_declaration env opac kn cb (KerName.Set.mem (Constant.canonical kn) opacify.cset)
+      let env', opac = check_constant_declaration env opac kn cb (KerName.Set.mem (Constant.canonical kn) opacify.cset) in
+        let () = Subtyping.check_constant_alias env kn cb in
+        env', opac
   | SFBmind mib ->
       let kn = KerName.make mp lab in
       let kn = Mod_subst.mind_of_delta_kn res kn in
