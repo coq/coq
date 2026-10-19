@@ -214,12 +214,8 @@ Defining record types
 
       The fieldname :n:`@ident` is already defined as a global.
 
-   .. warn:: @ident__1 cannot be defined because the projection @ident__2 was not defined
-
-      The type of the projection :n:`@ident__1` depends on previous projections which
-      themselves could not be defined.
-
    .. warn:: @ident cannot be defined.
+      :name: cannot-define-projection
 
       The projection cannot be defined.  This message is followed by an explanation
       of why it's not possible, such as:
@@ -227,15 +223,17 @@ Defining record types
       #. The :term:`body` of :token:`ident` uses an incorrect elimination for
          :token:`ident` (see :cmd:`Fixpoint` and :ref:`Destructors`).
 
-   .. warn:: @ident__field cannot be defined because it is informative and @ident__record is not
+         The projection for the named field :n:`@ident__field` can't
+         be defined. For example, :n:`Record R:Prop := { f:nat }`
+         generates the message "f cannot be defined because it is informative and R is not".
+         Records of sort :n:`Prop` must be non-informative (i.e.
+         indistinguishable). Since :n:`nat` has multiple inhabitants,
+         such as :n:`%{%| f := 0 %|%}` and :n:`%{%| f := 1 %|%}`, the
+         record would be informative and therefore the projection
+         can't be defined.
 
-      The projection for the named field :n:`@ident__field` can't be defined.
-      For example, :n:`Record R:Prop := { f:nat }` generates the message
-      "f cannot be defined ... and R is not".  Records of sort :n:`Prop`
-      must be non-informative (i.e. indistinguishable).  Since :n:`nat`
-      has multiple inhabitants, such as :n:`%{%| f := 0 %|%}` and
-      :n:`%{%| f := 1 %|%}`, the record would be informative and therefore the
-      projection can't be defined.
+      #. The type of the projection depends on a previous projection
+         which could not be defined.
 
    .. seealso:: Coercions and records in section :ref:`coercions-classes-as-records`.
 

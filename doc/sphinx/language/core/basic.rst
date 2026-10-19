@@ -562,6 +562,7 @@ they appear after a boldface label.  They are listed in the
    They are described :ref:`here <set_unset_scope_qualifiers>`.
 
    .. warn:: There is no flag or option with this name: "@setting_name".
+      :name: unknown-option
 
       This warning message can be raised by :cmd:`Set` and
       :cmd:`Unset` when :n:`@setting_name` is unknown.  It is a

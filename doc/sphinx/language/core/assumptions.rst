@@ -215,6 +215,7 @@ has type :n:`@type`.
    :undocumented:
 
 .. warn:: Use of "Variable" or "Hypothesis" outside sections behaves as "#[local] Parameter" or "#[local] Axiom".
+   :name: declaration-outside-section, context-outside-section
 
    Warning generated when using :cmd:`Variable` or its equivalent
    instead of :n:`Local Parameter` or its equivalent.

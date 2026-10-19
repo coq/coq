@@ -162,6 +162,7 @@ terminating functions.
    :undocumented:
 
 .. warn:: Cannot define graph for @ident.
+   :name: funind-cannot-define-graph
 
    The generation of the graph relation (:n:`R_@ident`) used to compute the induction scheme of ident
    raised a typing error. Only :token:`ident` is defined; the induction scheme
@@ -172,13 +173,10 @@ terminating functions.
    - the definition is not a *pattern matching tree* as explained above.
 
 .. warn:: Cannot define principle(s) for @ident.
+   :name: funind-cannot-define-principle
 
    The generation of the graph relation (:n:`R_@ident`) succeeded but the induction principle
    could not be built. Only :token:`ident` is defined. Please report.
-
-.. warn:: Cannot build functional inversion principle.
-
-   :tacn:`functional inversion` will not be available for the function.
 
 Tactics
 -------

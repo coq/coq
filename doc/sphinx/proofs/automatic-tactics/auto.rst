@@ -86,6 +86,7 @@ Tactics
       to know what lemmas/assumptions were used.
 
    .. warn:: Use of the non-reference term @term in “using” clauses is ignored
+      :name: non-reference-hint-using
 
       Any non-reference term passed in a `using` clause is ignored. We
       recommend adding such hints to the context via the :tacn:`pose proof`
@@ -594,7 +595,7 @@ Creating Hints
         Permits declaring a hint without declaring a new
         constant first. This is deprecated.
 
-         .. warn:: Declaring arbitrary terms as hints is fragile and deprecated; it is recommended to declare a toplevel constant instead
+         .. exn:: Declaring arbitrary terms as hints is forbidden. You must declare a toplevel constant instead.
             :undocumented:
 
       :n:`@one_pattern`
@@ -904,6 +905,7 @@ Creating Hints
         ``typeclass_instances`` hint database.
 
    .. warn:: This hint is not local but depends on a section variable. It will disappear when the section is closed.
+      :name: non-local-section-hint
 
       A hint with a non-local attribute was added inside a section, but it
       refers to a local variable that will go out of scope when closing the

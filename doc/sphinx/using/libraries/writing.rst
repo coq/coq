@@ -37,14 +37,39 @@ deprecated compatibility alias using :cmd:`Abbreviation`
    It can trigger the following warnings:
 
    .. warn:: Library File @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
-             Library File (transitively required) @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
-             Ltac2 alias @qualid is deprecated since @string__since. @string__note.
-             Ltac2 definition @qualid is deprecated since @string__since. @string__note.
-             Ltac2 notation {+ @ltac2_syntax_class } is deprecated since @string__since. @string__note.
-             Ltac2 constructor @qualid is deprecated since @string__since. @string__note.
-             Notation @string is deprecated since @string__since. @string__note. Use @qualid__use instead.
-             Tactic @qualid is deprecated since @string__since. @string__note.
-             Tactic Notation @qualid is deprecated since @string__since. @string__note.
+      :undocumented:
+      :name: deprecated-library-file
+
+   .. warn:: Library File (transitively required) @qualid is deprecated since @string__since. @string__note. Use @qualid__use instead.
+      :undocumented:
+      :name: deprecated-transitive-library-file
+
+   .. warn:: Ltac2 abbreviation @qualid is deprecated since @string__since. @string__note.
+      :undocumented:
+      :name: deprecated-ltac2-abbreviation
+
+   .. warn:: Ltac2 definition @qualid is deprecated since @string__since. @string__note.
+      :undocumented:
+      :name: deprecated-ltac2-definition
+
+   .. warn:: Ltac2 notation {+ @ltac2_syntax_class } is deprecated since @string__since. @string__note.
+      :undocumented:
+      :name: deprecated-ltac2-notation
+
+   .. warn:: Ltac2 constructor @qualid is deprecated since @string__since. @string__note.
+      :undocumented:
+      :name: deprecated-ltac2-constructor
+
+   .. warn:: Notation @string is deprecated since @string__since. @string__note. Use @qualid__use instead.
+      :undocumented:
+      :name: deprecated-notation
+
+   .. warn:: Tactic @qualid is deprecated since @string__since. @string__note.
+      :undocumented:
+      :name: deprecated-syntactic-definition
+
+   .. warn:: Tactic Notation @qualid is deprecated since @string__since. @string__note.
+      :name: deprecated-tactic-notation
 
       :n:`@qualid` or :n:`@string` is the notation,
       :n:`@string__since` is the version number, :n:`@string__note` is
@@ -97,6 +122,7 @@ notation, definition, axiom, theorem or file.
    It can trigger the following warning:
 
    .. warn:: @string__note
+      :name: user-warn
 
       :n:`@string__note` is the note. It's common practice to start it
       with a capital and end it with a period.

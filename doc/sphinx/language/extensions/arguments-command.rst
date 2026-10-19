@@ -125,6 +125,7 @@ Setting properties of a function's arguments
          expected names.  See the example here: :ref:`renaming_implicit_arguments`.
 
          .. warn:: This command is just asserting the names of arguments of @qualid. If this is what you want, add ': assert' to silence the warning. If you want to clear implicit arguments, add ': clear implicits'. If you want to clear notation scopes, add ': clear scopes'
+            :name: arguments-assert
             :undocumented:
 
       `clear scopes`

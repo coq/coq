@@ -236,6 +236,7 @@ Here is an example:
      f 0 = g 0 0.
 
 .. warn:: Ignoring implicit binder declaration in unexpected position
+   :name: unexpected-implicit-declaration
 
    This is triggered when setting an argument implicit in an
    expression which does not correspond to the type of an assumption
@@ -246,6 +247,7 @@ Here is an example:
       Definition f := forall {y}, y = 0.
 
 .. warn:: Making shadowed name of implicit argument accessible by position
+   :name: shadowed-implicit-name
 
    This is triggered when two variables of same name are set implicit
    in the same block of binders, in which case the first occurrence is

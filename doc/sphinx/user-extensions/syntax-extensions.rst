@@ -628,11 +628,13 @@ Enabling and disabling notations
       :token:`one_term` or :token:`scope_name` must be provided.
 
    .. warn:: Activation of abbreviations does not expect mentioning a grammar entry.
+      :name: conflicting-abbreviation-entry
 
       ``in custom`` and ``in constr`` are not compatible with
       :ref:`abbreviations <Abbreviations>`.
 
    .. warn:: Activation of abbreviations does not expect mentioning a scope.
+      :name: conflicting-abbreviation-scope
 
       Scopes are not compatible with :ref:`abbreviations <Abbreviations>`.
 
@@ -1519,6 +1521,7 @@ Note that `_` by itself is a valid :n:`@name` but is not a valid :n:`@ident`.
           and are not honored in pattern expressions.
 
           .. warn:: Use of @string Notation is deprecated as it is inconsistent with pattern syntax.
+             :name: disj-pattern-notation
 
              This warning is disabled by default to avoid spurious diagnostics
              due to legacy notation in the Rocq standard library.
@@ -2167,6 +2170,7 @@ Number notations
          overflow when calling :n:`@qualid__parse` to parse a literal larger than :n:`@bignat`.
 
          .. warn:: Stack overflow or segmentation fault happens when working with large numbers in @type (threshold may vary depending on your system limits and on the command executed).
+            :name: large-number
 
             When a :cmd:`Number Notation` is registered in the current scope
             with :n:`(warning after @bignat)`, this warning is emitted when
@@ -2185,6 +2189,7 @@ Number notations
          when :n:`@qualid__parse` lands in an :g:`option` type.
 
          .. warn:: To avoid stack overflow, large numbers in @type are interpreted as applications of @qualid__parse.
+            :name: abstract-large-number
 
             When a :cmd:`Number Notation` is registered in the current scope
             with :n:`(abstract after @bignat)`, this warning is emitted when
@@ -2194,6 +2199,7 @@ Number notations
             functions run out of stack space when trying to walk them.
 
          .. warn:: The 'abstract after' directive has no effect when the parsing function (@qualid__parse) targets an option type.
+            :name: abstract-large-number-no-op
 
             As noted above, the :n:`(abstract after @natural)` directive has no
             effect when :n:`@qualid__parse` lands in an :g:`option` type.
@@ -2347,10 +2353,12 @@ The following errors apply to both string and number notations:
       A mapping should be provided for :n:`@qualid` in the :n:`mapping` list.
 
    .. warn:: @type was already mapped to @type, mapping it also to @type might yield ill typed terms when using the notation.
+      :name: via-type-renapping
 
       Two pairs in the :n:`mapping` list associate types that might be incompatible.
 
    .. warn:: Type of @qualid seems incompatible with the type of @qualid. Expected type is: @type instead of @type. This might yield ill typed terms when using the notation.
+      :name: via-type-mismatch
 
       A mapping given in the :n:`mapping` list associates a constant with a seemingly incompatible constructor.
 
