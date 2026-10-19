@@ -198,8 +198,8 @@ Otherwise return `nil'."
 (with-eval-after-load 'compile
   (push
    '(rocq-refman
-     "\\(sphinx.errors.ExtensionError: .*/_build/default/\\(.*\\):\\(.*\\):\\) Error while sending the following to rocqtop:"
-     2 3 nil nil 1)
+     "\\(sphinx.errors.ExtensionError: \\(.*/_build/default/\\)?\\([^:]*\\):\\([^:]*\\):\\)"
+     3 4 nil nil 1)
    compilation-error-regexp-alist-alist)
 
   (push 'rocq-refman compilation-error-regexp-alist))
