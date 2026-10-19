@@ -357,6 +357,16 @@ unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(HIDE)$(call WITH_TIMER,$@,./$<.test)
 	$(HIDE)$(call REPORT_TIMER,$@)
 
+# Without rocq-runtime.toplevel: through findlib.dynload it links with
+# -linkall, which would also link the checker's main module, and both
+# declare the same warnings.
+unit-tests/checker/%.ml.log: unit-tests/checker/%.ml unit-tests/src/$(UNIT_LINK)
+	$(SHOW) 'TEST      $<'
+	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package rocq-runtime.checklib,ounit2 \
+	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
+	$(HIDE)$(call WITH_TIMER,$@,./$<.test)
+	$(HIDE)$(call REPORT_TIMER,$@)
+
 #######################################################################
 # Other generic tests
 #######################################################################

@@ -17,8 +17,11 @@ open Environ
 
 let () = at_exit flush_all
 
+let print_fatal_error info =
+  flush_all (); Format.eprintf "@[Fatal Error: @[%a@]@]@\n%!" Pp.pp_with info; flush_all ()
+
 let fatal_error info code =
-  flush_all (); Format.eprintf "@[Fatal Error: @[%a@]@]@\n%!" Pp.pp_with info; flush_all ();
+  print_fatal_error info;
   exit code
 
 let rocq_root = Id.of_string "Corelib"
@@ -163,6 +166,18 @@ let warn_no_bytecode =
         str "Bytecode compiler is disabled," ++ spc() ++
         str "-bytecode-compiler option ignored.")
 
+let jobs = ref 1
+let set_jobs s =
+  match int_of_string_opt s with
+  | Some n when n >= 1 -> jobs := n
+  | _ -> fatal_error (str "Option -j expects a positive integer, got " ++ qstring s ++ str ".") 1
+
+let set_worker_budget s =
+  match float_of_string_opt s with
+  | Some t when t >= 0. -> CheckWorkers.set_budget t
+  | _ ->
+    fatal_error (str "Option -worker-budget expects a number of seconds, got " ++ qstring s ++ str ".") 1
+
 let make_senv () =
   let senv = Safe_typing.empty_environment in
   let senv = Safe_typing.set_impredicative_set !impredicative_set senv in
@@ -232,6 +247,11 @@ let print_usage_channel co command =
 \n  -o, --output-context        print the list of assumptions\
 \n  -m, --memory                print the maximum heap size\
 \n  -silent                     disable trace of constants being checked\
+\n  -j n                        check opaque proofs in parallel, using up to n\
+\n                              processes (default is 1, no parallelism)\
+\n  -worker-budget s            with -j, a worker process stops after s seconds\
+\n                              (default is 20) and its remaining checks are given\
+\n                              to another one; this bounds the memory it uses\
 \n\
 \n  -impredicative-set          set sort Set impredicative\
 \n  -indices-matter             levels of indices (and nonuniform parameters)\
@@ -260,7 +280,7 @@ let report () = strbrk (". Please report at " ^ Coq_config.wwwbugtracker ^ ".")
 
 let guill s = str "\"" ++ str s ++ str "\""
 
-let explain_exn = function
+let rec explain_exn = function
   | Sys_error msg ->
       hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ guill msg ++ report() )
   | UserError pps ->
@@ -366,6 +386,19 @@ let explain_exn = function
   | Modops.ModuleTypingError _ ->
     hov 0 (str "Module typing error")
 
+  | CheckWorkers.CheckError (cst, e) ->
+    explain_exn e ++ fnl () ++
+    hov 0 (str "while checking the opaque proof of" ++ spc () ++ Constant.print cst ++ str ".")
+
+  | CheckWorkers.WorkerFailed (pid, status, batch) ->
+    let status = match status with
+      | Unix.WEXITED n -> str "exited with code " ++ int n
+      | Unix.WSIGNALED s -> str "was killed by " ++ str (CheckWorkers.signal_name s)
+      | Unix.WSTOPPED s -> str "was stopped by " ++ str (CheckWorkers.signal_name s)
+    in
+    hov 0 (str "Worker process " ++ int pid ++ spc () ++ status ++ spc () ++
+           str "while checking " ++ CheckWorkers.pr_batch batch ++ str ".")
+
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
                (if s = "" then mt ()
@@ -441,6 +474,12 @@ let parse_args argv =
     | "-silent" :: rem ->
         Flags.quiet := true; parse rem
 
+    | "-j" :: n :: rem -> set_jobs n; parse rem
+    | "-j" :: [] -> usage 1
+
+    | "-worker-budget" :: s :: rem -> set_worker_budget s; parse rem
+    | "-worker-budget" :: [] -> usage 1
+
     | s :: _ when s<>"" && s.[0]='-' ->
         fatal_error (str "Unknown option " ++ str s) 1
     | s :: rem ->  add_compile s; parse rem
@@ -462,6 +501,7 @@ let init_with_argv argv =
   try
     parse_args argv;
     Option.iter (fun file -> init_profile ~file) !profile;
+    CheckWorkers.set_jobs ~profiling:(Option.has_some !profile) !jobs;
     if CDebug.(get_flag misc) then Printexc.record_backtrace true;
     let coqenv = Boot.Env.maybe_init ~boot:!boot ~coqlib:!coqlib
         ~warn_ignored_coqlib:CWarnings.warn_ignored_coqlib
@@ -485,13 +525,25 @@ let init_with_argv argv =
 
 let init() = init_with_argv Sys.argv
 
+let exit_code = function
+  | CheckWorkers.CheckError (_, e) -> CErrors.exit_code e
+  | CheckWorkers.WorkerFailed (_, Unix.WEXITED n, _) when n <> 0 -> n
+  | CheckWorkers.WorkerFailed _ -> 1
+  | e -> CErrors.exit_code e
+
+(* A worker reports its error as [run] does, then exits with the same
+   code, which the main process passes on. *)
+let () = CheckWorkers.set_error_printer (fun e ->
+    if CDebug.(get_flag misc) then Printexc.print_backtrace stderr;
+    print_fatal_error (explain_exn e))
+
 let run senv =
   try
     let senv = compile_files senv in
     flush_all(); senv
   with e ->
     if CDebug.(get_flag misc) then Printexc.print_backtrace stderr;
-    fatal_error (explain_exn e) (CErrors.exit_code e)
+    fatal_error (explain_exn e) (exit_code e)
 
 let main () =
   let senv = init() in

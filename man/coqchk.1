@@ -55,6 +55,23 @@ Synonymous to
 Be less verbose.
 .
 .TP
+.BI \-j \ n
+Check opaque proofs in parallel, using up to
+.I n
+processes at the same time (default 1). A worker that has run for longer than
+its budget hands its remaining proofs back to the main process, which queues
+them again.
+.
+.TP
+.BI \-worker\-budget \ s
+With
+.BR \-j ,
+stop a worker after
+.I s
+seconds (default 20) and once it has completed one check; the main process
+queues its unchecked proofs again. This bounds the memory workers use.
+.
+.TP
 .BI \-admit \ module
 Tag the specified module and all its dependencies as trusted, and will
 not be rechecked, unless explicitly requested by other options.

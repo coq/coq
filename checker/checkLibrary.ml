@@ -457,6 +457,17 @@ let recheck_library ?(output_context=false) senv ~norec ~admit ~check =
   Flags.if_verbose Feedback.msg_notice (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
-  let senv = List.fold_left (check_one_lib ~output_context nochk) (senv, Mod_checking.empty_opaques) needed in
+  let senv =
+    try
+      let senv =
+        List.fold_left (check_one_lib ~output_context nochk) (senv, Mod_checking.empty_opaques) needed
+      in
+      CheckWorkers.finish ();
+      senv
+    with e ->
+      let e = Exninfo.capture e in
+      CheckWorkers.abort ();
+      Exninfo.iraise e
+  in
   Flags.if_verbose Feedback.msg_notice (str"Modules were successfully checked");
   senv
