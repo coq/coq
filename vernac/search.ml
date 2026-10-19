@@ -133,53 +133,31 @@ let iter_constructors indsp u fn env sigma nconstr =
     fn (GlobRef.ConstructRef (indsp, i)) None env sigma typ
   done
 
-(* FIXME: this is a Libobject hack that should be replaced with a proper
-   registration mechanism. *)
-module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> unit end)
-
-let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
-| f -> f o
-| exception Not_found -> ()
-
 (* General search over declarations *)
 let generic_search env sigma (fn : GlobRef.t -> (Vernacexpr.discharge * Decls.logical_kind) option -> env -> Evd.evar_map -> constr -> unit) =
   List.iter (fun d ->
     let id = NamedDecl.get_id d in
     let kind = try Some (DoDischarge, Decls.variable_kind id) with Not_found -> None in
     fn (GlobRef.VarRef id) kind env sigma (NamedDecl.get_type d))
-  (Environ.named_context env);
-  let iter_obj prefix lobj = match lobj with
-    | AtomicObject o ->
-      let handler =
-        DynHandle.add Declare.Internal.Constant.tag begin fun (id,obj) ->
-          let kn = KerName.make prefix.obj_mp id in
-          let cst = Global.constant_of_delta_kn kn in
-          let gr = GlobRef.ConstRef cst in
-          let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
-          let kind = Declare.Internal.Constant.kind obj in
-          fn gr (Some (NoDischarge, kind)) env sigma typ
-        end @@
-        DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
-          let kn = KerName.make prefix.obj_mp id in
-          let mind = Global.mind_of_delta_kn kn in
-          let mib = Global.lookup_mind mind in
-          let iter_packet i mip =
-            let ind = (mind, i) in
-            let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
-            let typ = Inductive.type_of_inductive (Inductive.lookup_mind_specif env ind, u) in
-            let () = fn (GlobRef.IndRef ind) None env sigma typ in
-            let len = Array.length mip.mind_user_lc in
-            iter_constructors ind u fn env sigma len
-          in
-          Array.iteri iter_packet mib.mind_packets
-        end @@
-        DynHandle.empty
-      in
-      handle handler o
-    | _ -> ()
+    (Environ.named_context env);
+  let search_constant c cb =
+    let kind = Dumpglob.constant_kind env c in
+    fn (ConstRef c) (Some (NoDischarge, kind)) env sigma cb.const_type
   in
-  try Declaremods.iter_all_interp_segments iter_obj
-  with Not_found -> ()
+  let search_mind mind mib =
+    let iter_packet i mip =
+      let ind = (mind, i) in
+      let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+      let typ = Inductive.type_of_inductive (Inductive.lookup_mind_specif env ind, u) in
+      let () = fn (GlobRef.IndRef ind) None env sigma typ in
+      let len = Array.length mip.mind_user_lc in
+      iter_constructors ind u fn env sigma len
+    in
+    Array.iteri iter_packet mib.mind_packets
+  in
+  let () = Environ.fold_constants (fun c cb () -> search_constant c cb) env () in
+  let () = Environ.fold_inductives (fun mind mib () -> search_mind mind mib) env () in
+  ()
 
 (** This module defines a preference on constrs in the form of a
     [compare] function (preferred constr must be big for this
