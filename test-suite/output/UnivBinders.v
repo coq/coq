@@ -105,6 +105,8 @@ Fail Print foo@{E}.
 Fail Print mono@{E}.
 
 (* Not everything can be printed with custom universe names. *)
+Fail Print Corelib.Init.Logic@{E}.
+(* Nonexistent object still gets "is not defined" *)
 Fail Print Stdlib.Init.Logic@{E}.
 
 (* Case where a universe name appears more than one *)
