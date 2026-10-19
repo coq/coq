@@ -1630,6 +1630,18 @@ let check_poly_univ_decl ~cumulative ~kind uctx decl =
   let uctx = UContext.make nas (inst, (elim_csts,univ_csts)) in
   uctx, variances
 
+let pr_univ_entry e =
+  let open Pp in
+  let pr_variances = function
+    | Entries.Infer_variances -> str"Infer"
+    | Check_variances v -> str"Check: " ++ UVars.Variances.pr v
+  in
+  match e with
+  | Polymorphic_entry (uctx, variances) -> 
+    str"Polymorphic_entry " ++ UContext.pr Sorts.raw_printer uctx ++ str" variances: " ++
+      pr_opt pr_variances variances
+  | Monomorphic_entry ctx -> str"Monomorphic_entry: " ++ ContextSet.pr Level.raw_pr ctx
+
 let check_univ_decl ~poly ~kind uctx decl =
   let (binders, _) = uctx.names in
   let entry =
@@ -1641,6 +1653,7 @@ let check_univ_decl ~poly ~kind uctx decl =
         CErrors.user_err
           Pp.(strbrk "Universe variance was specified but this definition will not be cumulative.")
       else Monomorphic_entry (check_mono_univ_decl uctx decl) in
+  debug Pp.(fun () -> str"check_univ_decl: " ++ pr_univ_entry entry);
   { universes_entry_universes = entry;
     universes_entry_binders = binders }
 

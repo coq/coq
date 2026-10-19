@@ -389,7 +389,8 @@ let check_conv_record env sigma ((proji, u), (params1, c1, extra_args1)) (t2,sk2
      (* N.B. In the `Proj` case, the subject needs to be added in args2. *)
     try begin
       try
-        debug_cs_unification Pp.(fun () -> str"Looking for " ++ Names.GlobRef.(print (ConstRef proji)) ++ str" , " ++ ValuePattern.print pat);
+        debug_cs_unification Pp.(fun () -> str"Looking for " ++ Names.GlobRef.(print (ConstRef proji)) ++ str" , " ++
+           ValuePattern.print pat ++ str" (" ++ Termops.Internal.print_constr_env env sigma h2 ++ str ")");
          let () = if pat = Default_cs then raise Not_found else () in
          let (sigma, solution) = CanonicalSolution.find env sigma (Names.GlobRef.ConstRef proji, pat) in
         debug_cs_unification Pp.(fun () -> str"Solution " ++ CanonicalSolution.print env sigma solution);
