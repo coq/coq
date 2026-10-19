@@ -209,8 +209,7 @@ let synterp_end_module export {loc;v=id} =
   Option.map (fun export -> synterp_import_mod export (qualid_of_ident ?loc id) ImportAll) export
 
 let synterp_end_section {CAst.loc; v} =
-  Dumpglob.dump_reference ?loc
-    (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
+  let () = Dumpglob.dump_end_section ?loc (DirPath.to_string (Lib.current_dirpath true)) in
   Declaremods.Synterp.close_section ()
 
 let synterp_end_segment ({v=id;loc} as lid) =

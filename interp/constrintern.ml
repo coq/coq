@@ -50,7 +50,7 @@ open NumTok
 (* To interpret implicits and arg scopes of variables in inductive
    types and recursive definitions and of projection names in records *)
 
-type var_internalization_type =
+type var_internalization_type = Dumpglob.ref_type =
   | Inductive
   | Recursive
   | Method
@@ -1139,12 +1139,6 @@ let intern_notation intern env ntnvars loc ntn fullargs =
 (**********************************************************************)
 (* Discriminating between bound variables and global references       *)
 
-let string_of_ty = function
-  | Inductive -> "ind"
-  | Recursive -> "def"
-  | Method -> "meth"
-  | Variable -> "var"
-
 let gvar (loc, id) us = match us with
   | None | Some ([],[]) -> DAst.make ?loc @@ GVar id
   | Some _ ->
@@ -1162,8 +1156,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] registered with implicit arguments *)
   try
     let {var_intern_typ=ty; var_uid=uid} = Id.Map.find id env.impls in
-    let tys = string_of_ty ty in
-    Dumpglob.dump_reference ?loc "<>" uid tys;
+    Dumpglob.dump_reference ?loc uid ty;
     gvar (loc,id) us
   with Not_found ->
   (* Is [id] bound in current term or is an ltac var bound to constr *)

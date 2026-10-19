@@ -37,7 +37,7 @@ open Pretyping
    positions and scopes to identifiers declared in the [rel_context]
    of [env] *)
 
-type var_internalization_type =
+type var_internalization_type = Dumpglob.ref_type =
   | Inductive
   | Recursive
   | Method

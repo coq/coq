@@ -121,9 +121,9 @@ let interp_hints ~poly h =
   | HintsConstructors lqid ->
     let constr_hints_of_ind qid =
       let ind = Smartlocate.global_inductive_with_alias qid in
-      Dumpglob.dump_reference ?loc:qid.CAst.loc "<>"
+      Dumpglob.dump_reference ?loc:qid.CAst.loc
         (Libnames.string_of_qualid qid)
-        "ind";
+        Dumpglob.Inductive;
       List.init (Inductiveops.nconstructors env ind) (fun i ->
           let c = (ind, i + 1) in
           let gr = GlobRef.ConstructRef c in
