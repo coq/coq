@@ -11,6 +11,7 @@
 open Names
 open Notation_term
 open Glob_term
+open Constrexpr
 
 (** Constr default entries *)
 
@@ -76,6 +77,8 @@ val glob_constr_of_notation_constr : ?loc:Loc.t -> notation_constr -> glob_const
 val pr_notation_info :
   (Glob_term.glob_constr -> Pp.t) -> Constrexpr.notation_key -> Notation_term.notation_constr -> Pp.t
 
+val dummy_subscopes : extended_subscopes * notation_var_binders
+
 (** {5 Matching a notation pattern against a [glob_constr]} *)
 
 (** [match_notation_constr] matches a [glob_constr] against a notation
@@ -83,24 +86,49 @@ val pr_notation_info :
 
 exception No_match
 
+(** When term matching a rule is found, with_vars informs about the
+    set of actual binder names of this term and the pairs (x,y) of
+    (notation-unbound) binder name [x] of the pattern and
+    corresponding binder name [y] in the term; e.g. when matching the
+    term "fun '((y,z) as c) b => t" against the pattern "fun x a => u"
+    (when x is not bound in the notation) the actual binder names include
+    [c,y,z,b] and the matching pairs are [(x,c);(b,a)] *)
+type 'a with_vars = Id.Set.t * (Name.t * Id.t) list * 'a
+
+(** Instances of notation variables, with their type as interpreted in
+    a term; also, when a variable is used both as term and binder, it
+    is represented as a a pattern *)
+type 'a glob_constr_notation_substitution =
+  ('a glob_constr_g with_vars, 'a cases_pattern_disjunction_g with_vars, 'a extended_glob_local_binder_g list with_vars) notation_arg_type
+    Id.Map.t
+
 val match_notation_constr : print_parentheses:bool ->
   factorize_eqns:PrintingFlags.Extern.FactorizeEqns.t ->
   'a glob_constr_g -> vars:Id.Set.t -> interpretation ->
-      ((Id.Set.t * 'a glob_constr_g) * extended_subscopes) list *
-      ((Id.Set.t * 'a glob_constr_g list) * extended_subscopes) list *
-      ((Id.Set.t * 'a cases_pattern_disjunction_g) * extended_subscopes) list *
-      ((Id.Set.t * 'a extended_glob_local_binder_g list) * extended_subscopes) list
+  'a glob_constr_notation_substitution
+
+(** Instances of notation variables, with their type as interpreted in
+    a pattern *)
+type 'a glob_cases_pattern_notation_substitution =
+  ('a glob_constr_g, 'a cases_pattern_g, unit) notation_arg_type
+    Id.Map.t
+
+(** In a result [subst,(b,n,more_args)] of [match_notation_constr_cases_pattern]
+    or [match_notation_constr_ind_pattern], [b] tells when the notation
+    is a notation for a pattern of the form [@f] in which case implicit
+    arguments are deactivated by convention. Otherwise, [n] tells how many
+    arguments are involved in the notation and [more_args] are the
+    extra arguments in case the pattern is a partially apply
+    constructor. For instance, if the pattern is [C ?x ?y] with
+    notation, say, "{x,y}" and the term is [C t1 t2 t3 t4], then [n]
+    is [2] and [more_args] is [t3;t4] (the information is needed so
+    that, later on, if e.g. [C] has its 3rd argument implicit, the
+    term should be written "{x,y} t4" *)
 
 val match_notation_constr_cases_pattern :
   'a cases_pattern_g -> interpretation ->
-  (('a cases_pattern_g * extended_subscopes) list *
-   ('a cases_pattern_g list * extended_subscopes) list *
-   ('a cases_pattern_g * extended_subscopes) list) *
-    (bool * int * 'a cases_pattern_g list)
+  'a glob_cases_pattern_notation_substitution * (bool * int * 'a cases_pattern_g list)
 
 val match_notation_constr_ind_pattern :
   inductive -> 'a cases_pattern_g list -> interpretation ->
-  (('a cases_pattern_g * extended_subscopes) list *
-   ('a cases_pattern_g list * extended_subscopes) list *
-   ('a cases_pattern_g * extended_subscopes) list) *
-    (bool * int * 'a cases_pattern_g list)
+  'a glob_cases_pattern_notation_substitution * (bool * int * 'a cases_pattern_g list)

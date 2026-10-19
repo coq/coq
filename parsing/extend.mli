@@ -41,12 +41,14 @@ type constr_entry_key =
 
 val constr_entry_key_eq : constr_entry_key -> constr_entry_key -> bool
 
-val constr_entry_key_eq_ignore_binder_kind : constr_entry_key -> constr_entry_key -> bool
+val constr_entry_key_visible_eq : constr_entry_key -> constr_entry_key -> bool
 
 (** Entries used in productions, vernac side (e.g. "x bigint" or "x ident") *)
 
 type 'custom simple_constr_prod_entry_key =
     ('custom, production_level) constr_entry_key_gen
+
+val simple_constr_entry_key_eq : CustomName.t simple_constr_prod_entry_key -> CustomName.t simple_constr_prod_entry_key -> bool
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 

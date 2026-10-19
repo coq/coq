@@ -18,6 +18,7 @@ type ntnvar_status = {
   mutable ntnvar_used_as_binder : bool;
   mutable ntnvar_scopes : Notation_term.subscopes option;
   mutable ntnvar_binding_ids : Notation_term.notation_var_binders option;
+  mutable ntnvar_is_only_in_constr: bool;
   ntnvar_typ : Notation_term.notation_var_internalization_type;
 }
 
