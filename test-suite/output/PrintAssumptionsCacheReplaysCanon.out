@@ -1,0 +1,136 @@
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.M.d
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed Corelib.Init.Nat.add
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.d
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.S.f
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.Z.g
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed Corelib.Init.Nat.add
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.M.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.P.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.d
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.R.e
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.S.f
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.V.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.W.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.Z.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.R.f
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed Corelib.Init.Nat.add
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.M.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.P.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.d
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.R.e
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.S.f
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.V.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.W.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.Z.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.R.f
+Transparent constants:
+use :
+nat
+Z.g :
+nat
+W.g :
+nat
+V.g :
+nat
+S.f :
+nat
+R.f :
+nat
+S.e :
+nat
+R.e :
+nat
+Z.d :
+nat
+W.d :
+nat
+V.d :
+nat
+Q.d :
+nat
+MA.d :
+nat
+M.d :
+nat
+Z.c :
+nat
+W.c :
+nat
+V.c :
+nat
+Q.c :
+nat
+P.c :
+nat
+MA.c :
+nat
+M.c :
+nat
+S.Inner.c :
+nat
+R.Inner.c :
+nat
+Nat.add :
+nat -> nat -> nat
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed Corelib.Init.Nat.add
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.M.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.P.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.d
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.R.e
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.S.f
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.V.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.W.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.Z.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.R.f
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed Corelib.Init.Nat.add
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.M.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.P.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.MA.d
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.R.e
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.S.f
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.V.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.W.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.Z.g
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.R.f
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Debug:
+[assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.Include1.h
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Debug:
+[assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.Include1.h
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed Corelib.Init.Nat.add
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.M.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.P.c
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.M.d
+Debug:
+[assumptions-cache] replayed PrintAssumptionsCacheReplaysCanon.Include1.h
+Axioms:
+ax : nat

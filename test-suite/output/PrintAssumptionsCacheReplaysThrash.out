@@ -1,0 +1,14 @@
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysThrash.M.d
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysThrash.x2
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysThrash.M.d
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysThrash.x2
+Axioms:
+ax : nat

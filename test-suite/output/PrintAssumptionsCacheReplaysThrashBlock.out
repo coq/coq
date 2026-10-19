@@ -1,0 +1,16 @@
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed (Corelib.Init.Datatypes.nat, 0)
+Debug:
+[assumptions-cache] replayed PrintAssumptionsCacheReplaysThrashBlock.ax
+Axioms:
+ax : nat
+Debug:
+[assumptions-cache] replayed PrintAssumptionsCacheReplaysThrashBlock.z3
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed (Corelib.Init.Datatypes.nat, 0)
+Debug:
+[assumptions-cache] replayed PrintAssumptionsCacheReplaysThrashBlock.ax
+Axioms:
+ax : nat

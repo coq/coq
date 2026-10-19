@@ -1,0 +1,26 @@
+Section Variables:
+a
+: nat
+Section Variables:
+a
+: nat
+Section Variables:
+v
+: (fun _ : T => nat) t0
+Axioms:
+ax : nat
+Section Variables:
+v
+: (fun _ : T => nat) t0
+Axioms:
+ax : nat
+Closed under the global context
+Closed under the global context
+Axioms:
+t0 : T
+ax : nat
+T : Type
+Axioms:
+t0 : T
+ax : nat
+T : Type

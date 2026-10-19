@@ -1,0 +1,49 @@
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Opaque constants:
+op :
+tr = tr
+Transparent constants:
+tr :
+nat
+op :
+tr = tr
+both :
+tr = tr
+Nat.add :
+nat -> nat -> nat
+Axioms:
+ax : nat
+Transparent constants:
+tr :
+nat
+both :
+tr = tr
+Nat.add :
+nat -> nat -> nat
+Axioms:
+ax : nat
+Opaque constants:
+op :
+tr = tr
+Transparent constants:
+tr :
+nat
+both :
+tr = tr
+Nat.add :
+nat -> nat -> nat
+Axioms:
+ax : nat
+Opaque constants:
+op :
+tr = tr
+Axioms:
+ax : nat
+Opaque constants:
+op :
+tr = tr
+Axioms:
+ax : nat

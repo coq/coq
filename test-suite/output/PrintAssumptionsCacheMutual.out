@@ -1,0 +1,60 @@
+Axioms:
+C2 relies on an unsafe hierarchy.
+C1 relies on an unsafe hierarchy.
+bad relies on an unsafe hierarchy.
+Axioms:
+C2 relies on an unsafe hierarchy.
+C1 relies on an unsafe hierarchy.
+bad relies on an unsafe hierarchy.
+Axioms:
+C2 relies on an unsafe hierarchy.
+C1 relies on an unsafe hierarchy.
+bad relies on an unsafe hierarchy.
+Axioms:
+cons_f relies on an unsafe hierarchy.
+node relies on an unsafe hierarchy.
+nil_f relies on an unsafe hierarchy.
+leaf relies on an unsafe hierarchy.
+forest relies on an unsafe hierarchy.
+tree relies on an unsafe hierarchy.
+Axioms:
+cons_f relies on an unsafe hierarchy.
+node relies on an unsafe hierarchy.
+nil_f relies on an unsafe hierarchy.
+leaf relies on an unsafe hierarchy.
+forest relies on an unsafe hierarchy.
+tree relies on an unsafe hierarchy.
+Axioms:
+cons_f relies on an unsafe hierarchy.
+node relies on an unsafe hierarchy.
+nil_f relies on an unsafe hierarchy.
+leaf relies on an unsafe hierarchy.
+forest relies on an unsafe hierarchy.
+tree relies on an unsafe hierarchy.
+Axioms:
+cons_f relies on an unsafe hierarchy.
+node relies on an unsafe hierarchy.
+nil_f relies on an unsafe hierarchy.
+leaf relies on an unsafe hierarchy.
+forest relies on an unsafe hierarchy.
+tree relies on an unsafe hierarchy.
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Axioms:
+loop is assumed to be guarded.
+Axioms:
+loop is assumed to be guarded.
+Axioms:
+neg is assumed to be positive.
+Axioms:
+neg is assumed to be positive.
+Axioms:
+neg is assumed to be positive.

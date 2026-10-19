@@ -1,0 +1,31 @@
+File "./output/PrintAssumptionsCacheReplaysOpaque.v", line 14, characters 0-27:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Axioms:
+axiom : nat
+Opaque proofs that could not be accessed:
+foo : nat
+Debug: [assumptions-cache] replayed Corelib.Init.Nat.add
+File "./output/PrintAssumptionsCacheReplaysOpaque.v", line 15, characters 0-27:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Debug: [assumptions-cache] replayed TestSuite.for_vos.bar
+Axioms:
+axiom : nat
+Opaque proofs that could not be accessed:
+foo : nat
+File "./output/PrintAssumptionsCacheReplaysOpaque.v", line 16, characters 0-26:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Debug: [assumptions-cache] replayed (Corelib.Init.Datatypes.nat, 0)
+Opaque proofs that could not be accessed:
+foo : nat
+File "./output/PrintAssumptionsCacheReplaysOpaque.v", line 17, characters 0-26:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Debug: [assumptions-cache] replayed (Corelib.Init.Datatypes.nat, 0)
+Opaque proofs that could not be accessed:
+foo : nat
+Debug: [assumptions-cache] replayed TestSuite.for_vos.bar
+Axioms:
+axiom : nat

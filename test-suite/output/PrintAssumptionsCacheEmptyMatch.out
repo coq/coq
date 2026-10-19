@@ -1,0 +1,64 @@
+Axioms:
+impossible : empty
+used in probe to prove
+ False
+Axioms:
+impossible : empty
+used in probe to prove
+ False
+Axioms:
+impossible : empty
+used in probe to prove
+ False
+Axioms:
+impossible : empty
+used in probe to prove
+ False
+Axioms:
+impossible : empty
+used in probe to prove
+ False
+Axioms:
+impossible : empty
+used in b1 to prove
+ Prop
+Axioms:
+impossible : empty
+used in b1 to prove
+ Prop
+Axioms:
+impossible : empty
+used in b1 to prove
+ Prop
+Axioms:
+impossible : empty
+used in b1 to prove
+ Prop
+Axioms:
+impossible : empty
+used in b1 to prove
+ Prop
+Axioms:
+impossible : empty
+used in b1 to prove
+ Prop
+Axioms:
+z : (fun _ : nat => empty) w
+w : nat
+Axioms:
+z : (fun _ : nat => empty) w
+used in probe_z to prove
+ False
+w : nat
+Axioms:
+z : (fun _ : nat => empty) w
+used in probe_z to prove
+ False
+Axioms:
+z : (fun _ : nat => empty) w
+used in probe_z to prove
+ False
+Axioms:
+z : (fun _ : nat => empty) w
+used in probe_z to prove
+ False

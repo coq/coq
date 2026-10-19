@@ -1,0 +1,47 @@
+Axioms:
+a0 : Prop
+Axioms:
+a1 : Prop
+Axioms:
+a2 : Prop
+Debug: [assumptions-cache] cleared
+Axioms:
+a0 : Prop
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysBound.g0
+Axioms:
+a0 : Prop
+Axioms:
+c0 : Prop
+Axioms:
+c1 : Prop
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysBound.h0
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysBound.h1
+Axioms:
+c1 : Prop
+c0 : Prop
+Axioms:
+c2 : Prop
+Axioms:
+c3 : Prop
+Axioms:
+c4 : Prop
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysBound.h0
+Axioms:
+c0 : Prop
+Axioms:
+b0 : Prop
+Axioms:
+d0 : Prop
+Axioms:
+d1 : Prop
+Debug: [assumptions-cache] replayed (PrintAssumptionsCacheReplaysBound.J, 0)
+Axioms:
+b0 : Prop
+Axioms:
+d2 : Prop
+Debug: [assumptions-cache] cleared
+Axioms:
+b0 : Prop
+Debug: [assumptions-cache] replayed (PrintAssumptionsCacheReplaysBound.J, 0)
+Axioms:
+b0 : Prop

@@ -1,0 +1,12 @@
+Axioms:
+ax1 : nat
+File "./output/PrintAssumptionsCacheReset.v", line 9, characters 0-20:
+Warning: Command "Reset f." is not recommended in batch mode. In particular,
+going back in the document is not efficient in batch mode due to Rocq not
+caching previous states for memory optimization reasons. If your use is
+intentional, you may want to disable this warning and pass the
+"-async-proofs-cache force" option to Rocq. [undo-batch-mode,default]
+Axioms:
+ax2 : nat
+Axioms:
+ax2 : nat

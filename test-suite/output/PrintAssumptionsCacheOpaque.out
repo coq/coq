@@ -1,0 +1,33 @@
+File "./output/PrintAssumptionsCacheOpaque.v", line 12, characters 0-27:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Axioms:
+axiom : nat
+Opaque proofs that could not be accessed:
+foo : nat
+File "./output/PrintAssumptionsCacheOpaque.v", line 13, characters 0-27:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Axioms:
+axiom : nat
+Opaque proofs that could not be accessed:
+foo : nat
+File "./output/PrintAssumptionsCacheOpaque.v", line 14, characters 0-22:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Opaque proofs that could not be accessed:
+foo : nat
+File "./output/PrintAssumptionsCacheOpaque.v", line 15, characters 0-26:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Opaque proofs that could not be accessed:
+foo : nat
+Axioms:
+axiom : nat
+File "./output/PrintAssumptionsCacheOpaque.v", line 17, characters 0-27:
+Warning: Cannot access the opaque body of foo, its assumptions are unknown.
+[unreachable-opaque-body,vernacular,default]
+Axioms:
+axiom : nat
+Opaque proofs that could not be accessed:
+foo : nat

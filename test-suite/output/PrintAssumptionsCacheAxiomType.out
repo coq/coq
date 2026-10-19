@@ -1,0 +1,41 @@
+Axioms:
+secret : nat
+gate : (fun _ : nat => nat) secret
+Axioms:
+secret : nat
+gate : (fun _ : nat => nat) secret
+Axioms:
+secret : nat
+gate : (fun _ : nat => nat) secret
+Axioms:
+reached_via_type : hidden = hidden -> nat
+hidden : nat
+Axioms:
+reached_via_type : hidden = hidden -> nat
+hidden : nat
+Axioms:
+hidden : nat
+A : (fun _ : nat => nat) hidden
+Axioms:
+other : nat
+Axioms:
+hidden : nat
+A : (fun _ : nat => nat) hidden
+Axioms:
+top_ax : forall l : low, mid l
+mid : low -> Type
+low : Type
+Axioms:
+top_ax : forall l : low, mid l
+mid : low -> Type
+low : Type
+Axioms:
+top_ax : forall l : low, mid l
+mid : low -> Type
+low : Type
+Axioms:
+C : Type
+B : C
+Axioms:
+C : Type
+B : C

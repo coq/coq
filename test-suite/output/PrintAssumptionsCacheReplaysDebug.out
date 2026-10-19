@@ -1,0 +1,26 @@
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysDebug.g
+Axioms:
+ax : nat
+f
+     : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysDebug.f
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysDebug.g
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysDebug.g
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysDebug.g
+Axioms:
+ax : nat
+Axioms:
+ax : nat
+Debug: [assumptions-cache] replayed PrintAssumptionsCacheReplaysDebug.g
+Axioms:
+ax : nat
