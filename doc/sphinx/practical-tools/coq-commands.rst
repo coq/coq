@@ -276,9 +276,7 @@ experimenting with these settings will likely not cause a significant performanc
 and should be harmless.
 
 If the variable is not set, Rocq uses the
-`default values <https://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#TYPEcontrol>`_,
-except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 32Mwords
-(256MB with 64-bit executables or 128MB with 32-bit executables).
+`default values <https://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#TYPEcontrol>`_.
 
 .. todo: Using the same text "here" for both of the links in the last 2 paragraphs generates
    an incorrect warning: coq-commands.rst:4: WARNING: Duplicate explicit target name: "here".
