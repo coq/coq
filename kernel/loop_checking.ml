@@ -2,6 +2,7 @@ open Univ
 
 let debug_loop_checking_invariants_flag, debug_loop_checking_invariants = CDebug.create_full ~name:"loop-checking-invariants" ()
 let _debug_loop_checking_flag, debug_loop_checking = CDebug.create_full ~name:"loop-checking" ()
+let _debug_loop_checking_set_can_flag, debug_loop_checking_set_can = CDebug.create_full ~name:"loop-checking-set-can" ()
 
 module Index :
 sig
@@ -1648,6 +1649,9 @@ end
 let enter_equiv_expr m idx local idx' k =
   enter_equiv m idx local (NeList.Tip (idx', k))
 
+let pr_clauses model cls = 
+  Pp.prlist_with_sep Pp.cut (_pr_clause_idx model) cls
+
 (** [enforce_eq_can model canu canv]
 
   @requires canu.value = canv.value, so no new model needs to be computed.
@@ -1703,6 +1707,11 @@ let enforce_eq_can model (canu, ku as _u) (canv, kv as _v) : (canonical_node * i
       let model = subst_bwd_of_fwd_and_duplicates other.canon cank newfwd model in
       model, newbwd, newfwd
     in
+    debug_loop_checking_set_can Pp.(fun () ->
+      str"enforce_eq_can " ++ pr_index_point model (other.canon, 0) ++ 
+      str" := " ++ pr_index_point model cank ++
+      str" new fwd " ++ pr_clauses model (ForwardClauses.to_clauses 
+        (NeList.Tip (can.canon, 0)) fwd));
     let can = { can with clauses_bwd = bwd; clauses_fwd = fwd } in
     can, change_node model can
   in
@@ -1796,8 +1805,10 @@ module Status = struct
 end
 
 
-(** [shrink_premises prems] Simplifies the clause [prems -> concl + conclk]
-  by removing redundant hypotheses [l + k] when [l + k'] with [k' > k] is also present in [prems],
+(** [shrink_premises prems concl conclk] 
+
+  Simplifies the clause [prems -> concl + conclk] by removing redundant hypotheses [l + k] 
+  when [l + k'] with [k' > k] is also present in [prems],
   potentially returning [None] if the clause is trivial, that is, has a premise [concl + k]
   with [k >= conclk].
 *)
@@ -2133,8 +2144,13 @@ let infer_clause_extension cl minit =
     end else
       (* The clauses are not valid in the current model, we have to find a new one *)
       (* debug Pp.(fun () -> str"Enforcing clauses requires a new inference"); *)
-      infer_clauses_extension cans m
-
+      match infer_clauses_extension cans m with
+      | None -> 
+        debug_loop_checking Pp.(fun () -> str"infer_clause_extension found loop");
+        None
+      | Some m -> 
+        debug_loop_checking Pp.(fun () -> str"infer_clause_extension found a model");
+        Some m
 (* A clause premises -> concl + k might hold in the current minimal model without being valid in all
    its extensions.
 
@@ -2497,6 +2513,11 @@ let set_can (can,k) u model =
   let fwd = can.clauses_fwd in
   let bwd = can.clauses_bwd in
   let uprems = NeList.map (fun (can, k) -> can.canon, k) u in
+  debug_loop_checking_set_can Pp.(fun () ->
+      str"set_can " ++ pr_index_point model (can.canon, k) ++ 
+      str" = " ++ Premises.pr (pr_index_point model) uprems ++
+      str" from fwd " ++ pr_clauses model (ForwardClauses.to_clauses 
+        (NeList.Tip (can.canon, 0)) fwd));
   let newfwd = UnivSubst.subst_fwd_clauses can.canon uprems fwd in
   let newbwd = UnivSubst.subst_bwd_clauses can.canon uprems bwd in
   let model = UnivSubst.remove_bwd_of_fwd_and_duplicates can.canon newfwd model in
@@ -2505,6 +2526,8 @@ let set_can (can,k) u model =
   let fwdcls = ForwardClauses.to_clauses uprems newfwd in
   let bwdcls = ClausesOf.to_clauses uprems newbwd in
   let newcls = fwdcls @ List.map snd bwdcls in
+  debug_loop_checking_set_can Pp.(fun () ->str "newfwd: " ++ pr_clauses model fwdcls ++ 
+    str"bwdcls: " ++ pr_clauses model (List.map snd bwdcls));
   let newcls = List.filter_map (filter_trivial_clause model) newcls in
   let enforce_clause (model, equivs) cl =
     match enforce_clause cl model with
