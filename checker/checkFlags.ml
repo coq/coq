@@ -10,7 +10,15 @@
 
 open Declarations
 
+let axiom_free = ref false
+
+let flags_are_safe flags =
+  flags.check_guarded && flags.check_positive && flags.check_universes &&
+  flags.check_eliminations && not flags.allow_uip
+
 let set_local_flags flags env =
+  if !axiom_free && not (flags_are_safe flags) then
+    CErrors.user_err Pp.(str "Axioms or unsafe features found (-axiom-free).");
   (* Explicitly ignored flags are set to not change *)
   let envflags = Environ.typing_flags env in
   let flags = {
@@ -38,3 +46,19 @@ let set_local_flags flags env =
    this rather than the environment's flag when deciding whether to recompile
    the VM bytecode of a library. *)
 let enable_vm = ref false
+
+let is_axiom_free env opac =
+  let open Environ in
+  let safe_constants = fold_constants (fun _ cb safe ->
+    safe && flags_are_safe cb.const_typing_flags) env true in
+  let safe_inductives = fold_inductives (fun _ mib safe ->
+    safe && flags_are_safe mib.mind_typing_flags)
+    env true in
+  let primitive c =
+    is_primitive_type env c || match lookup_constant_opt c env with
+    | Some { const_body = Primitive _; _ } -> true
+    | Some _ | None -> false
+  in
+  List.for_all primitive opac &&
+  safe_constants && safe_inductives &&
+  not (rewrite_rules_allowed env)

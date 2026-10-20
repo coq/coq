@@ -230,6 +230,7 @@ let print_usage_channel co command =
 \n  -where                      print coqchk's standard library location and exit\
 \n  -v, --version               print coqchk version and exit\
 \n  -o, --output-context        print the list of assumptions\
+\n  -axiom-free                 fail if axioms or unsafe features are used\
 \n  -m, --memory                print the maximum heap size\
 \n  -silent                     disable trace of constants being checked\
 \n\
@@ -432,6 +433,8 @@ let parse_args argv =
     | ("-o" | "--output-context") :: rem ->
         output_context := true; parse rem
 
+    | "-axiom-free" :: rem -> CheckFlags.axiom_free := true; parse rem
+
     | "-admit" :: s :: rem -> add_admit s; parse rem
     | "-admit" :: [] -> usage 1
 
@@ -496,11 +499,13 @@ let run senv =
 let main () =
   let senv = init() in
   let senv, opac = run senv in
+  let env = Safe_typing.env_of_safe_env senv in
   let opac =
-    if !output_context then
-      let env = Safe_typing.env_of_safe_env senv in
-      Some (Mod_checking.constants_of_opaques env opac)
-    else None
+    if !output_context || !CheckFlags.axiom_free then
+      Mod_checking.constants_of_opaques env opac
+    else []
   in
-  Check_stat.stats (Safe_typing.env_of_safe_env senv) opac;
+  Check_stat.stats env (if !output_context then Some opac else None);
+  if !CheckFlags.axiom_free && not (CheckFlags.is_axiom_free env opac) then
+    fatal_error (str "Axioms or unsafe features found (-axiom-free).") 1;
   exit 0
