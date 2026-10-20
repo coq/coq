@@ -35,8 +35,8 @@
 # - Wide40000: one inductive with 40,000 constructors, queried twice. The
 #   walk without reuse needs about 0.8 GB of address space; a replay that
 #   pushes a block's shared edges once per member runs out even at 4 GB.
-# Every size answers without reuse on the dev profile (what `make world` and
-# CI build) and on the release profile (-O3, as `dune build -p` builds),
+# Every size answers without reuse on the dev profile (what `make world`
+# builds) and on the release profile (-O3, as `dune build -p` builds),
 # whose larger frames lower the inductive limits to about 29,000 inductives
 # and 23,750 mixed links. The definition chains catch a non-tail call into
 # the walk, which overflows from about 47,500 definitions on the dev profile,
@@ -87,17 +87,18 @@
 #   machine's speed does not matter.
 #
 # OCaml 5 ignores ulimit -s (it runs OCaml code on its own stack), and the
-# memory caps were measured on OCaml 4 only: the stack and memory cases are
-# skipped there, rather than pass on files that cannot overflow.
+# stack and memory limits were measured with OCaml 4 on Linux x86-64 only:
+# the stack and memory cases are skipped elsewhere, rather than pass on files
+# that cannot overflow or fail on limits that were never measured there.
 
 set -e
 
 export PATH=$BIN:$PATH
 export LC_ALL=C
 
-case $(rocq --version) in
-  *"compiled with OCaml 4."*) ocaml4=true ;;
-  *) ocaml4=false ;;
+case "$(uname -sm) $(rocq --version)" in
+  "Linux x86_64 "*"compiled with OCaml 4."*) measured=true ;;
+  *) measured=false ;;
 esac
 
 cd misc
@@ -190,8 +191,8 @@ $axiom"
   fi
 done
 
-if ! $ocaml4; then
-  echo "Skipping the stack and memory cases: not built with OCaml 4, whose limits they are measured against."
+if ! $measured; then
+  echo "Skipping the stack and memory cases: not Linux x86-64 with OCaml 4, where their limits are measured."
   exit $status
 fi
 
@@ -292,10 +293,10 @@ names() { seq -f "$1" 1 "$2" | tr '\n' ' '; }
 # command each, taken by a definition H.
 axmod() {
   seq -f 'Definition c%g := 0.' 1 $1
-  echo "Abbreviation BIG := ($(seq -f 'c%g' 1 $1 | paste -sd+ | sed 's/+/ + /g'))."
+  echo "Abbreviation BIG := ($(seq -f 'c%g' 1 $1 | paste -sd+ - | sed 's/+/ + /g'))."
   echo "Module Type S. Parameter a : (fun _ : nat => nat) BIG. End S."
   seq -f 'Declare Module A%g : S.' 1 $1
-  echo "Definition all : nat := $(seq -f 'A%g.a' 1 $1 | paste -sd+ | sed 's/+/ + /g')."
+  echo "Definition all : nat := $(seq -f 'A%g.a' 1 $1 | paste -sd+ - | sed 's/+/ + /g')."
   echo "Print Assumptions all."
 }
 
@@ -438,9 +439,9 @@ fi
 coll() {
   for ((k = 1; k <= $1; k++)); do echo "Axiom a$k : forall x$k : nat, nat."; done
   for ((j = 0; j < $1; j += 100)); do
-    echo "Definition c$((j / 100)) : nat := $(seq -f 'a%g 0' $((j + 1)) $((j + 100)) | paste -sd+ | sed 's/+/ + /g')."
+    echo "Definition c$((j / 100)) : nat := $(seq -f 'a%g 0' $((j + 1)) $((j + 100)) | paste -sd+ - | sed 's/+/ + /g')."
   done
-  echo "Definition R : nat := $(seq -f 'c%g' 0 $(($1 / 100 - 1)) | paste -sd+ | sed 's/+/ + /g')."
+  echo "Definition R : nat := $(seq -f 'c%g' 0 $(($1 / 100 - 1)) | paste -sd+ - | sed 's/+/ + /g')."
   for _ in 1 2; do echo "Print Assumptions R."; done
 }
 
@@ -504,7 +505,7 @@ for f in Coll20000 FunCopies; do
   base=$(cpu "${f}NoQuery.v")
   expect "${f}NoQuery" "$(cat "${f}NoQuery.v.log")" ""
   # Both queries print the same lines: one header and one line per axiom each.
-  expect "$f" "$(wc -l < "$f.v.log")" 40002
+  expect "$f" "$(awk 'END { print NR }' "$f.v.log")" 40002
   expect "$f" "$(head -n 20001 "$f.v.log")" "$(tail -n 20001 "$f.v.log")"
   if ! awk -v f="$full" -v b="$base" 'BEGIN { exit !(f <= 1.5 * b + 1) }'; then
     echo "$f: ${full}s of CPU, against ${base}s without its queries"

@@ -466,14 +466,17 @@ Requests to the environment
       The body of :n:`@qualid` could not be read, so the assumptions it
       relies on are not part of the reported ones.
 
-   Consecutive :cmd:`Print Assumptions` queries in the same global
-   environment share the traversal of the objects they have in common: the
-   first query to reach an object walks it, and a later one reuses that
-   walk instead of walking it again. Declaring anything, which changes the
-   global environment, drops what was kept, and so does a query whose own
-   traversal is much larger than the earlier ones. The reported assumptions
-   are the same either way. The ``assumptions-cache`` component of the
-   :opt:`Debug` option reports each reuse.
+   :cmd:`Print Assumptions` and the :cmd:`Print Opaque Dependencies`,
+   :cmd:`Print Transparent Dependencies` and :cmd:`Print All Dependencies`
+   queries share, as long as nothing is declared in between, the traversal
+   of the objects they have in common: the first query to reach an object
+   walks it, and a later one reuses that walk instead of walking it again.
+   Declaring anything changes the global environment and drops what was
+   kept; it is also dropped when it outweighs twice the largest query made
+   so far in that environment. The reported assumptions are the same
+   either way. The ``assumptions-cache`` component of the :opt:`Debug`
+   option reports each reuse, and each time what was kept is dropped for
+   its weight.
 
 .. flag:: Printing All Assumptions
 
