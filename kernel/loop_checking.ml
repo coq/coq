@@ -1427,11 +1427,12 @@ let _pr_can_clause m (prems, conclk) =
   let open Pp in
   pr_with (pr_can m) conclk ++ str" ≤ " ++ NeList.pr_with_sep (fun () -> str", ") (pr_with (pr_can m)) prems
 
-let remove_premise idx prems =
+let remove_premise idx kprem prems =
   let rec aux = function
-    | NeList.Tip (idx', _) as l -> if Index.equal idx idx' then None else Some l
-    | NeList.Cons ((idx', _) as prem, l') ->
-      if Index.equal idx idx' then aux l'
+    | NeList.Tip (idx', k) as l -> 
+      if Index.equal idx idx' && Int.equal k kprem then None else Some l
+    | NeList.Cons ((idx', k) as prem, l') ->
+      if Index.equal idx idx' && Int.equal k kprem then aux l'
       else match aux l' with
         | None -> Some (NeList.Tip prem)
         | Some l' -> Some (NeList.Cons (prem, l'))
@@ -1453,7 +1454,7 @@ let add_can_clause_model m ((prems, (canl, conclk)) : can_clause) : (can_clause 
       let idx = if idx0 == canl then canl' else idx0 in
       let idx' =
         let fwd = ForwardClauses.add { kprem; concl = canl'.canon;
-          prems = PartialClausesOf.singleton (conclk, remove_premise idx0.canon canprems) } idx.clauses_fwd in
+          prems = PartialClausesOf.singleton (conclk, remove_premise idx0.canon kprem canprems) } idx.clauses_fwd in
         if fwd == idx.clauses_fwd then idx
         else { idx with clauses_fwd = fwd }
       in
