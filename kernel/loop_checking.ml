@@ -1812,7 +1812,7 @@ end
   potentially returning [None] if the clause is trivial, that is, has a premise [concl + k]
   with [k >= conclk].
 *)
-let shrink_premises prems concl conclk =
+let _shrink_premises prems concl conclk =
   (* This assumes a single Index.t * nat binding by index and preserves it *)
   let update ((prem, k) as x) prems =
     match prems with
@@ -1842,9 +1842,39 @@ let shrink_premises prems concl conclk =
       else aux (update x acc) xs
   in aux None prems
 
-let _simplify_premises m prems concl conclk : Premises.t option =
+let shrink_can_premises prems concl conclk =
+  (* This assumes a single Index.t * nat binding by index and preserves it *)
+  let update ((prem, k) as x) prems =
+    match prems with
+    | None -> Some (NeList.Tip x)
+    | Some prems ->
+      let rec aux prems =
+      match prems with
+      | NeList.Tip ((prem', k') as p) ->
+        if prem == prem' then
+          if k <= k' then prems
+          else NeList.Tip x
+        else NeList.Cons (x, NeList.Tip p)
+      | NeList.Cons ((prem', k') as p, prems') ->
+        if prem == prem' then
+          if k <= k' then prems
+          else NeList.Cons ((prem, k), prems')
+        else
+          let prems'' = aux prems' in
+          if prems' == prems'' then prems else NeList.Cons (p, prems'')
+      in Some (aux prems)
+  in
+  let rec aux acc = function
+    | NeList.Tip ((prem, k) as x) ->
+      if prem == concl && k >= conclk then acc else update x acc
+    | NeList.Cons ((prem, k) as x, xs) ->
+      if prem == concl && k >= conclk then aux acc xs
+      else aux (update x acc) xs
+  in aux None prems
+
+(* let _simplify_premises m prems concl conclk : Premises.t option =
   let prems' = canonical_premises m prems in
-  shrink_premises prems' concl conclk
+  shrink_premises prems' concl conclk *)
 
 let refresh_can_premises model prems =
   Premises._map (refresh_can_expr model) prems
@@ -2130,27 +2160,42 @@ let update_model ((prems, (can, k)) : can_clause) (m : model) : PSet.t * model =
       | None -> (PSet.empty, m')
     else (PSet.empty, m)
 
+(** Simplify u <= max (Set, v) clauses to u <= v and filter away u <= ... u + n , ... clauses, always valid *)
+let filter_trivial_can_clause m ((prems, (concl, k as conclk)) : can_clause) : can_clause option =
+  (* Filter out `Set` from max(Set, u) -> v constraints *)
+  let setidx = Index.find Level.set m.table in
+  (* Trivial ... u + k + n ... -> u + k clause *)      
+  if NeList.exists (fun (prem, k') -> (prem == concl && k' >= k) || (concl.canon == setidx && k' >= k && k > 0)) prems then
+    None
+  else
+    match shrink_can_premises prems concl k with
+    | Some prems -> Some (prems, conclk)
+    | None -> None
+
 let infer_clause_extension cl minit =
   debug_loop_checking Pp.(fun () -> str "infer_clause_extension " ++ pr_clause (pr_can_expr minit) cl);
-  match add_can_clause_model minit cl with
-  | None -> (* The clause was already present in the model *)
-     Some minit
-  | Some (cl, m) ->
-    let cans, m = update_model cl m in
-    if PSet.is_empty cans then begin
-      (* The clause is already true in the current model,
-        but might not be in an extension, so we keep it *)
-      Some m
-    end else
-      (* The clauses are not valid in the current model, we have to find a new one *)
-      (* debug Pp.(fun () -> str"Enforcing clauses requires a new inference"); *)
-      match infer_clauses_extension cans m with
-      | None -> 
-        debug_loop_checking Pp.(fun () -> str"infer_clause_extension found loop");
-        None
-      | Some m -> 
-        debug_loop_checking Pp.(fun () -> str"infer_clause_extension found a model");
+  match filter_trivial_can_clause minit cl with
+  | None -> debug_loop_checking Pp.(fun () -> str "clause is trivial "); Some minit
+  | Some cl ->
+    match add_can_clause_model minit cl with
+    | None -> (* The clause was already present in the model *)
+      Some minit
+    | Some (cl, m) ->
+      let cans, m = update_model cl m in
+      if PSet.is_empty cans then begin
+        (* The clause is already true in the current model,
+          but might not be in an extension, so we keep it *)
         Some m
+      end else
+        (* The clauses are not valid in the current model, we have to find a new one *)
+        (* debug Pp.(fun () -> str"Enforcing clauses requires a new inference"); *)
+        match infer_clauses_extension cans m with
+        | None -> 
+          debug_loop_checking Pp.(fun () -> str"infer_clause_extension found loop");
+          None
+        | Some m -> 
+          debug_loop_checking Pp.(fun () -> str"infer_clause_extension found a model");
+          Some m
 (* A clause premises -> concl + k might hold in the current minimal model without being valid in all
    its extensions.
 
@@ -2187,26 +2232,7 @@ let enforce_leq_can_internal (v, u) m =
       let u = refresh_can_expr m' u in
       let v = refresh_can_premises m' v in
       Some (simplify_clauses_between m' u v)
-    else Some (m, [])
-
-(** Simplify u <= max (Set, v) clauses to u <= v and filter away u <= ... u + n , ... clauses, always valid *)
-let filter_trivial_can_clause m ((prems, (concl, k as conclk)) : can_clause) : can_clause option =
-  (* Trivial ... u + k + n ... -> u + k clause *)
-  if NeList.exists (fun (prem, k') -> prem == concl && k' >= k) prems then
-    None
-  else
-    let filter (prem, k') = not (prem == concl && k' >= k) in
-    match Premises.filter filter prems with
-    | None -> (* We removed the only trivial premise (concl, k') -> concl, k *) None
-    | Some prems ->
-      (* Filter out `Set` from max(Set, u) -> v constraints *)
-      let canset = Index.find Level.set m.table in
-      let prems =
-        match NeList.filter (fun (prem, k) -> not (Index.equal prem.canon canset && Int.equal k 0)) prems with
-        | Some prems -> prems (* There were at least two premises in the rule *)
-        | None -> prems
-      in
-      Some (prems, conclk)
+    else Some (m, [])    
 
 let enforce_leq_can u v m =
   match filter_trivial_can_clause m (v, u) with
