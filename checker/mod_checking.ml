@@ -40,8 +40,7 @@ let indirect_accessor : (Opaqueproof.opaque -> Opaqueproof.opaque_proofterm) ref
 
 let set_indirect_accessor f = indirect_accessor := f
 
-let register_opacified_constant env chkst kn cb =
-  let opac = chkst.st_opaques in
+let register_opacified_constant env opac kn cb =
   let rec gather_consts s c =
     match Constr.kind c with
     | Constr.Const (c, _) -> Cset.add c s
@@ -49,7 +48,7 @@ let register_opacified_constant env chkst kn cb =
   in
   let fold c accu = add_opaque_cb c (lookup_constant c env) opac accu in
   let wo_body = Cset.fold fold (gather_consts Cset.empty cb) Cset.empty in
-  { chkst with st_opaques = Cmap.add kn wo_body opac }
+  Cmap.add kn wo_body opac
 
 exception BadConstant of Constant.t * Pp.t
 
@@ -104,7 +103,9 @@ let check_constant_declaration env opac kn cb opacify =
     Some retro, opac
   in
   match body with
-  | Some body when opacify -> retro, register_opacified_constant env opac kn body
+  | Some body when opacify ->
+    let opaques = register_opacified_constant env opac.st_opaques kn body in
+    retro, { opac with st_opaques = opaques }
   | Some _ | None -> retro, opac
 
 let check_constant_declaration env opac kn cb opacify =
