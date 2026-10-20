@@ -89,8 +89,11 @@ for bad, out in (("bad", d + "/Lib.vo"), ("late", d + "/late-spliced/Lib.vo")):
 PY
 
 # Expected output in misc/rocqchk_parallel.out. The error of the bad library
-# is found in the first opaque proof, which always goes to the first worker, so
-# the output is deterministic except for the worker's process id.
+# is found in the first opaque proof, which always goes to the first worker.
+# The batch named in the message assumes that checking Lib takes less than
+# rocqchk's 1 s dispatch window (it takes about 0.1 s), so that all its opaque
+# proofs are dealt after the library is checked. Otherwise the output is
+# deterministic except for the worker's process id.
 run() {
   echo "== $1"
   shift

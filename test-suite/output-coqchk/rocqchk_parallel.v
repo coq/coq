@@ -1,7 +1,7 @@
 (* -*- coqchk-prog-args: ("-j" "4") -*- *)
 
-(* rocqchk -j 4 checks the opaque proofs below in worker processes: there
-   are enough of them that the first share is worth a fork. *)
+(* rocqchk -j 4 checks the opaque proofs below in worker processes, and
+   the context summary is printed as without -j. *)
 
 Axiom A : Prop.
 Axiom a : A.

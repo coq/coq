@@ -251,7 +251,7 @@ let print_usage_channel co command =
 \n                              processes (default is 1, no parallelism)\
 \n  -worker-budget s            with -j, a worker process stops after s seconds\
 \n                              (default is 20) and its remaining checks are given\
-\n                              to another one; this bounds the memory it uses\
+\n                              to another one; this bounds how long a worker lives\
 \n\
 \n  -impredicative-set          set sort Set impredicative\
 \n  -indices-matter             levels of indices (and nonuniform parameters)\

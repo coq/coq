@@ -148,13 +148,13 @@ let set_report_writer f = report_writer := f
 
 (* Runs in the child, never returns.
 
-   The batch is checked in order. The time a worker lives is what makes
-   its private memory grow: the garbage collector keeps touching the heap
-   it shares copy-on-write with the main process. So once the budget has
-   passed, the worker stops after the check it is in, reports how many it
-   completed, and exits; the main process re-queues the rest. At least
-   one check is completed first, whatever the budget, so that the
-   checking always progresses. *)
+   The batch is checked in order. A worker's private memory grows while
+   it lives, with what it allocates and with the pages it shares
+   copy-on-write with the main process that the GC writes to. So once
+   the budget has passed, the worker stops after the check it is in,
+   reports how many it completed, and exits; the main process re-queues
+   the rest. At least one check is completed first, whatever the budget,
+   so that the checking always progresses. *)
 let run_worker parent report (tasks : task array) =
   let size = Array.length tasks in
   let current = ref (fst tasks.(0)) in

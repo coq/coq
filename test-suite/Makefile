@@ -355,20 +355,19 @@ unit-tests/src/utest.cmi: unit-tests/src/utest.mli
 
 unit-tests: $(UNIT_LOGFILES)
 
+UNIT_PACKAGES:=rocq-runtime.toplevel,ounit2
+
+# The checker's tests are linked without rocq-runtime.toplevel: through
+# findlib.dynload it links with -linkall, which would also link the
+# checker's main module, and both declare the same warnings. A
+# target-specific variable, unlike a second pattern rule, is chosen the
+# same way by every version of make.
+$(patsubst %.ml,%.ml.log,$(wildcard unit-tests/checker/*.ml)): UNIT_PACKAGES:=rocq-runtime.checklib,ounit2
+
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package rocq-runtime.toplevel,ounit2 \
-	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
-	$(HIDE)$(call WITH_TIMER,$@,./$<.test)
-	$(HIDE)$(call REPORT_TIMER,$@)
-
-# Without rocq-runtime.toplevel: through findlib.dynload it links with
-# -linkall, which would also link the checker's main module, and both
-# declare the same warnings.
-unit-tests/checker/%.ml.log: unit-tests/checker/%.ml unit-tests/src/$(UNIT_LINK)
-	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package rocq-runtime.checklib,ounit2 \
+	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package $(UNIT_PACKAGES) \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)$(call WITH_TIMER,$@,./$<.test)
 	$(HIDE)$(call REPORT_TIMER,$@)

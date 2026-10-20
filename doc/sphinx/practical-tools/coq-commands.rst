@@ -776,14 +776,14 @@ relative paths in object files ``-Q`` and ``-R`` have exactly the same meaning.
   run for longer than its budget (see ``-worker-budget``) stops after the proof
   it is checking and hands its remaining proofs back to the main process,
   which queues them again for another process; each proof is still checked
-  exactly once. More processes use more memory. This option is not available
-  on Windows, and is ignored with ``-profile``.
+  exactly once. With *n* > 1, ``rocqchk`` uses several times the memory of a
+  sequential check. This option is not available on Windows, and is ignored
+  with ``-profile``.
 :-worker-budget *s*: With ``-j``, the time in seconds (default 20) after which
   a worker process stops, once it has completed one check, and gives the proofs
-  it has not checked back to the main process. A worker lives for the budget
-  plus the time of its last proof. Workers share the memory of the main process
-  and copy more of it the longer they live, so a smaller budget bounds the
-  memory they use. ``0`` makes a worker check a single proof.
+  it has not checked back to the main process. This bounds how long a worker
+  lives: the budget plus the time of its last proof. ``0`` makes a worker check
+  a single proof.
 
 Environment variable ``$ROCQLIB`` can be set to override the location of
 the standard library.

@@ -21,14 +21,15 @@
 
     A batch is checked only if its worker exits with code 0.
 
-    A worker lives for at most a time budget (see [set_budget]): the
-    longer a worker lives, the more of the heap it shares with the main
-    process it has copied. Once the budget has passed, and the worker
-    has completed at least one check, it stops after the check it is in
-    and reports how many checks of its batch, the first ones in order, it
-    completed. The main process queues the others again, at the front.
-    So every check is run exactly once, by a process that ends
-    successfully, whichever way the work is cut into batches. *)
+    A worker lives for at most a time budget (see [set_budget]): its
+    private memory grows while it lives, with what it allocates and with
+    the pages it shares with the main process that the GC writes to.
+    Once the budget has passed, and the worker has completed at least
+    one check, it stops after the check it is in and reports how many
+    checks of its batch, the first ones in order, it completed. The main
+    process queues the others again, at the front. So every check is
+    run exactly once, by a process that ends successfully, whichever way
+    the work is cut into batches. *)
 
 val set_jobs : profiling:bool -> int -> unit
 (** [set_jobs ~profiling n] allows [n] processes to check at the same
