@@ -33,9 +33,9 @@
 val set_jobs : profiling:bool -> int -> unit
 (** [set_jobs ~profiling n] allows [n] processes to check at the same
     time: the main one and [n-1] workers while the libraries are
-    checked, then [n] workers. It has no effect when [n <= 1], and falls
-    back to checking in the main process, with a warning, when profiling
-    or when [Unix.fork] is not available. *)
+    checked, then [n] workers. With [n <= 1], and, with a warning, when
+    profiling or when [Unix.fork] is not available, every check runs at
+    once in the main process. *)
 
 val default_budget : float
 (** Seconds. *)

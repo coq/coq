@@ -64,10 +64,16 @@ ifeq ($(ARCH),win32)
   # (Coqcargs.add_compile)
   # for test stability across platforms we turn the \ from Filename.concat into a /
   CLEANUP_WINPATH=| sed 's:.\\$(<):./$(<):'
+
+  # -j needs Unix.fork: rocqchk falls back to checking sequentially, with a
+  # warning, which this test's expected output does not have.
+  OUTPUT_COQCHK_TESTS:=$(filter-out output-coqchk/rocqchk_parallel.v,$(wildcard output-coqchk/*.v))
 else
   export FINDLIB_SEP=:
 
   CLEANUP_WINPATH=
+
+  OUTPUT_COQCHK_TESTS:=$(wildcard output-coqchk/*.v)
 endif
 
 # The $(shell echo) trick is necessary due to configure quoting
@@ -490,8 +496,8 @@ $(addsuffix .log,$(wildcard output-coqtop/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	} > "$@"
 	$(HIDE)$(call REPORT_TIMER,$@)
 
-output-coqchk: $(addsuffix .log,$(wildcard output-coqchk/*.v))
-$(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
+output-coqchk: $(addsuffix .log,$(OUTPUT_COQCHK_TESTS))
+$(addsuffix .log,$(OUTPUT_COQCHK_TESTS)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	$(SHOW) "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \

@@ -40,6 +40,7 @@ exception WorkerFailed of int * Unix.process_status * batch
 let max_workers = ref 0
 
 let set_jobs ~profiling n =
+  max_workers := 0;
   if n > 1 then
     if not Sys.unix then
       Feedback.msg_warning

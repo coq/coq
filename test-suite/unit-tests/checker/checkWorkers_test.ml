@@ -494,9 +494,37 @@ let () = add_test "a good report is accepted" (fun () ->
         assert_no_exception result;
         assert_exactly_once n log))
 
-let () = add_test "negative budget is refused" (fun () ->
-    assert_raises (Invalid_argument "CheckWorkers.set_budget") (fun () -> CheckWorkers.set_budget (-1.));
-    assert_raises (Invalid_argument "CheckWorkers.set_budget") (fun () -> CheckWorkers.set_budget nan))
+(* Every test above forks. *)
+let fork_tests = if Sys.unix then List.rev !tests else []
 
-(* Without [Unix.fork], -j checks everything in the main process. *)
-let () = run_tests __FILE__ (open_log_out_ch __FILE__) (if Sys.unix then List.rev !tests else [])
+let budget_test = mk_test "negative budget is refused" (TestCase (fun () ->
+    assert_raises (Invalid_argument "CheckWorkers.set_budget") (fun () -> CheckWorkers.set_budget (-1.));
+    assert_raises (Invalid_argument "CheckWorkers.set_budget") (fun () -> CheckWorkers.set_budget nan)))
+
+(* With -j 1, when profiling, and where [Unix.fork] is not available,
+   [defer] runs each check at once, in the main process, in order, and a
+   refusal is the check's own exception, as without -j. *)
+let assert_sequential ~jobs ~profiling =
+  CheckWorkers.set_jobs ~profiling jobs;
+  Fun.protect ~finally:(fun () -> CheckWorkers.set_jobs ~profiling:false 1) (fun () ->
+      let ran = ref [] in
+      for i = 0 to 9 do
+        CheckWorkers.defer (constant i) (fun () -> ran := i :: !ran);
+        assert_equal ~printer:string_of_int (i + 1) (List.length !ran)
+      done;
+      CheckWorkers.finish ();
+      assert_equal ~printer:pr_batches [List.init 10 Fun.id] [List.rev !ran];
+      assert_raises (Failure "refused") (fun () ->
+          CheckWorkers.defer (constant 10) (fun () -> failwith "refused")))
+
+let sequential_tests = [
+  mk_test "-j 1: every check runs at once, in the main process"
+    (TestCase (fun () -> assert_sequential ~jobs:1 ~profiling:false));
+  mk_test "-j 4 when profiling: every check runs at once, in the main process"
+    (TestCase (fun () -> assert_sequential ~jobs:4 ~profiling:true));
+  (* On Unix this is the -j 4 case of the tests above. *)
+  mk_test "-j 4 without fork: every check runs at once, in the main process"
+    (TestCase (fun () -> if not Sys.unix then assert_sequential ~jobs:4 ~profiling:false));
+]
+
+let () = run_tests __FILE__ (open_log_out_ch __FILE__) (budget_test :: sequential_tests @ fork_tests)
