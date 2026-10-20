@@ -18,3 +18,6 @@ exception BadConstant of Names.Constant.t * Pp.t
 
 val constants_of_opaques : Environ.env -> opaques -> Names.Constant.t list
 val empty_opaques : opaques
+
+(** Record assumptions hidden by module signatures without type checking. *)
+val collect_module_opaques : Environ.env -> opaques -> Names.ModPath.t -> Mod_declarations.module_body -> opaques
