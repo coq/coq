@@ -581,11 +581,14 @@ compiled files.  Syntactically, they have this form:
 
 .. prodn::
    qualid ::= @ident {* .@ident }
+   | {+ .@ident }
 
 *Fully qualified* or *absolute* qualified names uniquely identify files
 (as in the `Require` command) and items within files, such as a single
 :cmd:`Variable` definition.  It's usually possible to use a suffix of the fully
 qualified name (a *short name*) that uniquely identifies an item.
+
+A :n:`@qualid` which starts with `.` is always absolute.
 
 The first part of a fully qualified name identifies a file, which may be followed
 by a second part that identifies a specific item within that file.  Qualified names

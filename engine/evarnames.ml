@@ -40,7 +40,7 @@ struct
       path: Id.t list }
 
   let make path =
-    let (dp, id) = Libnames.repr_qualid path in
+    let (dp, id) = Libnames.repr_qualid_noabs path in
     { basename = id; path = DirPath.repr dp }
 
   let repr { basename; path } =

@@ -53,9 +53,9 @@ let inl2intopt = function
 
 let consistency_checks exists dir =
   if exists then
-    let _ =
-      try Nametab.locate_module (qualid_of_path dir)
-      with Not_found ->
+    let () =
+      if Nametab.exists_module dir then ()
+      else
         user_err
           (pr_path dir ++ str " should already exist!")
     in
@@ -588,7 +588,7 @@ let collect_modules mpl =
 let open_modtype i ((sp,kn),_) =
   let mp = mp_of_kn kn in
   let mp' =
-    try Nametab.locate_modtype (qualid_of_path sp)
+    try Nametab.ModTypes.of_path sp
     with Not_found ->
       anomaly (pr_path sp ++ str " should already exist!");
   in

@@ -402,8 +402,9 @@ let glob_visible_short_qualid c =
   let rec aux acc c = match DAst.get c with
     | GRef (c,_) ->
         let qualid = Nametab.shortest_qualid_of_global ~force_short:true Id.Set.empty c in
-        let dir,id = Libnames.repr_qualid  qualid in
-        if DirPath.is_empty dir then Id.Set.add id acc else acc
+        if Libnames.qualid_is_ident qualid then
+          Id.Set.add (Libnames.qualid_basename qualid) acc
+        else acc
     | _ ->
         fold_glob_constr aux acc c
   in aux Id.Set.empty c

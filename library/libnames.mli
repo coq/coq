@@ -80,8 +80,9 @@ module Spmap  : CSig.MapS with type key = full_path
 type qualid_r
 type qualid = qualid_r CAst.t
 
-val make_qualid : ?loc:Loc.t -> DirPath.t -> Id.t -> qualid
-val repr_qualid : qualid -> DirPath.t * Id.t
+val make_qualid : ?loc:Loc.t -> ?abs:bool -> DirPath.t -> Id.t -> qualid
+val repr_qualid : qualid -> bool * DirPath.t * Id.t
+val repr_qualid_noabs : qualid -> DirPath.t * Id.t
 
 val qualid_eq : qualid -> qualid -> bool
 val qualid_compare : qualid -> qualid -> int

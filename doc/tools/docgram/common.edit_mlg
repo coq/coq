@@ -224,6 +224,7 @@ qualid: [ | DELETENT ]
 
 qualid: [
 | ident LIST0 ("." ident)
+| LIST1 ("." ident)
 ]
 
 field: [ | DELETENT ]
