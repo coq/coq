@@ -115,12 +115,11 @@ module Visit : VISIT = struct
 end
 
 let get_mono_inst_univs = function
-| Monomorphic -> [InfvInst.empty]
-| Polymorphic (uctx, _variances) -> InfvInst.generate uctx
+  (uctx, _variances) -> InfvInst.generate uctx
 
 let get_mono_inst = function
 | SFBconst cb -> get_mono_inst_univs cb.const_universes
-| SFBmind mib -> get_mono_inst_univs mib.mind_universes
+| SFBmind mib -> get_mono_inst_univs Declareops.(inductive_universes mib)
 | SFBrules _ -> [InfvInst.empty]
 | SFBmodule _ | SFBmodtype _ -> assert false
 
@@ -257,7 +256,7 @@ let rec extract_structure_spec : type a.
     in
     List.fold_right fold consts specs
   | (l, SFBmind mib) :: msig ->
-    let insts = get_mono_inst_univs mib.mind_universes in
+    let insts = get_mono_inst_univs Declareops.(inductive_universes mib) in
     let mind = make_mind reso mp l in
     let map inst = Sind (extract_inductive table env mind inst) in
     let minds = List.map map insts in
@@ -293,10 +292,8 @@ and extract_mexpr_spec table venv env mp1 (me_struct_o,me_alg) = match me_alg wi
   | MEident mp ->
     let () = Visit.add_mp_all venv mp in
     MTident mp
-  | MEwith(me',WithDef(idl,(c,ctx)))->
-      let () = match ctx with
-      | None -> ()
-      | Some auctx ->
+  | MEwith(me',WithDef(idl,(c,auctx)))->
+      let () =
         (* XXX *)
         if Array.is_empty (UVars.AbstractContext.names auctx).quals then ()
         else user_err Pp.(str "Extraction of \"with Definition\" clauses not supported for sort polymorphic definitions.")
@@ -391,7 +388,7 @@ let rec extract_structure table access venv env mp reso ~all = function
     consts @ ms
   | (l, SFBmind mib) :: struc ->
     let ms = extract_structure table access venv env mp reso ~all struc in
-    let insts = get_mono_inst_univs mib.mind_universes in
+    let insts = get_mono_inst_univs Declareops.(inductive_universes mib) in
     let mind = make_mind reso mp l in
     let map inst =
       let b = Visit.needed_ind venv mind inst in

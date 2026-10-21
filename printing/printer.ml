@@ -293,9 +293,7 @@ let pr_abstract_universe_ctx sigma ?variances ?priv c =
   else
     mt()
 
-let pr_universes sigma ?priv = function
-  | Declarations.Monomorphic -> mt ()
-  | Declarations.Polymorphic (ctx, variances) -> pr_abstract_universe_ctx sigma ?variances ?priv ctx
+let pr_universes sigma ?priv = function (ctx, variances) -> pr_abstract_universe_ctx sigma ?variances ?priv ctx
 
 (**********************************************************************)
 (* Global references *)

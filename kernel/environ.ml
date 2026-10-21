@@ -926,13 +926,6 @@ let is_primitive_type env c =
   is_int63_type env c || is_float64_type env c || is_array_type env c ||
   is_string_type env c
 
-let polymorphic_constant cst env =
-  Declareops.constant_is_polymorphic (lookup_constant cst env)
-
-let polymorphic_pconstant (cst,u) env =
-  if UVars.Instance.is_empty u then false
-  else polymorphic_constant cst env
-
 let cumulative_constant cst env =
   Declareops.constant_is_cumulative (lookup_constant cst env)
 
@@ -977,10 +970,6 @@ let get_projections env ind =
 let polymorphic_ind (mind,_i) env =
   Declareops.inductive_is_polymorphic (lookup_mind mind env)
 
-let polymorphic_pind (ind,u) env =
-  if UVars.Instance.is_empty u then false
-  else polymorphic_ind ind env
-
 let cumulative_ind (mind,_i) env =
   Declareops.inductive_is_cumulative (lookup_mind mind env)
 
@@ -988,9 +977,9 @@ let type_in_type_ind (mind,_i) env =
   not (lookup_mind mind env).mind_typing_flags.check_universes
 
 let template_polymorphic_ind (mind,_) env =
-  match (lookup_mind mind env).mind_template with
-  | Some _ -> true
-  | None -> false
+  match (lookup_mind mind env).mind_universes with
+  | Template _ -> true
+  | Polymorphic _ -> false
 
 let template_polymorphic_pind (ind,u) env =
   if not (UVars.Instance.is_empty u) then false
@@ -1179,7 +1168,7 @@ let is_polymorphic env r =
   let open Names.GlobRef in
   match r with
   | VarRef _id -> false
-  | ConstRef c -> polymorphic_constant c env
+  | ConstRef _ -> true
   | IndRef ind -> polymorphic_ind ind env
   | ConstructRef cstr -> polymorphic_ind (inductive_of_constructor cstr) env
 
@@ -1216,9 +1205,9 @@ let variances env gr =
   | ConstRef cst ->
     let cb = lookup_constant cst env in Declareops.universes_variances cb.const_universes
   | IndRef ind ->
-    let mib = lookup_mind (fst ind) env in Declareops.universes_variances mib.mind_universes
+    let mib = lookup_mind (fst ind) env in Declareops.(universes_variances (inductive_universes mib))
   | ConstructRef cstr ->
-    let mib = lookup_mind (fst (fst cstr)) env in Declareops.universes_variances mib.mind_universes
+    let mib = lookup_mind (fst (fst cstr)) env in Declareops.(universes_variances (inductive_universes mib))
   | VarRef _id -> None
 
 let vm_library env = env.vm_library

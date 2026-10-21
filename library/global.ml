@@ -193,10 +193,7 @@ let body_of_constant_body access cb =
   | Undef _ | Primitive _ | Symbol _ ->
      None
   | Def c ->
-    let u = match cb.const_universes with
-    | Monomorphic -> Opaqueproof.PrivateMonomorphic ()
-    | Polymorphic (auctx, _) -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
-    in
+    let u = Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty in
     Some (c, u, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
     let c, u = force_proof access o in
@@ -225,9 +222,10 @@ let import c t d = globalize (Safe_typing.import c t d)
 let env_of_context hyps =
   Environ.reset_with_named_context hyps (env())
 
-let is_polymorphic r =
-  Environ.is_polymorphic (env()) r
+let universes_of_global r =
+  Environ.universes_of_global (env()) r
 
+let is_polymorphic r = Environ.is_polymorphic (env()) r
 let is_cumulative r =
   Environ.is_cumulative (env()) r
 

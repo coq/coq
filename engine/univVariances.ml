@@ -31,10 +31,10 @@ let _global_variances env gr =
     else let cb = lookup_constant cst env in Declareops.universes_variances cb.const_universes
   | IndRef ind ->
     if not (mem_mind (fst ind) env) then None
-    else let mib = lookup_mind (fst ind) env in Declareops.universes_variances mib.mind_universes
+    else let mib = lookup_mind (fst ind) env in Declareops.universes_variances Declareops.(inductive_universes mib)
   | ConstructRef cstr ->
     if not (mem_mind (fst (fst cstr)) env) then None
-    else let mib = lookup_mind (fst (fst cstr)) env in Declareops.universes_variances mib.mind_universes
+    else let mib = lookup_mind (fst (fst cstr)) env in Declareops.universes_variances Declareops.(inductive_universes mib)
   | VarRef _id -> None
 
 let compute_variances_constr env ~evars status position (cumul_pb, typing_pb) c =

@@ -93,8 +93,12 @@ let skip_trusted_seff sl b e =
     in
   aux sl b e
 
+type typing_context_universes =
+  | Monomorphic
+  | Polymorphic of universes
+
 type typing_context =
-  TyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * universes
+  TyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * typing_context_universes
 
 type pre_universes =
   | PreMonomorphic
@@ -104,6 +108,9 @@ let process_universes env ?sec_univs = function
   | Entries.Monomorphic_entry ->
     env, UVars.Instance.empty, PreMonomorphic
   | Entries.Polymorphic_entry (auctx, variances) ->
+    if AbstractContext.is_empty auctx && Option.is_empty sec_univs then
+      env, UVars.Instance.empty, PreMonomorphic
+    else
     (** [ctx] must contain local universes, such that it has no impact
         on the rest of the graph (up to transitivity). *)
     let ctx = AbstractContext.repr auctx in
@@ -180,6 +187,10 @@ let on_variances fn = function
     let shift, variances = fn variances in
     shift, Polymorphic (uctx, Some variances)
 
+let to_universes = function
+  | Monomorphic -> (AbstractContext.empty, None)
+  | Polymorphic univs -> univs
+
 let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p } =
   let open CPrimitives in
   let auctx, variances = CPrimitives.op_or_type_univs p in
@@ -188,9 +199,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p } =
     | None ->
       let u = Instance.of_level_instance (UContext.instance (AbstractContext.repr auctx)) in
       let typ = Typeops.type_of_prim_or_type env u p in
-      let univs = if AbstractContext.is_empty auctx then Monomorphic
-        else Polymorphic (auctx, variances)
-      in
+      let univs = (auctx, variances) in
       univs, typ
 
     | Some (typ, univ_entry) ->
@@ -204,7 +213,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p } =
           ~typ ?body:None) univs
       in
       assert (Int.equal _shift 0);
-      univs, typ
+      to_universes univs, typ
   in
   let body = match p with
     | OT_op op -> Declarations.Primitive op
@@ -241,7 +250,7 @@ let infer_symbol env { symb_entry_universes; symb_entry_unfold_fix; symb_entry_t
     const_body = Symbol symb_entry_unfold_fix;
     const_type = j.uj_val;
     const_body_code = ();
-    const_universes = univs;
+    const_universes = to_universes univs;
     const_relevance = r;
     const_sec_variance = None;
     const_inline_code = false;
@@ -256,14 +265,14 @@ let make_univ_hyps = function
 
 let split_sec_variances sec_univs (shift, univs) =
   match univs with
-    | Monomorphic | Polymorphic (_, None) -> univs, None
-    | Polymorphic (auctx, Some variance) -> match sec_univs with
+    | (_, None) -> univs, None
+    | (auctx, Some variance) -> match sec_univs with
       | None -> univs, None
       | Some sec_univs ->
         (* no variance for qualities *)
         let _nsecq, nsecu = UVars.LevelInstance.length sec_univs in
         let variance', variance = UVars.Variances.split nsecu variance in
-        Polymorphic (auctx, Some (UVars.Variances.lift (-shift) variance)), Some variance'
+        (auctx, Some (UVars.Variances.lift (-shift) variance)), Some variance'
 
 let infer_parameter ~sec_univs env entry =
   let env, _, univs = process_universes env ?sec_univs entry.parameter_entry_universes in
@@ -274,9 +283,9 @@ let infer_parameter ~sec_univs env entry =
   let undef = Undef entry.parameter_entry_inline_code in
   let hyps = used_section_variables env entry.parameter_entry_secctx None typ in
   let univ_hyps = make_univ_hyps sec_univs in
-  let univs = on_variances (InferCumulativity.infer_definition env ?evars:None
+  let shift, univs = on_variances (InferCumulativity.infer_definition env ?evars:None
     ~infer_in_type:false ~in_ctx:hyps ~typ ?body:None) univs in
-  let univs, sec_variances = split_sec_variances sec_univs univs in
+  let univs, sec_variances = split_sec_variances sec_univs (shift, to_universes univs) in
   {
     const_hyps = hyps;
     const_univ_hyps = univ_hyps;
@@ -307,11 +316,11 @@ let infer_definition ~sec_univs env entry =
   let body = j.uj_val in
   let hbody = Some hbody in
   let def = Def body in
-  let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
   let def_h = Environ.constant_definitional_height env def in
-  let univs = on_variances (InferCumulativity.infer_definition env ?evars:None
+  let hyps = used_section_variables env entry.definition_entry_secctx (Some body) typ in
+  let shift, univs = on_variances (InferCumulativity.infer_definition env ?evars:None
     ~infer_in_type:(Option.is_empty entry.definition_entry_type) ~in_ctx:hyps ~typ ~body) univs in
-  let univs, sec_variance = split_sec_variances sec_univs univs in
+  let univs, sec_variance = split_sec_variances sec_univs (shift, to_universes univs) in
   hbody, {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;
@@ -333,10 +342,10 @@ let infer_opaque ~sec_univs env entry =
   let typj = Typeops.infer_type env typ in
   let typ = typj.utj_val in
   let hyps = used_section_variables env (Some entry.opaque_entry_secctx) None typ in
-  let univs = on_variances (InferCumulativity.infer_definition env ?evars:None ~infer_in_type:false ~in_ctx:hyps ~typ ?body:None) univs in
-  let context = TyCtx (env, typj, entry.opaque_entry_secctx, snd univs) in
+  let shift, univs = on_variances (InferCumulativity.infer_definition env ?evars:None ~infer_in_type:false ~in_ctx:hyps ~typ ?body:None) univs in
+  let context = TyCtx (env, typj, entry.opaque_entry_secctx, univs) in
   let def = OpaqueDef () in
-  let univs, sec_variance = split_sec_variances sec_univs univs in
+  let univs, sec_variance = split_sec_variances sec_univs (shift, to_universes univs) in
   {
     const_hyps = hyps;
     const_univ_hyps = make_univ_hyps sec_univs;

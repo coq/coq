@@ -197,8 +197,6 @@ val add_rewrite_rules : (Constant.t * machine_rewrite_rule) list -> env -> env
 val lookup_rewrite_rules : Constant.t -> env -> machine_rewrite_rule list
 
 (** New-style polymorphism *)
-val polymorphic_constant  : Constant.t -> env -> bool
-val polymorphic_pconstant : pconstant -> env -> bool
 val type_in_type_constant : Constant.t -> env -> bool
 
 (** {6 ... } *)
@@ -275,8 +273,6 @@ val ind_relevance : inductive -> env -> Sorts.relevance
 val mind_context : env -> MutInd.t -> AbstractContext.t
 
 (** New-style polymorphism *)
-val polymorphic_ind  : inductive -> env -> bool
-val polymorphic_pind : pinductive -> env -> bool
 val type_in_type_ind : inductive -> env -> bool
 
 (** Old-style polymorphism *)

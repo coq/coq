@@ -175,6 +175,8 @@ val env_of_context : Environ.named_context_val -> Environ.env
 val is_joined_environment : unit -> bool
 val is_curmod_library : unit -> bool
 
+val universes_of_global : GlobRef.t -> UVars.AbstractContext.t
+
 val is_polymorphic : GlobRef.t -> bool
 val is_cumulative : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool

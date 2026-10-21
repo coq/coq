@@ -606,4 +606,4 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   in
   let data = List.map map data in
 
-  env_ar_par, univs, template, record, not_prim_reason_or_has_eta, params, Array.of_list data
+  env_ar_par, univs, record, not_prim_reason_or_has_eta, params, Array.of_list data

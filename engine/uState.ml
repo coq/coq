@@ -31,7 +31,7 @@ let template_default_univs_obj =
   }
 
 let add_template_default_univs env kn =
-  match (Environ.lookup_mind kn env).mind_template with
+  match Declareops.inductive_template (Environ.lookup_mind kn env) with
   | None -> ()
   | Some template ->
     let _, us = UVars.LevelInstance.levels template.template_defaults in
@@ -1783,7 +1783,8 @@ let merge_sort_variables ?loc ?(sort_rigid=false) ?src ~sideff uctx (qvars, csts
   let local = Sorts.ElimConstraints.union uctx.local csts in
   { uctx with local; sort_variables; names }
 
-let merge_sort_context_set ?loc ?sort_rigid ?src ~sideff rigid uctx ((qvars, levels), (qcst, ucst)) =
+let merge_sort_context_set ?loc ?sort_rigid ?src ~sideff rigid uctx ((qvars, levels), (qcst, ucst) as ctx) =
+  if UnivGen.is_empty_sort_context ctx then uctx else
   let uctx = merge_sort_variables ?loc ?sort_rigid ?src ~sideff uctx (qvars, qcst) in
   merge_universe_context_set ?loc ~sideff rigid uctx (levels, ucst)
 

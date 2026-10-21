@@ -123,7 +123,7 @@ type constant_entry =
 
 (** {6 Modules } *)
 
-type module_struct_entry = (constr * UVars.AbstractContext.t option) Declarations.module_alg_expr
+type module_struct_entry = (constr * UVars.AbstractContext.t) Declarations.module_alg_expr
 
 type module_params_entry =
   (MBId.t * module_struct_entry * inline) list (** older first *)

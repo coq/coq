@@ -57,9 +57,10 @@ type ('a, 'opaque, 'rules) constant_def =
   | Primitive of CPrimitives.t (** or a primitive operation *)
   | Symbol of 'rules                      (** or a symbol *)
 
-type universes =
-  | Monomorphic
-  | Polymorphic of UVars.AbstractContext.t * UVars.Variances.t option
+type universes = UVars.AbstractContext.t * UVars.Variances.t option
+type ind_universes =
+  | Template of template_universes
+  | Polymorphic of universes
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -304,9 +305,7 @@ type mutual_inductive_body = {
 
     mind_params_ctxt : Constr.rel_context;  (** The context of parameters (includes let-in declaration) *)
 
-    mind_universes : universes; (** Information about monomorphic/polymorphic/cumulative inductives and their universes *)
-
-    mind_template : template_universes option;
+    mind_universes : ind_universes; (** Information about monomorphic/polymorphic/cumulative inductives and their universes *)
 
     mind_sec_variance : UVars.variances option;
     (** Variance info for section polymorphic universes. [None]
@@ -403,7 +402,7 @@ type 'uconstr functor_alg_expr =
 
 (** A module expression is an algebraic expression, possibly functorized. *)
 
-type module_expression = (constr * UVars.AbstractContext.t option) functor_alg_expr
+type module_expression = (constr * UVars.AbstractContext.t) functor_alg_expr
 
 (** A component of a module structure *)
 

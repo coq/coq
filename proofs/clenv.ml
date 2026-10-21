@@ -102,7 +102,7 @@ let get_template env sigma c =
   match EConstr.destRef sigma hd with
   | ConstructRef (ind, i), u when Environ.template_polymorphic_ind ind env ->
     let (mib, mip) = Inductive.lookup_mind_specif env ind in
-    let templ = match mib.Declarations.mind_template with
+    let templ = match Declareops.inductive_template mib with
     | None -> assert false
     | Some t -> t.template_param_arguments
     in
@@ -119,7 +119,7 @@ let get_type_of_with_metas ~metas env sigma c =
 
 let refresh_template_constraints ~metas env sigma ind c =
   let mib = Environ.lookup_mind (fst ind) env in
-  let ctx = (Option.get mib.mind_template).template_context in
+  let ctx = (Option.get (Declareops.inductive_template mib)).template_context in
   let cstrs0 = UVars.UContext.constraints @@ UVars.AbstractContext.repr ctx in
   if PConstraints.is_empty cstrs0 then sigma
   else
@@ -132,7 +132,7 @@ let refresh_template_constraints ~metas env sigma ind c =
 
 let clenv_refresh env sigma ctx clenv =
   match ctx with
-  | Some ctx ->
+  | Some ctx when not (UnivGen.is_empty_sort_context ctx) ->
     let (subst, ctx) = UnivGen.fresh_sort_context_instance ctx in
     let emap c = Vars.subst_univs_level_constr subst c in
     let sigma = Evd.merge_sort_context_set Evd.univ_flexible ~src:UState.Internal sigma ctx in
@@ -141,7 +141,7 @@ let clenv_refresh env sigma ctx clenv =
       (emap clenv.templval)
       clenv.metaset
       (emap (fst clenv.templtyp), snd clenv.templtyp)
-  | None ->
+  | _ ->
     (* We also refresh template arguments. This assumes that callers of
        {!clenv_refresh} use a freshly minted clenv, but this is the case as this
        function is only used by auto-like tactics for hint refresh. *)

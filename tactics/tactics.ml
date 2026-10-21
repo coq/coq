@@ -678,7 +678,7 @@ let is_partial_template_head env sigma c =
   match destRef sigma hd with
   | (ConstructRef (ind, _) | IndRef ind), _ ->
     let (mib, _) = Inductive.lookup_mind_specif env ind in
-    begin match mib.mind_template with
+    begin match Declareops.inductive_template mib with
     | None -> false
     | Some _ -> Array.length args < mib.mind_nparams
     end

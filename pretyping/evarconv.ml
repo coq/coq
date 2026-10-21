@@ -510,8 +510,7 @@ let compare_heads pbty env evd ~nargs term term' =
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       let mind = Environ.lookup_mind mi env in
-      let open Declarations in
-      begin match Declareops.universes_variances mind.mind_universes with
+      begin match Declareops.(universes_variances (inductive_universes mind)) with
         | None -> check_strict evd u u'
         | Some variances ->
           let needed = UCompare.inductive_cumulativity_arguments (mind,i) in
@@ -526,8 +525,7 @@ let compare_heads pbty env evd ~nargs term term' =
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       let mind = Environ.lookup_mind mi env in
-      let open Declarations in
-      begin match Declareops.universes_variances mind.mind_universes with
+      begin match Declareops.(universes_variances (inductive_universes mind)) with
         | None -> check_strict evd u u'
         | Some variances ->
           let needed = UCompare.constructor_cumulativity_arguments (mind,ind,ctor) in

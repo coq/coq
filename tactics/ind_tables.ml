@@ -273,11 +273,9 @@ let find_scheme kind (mind,i as ind) =
 
 let force_find_scheme kind (mind,i as ind) =
   let open Proofview.Notations in
+  Proofview.tclProofInfo[@alert "-deprecated"] >>= fun (_, poly) ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.tclENV >>= fun env ->
-  let mib = Environ.lookup_mind mind env in
-  let poly = PolyFlags.make ~univ_poly:(Declareops.inductive_is_polymorphic mib)
-    ~cumulative:(Declareops.inductive_is_cumulative mib) ~collapse_sort_variables:true in
   let eff = Evd.eval_side_effects sigma in
   match local_lookup_scheme eff kind ind with
   | Some s ->

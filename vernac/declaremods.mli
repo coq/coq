@@ -181,4 +181,4 @@ val debug_print_modtab : unit -> Pp.t
     bound module hasn't an atomic type. *)
 
 val process_module_binding :
-  MBId.t -> (Constr.t * UVars.AbstractContext.t option) Declarations.module_alg_expr -> unit
+  MBId.t -> (Constr.t * UVars.AbstractContext.t) Declarations.module_alg_expr -> unit

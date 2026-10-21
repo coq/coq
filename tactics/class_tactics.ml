@@ -160,7 +160,7 @@ let unify_resolve ~with_evars flags h diff = match diff with
 | None ->
   Hints.hint_res_pf ~with_evars ~with_classes:false ~flags h
 | Some (diff, ty) ->
-  let () = assert (Option.is_empty (fst @@ hint_as_term @@ h)) in
+  let () = assert (UnivGen.is_empty_sort_context (fst @@ hint_as_term @@ h)) in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -175,7 +175,7 @@ let unify_resolve ~with_evars flags h diff = match diff with
 let with_prods nprods h f =
   if get_typeclasses_limit_intros () then
     Proofview.Goal.enter begin fun gl ->
-      if Option.has_some (fst @@ hint_as_term h) || Int.equal nprods 0 then f None
+      if not (UnivGen.is_empty_sort_context (fst @@ hint_as_term h)) || Int.equal nprods 0 then f None
       else
         let sigma = Proofview.Goal.sigma gl in
         let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma (snd @@ hint_as_term h) in

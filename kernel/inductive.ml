@@ -323,7 +323,7 @@ let instantiate_template_constraints subst templ =
   PConstraints.fold (foldq, foldu) cstrs PConstraints.empty
 
 let instantiate_template_universes mib args =
-  let templ = match mib.mind_template with
+  let templ = match Declareops.(inductive_template mib) with
   | None -> assert false
   | Some t -> t
   in
@@ -344,13 +344,13 @@ let relevance_of_inductive env (ind,u) =
 
 let check_instance mib u =
   if not (match mib.mind_universes with
-      | Monomorphic -> Instance.is_empty u
+      | Template _ -> Instance.is_empty u
       | Polymorphic (uctx, _) -> Instance.length u = AbstractContext.size uctx)
   then CErrors.anomaly Pp.(str "bad instance length on mutind.")
 
 let type_of_inductive_gen ((mib,mip),u) paramtyps =
   check_instance mib u;
-  match mib.mind_template with
+  match Declareops.(inductive_template mib) with
   | None ->
     let cst = instantiate_inductive_constraints mib u in
     subst_instance_constr u mip.mind_user_arity, cst
@@ -378,7 +378,7 @@ let type_of_constructor_gen (cstr, u) (mib,mip) paramtyps =
   let i = index_of_constructor cstr in
   let nconstr = Array.length mip.mind_consnames in
   if i > nconstr then user_err Pp.(str "Not enough constructors in the type.");
-  match mib.mind_template with
+  match Declareops.(inductive_template mib) with
   | None ->
     let cst = instantiate_inductive_constraints mib u in
     subst_instance_constr u mip.mind_user_lc.(i-1), cst

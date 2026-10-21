@@ -1060,7 +1060,7 @@ let fold_match ?(force=false) env sigma c =
     | None | Some _ -> raise Not_found
   in
   let app =
-    let sk = if Global.is_polymorphic (ConstRef sk)
+    let sk = if not (UVars.AbstractContext.is_empty (Global.universes_of_global (ConstRef sk)))
       then CErrors.anomaly Pp.(str "Unexpected univ poly in Rewrite.fold_match")
       else UnsafeMonomorphic.mkConst sk
     in

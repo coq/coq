@@ -793,7 +793,7 @@ let compare_constr sigma cmp c1 c2 =
 
 let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
-  match Declareops.universes_variances mind.Declarations.mind_universes with
+  match Declareops.(universes_variances (inductive_universes mind)) with
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some variances ->
     let num_param_arity = UCompare.inductive_cumulativity_arguments spec in
@@ -802,7 +802,7 @@ let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
 
 let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
-  match Declareops.universes_variances mind.Declarations.mind_universes with
+  match Declareops.(universes_variances (inductive_universes mind)) with
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some _ ->
     let num_cnstr_args = UCompare.constructor_cumulativity_arguments spec in

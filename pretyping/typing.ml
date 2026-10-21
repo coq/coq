@@ -27,8 +27,10 @@ open Context.Rel.Declaration
 module GR = Names.GlobRef
 
 let fresh_template_context env0 sigma ind (mib, _ as spec) ?(refresh_all=false) args =
-  let template = Option.get mib.Declarations.mind_template in
-  let templ = Array.of_list template.template_param_arguments in
+  let templ = match Declareops.inductive_template mib with
+  | None -> assert false
+  | Some t -> Array.of_list t.template_param_arguments
+  in
   let ctx = CVars.subst_instance_context template.template_defaults mib.Declarations.mind_params_ctxt in
   let ctx = List.rev (EConstr.of_rel_context ctx) in
   let rec freshen i env sigma accu sorts = function

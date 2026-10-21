@@ -835,7 +835,7 @@ and convert_stacks ?(mask = [||]) l2r infos lft1 lft2 stk1 stk2 cuniv =
                   if UVars.Instance.is_empty u1 || UVars.Instance.is_empty u2 then
                     convert_instances ~flex:false u1 u2 cu
                   else
-                    match Declareops.universes_variances mind.Declarations.mind_universes with
+                    match Declareops.(universes_variances (inductive_universes mind)) with
                     | None -> convert_instances ~flex:false u1 u2 cu
                     | Some variances ->
                       convert_instances_cumul ~flex:false CONV ~nargs:UVars.FullyApplied variances u1 u2 cu

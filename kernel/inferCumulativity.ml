@@ -432,7 +432,7 @@ let extend_ind_instance mib u =
   Instance.append (Instance.of_level_instance mib.mind_univ_hyps) u
 
 let extended_mind_variance mind =
-  match Declareops.universes_variances mind.mind_universes, mind.mind_sec_variance with
+  match Declareops.(universes_variances (inductive_universes mind)), mind.mind_sec_variance with
   | None, None -> None
   | Some _ as variance, None -> variance
   | None, Some _ -> assert false
@@ -619,8 +619,8 @@ let rec infer_fterm cv_pb (variance : is_type * Variance.t) infos variances hd s
         let infer_mode = get_infer_mode variances in
         let nargs = stack_args_size stk in
         let variances = infer_constant cv_pb variance (info_env (fst infos)) (UVars.NumArgs nargs) variances (Option.has_some def) con in
-        let variances = infer_stack variance infos variances stk in
-        set_infer_mode infer_mode variances
+        let variances = set_infer_mode infer_mode variances in
+        infer_stack variance infos variances stk
       with BadVariance _ | NotInferring as e ->
       match def with
       | None -> raise e

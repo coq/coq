@@ -445,8 +445,8 @@ let get_level_of env sigma ty =
 let make_info env sigma data u a p car cdr =
   let (ind, _) = Globnames.destIndRef data.typ in
   (* Template-poly sigma + univ poly projections case *)
-  match (Environ.lookup_mind ind env).mind_template with
-  | Some templ when Environ.is_polymorphic env data.proj1 ->
+  match Declareops.inductive_template (Environ.lookup_mind ind env) with
+  | Some templ when not (UVars.AbstractContext.is_empty (Environ.constant_context env (Globnames.destConstRef data.proj1))) ->
     let au = Retyping.get_type_of env sigma a in
     let pu = Retyping.get_type_of env sigma p in
     let al = get_level_of env sigma au in

@@ -50,9 +50,10 @@ let hcons_template_universe ar =
     template_defaults = noh UVars.LevelInstance.hcons ar.template_defaults;
   }
 
-let universes_context = function
-  | Monomorphic -> UVars.AbstractContext.empty
-  | Polymorphic (ctx, _) -> ctx
+let empty_universes = (UVars.AbstractContext.empty, None)
+let is_empty_universes (ctx, variance as univs) =
+  univs == empty_universes || (UVars.AbstractContext.is_empty ctx && variance == None)
+let universes_context (ctx, _) = ctx
 
 let abstract_universes = function
   | Entries.Monomorphic_entry ->
@@ -66,15 +67,9 @@ let has_cumulative_variance = function
 
 (** {6 Constants } *)
 
-let constant_is_polymorphic cb =
-  match cb.const_universes with
-  | Monomorphic -> false
-  | Polymorphic _ -> true
-
 let constant_is_cumulative cb =
-  match cb.const_universes with
-  | Monomorphic -> false
-  | Polymorphic (_, variances) -> has_cumulative_variance variances
+  let  (_, variances) = cb.const_universes in
+  has_cumulative_variance variances
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ | Primitive _ | Symbol _ -> false
@@ -83,9 +78,7 @@ let constant_has_body cb = match cb.const_body with
 let constant_polymorphic_context cb =
   universes_context cb.const_universes
 
-let universes_variances = function
-  | Monomorphic -> None
-  | Polymorphic (_, variance) -> variance
+let universes_variances (_, variance) = variance
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
@@ -151,12 +144,9 @@ let hcons_const_def ?(hbody=noh Constr.hcons) = function
     Def (hbody l_constr)
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
-let hcons_universes cbu =
-  match cbu with
-  | Monomorphic -> Monomorphic
-  | Polymorphic (ctx, variances) ->
-    (* FIXME hashcons variances? *)
-    Polymorphic (noh UVars.hcons_abstract_universe_context ctx, variances)
+let hcons_universes (ctx, variances) =
+  (* FIXME hashcons variances? *)
+  (noh UVars.hcons_abstract_universe_context ctx, variances)
 
 let hcons_const_body ?hbody cb =
   { cb with
@@ -271,7 +261,6 @@ let subst_mind_body subst mib =
       Context.Rel.map (subst_mps subst) mib.mind_params_ctxt;
     mind_packets = Array.Smart.map (subst_mind_packet subst) mib.mind_packets ;
     mind_universes = mib.mind_universes;
-    mind_template = mib.mind_template;
     mind_sec_variance = mib.mind_sec_variance;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;
@@ -280,15 +269,40 @@ let subst_mind_body subst mib =
 let mind_ntypes mib = Array.length mib.mind_packets
 
 let inductive_polymorphic_context mib =
-  universes_context mib.mind_universes
+  match mib.mind_universes with
+  | Template _ -> UVars.AbstractContext.empty
+  | Polymorphic (univs, _) -> univs
 
 let inductive_is_polymorphic mib =
   match mib.mind_universes with
-  | Monomorphic -> false
+  | Template _ -> false
   | Polymorphic _ -> true
 
+let inductive_is_template mib =
+  match mib.mind_universes with
+  | Template _ -> true
+  | Polymorphic _ -> false
+
+let inductive_universes mib =
+  match mib.mind_universes with
+  | Template _ -> empty_universes
+  | Polymorphic univs -> univs
+
 let inductive_is_cumulative mib =
-  has_cumulative_variance (universes_variances mib.mind_universes)
+  match mib.mind_universes with
+  | Template _ -> false
+  | Polymorphic univs -> has_cumulative_variance (universes_variances univs)
+
+let inductive_variances mib =
+  match mib.mind_universes with
+  | Template _ -> None
+  | Polymorphic univs -> universes_variances univs
+
+let inductive_template mib =
+  match mib.mind_universes with
+  | Template templ -> Some templ
+  | Polymorphic _ -> None
+
 
 let inductive_make_projection ind mib ~proj_arg =
   match mib.mind_packets.(snd ind).mind_record with
@@ -352,12 +366,16 @@ let hcons_mind_packet oib =
     mind_user_lc = user;
     mind_nf_lc = nf }
 
+let hcons_ind_universes univs =
+  match univs with
+  | Template templ -> Template (hcons_template_universe templ)
+  | Polymorphic poly -> Polymorphic (hcons_universes poly)
+
 let hcons_mind mib =
   { mib with
     mind_packets = Array.Smart.map hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
-    mind_template = Option.Smart.map hcons_template_universe mib.mind_template;
-    mind_universes = hcons_universes mib.mind_universes }
+    mind_universes = hcons_ind_universes mib.mind_universes }
 
 let subst_rewrite_rules subst ({ rewrules_rules } as rules) =
   let body' = List.Smart.map (fun (name, ({ rhs; _ } as rule) as orig) ->

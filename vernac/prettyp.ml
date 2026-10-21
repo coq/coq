@@ -193,9 +193,9 @@ let print_if_is_coercion ref =
 (* XXX TODO print based on the actual binders not from the monomorphic data *)
 let template_poly_variables env ind =
   let mib, mip = Inductive.lookup_mind_specif env ind in
-  match mib.mind_template with
-  | None -> assert false
-  | Some { template_defaults; template_concl } ->
+  match mib.mind_universes with
+  | Polymorphic _ -> assert false
+  | Template { template_defaults; template_concl } ->
     let pseudo_poly = match template_concl with
       | VSort (q, _) when Option.has_some (Sorts.QVar.var_index q) -> true
       | _ -> false
@@ -564,8 +564,8 @@ let print_section_variable_with_infos env sigma id =
   with_line_skip (print_name_infos env (GlobRef.VarRef id))
 
 let print_instance sigma cb =
-  if Declareops.constant_is_polymorphic cb then
-    let univs = Declareops.constant_polymorphic_context cb in
+  let univs = Declareops.constant_polymorphic_context cb in
+  if not (UVars.AbstractContext.is_empty univs) then
     let inst = UVars.Instance.of_level_instance @@ UVars.make_abstract_level_instance univs in
     pr_universe_instance sigma inst
   else mt()

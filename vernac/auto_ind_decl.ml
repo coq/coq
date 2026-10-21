@@ -675,7 +675,7 @@ let build_beq_scheme env handle kn =
   let mib = Environ.lookup_mind kn env in
 
   (* Setting universes *)
-  let auctx = Declareops.universes_context mib.mind_universes in
+  let auctx = Declareops.(universes_context (inductive_universes mib)) in
   let u, ctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.from_env env in
   let uctx = UState.merge_sort_context_set ~sideff:false UState.univ_rigid ~src:UState.Internal uctx ctx in
@@ -1190,7 +1190,7 @@ let make_bl_scheme env handle mind =
       Pp.(str "Automatic building of boolean->Leibniz lemmas not supported");
 
   (* Setting universes *)
-  let auctx = Declareops.universes_context mib.mind_universes in
+  let auctx = Declareops.(universes_context (inductive_universes mib)) in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.merge_sort_context_set ~sideff:false UState.univ_rigid ~src:UState.Internal (UState.from_env env) uctx in
 
@@ -1325,7 +1325,7 @@ let make_lb_scheme env handle mind =
   let ind = (mind,0) in
 
   (* Setting universes *)
-  let auctx = Declareops.universes_context mib.mind_universes in
+  let auctx = Declareops.(universes_context (inductive_universes mib)) in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.merge_sort_context_set ~sideff:false UState.univ_rigid ~src:UState.Internal (UState.from_env env) uctx in
 
@@ -1521,7 +1521,7 @@ let make_eq_decidability env handle mind =
   let nparrec = mib.mind_nparams_rec in
 
   (* Setting universes *)
-  let auctx = Declareops.universes_context mib.mind_universes in
+  let auctx = Declareops.(universes_context (inductive_universes mib)) in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.merge_sort_context_set ~sideff:false UState.univ_rigid ~src:UState.Internal (UState.from_env env) uctx in
 

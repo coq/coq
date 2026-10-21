@@ -291,7 +291,7 @@ let inductive_template env sigma tmloc ind =
      (and in the future fresh qualities?) *)
   let sigma, indu = Evd.fresh_inductive_instance env sigma ind in
   let templ =
-    match (Environ.lookup_mind (fst (fst indu)) env).mind_template with
+    match Declareops.inductive_template (Environ.lookup_mind (fst (fst indu)) env) with
     | None -> []
     | Some t -> t.template_param_arguments
   in

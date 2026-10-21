@@ -26,7 +26,7 @@ type template_arity =
 
 let get_template_arity env ind ~ctoropt =
   let mib, mip = Inductive.lookup_mind_specif env ind in
-  let template = match mib.mind_template with
+  let template = match Declareops.inductive_template mib with
     | None -> assert false
     | Some t -> t
   in

@@ -802,11 +802,11 @@ let control_only_guard env sigma c =
     and returns the context of parameters, the new evar_map, and the
     substitution for the template variable if there is one. *)
 let paramdecls_fresh_template sigma (mib,u) =
-  match mib.mind_template with
-  | None ->
+  match mib.mind_universes with
+  | Polymorphic _ ->
     let params = Inductive.inductive_paramdecls (mib, EConstr.Unsafe.to_instance u) in
     sigma, EConstr.of_rel_context params, None
-  | Some templ ->
+  | Template templ ->
     assert (EConstr.EInstance.is_empty u);
     let sigma, univs = List.fold_left_map (fun sigma -> function
         | None -> sigma, (fun ~default -> assert false)

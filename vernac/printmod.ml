@@ -167,7 +167,7 @@ let pr_mutual_inductive_body env mind mib udecl =
   hov 0 (def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
            (print_one_inductive env sigma mib) inds ++ str "." ++
-         Printer.pr_universes sigma mib.mind_universes)
+         Printer.pr_universes sigma Declareops.(inductive_universes mib))
 
 (** Modpaths *)
 

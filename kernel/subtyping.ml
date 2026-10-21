@@ -136,8 +136,7 @@ let check_polymorphic_universes env ctxT ctx =
 
 let check_universes error env ~term_variances u1 u2 =
   match u1, u2 with
-  | Monomorphic, Monomorphic -> env
-  | Polymorphic (auctx1, variances1), Polymorphic (auctx2, variances2) ->
+  | (auctx1, variances1), (auctx2, variances2) ->
     if not (check_polymorphic_universes env auctx2 auctx1) then
       error (IncompatibleUnivConstraints { env; got = auctx1; expect = auctx2; } )
     else
@@ -145,10 +144,13 @@ let check_universes error env ~term_variances u1 u2 =
       let env = check_variance error env ~term_variances variances1 variances2 in
       let env = Environ.push_context ~strict:false (UVars.AbstractContext.repr auctx2) env in
       env
-  | Monomorphic, Polymorphic (auctx, _) when UVars.AbstractContext.is_empty auctx -> env
-  | Polymorphic (auctx, _), Monomorphic when UVars.AbstractContext.is_empty auctx -> env
-  | Monomorphic, Polymorphic _ -> error (PolymorphicStatusExpected true)
-  | Polymorphic _, Monomorphic -> error (PolymorphicStatusExpected false)
+
+let check_ind_universes error env ~term_variances u1 u2 =
+  match u1, u2 with
+  | Template _u1, Template _u2 -> (* !!!! FIXME !!!! *) env
+  | Polymorphic u1, Polymorphic u2 -> check_universes error env ~term_variances u1 u2
+  | Template _, Polymorphic _ -> error (PolymorphicStatusExpected true)
+  | Polymorphic _, Template _ -> error (PolymorphicStatusExpected false)
 
 let check_template error _env t1 t2 = match t1, t2 with
 | None, None | Some _, Some _ -> ()
@@ -214,7 +216,7 @@ let check_inductive (cst, ustate) trace env mp1 l info1 mp2 mib2 subst1 subst2 r
   in
 
   let () = check_private error mib1.mind_private mib2.mind_private in
-  let env = check_universes error env ~term_variances:true mib1.mind_universes mib2.mind_universes in
+  let env = check_ind_universes error env ~term_variances:true mib1.mind_universes mib2.mind_universes in
   let inst = make_abstract_instance (Declareops.inductive_polymorphic_context mib1) in
   let mib2 =  Declareops.subst_mind_body subst2 mib2 in
   let check_inductive_type ~is_ctor cst name t1 t2 =
@@ -344,7 +346,7 @@ let check_constant (cst, ustate) trace env l info1 cb2 subst1 subst2 =
       let cb2 = Declareops.subst_const_body subst2 cb2 in
       (* Start by checking universes *)
       let env = check_universes error env ~term_variances:(is_def cb2.const_body) cb1.const_universes cb2.const_universes in
-      let poly = Declareops.constant_is_polymorphic cb1 in
+      let poly = not @@ is_empty_universes cb1.const_universes in
       (* Now check types *)
       let typ1 = cb1.const_type in
       let typ2 = cb2.const_type in

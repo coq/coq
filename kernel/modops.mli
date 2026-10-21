@@ -29,7 +29,7 @@ val destr_nofunctor : ModPath.t -> ('ty,'a) functorize -> 'a
 val check_modpath_equiv : env -> ModPath.t -> ModPath.t -> unit
 
 val annotate_module_expression : module_expression -> module_signature ->
-  (module_type_body, (constr * UVars.AbstractContext.t option) module_alg_expr) functorize
+  (module_type_body, (constr * UVars.AbstractContext.t) module_alg_expr) functorize
 
 val annotate_struct_body : structure_body -> module_signature -> module_signature
 

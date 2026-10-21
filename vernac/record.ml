@@ -719,7 +719,7 @@ let declare_projections indsp ~kind ~inhabitant_id flags ?fieldlocs fieldimpls =
     Declareops.inductive_polymorphic_context mib
   in
   let univs = match mib.mind_universes with
-    | Monomorphic -> UState.Monomorphic_entry Univ.ContextSet.empty
+    | Template _ -> UState.Monomorphic_entry Univ.ContextSet.empty
     | Polymorphic (auctx, variances) -> UState.Polymorphic_entry (UVars.AbstractContext.repr auctx, Option.map (fun _ -> Infer_variances) variances)
   in
   let univs = UState.{ universes_entry_universes = univs;

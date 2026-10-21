@@ -11,8 +11,8 @@
 #[global] Set Universe Polymorphism.
 Set Implicit Arguments.
 
-Require Export Notations.
-Require Import Ltac.
+From Corelib Require Export Notations.
+From Corelib Require Import Ltac.
 
 (** * Propositional connectives *)
 
@@ -23,6 +23,7 @@ Inductive True : Prop :=
 
 Register True as core.True.type.
 Register I as core.True.I.
+Scheme Rewriting for True.
 
 (** [False] is the always false proposition *)
 Inductive False : Prop :=.

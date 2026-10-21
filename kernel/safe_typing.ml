@@ -858,9 +858,8 @@ let add_field ((l,sfb) as field) gn senv =
     | None -> None
     | Some sections ->
       match sfb, gn with
-      | SFBconst cb, C con ->
-        let poly = Declareops.constant_is_polymorphic cb in
-        Some Section.(push_global ~poly env' (SecDefinition con) sections)
+      | SFBconst _, C con ->
+        Some Section.(push_global ~poly:true env' (SecDefinition con) sections)
       | SFBmind mib, I mind ->
         let poly = Declareops.inductive_is_polymorphic mib in
         Some Section.(push_global ~poly env' (SecInductive mind) sections)
@@ -881,17 +880,13 @@ let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 type exported_opaque = {
   exp_handle : Opaqueproof.opaque_handle;
   exp_body : Constr.t;
-  exp_univs : (int * int) option;
   (* Minimal amount of data needed to rebuild the private universes. We enforce
      in the API that private constants have no internal constraints. *)
 }
 type exported_private_constant = Constant.t * exported_opaque option
 
 let repr_exported_opaque o =
-  let priv = match o .exp_univs with
-  | None -> Opaqueproof.PrivateMonomorphic ()
-  | Some _ -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
-  in
+  let priv = Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty in
   (o.exp_handle, (o.exp_body, priv))
 
 let set_vm_library lib senv =
@@ -957,14 +952,13 @@ let inline_side_effects env body side_eff =
       | OpaqueDef b -> (b, true)
       | _ -> assert false
       in
-      match cb.const_universes with
-      | Monomorphic ->
+      if Declareops.is_empty_universes cb.const_universes then
         (** Abstract over the term at the top of the proof *)
         let ty = cb.const_type in
         let subst = Cmap.add c (Inr var) subst in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c cb.const_relevance, b, ty, opaque) :: args)
-      | Polymorphic _ ->
+      else
         let () = assert (Univ.ContextSet.is_empty univs) in
         (** Inline the term to emulate universe polymorphism *)
         let subst = Cmap.add c (Inl b) subst in
@@ -1060,11 +1054,8 @@ let constant_entry_of_side_effect eff =
   let (_hbody, cb) = eff.seff_body in
   let open Entries in
   let univs =
-    match cb.const_universes with
-    | Monomorphic ->
-      Monomorphic_entry
-    | Polymorphic (auctx, variances) ->
-      Polymorphic_entry (auctx, Option.map (fun x -> Check_variances x) variances)
+    let (auctx, variances) = cb.const_universes in
+    Polymorphic_entry (auctx, Option.map (fun x -> Check_variances x) variances)
   in
   let p =
     match cb.const_body with
@@ -1164,10 +1155,6 @@ let export_private_constants eff senv =
     (* Don't care about the body, it has been checked by {!infer_direct_opaque} *)
     let senv, o = push_opaque_proof senv in
     let (_, _, _, h) = Opaqueproof.repr o in
-    let univs = match c.const_universes with
-    | Monomorphic -> None
-    | Polymorphic (auctx, _variances) -> Some (UVars.AbstractContext.size auctx)
-    in
     (* Hashcons now, before storing in the opaque table *)
     let _, body = match hbody with
     | None -> Constr.hcons body
@@ -1175,7 +1162,7 @@ let export_private_constants eff senv =
       let () = assert (HConstr.self hbody == body) in
       HConstr.hcons hbody
     in
-    let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in
+    let opaque = { exp_body = body; exp_handle = h } in
     senv, (kn, { c with const_body = OpaqueDef o }, Some opaque, None)
   | Def _ | Undef _ | Primitive _ | Symbol _ as body ->
     (* Hashconsing is handled by {!add_constant_aux}, propagate hbody *)
@@ -1356,9 +1343,9 @@ let add_mind l mie senv =
   (* We still have to add the template monomorphic constraints, and only those
      ones. In all other cases, they are already part of the environment at this
      point. *)
-  let senv = match mib.mind_template with
-  | None -> senv
-  | Some { template_context = ctx; template_defaults = u; _ } ->
+  let senv = match mib.mind_universes with
+  | Polymorphic _ -> senv
+  | Template { template_context = ctx; template_defaults = u; _ } ->
     let qs, levels = UVars.LevelInstance.levels u in
     let () = assert (Sorts.Quality.Set.for_all (fun q -> Sorts.Quality.equal Sorts.Quality.qtype q) qs) in
     let (qctx, uctx) = UVars.AbstractContext.instantiate (UVars.Instance.of_level_instance u) ctx in
@@ -1867,8 +1854,11 @@ let register_inline kn senv =
 
 let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) (mb, ob as spec) =
   let ind = match mb.mind_universes with
-    | Polymorphic _ -> CErrors.user_err Pp.(str "A universe monomorphic inductive type is expected.")
-    | Monomorphic -> Constr.UnsafeMonomorphic.mkInd ind
+    | Polymorphic univs ->
+      if not (Declareops.is_empty_universes univs) then
+         CErrors.user_err Pp.(str "A universe monomorphic inductive type is expected.");
+      Constr.mkIndU (ind, UVars.Instance.empty)
+    | Template _ -> Constr.UnsafeMonomorphic.mkInd ind
   in
   let check_if b msg =
     if not b then

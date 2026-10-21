@@ -84,7 +84,7 @@ let lookup_polymorphism env base kind fqid =
         match Id.equal lab id, obj with
         | false, _ | _, (SFBrules _ | SFBmodule _ | SFBmodtype _) -> None
         | true, SFBmind mind -> Some (Declareops.inductive_is_polymorphic mind)
-        | true, SFBconst const -> Some (Declareops.constant_is_polymorphic const)
+        | true, SFBconst const -> Some true
       in
       (match CList.find_map test m with Some v -> v | None -> false (* error later *))
     | id::rem ->
@@ -149,10 +149,10 @@ let interp_with_decl env base kind = function
         let inst, ctx = UVars.abstract_universes ctx in
         let c = EConstr.Vars.subst_univs_level_constr (UVars.make_instance_subst inst) c in
         let c = EConstr.to_constr sigma c in
-        WithDef (fqid,(c, Some ctx)), Univ.ContextSet.empty
+        WithDef (fqid,(c, ctx)), Univ.ContextSet.empty
       | UState.Monomorphic_entry ctx ->
         let c = EConstr.to_constr sigma c in
-        WithDef (fqid,(c, None)), ctx
+        WithDef (fqid,(c, UVars.AbstractContext.empty)), ctx
     end
 
 let rec interp_module_ast env kind base m cst = match m with

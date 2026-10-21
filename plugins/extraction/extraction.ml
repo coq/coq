@@ -107,9 +107,7 @@ let push_rel_assum (n, t) env =
 let push_rels_assum assums =
   EConstr.push_rel_context (List.map (fun (x,t) -> LocalAssum (x,t)) assums)
 
-let qmono uctx inst lconstr = match uctx with
-| Monomorphic -> EConstr.of_constr lconstr
-| Polymorphic (uctx, _variances) ->
+let qmono (uctx, _variances) inst lconstr =
   let inst = InfvInst.instantiate uctx inst in
   let lconstr = Vars.subst_instance_constr inst lconstr in
   EConstr.of_constr lconstr
@@ -483,7 +481,7 @@ and extract_really_ind table env kn inst mib =
         end
     in
     let env, u = match mib.mind_universes with
-    | Monomorphic -> env, UVars.Instance.empty
+    | Template _ -> env, UVars.Instance.empty
     | Polymorphic (uctx, _variances) ->
       (* FIXME: we should probably push the levels *)
       env, InfvInst.instantiate uctx inst
