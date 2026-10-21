@@ -516,7 +516,9 @@ let pretype_id pretype loc env sigma id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let instance ?loc evd (ql,ul) =
+let instance ?loc evd i =
+  let ql = i.qualities in
+  let ul = i.univlevels in
   let evd, ql' =
     List.fold_left
       (fun (evd, quals) l ->
@@ -548,8 +550,8 @@ let pretype_ref ?loc sigma env ref us =
     (try
        let ty = NamedDecl.get_type (lookup_named id !!env) in
        (match us with
-        | None | Some ([],[]) -> ()
-        | Some (qs,us) ->
+        | None | Some {qualities = []; univlevels = []} -> ()
+        | Some {qualities = qs; univlevels = us} ->
             let open UnivGen in
             Loc.raise ?loc (UniverseLengthMismatch {
               gref = ref;
@@ -1617,10 +1619,10 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     in
     let sigma, u = match u with
       | None -> sigma, None
-      | Some ([],[u]) ->
+      | Some {qualities = []; univlevels = [u]} ->
         let sigma, u = glob_level ?loc sigma u in
         sigma, Some u
-      | Some (qs,us) ->
+      | Some {qualities = qs; univlevels = us} ->
         let open UnivGen in
           Loc.raise ?loc (UniverseLengthMismatch {
             gref = ConstRef array_kn;

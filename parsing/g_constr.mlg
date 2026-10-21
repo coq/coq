@@ -365,11 +365,11 @@ GRAMMAR EXTEND Gram
               List.map (force_quality ~loc) l, List.map (force_univ_level ~loc) l'
           in
           Some  {
-                  univannot_qualities = l;
-                  univannot_extensible_qualities = false;
-                  univannot_levels = l';
-                  univannot_extensible_levels = false
-                }
+            univannot_qualities = l;
+            univannot_extensible_qualities = false;
+            univannot_levels = l';
+            univannot_extensible_levels = false
+          }
         }
       | -> { None } ] ]
   ;

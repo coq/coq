@@ -748,7 +748,12 @@ let detype_instance ~flags sigma l =
       let qs, us = UVars.Instance.to_array l in
       let qs = List.map (detype_quality sigma) (Array.to_list qs) in
       let us = List.map (detype_level sigma) (Array.to_list us) in
-      Some (qs, us)
+      Some {
+        qualities = qs;
+        extensible_qualities = false;
+        univlevels = us;
+        extensible_univlevels = false;
+      }
 
 let delay (type a) (d : a delay) (f : a delay -> _ -> _ -> _ -> _ -> _ -> a glob_constr_r) flags env avoid sigma t : a glob_constr_g =
   match d with

@@ -1072,7 +1072,7 @@ let intern_notation intern env ntnvars loc ntn fullargs =
 (* Discriminating between bound variables and global references       *)
 
 let gvar (loc, id) us = match us with
-  | None | Some ([],[]) -> DAst.make ?loc @@ GVar id
+  | None | Some {qualities = []; univlevels = []} -> DAst.make ?loc @@ GVar id
   | Some _ ->
     user_err ?loc  (str "Variable " ++ Id.print id ++
       str " cannot have a universe instance")
@@ -1195,7 +1195,12 @@ let intern_instance ~local_univs = function
   | Some i ->
     let qs = List.map (intern_quality ~local_univs) i.univannot_qualities in
     let us = List.map (map_glob_sort_gen (intern_sort_name ~local_univs)) i.univannot_levels in
-    Some (qs, us)
+    Some {
+      qualities = qs;
+      extensible_qualities = i.univannot_extensible_qualities;
+      univlevels = us;
+      extensible_univlevels = i.univannot_extensible_levels;
+    }
 
 let intern_name_alias = function
   | { CAst.v = CRef(qid,u) } ->
@@ -1316,9 +1321,9 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
           DAst.make ?loc @@ GApp (DAst.make ?loc:loc' @@ GRef (ref, us), arg)
         | _ -> err ()
         end
-      | Some ([],[s]), GSort gs when Glob_ops.(glob_sort_eq glob_Type_sort gs) ->
+      | Some {qualities = []; univlevels = [s]}, GSort gs when Glob_ops.(glob_sort_eq glob_Type_sort gs) ->
         DAst.make ?loc @@ GSort (glob_sort_of_level s)
-      | Some ([],[_old_level]), GSort _new_sort ->
+      | Some {qualities = []; univlevels = [_old_level]}, GSort _new_sort ->
         (* TODO: add old_level and new_sort to the error message *)
         user_err ?loc (str "Cannot change universe level of notation " ++ pr_qualid qid)
       | Some _, _ -> err ()
