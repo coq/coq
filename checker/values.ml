@@ -24,7 +24,7 @@ type 'v kind =
   | Any
   | Fail of string
   | Tuple of string * 'v array
-  | Sum of string * int * 'v array array
+  | Sum of string * int option * 'v array array
   | Array of 'v
   | List of 'v
   | Opt of 'v
@@ -119,8 +119,8 @@ let fix f =
 (** Some pseudo-constructors *)
 
 let v_tuple name v = of_kind @@ Tuple(name,v)
-let v_sum name cc vv = of_kind @@ Sum(name,cc,vv)
-let v_enum name n = of_kind @@ Sum(name,n,[||])
+let v_sum name cc vv = of_kind @@ Sum(name,Some cc,vv)
+let v_enum name n = of_kind @@ Sum(name,Some n,[||])
 let v_annot a v = of_kind @@ Annot (a, v)
 let v_fail f = of_kind @@ Fail f
 
@@ -256,8 +256,7 @@ let v_cofix = v_tuple_c ("pcofixpoint",[|v_int;v_prec|]) in
 let v_case_invert = v_sum_c ("case_inversion", 1, [|[|v_array v_constr|]|]) in
 let v_case_branch = v_tuple_c ("case_branch", [|v_array (v_binder_annot v_name); v_constr|]) in
 let v_case_return = v_tuple_c ("case_return", [|v_tuple_c ("case_return'", [|v_array (v_binder_annot v_name); v_constr|]); v_relevance|]) in
-  v_sum_c ("constr",0,[|
-    [|v_int|]; (* Rel *)
+  of_kind @@ Sum ("constr",None(*Rel*),[|
     [|v_id|]; (* Var *)
     [|v_fail "Meta"|]; (* Meta *)
     [|v_fail "Evar"|]; (* Evar *)

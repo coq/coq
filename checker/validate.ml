@@ -145,8 +145,8 @@ and val_gen_aux v mem ctx o = match kind v with
   | Tuple (name,vs) -> val_tuple ~name vs mem ctx o
   | Sum (name,cc,vv) -> val_sum name cc vv mem ctx o
   | Array v -> val_array v mem ctx o
-  | List v0 -> val_sum "list" 1 [|[|v0;v|]|] mem ctx o
-  | Opt v -> val_sum "option" 1 [|[|v|]|] mem ctx o
+  | List v0 -> val_sum "list" (Some 1) [|[|v0;v|]|] mem ctx o
+  | Opt v -> val_sum "option" (Some 1) [|[|v|]|] mem ctx o
   | Int -> if not (is_int mem o) then fail mem ctx o "expected an int"
   | String ->
     (try val_tag Obj.string_tag mem.mem ctx o
@@ -191,9 +191,12 @@ and val_sum name cc vv mem ctx o =
     if i < n then val_tuple vv.(i) mem ctx' o
     else fail mem ctx' o ("sum: unexpected tag"))
   else if is_int mem o then
-    let (n:int) = get_int mem o in
-    (if n<0 || n>=cc then
-      fail mem ctx o ("bad constant constructor "^string_of_int n))
+    match cc with
+    | None -> ()
+    | Some cc ->
+      let (n:int) = get_int mem o in
+      (if n<0 || n>=cc then
+         fail mem ctx o ("bad constant constructor "^string_of_int n))
   else fail mem ctx o "not a sum"
 
 (* Check the o is an array of values satisfying f. *)

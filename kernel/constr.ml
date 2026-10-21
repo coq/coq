@@ -91,7 +91,6 @@ type ('constr, 'types, 'univs, 'r) pcase =
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
 type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
-  | Rel       of int
   | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
@@ -112,11 +111,40 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Float     of Float64.t
   | String    of Pstring.t
   | Array     of 'univs * 'constr array * 'constr * 'types
+  | Rel       of int
 
-(* constr is the fixpoint of the previous type. *)
-type t = T of (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term [@@unboxed]
+module FastKind = struct
+type ('constr, 'types, 'sort, 'univs, 'r) t =
+  | Var       of Id.t
+  | Meta      of metavariable
+  | Evar      of 'constr pexistential
+  | Sort      of 'sort
+  | Cast      of 'constr * cast_kind * 'types
+  | Prod      of (Name.t,'r) pbinder_annot * 'types * 'types
+  | Lambda    of (Name.t,'r) pbinder_annot * 'types * 'constr
+  | LetIn     of (Name.t,'r) pbinder_annot * 'constr * 'types * 'constr
+  | App       of 'constr * 'constr array
+  | Const     of (Constant.t * 'univs)
+  | Ind       of (inductive * 'univs)
+  | Construct of (constructor * 'univs)
+  | Case      of case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr,'r) pcase_branch array
+  | Fix       of ('constr, 'types, 'r) pfixpoint
+  | CoFix     of ('constr, 'types, 'r) pcofixpoint
+  | Proj      of Projection.t * 'r * 'constr
+  | Int       of Uint63.t
+  | Float     of Float64.t
+  | String    of Pstring.t
+  | Array     of 'univs * 'constr array * 'constr * 'types
+  | IsRel
+end
+
+(* constr is the fixpoint of the previous type, with Rel unboxed. *)
+type t (* = T of (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term [@@unboxed] *)
 type constr = t
 type types = constr
+
+type constr_kind = (t, t, Sorts.t, Instance.t, Sorts.relevance) kind_of_term
+type fast_kind = (t, t, Sorts.t, Instance.t, Sorts.relevance) FastKind.t
 
 type existential = existential_key * constr SList.t
 
@@ -137,7 +165,11 @@ type 'a binder_annot = ('a,Sorts.relevance) Context.pbinder_annot
    least one argument and the function is not itself an applicative
    term *)
 
-let kind (T c) = c
+let isRel (c:t) = Obj.is_int (Obj.repr c)
+
+let kind c : constr_kind = if isRel c then Rel (Obj.magic c) else Obj.magic c
+
+let fast_kind c : fast_kind = if isRel c then IsRel else Obj.magic c
 
 let rec kind_nocast_gen kind c =
   match kind c with
@@ -159,29 +191,31 @@ let kind_nocast c = kind_nocast_gen kind c
 
 exception DestKO
 
-let isMeta c = match kind c with Meta _ -> true | _ -> false
+let destRel c : int = if isRel c then Obj.magic c else raise DestKO
+
+let isMeta c = match fast_kind c with Meta _ -> true | _ -> false
 
 (* Destructs a type *)
-let isSort c = match kind c with
+let isSort c = match fast_kind c with
   | Sort _ -> true
   | _ -> false
 
-let rec isprop c = match kind c with
+let rec isprop c = match fast_kind c with
   | Sort (Sorts.Prop | Sorts.Set) -> true
   | Cast (c,_,_) -> isprop c
   | _ -> false
 
-let rec is_Prop c = match kind c with
+let rec is_Prop c = match fast_kind c with
   | Sort Sorts.Prop -> true
   | Cast (c,_,_) -> is_Prop c
   | _ -> false
 
-let rec is_Set c = match kind c with
+let rec is_Set c = match fast_kind c with
   | Sort Sorts.Set -> true
   | Cast (c,_,_) -> is_Set c
   | _ -> false
 
-let rec is_Type c = match kind c with
+let rec is_Type c = match fast_kind c with
   | Sort (Sorts.Type _) -> true
   | Cast (c,_,_) -> is_Type c
   | _ -> false
@@ -189,125 +223,119 @@ let rec is_Type c = match kind c with
 let iskind c = isprop c || is_Type c
 
 (* Tests if an evar *)
-let isEvar c = match kind c with Evar _ -> true | _ -> false
-let isEvar_or_Meta c = match kind c with
+let isEvar c = match fast_kind c with Evar _ -> true | _ -> false
+let isEvar_or_Meta c = match fast_kind c with
   | Evar _ | Meta _ -> true
   | _ -> false
 
-let isCast c = match kind c with Cast _ -> true | _ -> false
+let isCast c = match fast_kind c with Cast _ -> true | _ -> false
 (* Tests if a de Bruijn index *)
-let isRel c = match kind c with Rel _ -> true | _ -> false
 let isRelN n c =
-  match kind c with Rel n' -> Int.equal n n' | _ -> false
+  isRel c && Int.equal n (destRel c)
 (* Tests if a variable *)
-let isVar c = match kind c with Var _ -> true | _ -> false
-let isVarId id c = match kind c with Var id' -> Id.equal id id' | _ -> false
+let isVar c = match fast_kind c with Var _ -> true | _ -> false
+let isVarId id c = match fast_kind c with Var id' -> Id.equal id id' | _ -> false
 (* Tests if an inductive *)
-let isInd c = match kind c with Ind _ -> true | _ -> false
-let isProd c = match kind c with | Prod _ -> true | _ -> false
-let isLambda c = match kind c with | Lambda _ -> true | _ -> false
-let isLetIn c =  match kind c with LetIn _ -> true | _ -> false
-let isApp c = match kind c with App _ -> true | _ -> false
-let isConst c = match kind c with Const _ -> true | _ -> false
-let isConstruct c = match kind c with Construct _ -> true | _ -> false
-let isCase c =  match kind c with Case _ -> true | _ -> false
-let isProj c =  match kind c with Proj _ -> true | _ -> false
-let isFix c =  match kind c with Fix _ -> true | _ -> false
-let isCoFix c =  match kind c with CoFix _ -> true | _ -> false
+let isInd c = match fast_kind c with Ind _ -> true | _ -> false
+let isProd c = match fast_kind c with | Prod _ -> true | _ -> false
+let isLambda c = match fast_kind c with | Lambda _ -> true | _ -> false
+let isLetIn c =  match fast_kind c with LetIn _ -> true | _ -> false
+let isApp c = match fast_kind c with App _ -> true | _ -> false
+let isConst c = match fast_kind c with Const _ -> true | _ -> false
+let isConstruct c = match fast_kind c with Construct _ -> true | _ -> false
+let isCase c =  match fast_kind c with Case _ -> true | _ -> false
+let isProj c =  match fast_kind c with Proj _ -> true | _ -> false
+let isFix c =  match fast_kind c with Fix _ -> true | _ -> false
+let isCoFix c =  match fast_kind c with CoFix _ -> true | _ -> false
 
-let isRef c = match kind c with
+let isRef c = match fast_kind c with
   | Const _ | Ind _ | Construct _ | Var _ -> true
   | _ -> false
 
-(* Destructs a de Bruijn index *)
-let destRel c = match kind c with
-  | Rel n -> n
-  | _ -> raise DestKO
-
 (* Destructs an existential variable *)
-let destMeta c = match kind c with
+let destMeta c = match fast_kind c with
   | Meta n -> n
   | _ -> raise DestKO
 
 (* Destructs a variable *)
-let destVar c = match kind c with
+let destVar c = match fast_kind c with
   | Var id -> id
   | _ -> raise DestKO
 
-let destSort c = match kind c with
+let destSort c = match fast_kind c with
   | Sort s -> s
   | _ -> raise DestKO
 
 (* Destructs a casted term *)
-let destCast c = match kind c with
+let destCast c = match fast_kind c with
   | Cast (t1,k,t2) -> (t1,k,t2)
   | _ -> raise DestKO
 
 (* Destructs the product (x:t1)t2 *)
-let destProd c = match kind c with
+let destProd c = match fast_kind c with
   | Prod (x,t1,t2) -> (x,t1,t2)
   | _ -> raise DestKO
 
 (* Destructs the abstraction [x:t1]t2 *)
-let destLambda c = match kind c with
+let destLambda c = match fast_kind c with
   | Lambda (x,t1,t2) -> (x,t1,t2)
   | _ -> raise DestKO
 
 (* Destructs the let [x:=b:t1]t2 *)
-let destLetIn c = match kind c with
+let destLetIn c = match fast_kind c with
   | LetIn (x,b,t1,t2) -> (x,b,t1,t2)
   | _ -> raise DestKO
 
 (* Destructs an application *)
-let destApp c = match kind c with
+let destApp c = match fast_kind c with
   | App (f,a) -> (f, a)
   | _ -> raise DestKO
 
 (* Destructs a constant *)
-let destConst c = match kind c with
+let destConst c = match fast_kind c with
   | Const kn -> kn
   | _ -> raise DestKO
 
 (* Destructs an existential variable *)
-let destEvar c = match kind c with
+let destEvar c = match fast_kind c with
   | Evar (_kn, _a as r) -> r
   | _ -> raise DestKO
 
 (* Destructs a (co)inductive type named kn *)
-let destInd c = match kind c with
+let destInd c = match fast_kind c with
   | Ind (_kn, _a as r) -> r
   | _ -> raise DestKO
 
 (* Destructs a constructor *)
-let destConstruct c = match kind c with
+let destConstruct c = match fast_kind c with
   | Construct (_kn, _a as r) -> r
   | _ -> raise DestKO
 
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
-let destCase c = match kind c with
+let destCase c = match fast_kind c with
   | Case (ci,u,params,p,iv,c,v) -> (ci,u,params,p,iv,c,v)
   | _ -> raise DestKO
 
-let destProj c = match kind c with
+let destProj c = match fast_kind c with
   | Proj (p, r, c) -> (p, r, c)
   | _ -> raise DestKO
 
-let destFix c = match kind c with
+let destFix c = match fast_kind c with
   | Fix fix -> fix
   | _ -> raise DestKO
 
-let destCoFix c = match kind c with
+let destCoFix c = match fast_kind c with
   | CoFix cofix -> cofix
   | _ -> raise DestKO
 
-let destRef c = let open GlobRef in match kind c with
+let destRef c = let open GlobRef in match fast_kind c with
   | Var x -> VarRef x, UVars.Instance.empty
   | Const (c,u) -> ConstRef c, u
   | Ind (ind,u) -> IndRef ind, u
   | Construct (c,u) -> ConstructRef c, u
   | _ -> raise DestKO
 
-let destArray c = match kind c with
+let destArray c = match fast_kind c with
   | Array (u,ar,def,ty) -> u,ar,def,ty
   | _ -> raise DestKO
 
@@ -316,12 +344,12 @@ let destArray c = match kind c with
 (******************************************************************)
 
 let decompose_app_list c =
-  match kind c with
+  match fast_kind c with
     | App (f,cl) -> (f, Array.to_list cl)
     | _ -> (c,[])
 
 let decompose_app c =
-  match kind c with
+  match fast_kind c with
     | App (f,cl) -> (f, cl)
     | _ -> (c,[||])
 
@@ -329,14 +357,17 @@ let decompose_app c =
 (* Term constructors *)
 (*********************)
 
-(* Constructs a de Bruijn index with number n *)
-let rels = Array.init 17 (fun i -> T (Rel i))
+let mkRel (n:int) : t = Obj.magic n
 
-let mkRel n = if 0<=n && n<=16 then rels.(n) else T (Rel n)
+(* "unsafe" because it doesn't preserve App invariants, this is type safe though *)
+let unsafe_mk (k:constr_kind) : t =
+  match k with
+  | Rel n -> mkRel n
+  | _ -> Obj.magic k
 
-let mkSProp = T (Sort Sorts.sprop)
-let mkProp  = T (Sort Sorts.prop)
-let mkSet   = T (Sort Sorts.set)
+let mkSProp = unsafe_mk (Sort Sorts.sprop)
+let mkProp  = unsafe_mk (Sort Sorts.prop)
+let mkSet   = unsafe_mk (Sort Sorts.set)
 
 (* Enforces:
    - applicative terms have at least one argument and the
@@ -346,21 +377,20 @@ let mkSet   = T (Sort Sorts.set)
    - small sorts are shared
 *)
 let of_kind = function
-| Rel n when 0 <= n && n < Array.length rels -> rels.(n)
 | App (f, [||]) -> f
-| App (f, a) as k -> begin match kind f with
-    | App (g, cl) -> T (App (g, Array.append cl a))
-    | _ -> T k
+| App (f, a) as k -> begin match fast_kind f with
+    | App (g, cl) -> unsafe_mk (App (g, Array.append cl a))
+    | _ -> unsafe_mk k
   end
-| Cast (c, knd, t) as k -> begin match kind c with
+| Cast (c, knd, t) as k -> begin match fast_kind c with
     | Cast (c, knd', _) when (knd == VMcast || knd == NATIVEcast) && knd == knd' ->
-      T (Cast (c, knd, t))
-    | _ -> T k
+      unsafe_mk (Cast (c, knd, t))
+    | _ -> unsafe_mk k
   end
 | Sort Sorts.SProp -> mkSProp
 | Sort Sorts.Prop -> mkProp
 | Sort Sorts.Set -> mkSet
-| k -> T k
+| k -> unsafe_mk k
 
 (* Construct a type *)
 let mkType u = of_kind @@ Sort (Sorts.sort_of_univ u)
@@ -486,8 +516,8 @@ let fold_invert f acc = function
   | CaseInvert {indices} ->
     Array.fold_left f acc indices
 
-let fold f acc c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+let fold f acc c = match fast_kind c with
+  | (IsRel | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _ | String _) -> acc
   | Cast (c,_,t) -> f (f acc c) t
   | Prod (_,t,c) -> f (f acc t) c
@@ -514,8 +544,8 @@ let iter_invert f = function
   | CaseInvert {indices;} ->
     Array.iter f indices
 
-let iter f c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+let iter f c = match fast_kind c with
+  | (IsRel | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _ | String _) -> ()
   | Cast (c,_,t) -> f c; f t
   | Prod (_,t,c) -> f t; f c
@@ -536,8 +566,8 @@ let iter f c = match kind c with
    each binder traversal; it is not recursive and the order with which
    subterms are processed is not specified *)
 
-let iter_with_binders g f n c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+let iter_with_binders g f n c = match fast_kind c with
+  | (IsRel | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _ | String _) -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (_,t,c) -> f n t; f (g n) c
@@ -569,8 +599,8 @@ let iter_with_binders g f n c = match kind c with
    each binder traversal; it is not recursive *)
 
 let fold_constr_with_binders g f n acc c =
-  match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+  match fast_kind c with
+  | (IsRel | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _ | String _) -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (_na,t,c) -> f (g  n) (f n acc t) c
@@ -633,8 +663,8 @@ let map_invert f = function
     if indices == indices' then orig
     else CaseInvert {indices=indices';}
 
-let map f c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+let map f c = match fast_kind c with
+  | (IsRel | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _ | String _) -> c
   | Cast (b,k,t) ->
       let b' = f b in
@@ -718,8 +748,8 @@ let fold_map_return_predicate f accu (p,r as v) =
   let v = if p == p' then v else p', r in
   accu, v
 
-let fold_map f accu c = match kind c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+let fold_map f accu c = match fast_kind c with
+  | (IsRel | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _ | String _) -> accu, c
   | Cast (b,k,t) ->
       let accu, b' = f accu b in
@@ -786,8 +816,8 @@ let fold_map f accu c = match kind c with
    each binder traversal; it is not recursive and the order with which
    subterms are processed is not specified *)
 
-let map_with_binders g f l c0 = match kind c0 with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+let map_with_binders g f l c0 = match fast_kind c0 with
+  | (IsRel | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _ | String _) -> c0
   | Cast (c, k, t) ->
     let c' = f l c in
@@ -1304,7 +1334,7 @@ and sh_invert civ iv = match civ, iv with
 
 and sh_rec_main t =
   let (h, y) = hash_term t in
-  (h, HashsetTerm.repr h (T y) term_table)
+  (h, HashsetTerm.repr h (unsafe_mk y) term_table)
 
 and sh_rec t =
   incr steps;
@@ -1355,10 +1385,6 @@ module HCons = GenHCons(struct
       let add _ _ : unit = assert false
     end
   end)
-
-  (* Make sure our statically allocated Rels (1 to 16) are considered
-     as canonical, and hence hash-consed to themselves *)
-let () = ignore (HCons.hash_term_array rels rels)
 
 let hcons = HCons.hcons
 

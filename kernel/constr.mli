@@ -239,8 +239,6 @@ val mkCoFix : cofixpoint -> constr
 type 'constr pexistential = Evar.t * 'constr SList.t
 
 type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
-  | Rel       of int
-  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
   | Var       of Id.t
   (** Gallina-variable that was introduced by Vernacular-command that
      extends the local context of the currently open section (i.e.
@@ -291,6 +289,33 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
   | Array     of 'univs * 'constr array * 'constr * 'types
   (** [Array (u,vals,def,t)] is an array of [vals] in type [t] with default value [def].
       [u] is a universe containing [t]. *)
+  | Rel       of int
+  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
+
+module FastKind : sig
+type ('constr, 'types, 'sort, 'univs, 'r) t =
+  | Var       of Id.t
+  | Meta      of metavariable
+  | Evar      of 'constr pexistential
+  | Sort      of 'sort
+  | Cast      of 'constr * cast_kind * 'types
+  | Prod      of (Name.t,'r) Context.pbinder_annot * 'types * 'types
+  | Lambda    of (Name.t,'r) Context.pbinder_annot * 'types * 'constr
+  | LetIn     of (Name.t,'r) Context.pbinder_annot * 'constr * 'types * 'constr
+  | App       of 'constr * 'constr array
+  | Const     of (Constant.t * 'univs)
+  | Ind       of (inductive * 'univs)
+  | Construct of (constructor * 'univs)
+  | Case      of case_info * 'univs * 'constr array * ('types,'r) pcase_return * 'constr pcase_invert * 'constr * ('constr,'r) pcase_branch array
+  | Fix       of ('constr, 'types, 'r) pfixpoint
+  | CoFix     of ('constr, 'types, 'r) pcofixpoint
+  | Proj      of Projection.t * 'r * 'constr
+  | Int       of Uint63.t
+  | Float     of Float64.t
+  | String    of Pstring.t
+  | Array     of 'univs * 'constr array * 'constr * 'types
+  | IsRel
+end
 
 (** User view of [constr]. For [App], it is ensured there is at
    least one argument and the function is not itself an applicative
@@ -298,6 +323,8 @@ type ('constr, 'types, 'sort, 'univs, 'r) kind_of_term =
 
 val kind : constr -> (constr, types, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term
 val of_kind : (constr, types, Sorts.t, UVars.Instance.t, Sorts.relevance) kind_of_term -> constr
+
+val fast_kind : constr -> (constr, types, Sorts.t, UVars.Instance.t, Sorts.relevance) FastKind.t
 
 val kind_nocast_gen : ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term) ->
   ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term)

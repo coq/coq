@@ -18,9 +18,10 @@ type 'v kind = private
   | Tuple of string * 'v array
   (** A debug name and sub-values in this block *)
 
-  | Sum of string * int * 'v array array
+  | Sum of string * int option * 'v array array
   (** A debug name, a number of constant constructors, and sub-values
-     at each position of each possible constructed variant *)
+      at each position of each possible constructed variant.
+      If the number of constant constructors is [None], this means an unboxed [int] constructor. *)
 
   | Array of 'v
   | List of 'v
