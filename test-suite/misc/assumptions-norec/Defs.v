@@ -1,5 +1,5 @@
-Declare ML Module "rocq-runtime.plugins.ltac".
-Set Default Proof Mode "Classic".
+(* -*- coq-prog-args: ("-noinit"); -*- *)
+Require Import Ltac.
 Unset Elimination Schemes.
 Inductive unit : Set := tt.
 
