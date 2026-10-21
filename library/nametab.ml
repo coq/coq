@@ -714,7 +714,7 @@ module XRefWarn = struct
   let pp = XRefNoWarn.pr
 
   let depr_ref = Deprecation.create_warning_with_qf ~object_name:"Reference" ~warning_name_if_no_since:"deprecated-reference" ~pp_qf:pp pp
-  let depr_abbrev = Deprecation.create_warning_with_qf ~object_name:"Notation" ~warning_name_if_no_since:"deprecated-syntactic-definition" ~pp_qf:pp pp
+  let depr_abbrev = Deprecation.create_warning_with_qf ~object_name:"Abbreviation" ~warning_name_if_no_since:"deprecated-syntactic-definition" ~pp_qf:pp pp
   let user_warn = UserWarn.create_warning ~warning_name_if_no_cats:"warn-reference" ()
 
   let depr_xref ?loc depr xref =

@@ -64,9 +64,13 @@ deprecated compatibility alias using :cmd:`Abbreviation`
       :undocumented:
       :name: deprecated-notation
 
-   .. warn:: Tactic @qualid is deprecated since @string__since. @string__note.
+   .. warn:: Abbreviation @string is deprecated since @string__since. @string__note. Use @qualid__use instead.
       :undocumented:
       :name: deprecated-syntactic-definition
+
+   .. warn:: Tactic @qualid is deprecated since @string__since. @string__note.
+      :undocumented:
+      :name: deprecated-tactic
 
    .. warn:: Tactic Notation @qualid is deprecated since @string__since. @string__note.
       :name: deprecated-tactic-notation
