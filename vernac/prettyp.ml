@@ -887,7 +887,6 @@ type logical_name =
   | Module of ModPath.t
   | ModuleType of ModPath.t
   | Other : 'a * 'a locatable_info -> logical_name
-  | Undefined of qualid
 
 type locatable = Locatable : 'a locatable_info -> locatable
 
@@ -897,25 +896,29 @@ let locatable_map : locatable String.Map.t ref = ref String.Map.empty
 let register_locatable name f =
   locatable_map := String.Map.add name (Locatable f) !locatable_map
 
-exception ObjFound of logical_name
-
 let locate_any_name qid =
-  try Term (Nametab.locate qid)
-  with Not_found ->
-  try Abbreviation (Nametab.locate_abbreviation qid)
-  with Not_found ->
-  try Dir (Nametab.locate_dir qid)
-  with Not_found ->
-  try Module (Nametab.locate_module qid)
-  with Not_found ->
-  try ModuleType (Nametab.locate_modtype qid)
-  with Not_found ->
-    let iter _ (Locatable info) = match info.locate qid with
-    | None -> ()
-    | Some ans -> raise (ObjFound (Other (ans, info)))
+  (* If we find the qid in the ExtRef nametab we just print that.
+     Otherwise there is no reason to prefer eg Module over Ltac or vice versa
+     so print all. *)
+  let base =
+    match Nametab.locate_extended qid with
+    | TrueGlobal ref -> [Term ref]
+    | Abbrev abr -> [Abbreviation abr]
+    | exception Not_found -> []
+  in
+  if not (CList.is_empty base) then base
+  else
+    (try [Dir (Nametab.locate_dir qid)]
+     with Not_found -> []) @
+    (try [Module (Nametab.locate_module qid)]
+     with Not_found -> []) @
+    (try [ModuleType (Nametab.locate_modtype qid)]
+     with Not_found -> []) @
+    let fold _ (Locatable info) acc = match info.locate qid with
+      | None -> acc
+      | Some ans -> Other (ans, info) :: acc
     in
-    try String.Map.iter iter !locatable_map; Undefined qid
-    with ObjFound obj -> obj
+    String.Map.fold fold !locatable_map []
 
 let canonical_info env ref =
   let cref = QGlobRef.canonize env ref in
@@ -957,14 +960,12 @@ let pr_located_qualid env = function
   | ModuleType mp ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
   | Other (obj, info) -> info.name obj
-  | Undefined qid ->
-      pr_qualid qid ++ spc () ++ str "not a defined object."
 
 let maybe_error_reject_univ_decl na udecl =
   let open GlobRef in
   match na, udecl with
   | _, None | Term (ConstRef _ | IndRef _ | ConstructRef _), Some _ -> ()
-  | (Term (VarRef _) | Abbreviation _ | Dir _ | Module _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
+  | (Term (VarRef _) | Abbreviation _ | Dir _ | Module _ | ModuleType _ | Other _), Some udecl ->
     (* TODO Print na somehow *)
     user_err (str "This object does not support universe names.")
 
@@ -977,12 +978,6 @@ let print_any_name access env sigma na udecl =
   | Dir dir -> pr_dir dir
   | ModuleType mp -> print_modtype mp
   | Other (obj, info) -> info.print obj
-  | Undefined qid ->
-  try  (* A goal variable which is not a section variable *)
-    let dir,str = repr_qualid qid in
-    if not (DirPath.is_empty dir) then raise Not_found;
-    print_named_decl env sigma true str
-  with Not_found -> user_err ?loc:qid.loc (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_notation_interpretation env sigma ntn df sc c =
   let filter = Notation.{
@@ -1003,7 +998,16 @@ let print_name access env sigma na udecl =
     print_notation_interpretation env sigma ntn df (Some sc) c ++ fnl () ++ fnl () ++
     print_any_name access env sigma (Term ref) udecl
   | {loc; v=Constrexpr.AN ref} ->
-    print_any_name access env sigma (locate_any_name ref) udecl
+    match locate_any_name ref with
+    | [] ->
+      (* A goal variable which is not a section variable? *)
+      begin try
+        let () = if not (qualid_is_ident ref) then raise Not_found in
+        print_named_decl env sigma true (qualid_basename ref)
+      with Not_found -> user_err ?loc:ref.loc (pr_qualid ref ++ spc () ++ str "not a defined object.")
+      end
+    | objs ->
+      prlist_with_sep (fun () -> fnl() ++fnl()) (fun o -> print_any_name access env sigma o udecl) objs
 
 (** Command [Print Notation] *)
 
@@ -1090,7 +1094,7 @@ let print_about_any ?loc env sigma k udecl =
   match k with
   | Term ref -> Dumpglob.add_glob ?loc ref; print_about_global_reference env ref udecl
   | Abbreviation kn -> v 0 (print_about_abbreviation env sigma kn)
-  | Dir _ | Module _ | ModuleType _ | Undefined _ -> hov 0 (pr_located_qualid env k)
+  | Dir _ | Module _ | ModuleType _ -> hov 0 (pr_located_qualid env k)
   | Other (obj, info) -> hov 0 (info.about obj)
 
 let print_about env sigma na udecl =
@@ -1100,7 +1104,10 @@ let print_about env sigma na udecl =
     print_notation_interpretation env sigma ntn df (Some sc) c ++ fnl () ++ fnl () ++
     print_about_any ?loc env sigma (Term ref) udecl
   | {loc;v=Constrexpr.AN ref} ->
-      print_about_any ?loc env sigma (locate_any_name ref) udecl
+    match locate_any_name ref with
+    | [] -> pr_qualid ref ++ spc () ++ str "not a defined object."
+    | objs ->
+      prlist_with_sep (fun () -> fnl() ++fnl()) (fun o -> print_about_any ?loc env sigma o udecl) objs
 
 (* Command [Inspect], for debug *)
 
