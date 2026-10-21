@@ -1619,6 +1619,9 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     in
     let sigma, u = match u with
       | None -> sigma, None
+      | Some {qualities = []; univlevels = []; extensible_univlevels = true} ->
+        let u = UAnonymous {rigid = UnivFlexible false} in
+          let sigma, u = glob_level ?loc sigma u in sigma, Some u
       | Some {qualities = []; univlevels = [u]} ->
         let sigma, u = glob_level ?loc sigma u in
         sigma, Some u
