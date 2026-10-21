@@ -1813,8 +1813,9 @@ let inductive_of_mutfix ?evars env ((nvect, bodynum), (names, types, bodies as r
     in
     (* check no recursive call appear in the first abstractions until recarg *)
     let initial_context = Term.it_mkLambda_or_LetIn mkProp (* dummy *) ctx in
-    let () = if not (noccur_with_meta 1 nbfix initial_context) then
-      anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
+    let () = if (Environ.typing_flags env).check_guarded
+      && not (noccur_with_meta 1 nbfix initial_context) then
+      raise_err env i RecCallInFixBinderType
     in
     (* ctx has size [recarg+1], top entry is recarg *)
     let ty = Context.Rel.Declaration.get_type (List.hd ctx) in
