@@ -1,5 +1,5 @@
-nat * nat : Set
-     : Set
+nat * nat : Type
+     : Type
 nat * nat : Type
      : Type
 0 * 0 : nat

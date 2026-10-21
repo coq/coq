@@ -54,7 +54,7 @@ The term "A" has type "Type@{v}" while it is expected to have type
  "Type@{Arg.u}"
 (universe inconsistency: Cannot enforce v ≤ Arg.u because Arg.u < Arg.u+1
 ≤ v).
-File "./output/unidecls.v", line 93, characters 17-24:
+File "./output/unidecls.v", line 96, characters 17-24:
 The command has indeed failed with message:
 Undeclared universe FnApp.v.
 Type@{Fn.v}
@@ -90,7 +90,12 @@ a < decls.a
 secfoo2 < a
 Arg.u < Fn.v
 
-id@{0} nat
+id@{unidecls.17} nat
      : nat -> nat
+(* {unidecls.17} | 
+Minimized universes:
+ unidecls.17 := 0
+Normalized constraints:
+  *)
 id@{0}
      : forall A : Set, A -> A

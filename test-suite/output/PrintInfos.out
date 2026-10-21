@@ -21,7 +21,7 @@ eq_refl : forall {A : Type} {x : A}, x = x
 eq_refl is template universe polymorphic
 Arguments eq_refl {A}%_type_scope {x}, [_] _
 Expands to: Constructor Corelib.Init.Logic.eq_refl
-Declared in library Corelib.Init.Logic, line 380, characters 4-11
+Declared in library Corelib.Init.Logic, line 383, characters 4-11
 eq_refl : forall {A : Type} {x : A}, x = x
 
 When applied to no arguments:
@@ -63,7 +63,7 @@ comparison : Set
 
 comparison is not universe polymorphic
 Expands to: Inductive Corelib.Init.Datatypes.comparison
-Declared in library Corelib.Init.Datatypes, line 367, characters 10-20
+Declared in library Corelib.Init.Datatypes, line 373, characters 10-20
 Inductive comparison : Set :=
     Eq : comparison | Lt : comparison | Gt : comparison.
 bar : foo
@@ -84,28 +84,28 @@ Arguments bar {x}
 Module Corelib.Init.Peano
 Abbreviation sym_eq := eq_sym
 Expands to: Abbreviation Corelib.Init.Logic.sym_eq
-Declared in library Corelib.Init.Logic, line 767, characters 0-45
+Declared in library Corelib.Init.Logic, line 770, characters 0-45
 
-eq_sym : forall [A : Type] [x y : A], x = y -> y = x
+eq_sym@{u} : forall [A : Type] [x y : A], x = y -> y = x
 
-eq_sym is not universe polymorphic
+eq_sym is universe polymorphic and cumulative
 Arguments eq_sym [A]%_type_scope [x y] H
 eq_sym is transparent
 Expands to: Constant Corelib.Init.Logic.eq_sym
-Declared in library Corelib.Init.Logic, line 409, characters 0-24
+Declared in library Corelib.Init.Logic, line 412, characters 0-24
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x.
 
 Arguments eq {A}%_type_scope x _
 Arguments eq_refl {A}%_type_scope {x}, {_} _
-nat_rect :
+nat_rect@{u} :
 forall P : nat -> Type,
 P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n
 
-nat_rect is not universe polymorphic
+nat_rect is universe polymorphic and cumulative
 Arguments nat_rect P%_function_scope O S%_function_scope n%_nat_scope
 nat_rect is transparent
 Expands to: Constant Corelib.Init.Datatypes.nat_rect
-Declared in library Corelib.Init.Datatypes, line 185, characters 0-54
+Declared in library Corelib.Init.Datatypes, line 189, characters 0-83
 
 nat_ind :
 forall P : nat -> Prop,
@@ -115,7 +115,7 @@ nat_ind is not universe polymorphic
 Arguments nat_ind P%_function_scope O S%_function_scope n%_nat_scope
 nat_ind is transparent
 Expands to: Constant Corelib.Init.Datatypes.nat_ind
-Declared in library Corelib.Init.Datatypes, line 185, characters 0-54
+Declared in library Corelib.Init.Datatypes, line 189, characters 0-83
 
 nat_sind :
 forall P : nat -> SProp,
@@ -125,8 +125,8 @@ nat_sind is not universe polymorphic
 Arguments nat_sind P%_function_scope O S%_function_scope n%_nat_scope
 nat_sind is transparent
 Expands to: Constant Corelib.Init.Datatypes.nat_sind
-Declared in library Corelib.Init.Datatypes, line 185, characters 0-54
-nat_rect =
+Declared in library Corelib.Init.Datatypes, line 189, characters 0-83
+nat_rect@{u} =
 fun (P : nat -> Type) (O : P 0) (S : forall n : nat, P n -> P (S n)) =>
 fix F (n : nat) : P n :=
   match n as n0 return P n0 with
@@ -179,35 +179,35 @@ Alias.eq is template universe polymorphic
 Arguments Alias.eq {A}%_type_scope x _
 Expands to: Inductive PrintInfos.Alias.eq (syntactically equal to
             Corelib.Init.Logic.eq)
-Declared in library Corelib.Init.Logic, line 379, characters 10-12
+Declared in library Corelib.Init.Logic, line 382, characters 10-12
 Alias.eq_refl : forall {A : Type} {x : A}, x = x
 
 Alias.eq_refl is template universe polymorphic
 Arguments Alias.eq_refl {A}%_type_scope {x}, [_] _
 Expands to: Constructor PrintInfos.Alias.eq_refl (syntactically equal to
             Corelib.Init.Logic.eq_refl)
-Declared in library Corelib.Init.Logic, line 380, characters 4-11
-Alias.eq_ind :
+Declared in library Corelib.Init.Logic, line 383, characters 4-11
+Alias.eq_ind@{u} :
 forall [A : Type] (x : A) (P : A -> Prop), P x -> forall y : A, x = y -> P y
 
-Alias.eq_ind is not universe polymorphic
+Alias.eq_ind is universe polymorphic and cumulative
 Arguments Alias.eq_ind [A]%_type_scope x P%_function_scope eq_refl y e
   (where some original arguments have been renamed)
 Alias.eq_ind is transparent
 Expands to: Constant PrintInfos.Alias.eq_ind (syntactically equal to
             Corelib.Init.Logic.eq_ind)
-Declared in library Corelib.Init.Logic, line 379, characters 0-115
-fst : forall A B : Type, prod A B -> A
+Declared in library Corelib.Init.Logic, line 381, characters 0-138
+fst@{u u0} : forall A B : Type, prod A B -> A
 
-fst is not universe polymorphic
+fst is universe polymorphic and cumulative
 fst is a projection of prod
 Arguments fst (A B)%_type_scope p
 fst is transparent
 Expands to: Constant PrintInfos.AboutProj.fst
 Declared in library PrintInfos, line 61, characters 21-24
-fst : forall A B : Type, prod A B -> A
+fst@{u u0} : forall A B : Type, prod A B -> A
 
-fst is not universe polymorphic
+fst is universe polymorphic and cumulative
 fst is a primitive projection of prod
 Arguments fst (A B)%_type_scope p
 fst is transparent

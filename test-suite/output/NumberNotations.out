@@ -38,10 +38,10 @@ applications of pto_punits. [abstract-large-number,numbers,default]
 File "./output/NumberNotations.v", line 91, characters 32-33:
 The command has indeed failed with message:
 In environment
-v := pto_punits (Number.UIntDecimal (Decimal.D1 Decimal.Nil)) : punit
+v := pto_punits 1 : punit
 The term "v" has type "punit@{0}" while it is expected to have type
  "punit@{u}"
-(universe inconsistency: Cannot enforce Set = u).
+(universe inconsistency: Cannot enforce u = Set because 0 < 1 ≤ u).
 S
      : nat -> nat
 S (ack 4 4)
@@ -228,7 +228,7 @@ Cannot interpret this number as a value of type ty
      : ty
      = 4%kt
      : ty
-     = 5%kt
+     = 4%kt
      : ty
 let v : ty := Build_ty Empty_set zero in v : ty
      : ty

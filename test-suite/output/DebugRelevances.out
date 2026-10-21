@@ -3,12 +3,12 @@ fun (A : (* Relevant *) Type) (a : (* Relevant *) A) => a
      : forall A : (* Relevant *) Type, A -> A
 
 Arguments foo A%_type_scope a
-foo'@{} =
+foo' =
 fun (A : (* Relevant *) Prop) (a : (* Relevant *) A) => a
      : forall A : (* Relevant *) Prop, A -> A
 
 Arguments foo' A%_type_scope a
-bar@{} =
+bar =
 fun (A : (* Relevant *) SProp) (a : (* Irrelevant *) A) => a
      : forall A : (* Relevant *) SProp, A -> A
 

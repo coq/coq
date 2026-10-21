@@ -43,7 +43,7 @@ fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
 Arguments wrap {A}%_type_scope {Wrap}
 bar@{uu} = nat
      : Wrap@{uu} Set
-(* uu |= 1 <= uu *)
+(* uu | 1 <= uu *)
 foo@{uu u v} =
 Type@{u} -> Type@{v} -> Type@{uu}
      : Type@{max(uu+1,u+1,v+1)}
@@ -150,14 +150,13 @@ Arguments inseccstr _%_type_scope
 insec@{uu v} = Type@{uu} -> Type@{v}
      : Type@{max(uu+1,v+1)}
 (* uu v |  *)
-Inductive insecind@{uu k} : Type@{k+1} :=
-    inseccstr : Type@{k} -> insecind@{uu k}.
-(* uu k |  *)
+Inductive insecind@{k} : Type@{k+1} :=
+    inseccstr : Type@{k} -> insecind@{k}.
+(* k |  *)
 
 Arguments inseccstr _%_type_scope
-insec2@{u} = Prop
+insec2 = Prop
      : Type@{1}
-(* u |=  *)
 inmod@{uu} = Type@{uu}
      : Type@{uu+1}
 (* uu |  *)
@@ -219,11 +218,11 @@ block).
 foo@{i} = Type@{M.i} -> Type@{i}
      : Type@{max(M.i+1,i+1)}
 (* i |  *)
-Type@{u0} -> Type@{UnivBinders.86}
-     : Type@{max(u0+1,UnivBinders.86+1)}
-(* {UnivBinders.86} | 
+Type@{u0} -> Type@{UnivBinders.83}
+     : Type@{max(u0+1,UnivBinders.83+1)}
+(* {UnivBinders.83} | 
 Normalized constraints:
- {UnivBinders.86} |  *)
+ {UnivBinders.83} |  *)
 bind_univs.mono = Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}
 bind_univs.poly@{u} = Type@{u}
@@ -286,21 +285,25 @@ Declared in library UnivBinders, line 228, characters 10-14
 File "./output/UnivBinders.v", line 243, characters 2-38:
 The command has indeed failed with message:
 Universe u0 already exists.
-File "./output/UnivBinders.v", line 252, characters 6-26:
+File "./output/UnivBinders.v", line 251, characters 6-26:
 The command has indeed failed with message:
 Tactic failure: Not equal (due to universes).
-eq_rect
-     : forall (A : Type@{eq_rect.u1}) (x : A) (P : A -> Type@{eq_rect.u0}),
+eq_rect@{UnivBinders.136 UnivBinders.137}
+     : forall (A : Type@{UnivBinders.137}) (x : A)
+         (P : A -> Type@{UnivBinders.136}),
        P x -> forall y : A, x = y -> P y
-File "./output/UnivBinders.v", line 268, characters 18-19:
+(* {UnivBinders.137 UnivBinders.136} | 
+Normalized constraints:
+ {UnivBinders.137 UnivBinders.136} |  *)
+File "./output/UnivBinders.v", line 269, characters 18-19:
 Warning: Separating sorts from universes with "|" is deprecated.
 Use ";" instead.
 [deprecated-sort-poly-syntax,deprecated-since-9.1,deprecated,default]
-File "./output/UnivBinders.v", line 268, characters 33-34:
+File "./output/UnivBinders.v", line 269, characters 33-34:
 Warning: Separating sorts from universes with "|" is deprecated.
 Use ";" instead.
 [deprecated-sort-poly-syntax,deprecated-since-9.1,deprecated,default]
-File "./output/UnivBinders.v", line 274, characters 16-17:
+File "./output/UnivBinders.v", line 275, characters 16-17:
 Warning: Separating sorts from universes with "|" is deprecated.
 Use ";" instead.
 [deprecated-sort-poly-syntax,deprecated-since-9.1,deprecated,default]
@@ -311,6 +314,6 @@ id@{SProp ; 0}
 id3@{s ; u} =
 fun (A : Type@{s ; u}) (a : A) => a
      : forall A : Type@{s ; u}, A -> A
-(* s ; u |= 1 <= u *)
+(* s ; u | 1 <= u *)
 
 Arguments id3 A%_type_scope a

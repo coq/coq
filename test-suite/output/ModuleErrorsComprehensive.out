@@ -45,7 +45,9 @@ incompatible variance information:  (= (* for typing) in term) but expected
 File "./output/ModuleErrorsComprehensive.v", line 103, characters 0-52:
 The command has indeed failed with message:
 Signature components for field x do not match:
-a polymorphic declaration was expected, but a monomorphic declaration was found.
+the universe constraints are inconsistent: Cannot enforce PolyExpMod.x.u0 ≤
+Set because 0 < 1 ≤ PolyExpMod.x.u0 when comparing 
+"Type" and "Set".
 File "./output/ModuleErrorsComprehensive.v", line 112, characters 0-58:
 The command has indeed failed with message:
 Signature components for field I do not match: constructor names differ:
@@ -64,8 +66,8 @@ Signature components for field I1 do not match:
 number of inductive types differs: expected 2 but found 1.
 File "./output/ModuleErrorsComprehensive.v", line 151, characters 0-49:
 The command has indeed failed with message:
-Signature components for field I do not match: number of parameters differs:
-expected 2 but found 1.
+Signature components for field I do not match: parameters differs: expected
+(A B : Type@{β0 ; _}) but found (A : Type@{β0 ; _}).
 File "./output/ModuleErrorsComprehensive.v", line 160, characters 0-49:
 The command has indeed failed with message:
 Signature components for field R do not match:
@@ -77,13 +79,13 @@ expected foo and bar but found baz and qux.
 File "./output/ModuleErrorsComprehensive.v", line 178, characters 0-67:
 The command has indeed failed with message:
 Signature components for field f do not match:
-incompatible polymorphic binders: got @{u v | u <= v} but expected 
-@{u}.
+incompatible polymorphic binders: got u v | u <= v but expected 
+u.
 File "./output/ModuleErrorsComprehensive.v", line 187, characters 0-55:
 The command has indeed failed with message:
 Signature components for field f do not match:
-incompatible polymorphic binders: got @{u v | v+1 <= u} but expected
-@{u v | u+1 <= v}
+incompatible polymorphic binders: got u v | v+1 <= u but expected
+u v | u+1 <= v
 (incompatible constraints).
 File "./output/ModuleErrorsComprehensive.v", line 199, characters 0-55:
 The command has indeed failed with message:
@@ -106,8 +108,7 @@ Cannot enforce big_type.u0+1 ≤ Set because 0 < 1 ≤ big_type.u0
 < big_type.u0+1 when comparing "Type" and "Set"
 File "./output/ModuleErrorsComprehensive.v", line 235, characters 0-71:
 The command has indeed failed with message:
-Incorrect constraint for label "p": incompatible polymorphic binders: got 
-@{} but expected @{u}
+Incorrect constraint for label "p": a monomorphic declaration was expected, but a polymorphic declaration was found
 File "./output/ModuleErrorsComprehensive.v", line 242, characters 0-95:
 The command has indeed failed with message:
 Incorrect constraint for label "b": expected type

@@ -1,7 +1,7 @@
 File "./output/bug_21813.v", line 11, characters 0-25:
 The command has indeed failed with message:
 Signature components for field T do not match:
-incompatible polymorphic binders: got @{s ; u | s -> Type,
-                                                Set < u}
-but expected @{s ; u | Set < u}
+incompatible polymorphic binders: got s ; u | s -> Type,
+                                              1 <= u
+but expected s ; u | 1 <= u
 (incompatible constraints).
