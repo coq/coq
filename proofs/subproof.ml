@@ -118,7 +118,7 @@ let build_constant_by_tactic ~name ~sigma ~env ~sign ~poly typ tac =
     in
     let () = if not @@ Proof.is_done proof then raise OpenProof in
     let evd = UnivVariances.register_universe_variances_of_eproofs pfenv evd [body, typ] in
-    let evd = if PolyFlags.collapse_sort_variables poly then Evd.collapse_sort_variables evd else evd in
+    let evd = Evd.collapse_sort_variables ~only_above_prop:(not @@ PolyFlags.collapse_sort_variables poly) evd in
     let to_constr c = match EConstr.to_constr_opt evd c with
     | Some p -> p
     | None -> raise OpenProof

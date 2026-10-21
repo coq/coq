@@ -2689,10 +2689,7 @@ let vernac_validate_proof ~pstate =
       Univ.UnivConstraints.filter (fun cst -> not @@ UGraph.check_constraint ugraph cst) ucsts'
     in
     let missing_ucsts =
-      let nf u = match Univ.Universe.level (UState.nf_universe ustate (Univ.Universe.make u)) with
-        | None -> u
-        | Some u -> u
-      in
+      let nf u = UState.nf_universe ustate u in
       Univ.UnivConstraints.map (fun (u1,k,u2) -> nf u1, k, nf u2) missing_ucsts
     in
 

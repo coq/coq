@@ -668,7 +668,7 @@ let restrict_subgraph levels univ_csts =
   (* having to merge_constraints twice (here and in add_subgraph) is
      not great but better than having to crawl the full env's graph to
      check the subgraph property *)
-  let g = UGraph.merge_constraints univ_csts g in
+  let g, _equivs = UGraph.merge_constraints univ_csts g in
   let kept = Univ.Level.Set.diff mentioned_univs levels in
   UGraph.constraints_for ~kept g
 
