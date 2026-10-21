@@ -1110,17 +1110,18 @@ let fresh_sort_in_quality ?loc ?(rigid=univ_flexible) evd s =
   with_sort_context_set ?loc rigid ~src:UState.Internal evd
     (UnivGen.fresh_sort_in_quality s)
 
+let get_abstract env sigma gr = let open GlobRef in
+  match gr with
+    | VarRef _ -> UVars.AbstractContext.empty
+    | ConstRef c ->
+      let cb = lookup_constant env sigma c in
+      Declareops.constant_polymorphic_context cb
+    | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
+      let mib = lookup_mind mind env in
+      Declareops.inductive_polymorphic_context mib
+
 let fresh_instance ?loc ?names env sigma gr =
-  let open GlobRef in
-  let auctx = match gr with
-  | VarRef _ -> UVars.AbstractContext.empty
-  | ConstRef c ->
-    let cb = lookup_constant env sigma c in
-    Declareops.constant_polymorphic_context cb
-  | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
-    let mib = lookup_mind mind env in
-    Declareops.inductive_polymorphic_context mib
-  in
+  let auctx = get_abstract env sigma gr in
   let names = Option.map (fun x -> gr, x) names in
   let u, ctx = UnivGen.fresh_instance_from ?loc auctx names in
   u, ctx
