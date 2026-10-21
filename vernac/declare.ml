@@ -952,7 +952,7 @@ let process_proof ~info:Info.({ udecl; poly }) ?(is_telescope=false) = function
         let sigma = UnivVariances.register_universe_variances_of_constr (Global.env ()) (Evd.from_ustate uctx) ?typ body in
         let uctx, univs, used_univs, body =
           make_univs_immediate poly ?keep_body_ucst_separate ~opaque ~uctx:(Evd.ustate sigma) ~udecl ~eff ~used_univs body typ in
-        (used_univs, (definition_entry_core ?using ~univs ?types:typ body, uctx))) Univ.Level.Set.empty entries opaques)
+        (used_univs, (definition_entry_core ~using ~univs ?types:typ body, uctx))) Univ.Level.Set.empty entries opaques)
   | DeferredOpaqueProof { deferred_proof = bodies; using; initial_proof_data; feedback_id; initial_euctx } ->
     let { Proof.poly; entry; sigma } = initial_proof_data in
     (* Deferred multiple entries currently assume either a mutual
