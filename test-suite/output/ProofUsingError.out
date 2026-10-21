@@ -1,0 +1,26 @@
+File "./output/ProofUsingError.v", line 7, characters 4-13:
+The command has indeed failed with message:
+The following section variables are used but not declared:
+x y.
+
+You can either update your proof to not depend on them,
+or you can update your Proof line to one of the following:
+Proof using x y
+Proof using All
+Proof using Type*
+File "./output/ProofUsingError.v", line 13, characters 4-13:
+The command has indeed failed with message:
+The following section variable is used but not declared:
+x.
+
+You can either update your proof to not depend on it,
+or you can update your Proof line to
+Proof using x
+File "./output/ProofUsingError.v", line 19, characters 4-13:
+The command has indeed failed with message:
+The following section variable is used but not declared:
+A.
+
+You can either update your proof to not depend on it,
+or you can update your Proof line to
+Proof using A
