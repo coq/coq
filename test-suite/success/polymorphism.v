@@ -5,7 +5,7 @@ Module ParseSet.
   Check eq_refl : Type@{0} = Set.
 
   Check Set : Type@{1}.
-  Fail Check Type@{1} : Type@{2}. (* it parses but +2 is currently not allowed *)
+  Check Type@{1} : Type@{2}. (* it parses but +2 is currently not allowed *)
 
   Polymorphic Definition id A (a:A) := a.
 
@@ -151,7 +151,7 @@ Record hypo : Type := mkhypo {
 
 Definition typehypo (A : Type) : hypo := {| hypo_proof := A |}.
 
-Polymorphic Record dyn : Type := 
+#[universes(cumulative)] Polymorphic Record dyn : Type :=
   mkdyn {
       dyn_type : Type;
       dyn_proof : dyn_type
@@ -182,9 +182,9 @@ Module binders.
     exact A.
   Defined.
 
-  Polymorphic Lemma hidden_strict_type : Type.
+  Polymorphic Lemma hidden_strict_type : Type@{i}.
   Proof.
-    exact Type.
+    exact Type@{0}.
   Qed.
   Check hidden_strict_type@{_}.
   Fail Check hidden_strict_type@{Set}.
@@ -197,8 +197,7 @@ Module binders.
 
   (* Handled in proofs as well *)
   Lemma bar@{i j | } : Type@{i}.
-    exact Type@{j}.
-    Fail Defined.
+    Fail exact Type@{j}.
   Abort.
 
   Fail Lemma bar@{u v | } : let x := (fun x => x) : Type@{u} -> Type@{v} in nat.
@@ -391,25 +390,25 @@ End Hurkens'.
 Module Anonymous.
   Set Universe Polymorphism.
 
-  Definition defaultid := (fun x => x) : Type -> Type.
+  Definition defaultid := (fun x => x) : Type@{*} -> Type@{*}.
   Definition collapseid := defaultid@{_ _}.
   Check collapseid@{_}.
 
-  Definition anonid := (fun x => x) : Type -> Type@{_}.
+  Definition anonid := (fun x => x) : Type -> Type.
   Check anonid@{_}.
 
-  Definition defaultalg := (fun x : Type => x) (Type : Type).
+  Definition defaultalg := (fun x : Type@{*} => x) (Type@{*} : Type@{*}).
   Definition usedefaultalg := defaultalg@{_ _ _}.
-  Check usedefaultalg@{_ _}.
+  Check usedefaultalg@{_}.
 
-  Definition anonalg := (fun x : Type@{_} => x) (Type : Type).
+  Definition anonalg := (fun x : Type => x) (Type@{*} : Type@{*}).
   Check anonalg@{_ _}.
 
   Definition unrelated@{i j} := nat.
   Definition useunrelated := unrelated@{_ _}.
-  Check useunrelated@{_ _}.
+  Check useunrelated@{}.
 
-  Definition inthemiddle@{i j k} :=
+  Definition inthemiddle@{i j k | i <= j, j < k} :=
     let _ := defaultid@{i j} in
     anonalg@{k j}.
   (* i <= j < k *)
@@ -422,7 +421,7 @@ Module Restrict.
   (* Universes which don't appear in the term should be pruned, unless they have names *)
   Set Universe Polymorphism.
 
-  Ltac exact0 := let x := constr:(Type) in exact 0.
+  Ltac exact0 := let x := constr:(Type@{_}) in exact 0.
   Definition dummy_pruned@{} : nat := ltac:(exact0).
 
   Definition named_not_pruned@{u} : nat := 0.
@@ -449,24 +448,23 @@ Module F.
 End F.
 
 Set Universe Polymorphism.
-
 Cumulative Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
 
 Section test_letin_subtyping.
-  Universe i j k i' j' k'.
+  Universe i j i' j'.
   Constraint j < j'.
 
-  Context (W : Type) (X : box@{i j k} W).
-  Definition Y := X : box@{i' j' k'} W.
+  Context (W : Type) (X : box@{i j} W).
 
-  Universe i1 j1 k1 i2 j2 k2.
+  Definition Y := X : box@{i' j'} W.
+
+  Universe i1 j1 i2 j2.
   Constraint i1 < i2.
-  Constraint k2 < k1.
   Context (V : Type).
 
-  Definition Z : box@{i1 j1 k1} V := {| unwrap := V |}.
-  Definition Z' : box@{i2 j2 k2} V := {| unwrap := V |}.
-  Lemma ZZ' : @eq (box@{i2 j2 k2} V) Z Z'.
+  Definition Z : box@{i1 j1} V := {| unwrap := V |}.
+  Definition Z' : box@{i2 j2} V := {| unwrap := V |}.
+  Lemma ZZ' : @eq (box@{i2 j2} V) Z Z'.
   Proof.
     Set Printing All. Set Printing Universes.
     cbv.
@@ -479,13 +477,15 @@ Module ObligationRegression.
   (** Test for a regression encountered when fixing obligations for
       stronger restriction of universe context. *)
   Require Import CMorphisms.
-  Check trans_co_eq_inv_arrow_morphism@{_ _ _ _ _  _ _}.
+  Check trans_co_eq_inv_arrow_morphism@{_ _ _ _}. (* FIXME one more univ?*)
 End ObligationRegression.
 
-Axiom poly@{i} : forall(A : Type@{i}) (a : A), unit.
+Module PolyCumul.
+Cumulative Axiom poly@{i} : forall(A : Type@{i}) (a : A), unit.
 
 Definition nonpoly := @poly True Logic.I.
 Definition check := nonpoly@{}.
+End PolyCumul.
 
 Module ProgramFixpoint.
 
@@ -511,7 +511,7 @@ Module EarlyPolyUniverseDeclarationCheck.
   Next Obligation. exact nat. Defined.
 
   Fail Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=
-    match n with 0 => _ | S n => f'' (Type->A) n end.
+    match n with 0 => _ | S n => f'' (Type@{u}->A) n end.
 
   Local Set Universe Polymorphism.
   Program Fixpoint f''@{u} (A:Type@{u}) (n:nat) {measure n} : Type@{u} :=

@@ -1,4 +1,4 @@
-Require Import PrimInt63.
+From Corelib Require Import PrimInt63.
 
 Open Scope uint63_scope.
 

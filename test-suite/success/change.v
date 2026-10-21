@@ -48,7 +48,7 @@ Abort.
 
 (* Check typability after change of type subterms *)
 Goal nat = nat :> Set.
-Fail change nat with (@id Type nat). (* would otherwise be ill-typed *)
+Fail change nat with (@id Type@{1} nat). (* would otherwise be ill-typed *)
 Abort.
 
 (* Check typing env for rhs is the correct one *)

@@ -6,6 +6,8 @@ Set Warnings "+bad-relevance".
 
 (** Case inversion, conversion and universe polymorphism. *)
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
+
 Inductive IsTy@{i j} : Type@{j} -> SProp :=
   isty : IsTy Type@{i}.
 

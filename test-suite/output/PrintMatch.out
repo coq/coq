@@ -7,7 +7,7 @@ end
      : forall (A : Type@{u}) (a : A)
          (P : forall a0 : A, eqT@{u} a a0 -> Type@{u0}),
        P a (reflT@{u} a) -> forall (a0 : A) (e : eqT@{u} a a0), P a0 e
-(* u u0 |  *)
+(* u(= in 1st binder) u0(= in 3rd binder) |=  *)
 
 Arguments eqT_rect A%_type_scope a P%_function_scope reflT a0 e
 seq_rect =

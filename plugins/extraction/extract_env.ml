@@ -116,7 +116,7 @@ end
 
 let get_mono_inst_univs = function
 | Monomorphic -> [InfvInst.empty]
-| Polymorphic uctx -> InfvInst.generate uctx
+| Polymorphic (uctx, _variances) -> InfvInst.generate uctx
 
 let get_mono_inst = function
 | SFBconst cb -> get_mono_inst_univs cb.const_universes

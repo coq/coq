@@ -77,7 +77,7 @@ Module Comment2.
     intros; apply injective_projections; simpl; auto with morphism. (* Replacing [auto with morphism] with [apply @LeftIdentity] removes the error *)
   Defined.
 
-  Polymorphic Definition Cat0 : Category Empty_set.
+  Polymorphic Definition Cat0 : Category@{i j} Empty_set.
   refine {|
       Morphism := fun s d : Empty_set => s = d;
       Identity := fun o : Empty_set => eq_refl;

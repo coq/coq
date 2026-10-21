@@ -52,7 +52,7 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       | None -> Monomorphic_ind_entry
       | Some template -> template
       end
-    | Polymorphic auctx -> Polymorphic_ind_entry auctx
+    | Polymorphic (auctx, variances) -> Polymorphic_ind_entry (auctx, Option.map (fun v -> Check_variances v) variances)
   in
   let ntyps = Array.length mb.mind_packets in
   let mind_entry_params = match mb.mind_template with
@@ -98,14 +98,12 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       })
       mb.mind_packets
   in
-  let mind_entry_variance = Option.map (Array.map (fun v -> Some v)) mb.mind_variance in
   {
     mind_entry_record;
     mind_entry_finite = mb.mind_finite;
     mind_entry_params;
     mind_entry_inds;
     mind_entry_universes;
-    mind_entry_variance;
     mind_entry_private = mb.mind_private;
   }
 
@@ -120,7 +118,7 @@ let check_template ar1 ar2 = match ar1, ar2 with
   List.equal (Option.equal Sorts.equal) ar.template_param_arguments template_param_arguments &&
   check_abstract_uctx template_context ar.template_context &&
   Sorts.equal ar.template_concl template_concl &&
-  Instance.equal ar.template_defaults template_defaults
+  LevelInstance.equal ar.template_defaults template_defaults
 | None, Some _ | Some _, None -> false
 
 (* if the generated inductive is squashed the original one must be squashed *)
@@ -216,7 +214,7 @@ let check_inductive env mind mb retro =
   let entry = to_entry mind mb in
   let { mind_packets; mind_finite; mind_hyps; mind_univ_hyps;
         mind_nparams; mind_nparams_rec; mind_params_ctxt;
-        mind_universes; mind_template; mind_variance; mind_sec_variance;
+        mind_universes; mind_template; mind_sec_variance;
         mind_private; mind_typing_flags; }
     =
     (* Locally set typing flags for further typechecking *)
@@ -234,7 +232,7 @@ let check_inductive env mind mb retro =
   Array.iter2 (check_packet mind) mb.mind_packets mind_packets;
   check "mind_finite" (mb.mind_finite == mind_finite);
   check "mind_hyps" (List.is_empty mind_hyps);
-  check "mind_univ_hyps" (UVars.Instance.is_empty mind_univ_hyps);
+  check "mind_univ_hyps" (UVars.LevelInstance.is_empty mind_univ_hyps);
   check "mind_nparams" Int.(equal mb.mind_nparams mind_nparams);
 
   check "mind_nparams_rec" (mb.mind_nparams_rec <= mind_nparams_rec);
@@ -244,8 +242,6 @@ let check_inductive env mind mb retro =
   check "mind_params_ctxt" (Context.Rel.equal Sorts.relevance_equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
   ignore mind_universes; (* Indtypes did the necessary checking *)
   check "mind_template" (check_template mb.mind_template mind_template);
-  check "mind_variance" (Option.equal (Array.equal UVars.Variance.equal)
-                           mb.mind_variance mind_variance);
   check "mind_sec_variance" (Option.is_empty mind_sec_variance);
   ignore mind_private; (* passed through Indtypes *)
 

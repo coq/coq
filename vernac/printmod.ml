@@ -115,7 +115,8 @@ let print_as env ind indname = function
   | Name id -> if is_canonical_as env ind indname id then mt () else str " as " ++ Id.print id
 
 let print_one_inductive env sigma mib ((_,i) as ind) =
-  let u = UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+  let ul = UVars.make_abstract_level_instance (Declareops.inductive_polymorphic_context mib) in
+  let u = UVars.Instance.of_level_instance ul in
   let mip = mib.mind_packets.(i) in
   let paramdecls = Inductive.inductive_paramdecls (mib,u) in
   let env_params, params = Namegen.make_all_rel_context_name_different env (Evd.from_env env) (EConstr.of_rel_context paramdecls) in
@@ -166,7 +167,7 @@ let pr_mutual_inductive_body env mind mib udecl =
   hov 0 (def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
            (print_one_inductive env sigma mib) inds ++ str "." ++
-         Printer.pr_universes sigma ?variance:mib.mind_variance mib.mind_universes)
+         Printer.pr_universes sigma mib.mind_universes)
 
 (** Modpaths *)
 

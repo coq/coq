@@ -675,6 +675,7 @@ let magically_constant_of_fixbody env sigma (reference, params) bd = function
           | Some csts ->
             let addqs l r (qs,us) = Sorts.QVar.Map.add l r qs, us in
             let addus l r (qs,us) = qs, Univ.Level.Map.add l r us in
+            let get_level u = Option.get (Universe.level u) in
             let subst = Set.fold (fun cst acc ->
                 match cst with
                 | QLeq _ | QElimTo _ -> assert false (* eq_constr_universes cannot produce QLeq nor QElimTo constraints *)
@@ -684,16 +685,16 @@ let magically_constant_of_fixbody env sigma (reference, params) bd = function
                     | _ -> assert false
                   in
                   addqs a b acc
-                  | ULub (u, v) | UWeak (u, v) -> addus u v acc
-                  | UEq (u, v) | ULe (u, v) ->
-                    (* XXX add something when qsort? *)
-                    let get u = match u with
-                    | Sorts.SProp | Sorts.Prop -> assert false
-                    | Sorts.Set -> Level.set
-                    | Sorts.Type u | Sorts.GSort (_, u)
-                    | Sorts.VSort (_, u) -> Option.get (Universe.level u)
-                    in
-                    addus (get u) (get v) acc)
+                | ULub (_, u, v) | UWeak (u, v) -> addus (get_level u) v acc
+                | UEq (u, v) | ULe (u, v) ->
+                  (* XXX add something when qsort? *)
+                  let get u = match u with
+                  | Sorts.SProp | Sorts.Prop -> assert false
+                  | Sorts.Set -> Universe.type0
+                  | Sorts.Type u | Sorts.GSort (_, u)
+                  | Sorts.VSort (_, u) -> u
+                  in
+                  addus (get_level (get u)) (get v) acc)
                 csts UVars.empty_sort_subst
             in
             let inst = UVars.subst_sort_level_instance subst u in

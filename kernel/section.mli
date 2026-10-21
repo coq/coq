@@ -60,7 +60,7 @@ val push_global : Environ.env -> poly:bool -> section_entry -> 'a t -> 'a t
 
 val section_qvar_count : _ t -> int
 
-val all_poly_univs : 'a t -> Instance.t
+val all_poly_univs : 'a t -> LevelInstance.t
 (** Returns all polymorphic universes, including those from previous
    sections. Earlier sections are earlier in the array.
 

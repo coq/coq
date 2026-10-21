@@ -18,14 +18,14 @@ Ltac call to "instantiate ( (ident) := (lglob) )" failed.
 
 File "./output/Errors.v", line 36, characters 19-20:
 The command has indeed failed with message:
-Cannot infer ?T in the partial instance "?T -> nat" found for the type of f.
-File "./output/Errors.v", line 37, characters 22-24:
+Cannot infer ?S in the partial instance "?S -> nat" found for the type of f.
+File "./output/Errors.v", line 35, characters 22-24:
 The command has indeed failed with message:
-Cannot infer ?T in the partial instance "?T -> nat" found for the implicit
-parameter A of id whose type is "Type".
-File "./output/Errors.v", line 38, characters 17-18:
+Cannot infer ?S in the partial instance "?S -> nat" found for the implicit
+parameter A of id whose type is "Set".
+File "./output/Errors.v", line 36, characters 17-18:
 The command has indeed failed with message:
-Cannot infer ?T in the partial instance "forall x : nat, ?T" found for the
+Cannot infer ?S in the partial instance "forall x : nat, ?S" found for the
 type of f in environment:
 x : nat
 File "./output/Errors.v", line 47, characters 5-23:
@@ -42,5 +42,5 @@ cannot be applied to the terms
  "n" : "Type"
  "n" : "Type"
 The 2nd term has type "Type" which should be a subtype of 
-"Set". (universe inconsistency: Cannot enforce Errors.57 <= Set)
+"Set". (universe inconsistency: Cannot enforce Errors.57 ≤ Set)
 

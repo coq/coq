@@ -95,11 +95,11 @@ type 'a constraint_function = 'a -> 'a -> t -> t
 let enforce_eq_univ u v c =
   (* We discard trivial constraints like u=u *)
   if Level.equal u v then c
-  else add_univ (u, UnivConstraint.Eq, v) c
+  else add_univ (Universe.make u, UnivConstraint.Eq, Universe.make v) c
 
 let enforce_leq_univ u v c =
   if Level.equal u v then c
-  else add_univ (u, UnivConstraint.Le, v) c
+  else add_univ (Universe.make u, UnivConstraint.Le, Universe.make v) c
 
 let enforce_elim_to q1 q2 csts =
   if QGraph.ElimTable.eliminates_to q1 q2 then csts

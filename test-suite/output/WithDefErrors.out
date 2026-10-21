@@ -13,5 +13,5 @@ Incorrect constraint for label "p": incompatible polymorphic binders: got
 File "./output/WithDefErrors.v", line 28, characters 0-51:
 The command has indeed failed with message:
 Incorrect constraint for label "x": the universe constraints are inconsistent:
-Cannot enforce y4.u0 < Set because Set < y4.u0 when comparing 
+Cannot enforce y4.u0+1 ≤ Set because 0 < 1 ≤ y4.u0 < y4.u0+1 when comparing
 "Type" and "Set"

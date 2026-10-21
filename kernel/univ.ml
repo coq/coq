@@ -71,7 +71,7 @@ module RawLevel =
 struct
 
   type t =
-    | Set
+    | Zero
     | Level of UGlobal.t
     | Var of int
 
@@ -80,16 +80,16 @@ struct
   let equal x y =
     x == y ||
       match x, y with
-      | Set, Set -> true
+      | Zero, Zero -> true
       | Level l, Level l' -> UGlobal.equal l l'
       | Var n, Var n' -> Int.equal n n'
       | _ -> false
 
   let compare u v =
     match u, v with
-    | Set, Set -> 0
-    | Set, _ -> -1
-    | _, Set -> 1
+    | Zero, Zero -> 0
+    | Zero, _ -> -1
+    | _, Zero -> 1
     | Level l1, Level l2 -> UGlobal.compare l1 l2
     | Level _, _ -> -1
     | _, Level _ -> 1
@@ -98,7 +98,7 @@ struct
   let hequal x y =
     x == y ||
       match x, y with
-      | Set, Set -> true
+      | Zero, Zero -> true
       | UGlobal.(Level { library = d; process = s; uid = n }, Level  { library = d'; process = s'; uid = n' }) ->
         n == n' && s==s' && d == d'
       | Var n, Var n' -> n == n'
@@ -107,7 +107,7 @@ struct
   open Hashset.Combine
 
   let hcons = function
-    | Set as x -> combinesmall 1 2, x
+    | Zero as x -> combinesmall 1 2, x
     | UGlobal.(Level { library = d; process = s; uid = n }) as x ->
       let hs, s' = CString.hcons s in
       let hd, d' = Names.DirPath.hcons d in
@@ -116,7 +116,7 @@ struct
     | Var n as x -> combinesmall 2 n, x
 
   let hash = function
-    | Set -> combinesmall 1 2
+    | Zero -> combinesmall 1 2
     | Var n -> combinesmall 2 n
     | Level l -> combinesmall 3 (UGlobal.hash l)
 
@@ -125,7 +125,7 @@ end
 module Level = struct
 
   type raw_level = RawLevel.t =
-  | Set
+  | Zero
   | Level of UGlobal.t
   | Var of int
 
@@ -157,18 +157,20 @@ module Level = struct
 
   let make l = snd @@ hcons { hash = RawLevel.hash l; data = l }
 
-  let set = make Set
+  let zero = make Zero
+  let set = zero
 
   let is_small x =
     match data x with
     | Level _ -> false
     | Var _ -> false
-    | Set -> true
+    | Zero -> true
 
-  let is_set x =
+  let is_zero x =
     match data x with
-    | Set -> true
+    | Zero -> true
     | _ -> false
+  let is_set = is_zero
 
   let compare u v =
     if u == v then 0
@@ -176,7 +178,7 @@ module Level = struct
 
   let to_string x =
     match data x with
-    | Set -> "Set"
+    | Zero -> "0"
     | Level l -> UGlobal.to_string l
     | Var n -> "Var(" ^ string_of_int n ^ ")"
 
@@ -248,17 +250,9 @@ module Level = struct
 
 end
 
-(* An algebraic universe [universe] is either a universe variable
-   [Level.t] or a formal universe known to be greater than some
-   universe variables and strictly greater than some (other) universe
-   variables
-
-   Universes variables denote universes initially present in the term
-   to type-check and non variable algebraic universes denote the
-   universes inferred while type-checking: it is either the successor
-   of a universe present in the initial term to type-check or the
-   maximum of two algebraic universes
-*)
+(* An algebraic universe [universe] is either a level expression
+   [LevelExpr.t] or a formal max() universe known to be greater than some
+   level expressions.  *)
 
 module Universe =
 struct
@@ -314,9 +308,15 @@ struct
       if is_small e then type1
       else (u, n + 1)
 
-    let pr_with f (v, n) =
-      if Int.equal n 0 then f v
-      else f v ++ str"+" ++ int n
+    let addn (u, n as e) k =
+      if Int.equal k 0 then e
+      else (u, k + n)
+
+    let pr f (l, n) =
+      if Int.equal n 0 then f l
+      else match Level.data l with
+      | RawLevel.Zero -> int n
+      | _ -> f l ++ str"+" ++ int n
 
     let is_level = function
       | (_v, 0) -> true
@@ -328,11 +328,11 @@ struct
 
     let get_level (v,_n) = v
 
-    let map f (v, n as x) =
-      let v' = f v in
-        if v' == v then x
-        else (v', n)
+    let hash = ExprHash.hash
 
+    module Self = struct type nonrec t = t let compare = compare end
+    module Map = CMap.Make(Self)
+    module Set = CSet.Make(Self)
   end
 
   type t = Expr.t list
@@ -341,7 +341,7 @@ struct
 
   let rec hash = function
   | [] -> 0
-  | e :: l -> Hashset.Combine.combinesmall (Expr.ExprHash.hash e) (hash l)
+  | e :: l  -> Hashset.Combine.combinesmall (Expr.ExprHash.hash e) (hash l)
 
   let equal x y = x == y || List.equal Expr.equal x y
 
@@ -357,13 +357,16 @@ struct
 
   let make l = tip (Expr.make l)
   let maken l n = tip (l, n)
-  let tip x = tip x
+
+  let of_expr l = tip l
+
+  let of_list x = x
 
   let pr f l = match l with
-    | [u] -> Expr.pr_with f u
+    | [u] -> Expr.pr f u
     | _ ->
       str "max(" ++ hov 0
-        (prlist_with_sep pr_comma (Expr.pr_with f) l) ++
+        (prlist_with_sep pr_comma (Expr.pr f) l) ++
         str ")"
 
   let raw_pr l = pr Level.raw_pr l
@@ -387,6 +390,9 @@ struct
     in
     List.fold_left fold init l
 
+  let mem l u =
+    List.exists (fun (l', _) -> Level.equal l l') u
+
   let is_small u =
     match u with
     | [l] -> Expr.is_small l
@@ -399,7 +405,13 @@ struct
      hence the definition of [type1_univ], the type of [Prop] *)
   let type1 = tip Expr.type1
 
+  let var x = tip (Level.var x, 0)
+
   let is_type0 x = equal type0 x
+
+  let is_typen n = function
+    [(l, k)] -> Level.is_zero l && Int.equal k n
+    | _ -> false
 
   (* Returns the formal universe that lies just above the universe variable u.
      Used to type the sort u. *)
@@ -407,6 +419,11 @@ struct
     if is_small l then type1
     else
       List.Smart.map (fun x -> Expr.successor x) l
+
+  let addn l k =
+    assert (k >= 0);
+    if Int.equal k 0 then l
+    else List.Smart.map (fun x -> Expr.addn x k) l
 
   (* Returns the formal universe that is greater than the universes u and v.
      Used to type the products. *)
@@ -424,34 +441,71 @@ struct
       then h1 :: (sup t1 l2)
       else h2 :: (sup l1 t2)
 
+  let all_above n u =
+    List.for_all (fun (_l, k) -> k >= n) u
+
+  let canonize u =
+    match u with
+    | [] | [_] -> u
+    | (l, n) :: u' ->
+      if Level.is_zero l then
+        if Int.equal n 0 then u'
+        else if all_above n u' then u'
+        else u
+      else u
+
+  let sort u =
+    canonize (List.fold_right (fun a acc -> sup [a] acc) u [])
+
   let exists = List.exists
 
   let for_all = List.for_all
   let repr x : t = x
   let unrepr l =
     assert (not (List.is_empty l));
-    List.fold_right (fun a acc -> sup [a] acc) l []
+    sort l
 
-  let map f u =
-    let f = Expr.map f in
-    let u' = List.Smart.map f u in
-    if u == u' then u
+  let decompose_succ (x : t) : t option =
+    if List.for_all (fun (_, k) -> k > 0) x then
+      Some (List.map (fun (l, k) -> (l, pred k)) x)
+    else None
+
+  let make_subst_fn (m : t Level.Map.t) =
+    fun l ->
+      match Level.Map.find_opt l m with
+      | None -> make l
+      | Some u -> u
+
+  let subst_fn fn u =
+    let modified = ref false in
+    let rec aux u' = function
+      | [] -> u'
+      | (l, k as x) :: u ->
+        let univ = fn l in
+        if Option.equal Level.equal (level univ) (Some l) then aux (x :: u') u
+        else begin
+          modified := true;
+          aux (List.append (addn univ k) u') u
+        end
+    in
+    let u' = aux [] u in
+    if not !modified then u
     else unrepr u'
+
 end
 
+module LevelExpr = Universe.Expr
+
 module UnivConstraint = struct
-  type kind = AcyclicGraph.constraint_type = Lt | Le | Eq
+  type kind = Le | Eq
 
   let eq_kind c1 c2 =
     match c1, c2 with
-    | Lt, Lt | Le, Le | Eq, Eq -> true
+    | Le, Le | Eq, Eq -> true
     | _ -> false
 
   let compare_kind c1 c2 =
     match c1, c2 with
-    | Lt, Lt -> 0
-    | Lt, _ -> -1
-    | Le, Lt -> 1
     | Le, Le -> 0
     | Le, Eq -> -1
     | Eq, Eq -> 0
@@ -459,32 +513,30 @@ module UnivConstraint = struct
 
   let pr_kind op =
     let op_str = match op with
-      | Lt -> " < "
       | Le -> " <= "
       | Eq -> " = "
     in str op_str
 
   let hash_kind = function
-    | Lt -> 0
-    | Le -> 1
-    | Eq -> 2
+    | Le -> 0
+    | Eq -> 1
 
-  type t = Level.t * kind * Level.t
+  type t = Universe.t * kind * Universe.t
 
   let compare (u, c, v) (u', c', v') =
     let i = compare_kind c c' in
     if not (Int.equal i 0) then i
     else
-      let i' = Level.compare u u' in
+      let i' = Universe.compare u u' in
       if not (Int.equal i' 0) then i'
-      else Level.compare v v'
+      else Universe.compare v v'
 
   module Hstruct = struct
     type nonrec t = t
 
     let hashcons (l1,k,l2) =
-      let hl1, l1 = Level.hcons l1 in
-      let hl2, l2 = Level.hcons l2 in
+      let hl1, l1 = Universe.hcons l1 in
+      let hl2, l2 = Universe.hcons l2 in
       Hashset.Combine.(combinesmall (hash_kind k) (combine hl1 hl2)), (l1,k,l2)
 
     let eq (l1,k,l2) (l1',k',l2') =
@@ -503,7 +555,7 @@ struct
 
   let pr prl c =
     v 0 (prlist_with_sep spc (fun (u1,op,u2) ->
-      hov 0 (prl u1 ++ UnivConstraint.pr_kind op ++ prl u2))
+      hov 0 (Universe.pr prl u1 ++ UnivConstraint.pr_kind op ++ Universe.pr prl u2))
         (elements c))
 
   module Hconstraints = CSet.Hashcons(UnivConstraint)(struct
@@ -521,10 +573,16 @@ type 'a constraint_function = 'a -> 'a -> UnivConstraints.t -> UnivConstraints.t
 let enforce_eq_level u v c =
   (* We discard trivial constraints like u=u *)
   if Level.equal u v then c
-  else UnivConstraints.add (u,UnivConstraint.Eq,v) c
+  else UnivConstraints.add (Universe.make u,UnivConstraint.Eq,Universe.make v) c
 
 let enforce_leq_level u v c =
-  if Level.equal u v then c else UnivConstraints.add (u,UnivConstraint.Le,v) c
+  if Level.equal u v then c else UnivConstraints.add (Universe.make u,UnivConstraint.Le,Universe.make v) c
+
+let enforce u k v c =
+  if Universe.equal u v then c else UnivConstraints.add (u,k,v) c
+
+let enforce_eq u v c = enforce u UnivConstraint.Eq v c
+let enforce_leq u v c = enforce u UnivConstraint.Le v c
 
 (* Miscellaneous functions to remove or test local univ assumed to
    occur in a universe *)

@@ -1190,12 +1190,16 @@ let intern_sort ~local_univs (q,l) =
   Option.map (intern_quality ~local_univs) q,
   map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) l
 
+let intern_universe ~local_univs s =
+  let map l = List.map (on_fst (intern_sort_name ~local_univs)) l in
+  map_glob_sort_gen map s
+
 let intern_instance ~local_univs = function
-  | None -> None
-  | Some (qs, us) ->
-    let qs = List.map (intern_quality ~local_univs) qs in
-    let us = List.map (map_glob_sort_gen (intern_sort_name ~local_univs)) us in
-    Some (qs, us)
+| None -> None
+| Some (qs, us) ->
+  let qs = List.map (intern_quality ~local_univs) qs in
+  let us = List.map (intern_universe ~local_univs) us in
+  Some (qs, us)
 
 let intern_name_alias = function
   | { CAst.v = CRef(qid,u) } ->
@@ -1278,10 +1282,7 @@ let find_projection_data c =
   | GRef (GlobRef.ConstRef cst,us) -> Some (cst, us, [], Structure.projection_nparams (Global.env ()) cst)
   | _ -> None
 
-let glob_sort_of_level (level: glob_level) : glob_sort =
-  match level with
-  | UAnonymous _ as l -> None, l
-  | UNamed id -> None, UNamed [id, 0]
+let glob_sort_of_level (univ: glob_univ) : glob_sort = None, univ
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
@@ -3111,10 +3112,14 @@ let interp_known_level evd u =
   let u = intern_sort_name ~local_univs:{bound = bound_univs evd; unb_univs=false} u in
   known_glob_level evd u
 
-let interp_univ_constraint evd (u,c,v) =
-  let u = interp_known_level evd u in
-  let v = interp_known_level evd v in
-  u,c,v
+let interp_universe evd u =
+  let le = List.map (on_fst (interp_known_level evd)) u in
+  Univ.Universe.of_list le
+
+let interp_univ_constraint evd (u,(c, b) ,v) =
+  let u = interp_universe evd u in
+  let v = interp_universe evd v in
+  (if b then Univ.Universe.super u else u),c,v
 
 let interp_univ_constraints env evd cstrs =
   let interp (evd,cstrs) cstr =
@@ -3159,34 +3164,8 @@ let interp_elim_constraints env evd cstrs =
 
 let interp_univ_decl env decl =
   let open UState in
-  let evd = Evd.from_env env in
-  let evd, qualities = List.fold_left_map (fun evd lid ->
-      Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd)
-      evd
-      decl.univdecl_qualities
-  in
-  let evd, instance = List.fold_left_map (fun evd lid ->
-      Evd.new_univ_level_variable ?loc:lid.loc univ_rigid ~name:lid.v evd)
-      evd
-      decl.univdecl_instance
-  in
-  let evd, univ_cstrs = interp_univ_constraints env evd decl.univdecl_univ_constraints in
-  let evd, elim_cstrs = interp_elim_constraints env evd decl.univdecl_elim_constraints in
-  let decl = {
-    univdecl_qualities = qualities;
-    univdecl_extensible_qualities = decl.univdecl_extensible_qualities;
-    univdecl_elim_constraints = elim_cstrs;
-    univdecl_instance = instance;
-    univdecl_extensible_instance = decl.univdecl_extensible_instance;
-    univdecl_univ_constraints = univ_cstrs;
-    univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
-  }
-  in evd, decl
-
-let interp_cumul_univ_decl env decl =
-  let open UState in
-  let binders = List.map fst decl.univdecl_instance in
-  let variances = Array.map_of_list snd decl.univdecl_instance in
+  let binders = decl.univdecl_instance in
+  let variances = decl.univdecl_variances in
   let evd = Evd.from_env env in
   let evd, qualities = List.fold_left_map (fun evd lid ->
       Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd)
@@ -3206,20 +3185,21 @@ let interp_cumul_univ_decl env decl =
     univdecl_elim_constraints = elim_cstrs;
     univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
+    univdecl_variances = variances;
     univdecl_univ_constraints = univ_cstrs;
     univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
   }
   in
-  evd, decl, variances
+  let evd =
+    if not decl.univdecl_extensible_instance then
+      Evd.disable_universe_extension evd ~with_cstrs:(not decl.univdecl_extensible_constraints)
+    else evd
+  in
+  evd, decl
 
-let interp_univ_decl_opt env l =
-  match l with
+let interp_univ_decl_opt env = function
   | None -> Evd.from_env env, UState.default_univ_decl
   | Some decl -> interp_univ_decl env decl
-
-let interp_cumul_univ_decl_opt env = function
-  | None -> Evd.from_env env, UState.default_univ_decl, [| |]
-  | Some decl -> interp_cumul_univ_decl env decl
 
 let interp_mutual_univ_decl_opt env udecls =
   let udecl =
@@ -3231,6 +3211,9 @@ let interp_mutual_univ_decl_opt env udecls =
         let open UState in
         let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
         if not (CList.for_all2eq (fun x y -> Id.equal x.CAst.v y.CAst.v) lsu usu) then
+          CErrors.user_err Pp.(str "Mutual definitions should all have the same universe binders.");
+        let lsv = ls.univdecl_variances and usv = us.univdecl_variances in
+        if not (Option.equal (CList.for_all2eq (Option.equal UVars.Variance.equal)) lsv usv) then
           CErrors.user_err Pp.(str "Mutual definitions should all have the same universe binders.");
         Some us) udecls None
   in

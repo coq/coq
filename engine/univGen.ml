@@ -153,7 +153,8 @@ let fresh_instance auctx : _ in_sort_context_set =
       qinst
   in
   let uctx = Array.fold_right Level.Set.add uinst Level.Set.empty in
-  let inst = Instance.of_array (qinst,uinst) in
+  let inst = LevelInstance.of_array (qinst,uinst) in
+  let inst = Instance.of_level_instance inst in
   inst, ((qctx,uctx), AbstractContext.instantiate inst auctx)
 
 let existing_instance ?loc ~gref auctx inst =
@@ -191,7 +192,7 @@ let fresh_constructor_instance env c =
   (c, u), ctx
 
 let fresh_array_instance env =
-  let auctx = CPrimitives.typ_univs CPrimitives.PT_array in
+  let auctx, _variances = CPrimitives.typ_univs CPrimitives.PT_array in
   let u, ctx = fresh_instance_from auctx None in
   u, ctx
 
@@ -219,10 +220,10 @@ let fresh_sort_in_quality =
      let u = fresh_level () in
      sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u), PConstraints.empty)
 
-let fresh_sort_context_instance ((qs, us), csts) =
-  let ufold u (us, usubst) =
+let fresh_sort_context_instance ((qs,us),csts) =
+  let ufold u (univs',subst) =
     let u' = fresh_level () in
-    (Level.Set.add u' us, Level.Map.add u u' usubst)
+    (Level.Set.add u' univs', Level.Map.add u (Universe.make u') subst)
   in
   let qfold q (qs, qsubst) =
     let q' = fresh_sort_quality () in

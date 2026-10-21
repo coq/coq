@@ -5,7 +5,7 @@ Inductive foo : Type -> Type :=
 | bar : foo (foo unit)
 | baz : foo nat.
 
-Definition toto : forall A, foo A -> {A = foo unit} + {A = nat}.
+Definition toto : forall A : Type, foo A -> {A = foo unit} + {A = nat}.
 Proof.
   intros A x. destruct x; intuition.
 Defined.

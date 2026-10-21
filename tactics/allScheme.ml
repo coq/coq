@@ -949,7 +949,7 @@ let gen_all_one_ind cache suffix kn pos_ind ind u mib return_sorts key_inds key_
     mind_entry_lc = Array.to_list @@ Array.map (to_constr sigma) ctors_type;
   }
 
-let generate_all_aux cache suffix kn u sub_temp mib uparams strpos nuparams =
+let generate_all_aux cache ~poly ~udecl suffix kn u sub_temp mib uparams strpos nuparams =
   (* create fresh sorts, and return types *)
   let* fresh_sorts_ql = create_fresh_sorts_ql strpos in
   let* return_sorts = compute_return_sort kn u sub_temp mib uparams nuparams strpos fresh_sorts_ql in
@@ -967,11 +967,17 @@ let generate_all_aux cache suffix kn u sub_temp mib uparams strpos nuparams =
   in
   (* universes *)
   let* sigma = get_sigma in
+  let* env = get_env in
+  let sigma = UnivVariances.register_universe_variances_of_inductive env sigma ~udecl ~cumulative:(PolyFlags.cumulative poly)
+                ~params:ctxt_params
+                ~arities:(Array.map_to_list (fun x -> EConstr.of_constr x.mind_entry_arity) ind_bodies)
+                ~constructors:(Array.map_to_list (fun x -> x.mind_entry_consnames,  List.map EConstr.of_constr x.mind_entry_lc) ind_bodies)
+  in
   let uctx = Evd.ustate sigma in
   dbg Pp.(fun () -> str "Before Simpl, Ustate.t = " ++ UState.pr (Evd.ustate sigma) ++ str "\n");
   let uctx = UState.collapse_sort_variables ~only_above_prop:true uctx in
   let uctx = UState.normalize_variables uctx in
-  let uctx = UState.minimize uctx in
+  let uctx = UState.minimize ~partial:false uctx in
   dbg Pp.(fun () -> str "After Simpl, Ustate.t = " ++ UState.pr (Evd.ustate sigma) ++ str "\n");
   let (inst, auctx) = UVars.abstract_universes @@ UState.context uctx in
   let usubst = UVars.make_instance_subst inst in
@@ -985,15 +991,13 @@ let generate_all_aux cache suffix kn u sub_temp mib uparams strpos nuparams =
   in
   (* build mentry *)
   let mie =
-    let _qlen, ulen = UVars.UContext.size (UState.context uctx) in
     let mind_entry_params = CVars.subst_univs_level_context usubst (EConstr.to_rel_context sigma ctxt_params) in
     {
       mind_entry_record = None;
       mind_entry_finite = mib.mind_finite;
       mind_entry_params;
       mind_entry_inds = Array.to_list ind_bodies;
-      mind_entry_universes = Polymorphic_ind_entry auctx;
-      mind_entry_variance = Some (Array.make ulen None);
+      mind_entry_universes = Polymorphic_ind_entry (auctx, Some Infer_variances);
       mind_entry_private = mib.mind_private;
       }
   in
@@ -1022,8 +1026,13 @@ let generate_all_aux cache suffix kn u sub_temp mib uparams strpos nuparams =
 let generate_all_predicate env sigma kn u mib strpos suffix =
   let cache = Warning_scheme_all.empty_cache () in
   let (sigma, uparams, nuparams, sub_temp) = get_params_sep sigma mib u in
+  let open Declareops in
+  let univ_poly = inductive_is_polymorphic mib in
+  let poly = PolyFlags.make ~univ_poly ~cumulative:(inductive_is_cumulative mib)
+               ~collapse_sort_variables:(not univ_poly) in
+  let udecl = UState.default_univ_decl in
   dbg Pp.(fun () -> str "strpos = " ++ prlist_with_sep (fun () -> str ", ") bool strpos);
-  let (sigma, (uctx, mie)) = run env sigma @@ generate_all_aux cache suffix kn u sub_temp mib uparams strpos nuparams in
+  let (sigma, (uctx, mie)) = run env sigma @@ generate_all_aux cache ~poly ~udecl suffix kn u sub_temp mib uparams strpos nuparams in
   (uctx, mie)
 
 

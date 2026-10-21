@@ -30,7 +30,7 @@ type uniform_inductive_flag =
 val do_mutual_inductive
   : flags:flags
   -> ?typing_flags:Declarations.typing_flags
-  -> cumul_univ_decl_expr option
+  -> universe_decl_expr option
   -> (one_inductive_expr * notation_declaration list) list
   -> private_ind:bool
   -> uniform:uniform_inductive_flag
@@ -68,7 +68,7 @@ val interp_mutual_inductive
   :  env:Environ.env
   -> flags:flags
   -> ?typing_flags:Declarations.typing_flags
-  -> cumul_univ_decl_expr option
+  -> universe_decl_expr option
   -> (one_inductive_expr * notation_declaration list) list
   -> private_ind:bool
   -> uniform:uniform_inductive_flag
@@ -82,7 +82,6 @@ val interp_mutual_inductive_constr
   :  sigma:Evd.evar_map
   -> flags:flags
   -> udecl:UState.universe_decl
-  -> variances:Entries.variance_entry
   -> ctx_params:EConstr.rel_context
   -> indnames:Names.Id.t list
   -> arities_explicit:bool list
@@ -90,7 +89,7 @@ val interp_mutual_inductive_constr
   -> template_syntax:syntax_allows_template_poly list
   -> constructors:(Names.Id.t list * EConstr.constr list) list
   (** Names and types of constructors, not including parameters (as in kernel entries) *)
-  -> env_ar:Environ.env
+  -> env_ar_params:Environ.env
   (** Environment with the inductives in the rel_context *)
   -> private_ind:bool
   -> DeclareInd.default_dep_elim list
@@ -109,16 +108,6 @@ val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:
 (** [nparams] is the number of parameters which aren't treated as
     uniform, ie the length of params (including letins) where the env
     is [uniform params, inductives, params, binders]. *)
-
-val variance_of_entry
-  : cumulative:bool
-  -> variances:Entries.variance_entry
-  -> Entries.inductive_universes_entry
-  -> Entries.variance_entry option
-(** Will return None if non-cumulative, and resize if there are more
-    universes than originally specified.
-    If monomorphic, [cumulative] is treated as [false].
-*)
 
 module Internal :
 sig

@@ -1,5 +1,5 @@
 Notes on universe polymorphism
-------------------------------
+=========================================
 
 The implementation of universe polymorphism introduces a few changes
 to the API of Rocq. First and foremost, the term language changes, as
@@ -18,7 +18,7 @@ type constr = ...
 ~~~
 
 Universes
----------
+-----------
 
 Universe instances (an array of levels) gets substituted when
 unfolding definitions, are used to typecheck and are unified according
@@ -63,11 +63,14 @@ incrementally according to the constraints, so one should normalize at
 the end of a proof (or during a proof) with that substitution just like
 we normalize evars. There are some nf_* functions in
 library/universes.ml to do that. Additionally, there is a minimization
-algorithm in there that can be applied at the end of a proof to simplify
-the universe constraints used in the term. It is heuristic but
-validity-preserving. No user-introduced universe (i.e. coming from a
-user-written anonymous Type) gets touched by this, only the fresh
-universes generated for each global application. Using
+algorithm in there that is applied at the end of a definition / proof to simplify
+the universe constraints used in the term. This relies on a variance analysis that
+should be performed *before* calling minimization. Minimization is preserving
+principal types and convertibility: it should hence always preserve validity of
+constructions, while minimizing the number of universes involved. No user-introduced or in
+general `UState.rigid` universe (i.e. coming from a user-written Type@{i} or Type@[*} expression)
+ets touched by this, only the fresh universes generated for each global application and anonymous
+`Type` expressions (in universe polymorphism mode). Using
 ~~~ocaml
 val pf_constr_of_global : Globnames.global_reference -> (constr -> tactic) -> tactic
 ~~~
@@ -224,3 +227,26 @@ In tactics:
   universes. `change` uses conversion while `pattern` only does
   syntactic matching up-to unification of universes.
 - `apply`, `refine` use unification up to universes.
+
+Algebraic universes and variances (since Rocq 10)
+==============================================
+
+- When displaying goals, compaction of contexts is *not* done disregarding
+  universes (eq_constr in compact_named_context), resulting in potentially
+  different display.
+
+Calling minimization
+-------------------------
+
+Since Rocq 10, a new minimization algorithm relying on the variance information
+of universes has been introduced. This requires changing the way elaboration is
+performed on all constructions before sending them to the kernel.
+
+The `UnivVariances` module provides an API to compute the variances of various
+constructions (inductives, definitions, proofs, ...) and record them in the
+`evar_map`. It should be called just before minimization, to gather the
+information needed for sound simplification of universes.
+
+The warning `minimization-without-variances` (enabled by default) is raised if
+a code path calls minimization without registering variances. Turn it into an error
+and `Set Debug "backtrace"` to find out the incriminated call to minimization.

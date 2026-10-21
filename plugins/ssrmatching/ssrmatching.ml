@@ -1345,7 +1345,7 @@ let mk_in_pattern env sigma0 (x, rp) =
   | Some ist -> ist
   in
   let src = Loc.tag (BinderType (Name x)) in
-  let sigma, (ty, s) = Evarutil.new_type_evar env sigma Evd.univ_flexible_alg in
+  let sigma, (ty, s) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
   let na = Context.make_annot (Name x) (Retyping.relevance_of_sort s) in
   let nenv = EConstr.push_rel (Context.Rel.Declaration.LocalAssum (na, ty)) env in
   let sigma, rp0 = Tacinterp.interp_open_constr ist nenv sigma rp.pattern in

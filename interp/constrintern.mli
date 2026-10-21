@@ -260,7 +260,7 @@ val check_duplicate : ?loc:Loc.t -> (qualid * constr_expr) list -> unit
 
 val interp_univ_constraint
   : Evd.evar_map
-  -> sort_name_expr * Univ.UnivConstraint.kind * sort_name_expr
+  -> universe_expr * (Univ.UnivConstraint.kind * bool) * universe_expr
   -> Univ.UnivConstraint.t
 
 val interp_elim_constraint
@@ -273,11 +273,8 @@ val interp_univ_decl : Environ.env -> universe_decl_expr ->
   Evd.evar_map * UState.universe_decl
 
 val interp_univ_decl_opt : Environ.env -> universe_decl_expr option ->
-  Evd.evar_map * UState.universe_decl
-
-val interp_cumul_univ_decl_opt : Environ.env -> cumul_univ_decl_expr option ->
-  Evd.evar_map * UState.universe_decl * Entries.variance_entry
-(** BEWARE the variance entry needs to be adjusted by
+                                Evd.evar_map * UState.universe_decl
+(** BEWARE the variance entry in the declaration needs to be adjusted by
    [ComInductive.variance_of_entry] if the instance is extensible. *)
 
 val interp_mutual_univ_decl_opt : Environ.env -> universe_decl_expr option list ->

@@ -352,6 +352,10 @@ let set_unfold_height_heuristic b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with unfold_height_heuristic = b} senv
 
+let set_cumulativity_zeta b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with cumulativity_zeta = b } senv
+
 let set_VM b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with enable_VM = b } senv
@@ -1059,8 +1063,8 @@ let constant_entry_of_side_effect eff =
     match cb.const_universes with
     | Monomorphic ->
       Monomorphic_entry
-    | Polymorphic auctx ->
-      Polymorphic_entry auctx
+    | Polymorphic (auctx, variances) ->
+      Polymorphic_entry (auctx, Option.map (fun x -> Check_variances x) variances)
   in
   let p =
     match cb.const_body with
@@ -1162,7 +1166,7 @@ let export_private_constants eff senv =
     let (_, _, _, h) = Opaqueproof.repr o in
     let univs = match c.const_universes with
     | Monomorphic -> None
-    | Polymorphic auctx -> Some (UVars.AbstractContext.size auctx)
+    | Polymorphic (auctx, _variances) -> Some (UVars.AbstractContext.size auctx)
     in
     (* Hashcons now, before storing in the opaque table *)
     let _, body = match hbody with
@@ -1355,9 +1359,9 @@ let add_mind l mie senv =
   let senv = match mib.mind_template with
   | None -> senv
   | Some { template_context = ctx; template_defaults = u; _ } ->
-    let qs, levels = UVars.Instance.levels u in
+    let qs, levels = UVars.LevelInstance.levels u in
     let () = assert (Sorts.Quality.Set.for_all (fun q -> Sorts.Quality.equal Sorts.Quality.qtype q) qs) in
-    let (qctx, uctx) = UVars.AbstractContext.instantiate u ctx in
+    let (qctx, uctx) = UVars.AbstractContext.instantiate (UVars.Instance.of_level_instance u) ctx in
     let () = assert (Sorts.ElimConstraints.is_empty qctx) in
     (* Eliminiation constraints used to be pushed with QGraph.Static *)
     let senv = push_context_set ~strict:true (levels, uctx) senv in

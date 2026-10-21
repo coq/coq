@@ -286,7 +286,7 @@ let const_of_string = function
 
 let const_univs = function
   | Arraymaxlength
-  | Stringmaxlength -> AbstractContext.empty
+  | Stringmaxlength -> AbstractContext.empty, None
 
 type 'a prim_type =
   | PT_int63 : unit prim_type
@@ -307,14 +307,25 @@ and ind_or_type =
   | PITT_type : 'a prim_type * 'a -> ind_or_type
   | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
 
-let one_univ =
-  AbstractContext.make { quals = [||]; univs = Names.[|Name (Id.of_string "u")|]} PConstraints.empty
+let array_variances : UVars.variances =
+  let open VariancePair in
+  let open VarianceOccurrence in
+  UVars.(Variances.make
+    [| { VarianceOccurrence.default_occ with in_binders = Some { cumul_variance = Variance.Irrelevant; typing_variance = Variance.Irrelevant }, [0]; under_impred_qvars = Some Predicative } |])
+
+let array_univs : AbstractContext.t * Variances.t option =
+  let open VariancePair in
+  let open VarianceOccurrence in
+  AbstractContext.make { quals = [||]; univs = Names.[|Name (Id.of_string "u")|]} PConstraints.empty,
+  Some (Variances.make [| { default_occ with in_binders = Some { cumul_variance = Variance.Invariant; typing_variance = Variance.Contravariant }, [0];
+    in_type = Some { cumul_variance = Variance.Covariant; typing_variance = Variance.Covariant };
+    under_impred_qvars = Some Predicative } |])
 
 let typ_univs (type a) (t : a prim_type) = match t with
-  | PT_int63 -> AbstractContext.empty
-  | PT_float64 -> AbstractContext.empty
-  | PT_string -> AbstractContext.empty
-  | PT_array -> one_univ
+  | PT_int63 -> AbstractContext.empty, None
+  | PT_float64 -> AbstractContext.empty, None
+  | PT_string -> AbstractContext.empty, None
+  | PT_array -> array_univs
 
 type prim_type_ex = PTE : 'a prim_type -> prim_type_ex
 
@@ -327,7 +338,7 @@ let types =
   let array_ty =
     PITT_type
       (PT_array,
-       (Instance.of_array ([||],[|Level.var 0|]),
+       (Instance.of_array ([||],[|Universe.var 0|]),
         PITT_param 1))
   in
   function
@@ -467,6 +478,13 @@ let params = function
 
 let nparams x = List.length (params x)
 
+let array_ops_univs : AbstractContext.t * Variances.t option =
+  let open VariancePair in
+  let open VarianceOccurrence in
+  AbstractContext.make { quals = [||]; univs = Names.[|Name (Id.of_string "u")|] } PConstraints.empty,
+  Some (Variances.make [| { default_occ with in_binders = Some { cumul_variance = Variance.Invariant; typing_variance = Variance.Contravariant }, [0];
+    under_impred_qvars = Some Predicative } |])
+
 let univs = function
   | Int63head0
   | Int63tail0
@@ -522,14 +540,14 @@ let univs = function
   | Stringget
   | Stringsub
   | Stringcat
-  | Stringcompare -> AbstractContext.empty
+  | Stringcompare -> AbstractContext.empty, None
 
   | Arraymake
   | Arrayget
   | Arraydefault
   | Arrayset
   | Arraycopy
-  | Arraylength -> one_univ
+  | Arraylength -> array_ops_univs
 
 type arg_kind =
   | Kparam (* not needed for the evaluation of the primitive when it reduces *)

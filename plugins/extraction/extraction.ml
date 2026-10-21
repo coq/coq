@@ -109,7 +109,7 @@ let push_rels_assum assums =
 
 let qmono uctx inst lconstr = match uctx with
 | Monomorphic -> EConstr.of_constr lconstr
-| Polymorphic uctx ->
+| Polymorphic (uctx, _variances) ->
   let inst = InfvInst.instantiate uctx inst in
   let lconstr = Vars.subst_instance_constr inst lconstr in
   EConstr.of_constr lconstr
@@ -484,7 +484,7 @@ and extract_really_ind table env kn inst mib =
     in
     let env, u = match mib.mind_universes with
     | Monomorphic -> env, UVars.Instance.empty
-    | Polymorphic uctx ->
+    | Polymorphic (uctx, _variances) ->
       (* FIXME: we should probably push the levels *)
       env, InfvInst.instantiate uctx inst
     in

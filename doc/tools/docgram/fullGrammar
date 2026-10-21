@@ -1063,7 +1063,7 @@ opt_constructors_or_fields: [
 ]
 
 inductive_or_record_definition: [
-| opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
+| opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
 ]
 
 constructors_or_record: [

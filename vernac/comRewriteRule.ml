@@ -46,11 +46,12 @@ let do_symbol ~poly ~unfold_fix udecl (id, typ) =
       env evd typ
   in
   Pretyping.check_evars_are_solved ~program_mode:false env evd;
+  let evd = UnivVariances.register_universe_variances_of_type env evd typ in
   let evd = Evd.minimize_universes ~poly evd in
   let _qvars, uvars = EConstr.universes_of_constr evd typ in
   let evd = Evd.restrict_ustate evd uvars in
   let typ = EConstr.to_constr evd typ in
-  let univs = Evd.check_univ_decl ~poly evd udecl in
+  let univs = Evd.check_univ_decl ~poly ~kind:PolyFlags.Assumption evd udecl in
   let entry = Declare.symbol_entry ~univs ~unfold_fix typ in
   let kn = Declare.declare_constant ?loc ~name:id ~kind:Decls.IsSymbol (Declare.SymbolEntry entry) in
   let () = Impargs.maybe_declare_manual_implicits false (GlobRef.ConstRef kn) impls in
@@ -94,7 +95,7 @@ let update_invtblu1 ~loc evd lvlold lvl (curvaru, tbl) =
     | Some k ->
         CErrors.user_err ?loc
           Pp.(str "Universe variable "
-            ++ Termops.pr_evd_level evd lvlold
+            ++ Termops.pr_evd_universe evd lvlold
             ++ str" is bound multiple times in the pattern (holes number "
             ++ int k ++ str" and " ++ int curvaru ++ str").")
 
@@ -124,9 +125,12 @@ let update_invtblu ~loc evd (qsubst, usubst) (state, stateq, stateu : state) u :
   let stateq, maskq = Array.fold_left_map (safe_quality_pattern_of_quality ~loc evd qsubst) stateq q
   in
   let stateu, masku = Array.fold_left_map (fun stateu lvlold ->
-      let lvlnew = Univ.Level.var_index @@ UVars.subst_univs_level_level usubst lvlold in
-      Option.fold_right (update_invtblu1 ~loc evd lvlold) lvlnew stateu, lvlnew
-    ) stateu u
+   let levopt = Univ.Universe.level (UVars.subst_univs_level_universe usubst lvlold) in
+   match levopt with
+   | Some lev -> let lvlnew = Univ.Level.var_index lev in
+                 Option.fold_right (update_invtblu1 ~loc evd lvlold) lvlnew stateu, lvlnew
+   | None -> CErrors.user_err ?loc Pp.(str"Only level variables may appear in a universe pattern"))
+   stateu u
   in
   (state, stateq, stateu), (maskq, masku)
 
@@ -135,7 +139,8 @@ let universe_level_subst_var_index usubst u =
     | None -> None
     | Some lvlold ->
         let lvl = UVars.subst_univs_level_level usubst lvlold in
-        Option.map (fun lvl -> lvlold, lvl) @@ Univ.Level.var_index lvl
+        let optl = Option.cata Univ.Level.var_index None (Univ.Universe.level lvl) in
+        Option.map (fun lvl -> lvlold, lvl) optl
 
 let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s =
   let open Sorts in
@@ -144,7 +149,7 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
       begin match universe_level_subst_var_index usubst u with
       | None -> state, PSType None
       | Some (lvlold, lvl) ->
-        (st, sq, update_invtblu1 ~loc evd lvlold lvl su), PSType (Some lvl)
+        (st, sq, update_invtblu1 ~loc evd (Univ.Universe.make lvlold) lvl su), PSType (Some lvl)
       end
   | SProp -> state, PSSProp
   | Prop -> state, PSProp
@@ -152,14 +157,14 @@ let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s 
   | GSort (qg, u) ->
     let su, ba =
       match universe_level_subst_var_index usubst u with
-      | Some (lvlold, lvl) -> update_invtblu1 ~loc evd lvlold lvl su, Some lvl
+      | Some (lvlold, lvl) -> update_invtblu1 ~loc evd (Univ.Universe.make lvlold) lvl su, Some lvl
       | None -> su, None
     in
     (st, sq, su), PSGlobal (qg, ba)
   | VSort (qold, u) ->
     let su, ba =
       match universe_level_subst_var_index usubst u with
-      | Some (lvlold, lvl) -> update_invtblu1 ~loc evd lvlold lvl su, Some lvl
+      | Some (lvlold, lvl) -> update_invtblu1 ~loc evd (Univ.Universe.make lvlold) lvl su, Some lvl
       | None -> su, None
     in
     match Sorts.Quality.subst_fn qsubst qold with
@@ -419,6 +424,7 @@ let interp_rule ~collapse_sort_variables (udecl, lhs, rhs: Constrexpr.universe_d
       univdecl_elim_constraints = elim_cstrs;
       univdecl_instance = instance;
       univdecl_extensible_instance = udecl.univdecl_extensible_instance;
+      univdecl_variances = None; (* FIXME: MS *)
       univdecl_univ_constraints = univ_cstrs;
       univdecl_extensible_constraints = udecl.univdecl_extensible_constraints;
     } in
@@ -440,6 +446,7 @@ let interp_rule ~collapse_sort_variables (udecl, lhs, rhs: Constrexpr.universe_d
     undeclared_evars_rr = true; expand_evars = false;
     solve_unification_constraints = false; poly } in
   let evd, lhs, typ = Pretyping.understand_tcc_ty ~flags env evd lhs in
+  let evd = UnivVariances.register_universe_variances_of env evd ~typ lhs in
   let evd = Evd.minimize_universes ~poly evd in
   let _qvars, uvars = EConstr.universes_of_constr evd lhs in
   let evd = Evd.restrict_ustate evd uvars in
@@ -490,6 +497,7 @@ let interp_rule ~collapse_sort_variables (udecl, lhs, rhs: Constrexpr.universe_d
         Pp.(surround (str "the replacement term doesn't have the type of the pattern") ++ str "." ++ fnl () ++ Himsg.explain_pretype_error env' evd' e);
       Pretyping.understand_tcc ~flags env evd rhs
   in
+  let evd' = UnivVariances.register_universe_variances_of env evd' rhs in
   let evd' = Evd.minimize_universes ~poly evd' in
   let _qvars', uvars' = EConstr.universes_of_constr evd' rhs in
   let evd' = Evd.restrict_ustate evd' (Univ.Level.Set.union uvars uvars') in

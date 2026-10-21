@@ -176,3 +176,5 @@ val vernac_monomorphic_flag : Loc.t option -> vernac_flag
 (** For internal use. *)
 val universe_polymorphism_option_name : string list
 val is_universe_polymorphism : unit -> bool
+
+val cumulative : PolyFlags.construction_kind -> bool attribute

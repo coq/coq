@@ -18,8 +18,8 @@ Definition El (A : TYPE) : Type := Pack A.(wit) A.(rel).
 Definition Typeᶠ : TYPE := {|
   wit := fun _ => Type;
   rel := fun _ A => (forall ω : Ω, A ω) -> Type;
-                          |}.
-Set Printing Universes.
+  |}.
+
 Definition Typeᵇ : El Typeᶠ :=
   mkPack _ _ (fun w => Type) (fun w A => (forall ω, A ω) -> Type).
 
@@ -39,6 +39,6 @@ Error: Conversion test raised an anomaly
 Definition Typeᵇ' : El Typeᶠ.
 Proof.
 unshelve refine (mkPack _ _ _ _).
-+ refine (fun _ => Type).
++ simpl. refine (fun _ => Type).
 + simpl. refine (fun _ A => (forall ω, A ω) -> Type).
 Defined.

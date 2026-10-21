@@ -1,5 +1,5 @@
 Set Universe Polymorphism. Set Printing Universes.
-
+Monomorphic Universe aboveset.
 Module MultiInd.
   Section S.
     Universe u.
@@ -15,9 +15,10 @@ Module MultiInd.
   Cumulative Inductive I3@{u} := C3 (_:I2@{u}).
 
   (* alternative test without the variance syntax: *)
-  Fail Check C3@{Type} _ : I3@{Set}. (* should fail but doesn't *)
+  Fail Check C3@{Type} _ : I3@{Set}.
 
-  Check C3@{Set} _ : I3@{Type}.
+  (* should fail but doesn't *)
+  Fail Check C3@{aboveset} _ : I3@{Set}.
 End MultiInd.
 
 Module WithAxiom.
@@ -55,11 +56,13 @@ Module WithVars.
 
   Module Var.
     Section S.
-      Let X:=Type.
+      Universe i.
+      Let X:=Type@{i}.
       Cumulative Inductive foo := C (_:X).
     End S.
 
     Fail Cumulative Inductive bar@{*u} := C' (_:foo@{u}).
+
     Cumulative Inductive bar@{+u} := C' (_:foo@{u}).
   End Var.
 

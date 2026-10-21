@@ -76,7 +76,6 @@ Qed.
 Goal forall H : O = S O, H = H.
  discriminate H.
 Qed.
-
 Goal O = S O -> Unit.
 intros. discriminate H. Qed.
 Goal O = S O -> Unit.

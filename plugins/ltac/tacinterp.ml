@@ -182,6 +182,9 @@ let set_debug pos = debug := pos
 (* Gives the state of debug; disabled in worker processes *)
 let get_debug () = if Flags.async_proofs_is_worker () then DebugOff else !debug
 
+let get_poly () =
+  PolyFlags.of_univ_poly (Attributes.is_universe_polymorphism ())
+
 let log_trace = ref false
 
 let is_traced () =
@@ -2014,7 +2017,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
 
 let default_ist () =
   let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
-  { lfun = Id.Map.empty; poly = PolyFlags.default; extra = extra }
+  let poly = get_poly () in
+  { lfun = Id.Map.empty; poly; extra = extra }
 
 let eval_tactic t =
   if get_debug () <> DebugOff then

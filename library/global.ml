@@ -195,7 +195,7 @@ let body_of_constant_body access cb =
   | Def c ->
     let u = match cb.const_universes with
     | Monomorphic -> Opaqueproof.PrivateMonomorphic ()
-    | Polymorphic auctx -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
+    | Polymorphic (auctx, _) -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
     in
     Some (c, u, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
@@ -228,6 +228,9 @@ let env_of_context hyps =
 let is_polymorphic r =
   Environ.is_polymorphic (env()) r
 
+let is_cumulative r =
+  Environ.is_cumulative (env()) r
+
 let is_template_polymorphic r =
   Environ.is_template_polymorphic (env ()) r
 
@@ -254,6 +257,9 @@ let set_unfold_dep_heuristic b =
 
 let set_unfold_height_heuristic b =
   globalize0 (Safe_typing.set_unfold_height_heuristic b)
+
+let set_cumulativity_zeta b =
+  globalize0 (Safe_typing.set_cumulativity_zeta b)
 
 let set_VM b = globalize0 (Safe_typing.set_VM b)
 let set_native_compiler b = globalize0 (Safe_typing.set_native_compiler b)

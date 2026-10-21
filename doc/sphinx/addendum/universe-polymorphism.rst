@@ -530,7 +530,7 @@ Explicit Universes
    universe_name ::= @qualid
    | Set
    | Prop
-   univ_annot ::= @%{ {* @univ_level_or_quality } {? ; {* @univ_level_or_quality } } %}
+   univ_annot ::= @%{ {* @univ_or_quality } {? ; {* @univ_or_quality } } %}
    univ_level_or_quality ::= 0
    | Set
    | SProp
@@ -582,6 +582,16 @@ to universes and explicitly instantiate polymorphic definitions.
 
    .. exn:: Polymorphic universe constraints can only be declared inside sections, use Monomorphic Constraint instead
       :undocumented:
+
+.. cmd:: Check Constraint {+, @univ_constraint }
+
+   Checks if a list of constraints hold in the current universe context, in which case the command
+   succeeds.
+
+   .. exn:: Constraint does not hold.
+
+      One can use :cmd:`Fail` before the :cmd:`Check Constraint`
+      command to check that a list of constraints does not hold.
 
 .. _printing-universes:
 
@@ -679,7 +689,7 @@ by adding a :g:`+` in the list of bound universe levels:
 
 .. rocqtop:: all
 
-   Fail Definition foobar@{u} : Type@{u} := Type.
+   Fail Definition foobar@{u} : Type@{u} := Type@{_}.
    Definition foobar@{u +} : Type@{u} := Type.
    Set Printing Universes.
    Print foobar.
@@ -728,7 +738,7 @@ underscore or by omitting the annotation to a polymorphic definition.
    .. rocqtop:: in
 
       Lemma foo@{i} : Type@{i}.
-      Proof. exact Type. Qed.
+      Proof. exact Type@{_}. Qed.
 
    .. rocqtop:: all
 
@@ -760,7 +770,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 
       Unset Private Polymorphic Universes.
 
-      Lemma bar : Type. Proof. exact Type. Qed.
+      Lemma bar : Type@{_}. Proof. exact Type@{_}. Qed.
 
    .. rocqtop:: all
 
@@ -1364,8 +1374,8 @@ sections, except in the following ways:
 
   .. rocqtop:: all
 
-     Fail Variable A : (Type@{i} : Type).
-     Polymorphic Variable A : (Type@{i} : Type).
+     Fail Variable A : (Type@{i} : Type@{_}).
+     Polymorphic Variable A : (Type@{i} : Type@{_}).
 
   (in the above example the anonymous :g:`Type` constrains polymorphic
   universe :g:`i` to be strictly smaller.)

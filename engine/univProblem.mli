@@ -26,13 +26,13 @@ type t =
   | QElimTo of Sorts.Quality.t * Sorts.Quality.t
   | ULe of Sorts.t * Sorts.t
   | UEq of Sorts.t * Sorts.t
-  | ULub of Level.t * Level.t
-  | UWeak of Level.t * Level.t
+  | ULub of UnivConstraint.kind * Universe.t * Universe.t
+  | UWeak of Universe.t * Universe.t
 
 val is_trivial : t -> bool
 
 (** Wrapper around the UGraph function to handle Prop *)
-val check_eq_level : UGraph.t -> Level.t -> Level.t -> bool
+val check_eq : UGraph.t -> Universe.t -> Universe.t -> bool
 
 module Set : sig
   include Set.S with type elt = t
@@ -49,4 +49,4 @@ val enforce_eq_instances_univs : bool -> Instance.t constraint_function
 
 val enforce_eq_qualities : Sorts.Quality.t array constraint_function
 
-val compare_cumulative_instances : Conversion.conv_pb -> Variance.t array -> Instance.t constraint_function
+val compare_cumulative_instances : ?flex:bool -> Conversion.conv_pb -> nargs:application -> Variances.t -> Instance.t constraint_function

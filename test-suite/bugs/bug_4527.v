@@ -15,6 +15,7 @@ Require Import Corelib.Init.Tactics.
 Import Corelib.Init.Notations.
 
 Global Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 
@@ -79,7 +80,6 @@ associativity) : function_scope.
 
 Inductive paths {A : Type} (a : A) : A -> Type :=
   idpath : paths a a.
-
 Arguments idpath {A a} , [A] a.
 
 Notation "x = y :> A" := (@paths A x y) : type_scope.
@@ -122,7 +122,7 @@ Arguments eissect {A B}%_type_scope f%_function_scope {_} _.
 Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3, format "f '^-1'") :
 function_scope.
 
-Inductive Unit : Type1 :=
+Inductive Unit@{i} : Type1@{i} :=
     tt : Unit.
 
 Local Open Scope path_scope.
@@ -146,8 +146,8 @@ Section Adjointify.
 
   Let issect' := fun x =>
     ap g (ap f (issect x)^)  @  ap g (isretr (f x))  @  issect x.
+    Let is_adjoint' (a : A) : isretr (f a) = ap f (issect' a).
 
-  Let is_adjoint' (a : A) : isretr (f a) = ap f (issect' a).
 admit.
 Defined.
 
@@ -166,7 +166,7 @@ End Adjointify.
     := match n with
          | O => Unit@{l}
          | S n => (forall (g : forall a, C (f a)),
-                     ExtensionAlong@{i j k l l} f C g) *
+                     ExtensionAlong@{i j k} f C g) *
                   forall (h k : forall b, C b),
                     ExtendableAlong n f (fun b => h b = k b)
        end.
@@ -196,7 +196,7 @@ Type@{i}),
 
   Parameter inO_equiv_inO@{u a i j k} :
       forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}) (U : Type@{j})
-             (T_inO : In@{u a i} O T) (f : T -> U) (feq : IsEquiv f),
+             (T_inO : In@{u a i} O T) (f : T -> U) (feq : IsEquiv@{i j} f),
 
         let gei := ((fun x => x) : Type@{i} -> Type@{k}) in
         let gej := ((fun x => x) : Type@{j} -> Type@{k}) in
@@ -204,7 +204,7 @@ Type@{i}),
 
   Parameter extendable_to_O@{u a i j k}
   : forall (O : ReflectiveSubuniverse@{u a}) {P : Type2le@{i a}} {Q :
-Type2le@{j a}} {Q_inO : In@{u a j} O Q},
+      Type2le@{j a}} {Q_inO : In@{u a j} O Q},
       ooExtendableAlong@{i i j k} (to O P) (fun _ => Q).
 
 End ReflectiveSubuniverses.
@@ -220,9 +220,10 @@ Arguments inO_equiv_inO {O} T {U} {_} f {_}.
 Global Existing Instance O_inO.
 
 Section ORecursion.
-  Context {O : ReflectiveSubuniverse}.
+  Universes Ou Oa.
+  Context {O : ReflectiveSubuniverse@{Ou Oa}}.
 
-  Definition O_indpaths {P Q : Type} {Q_inO : In O Q}
+  Definition O_indpaths@{i j +} {P : Type@{i}} {Q : Type@{j}} {Q_inO : In O Q}
              (g h : O P -> Q) (p : g o to O P == h o to O P)
   : g == h
   := (fst (snd (extendable_to_O O two) g h) p).1.
@@ -238,31 +239,38 @@ Section Reflective_Subuniverse.
   Universes Ou Oa.
   Context (O : ReflectiveSubuniverse@{Ou Oa}).
 
-    Definition inO_isequiv_to_O (T:Type)
-    : IsEquiv (to O T) -> In O T
-    := fun _ => inO_equiv_inO (O T) (to O T)^-1.
+  (* FIXME, regression or improvement from before? I think the minimization was too eager before *)
+  Definition inO_isequiv_to_O@{u u0} (T:Type@{u})
+    : IsEquiv@{u0 u0} (to@{Ou Oa u0} O T) -> In@{Ou Oa u0} O T
+    := fun H =>
+    @inO_equiv_inO@{Ou Oa u0 u0 u0} O (O_reflector@{Ou Oa u0} O T) T
+  (O_inO@{Ou Oa u0} O T)
+  (@equiv_inv@{u0 u0} T (O_reflector@{Ou Oa u0} O T) (to@{Ou Oa u0} O T) H)
+  (@isequiv_inverse@{u0 u0} T (O_reflector@{Ou Oa u0} O T)
+         (to@{Ou Oa u0} O T) H).
+
+    (* fun _ => inO_equiv_inO@{Ou Oa u0 u0 u0} (O T) (equiv_inv@{u0 u0} (to@{Ou Oa u0} O T)). *)
 
     Definition inO_to_O_retract (T:Type) (mu : O T -> T)
     : Sect (to O T) mu -> In O T.
     Proof.
+      Show Universes.
       unfold Sect; intros H.
       apply inO_isequiv_to_O.
       apply isequiv_adjointify with (g:=mu).
-      -
- refine (O_indpaths (to O T o mu) idmap _).
+      - refine (O_indpaths (to O T o mu) idmap _).
         intros x; exact (ap (to O T) (H x)).
-      -
- exact H.
+      - exact H.
     Defined.
 
-    Definition inO_paths@{i} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y :
+    Definition inO_paths@{i | Oa <= i} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y :
 S)    : In@{Ou Oa i} O (x=y).
     Proof.
-      simple refine (inO_to_O_retract@{i} _ _ _); intro u.
+      simple refine (inO_to_O_retract@{i i} _ _ _); intro u.
       -
  assert (p : (fun _ : O (x=y) => x) == (fun _=> y)).
         {
- refine (O_indpaths _ _ _); simpl.
+        refine (O_indpaths _ _ _); simpl.
           intro v; exact v.
 }
         exact (p u).

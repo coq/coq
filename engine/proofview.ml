@@ -898,11 +898,11 @@ let give_up =
 
 module Progress = struct
 
-  let eq_constr evd extended_evd =
-    Evarutil.eq_constr_univs_test ~evd ~extended_evd
+  let eq_constr env evd extended_evd =
+    Evarutil.eq_constr_univs_test env ~evd ~extended_evd
 
   (** equality function on hypothesis contexts *)
-  let eq_named_context_val sigma1 sigma2 ctx1 ctx2 =
+  let eq_named_context_val env sigma1 sigma2 ctx1 ctx2 =
     let r_eq _ _ = true (* ignore relevances *) in
     let c1 = EConstr.named_context_of_val ctx1 and c2 = EConstr.named_context_of_val ctx2 in
     (* should we check variable status? if x is secvar,
@@ -912,34 +912,34 @@ module Progress = struct
     let eq_named_declaration d1 d2 =
       match d1, d2 with
       | LocalAssum (i1,t1), LocalAssum (i2,t2) ->
-        Context.eq_annot Names.Id.equal r_eq i1 i2 && eq_constr sigma1 sigma2 t1 t2
+        Context.eq_annot Names.Id.equal r_eq i1 i2 && eq_constr env sigma1 sigma2 t1 t2
       | LocalDef (i1,c1,t1), LocalDef (i2,c2,t2) ->
-        Context.eq_annot Names.Id.equal r_eq i1 i2 && eq_constr sigma1 sigma2 c1 c2 &&
-        eq_constr sigma1 sigma2 t1 t2
+        Context.eq_annot Names.Id.equal r_eq i1 i2 && eq_constr env sigma1 sigma2 c1 c2
+        && eq_constr env sigma1 sigma2 t1 t2
       | _ ->
         false
     in
     (* NB: can't use List.equal because it shortcuts on physical equality *)
     List.for_all2eq eq_named_declaration c1 c2
 
-  let eq_evar_body (type a1 a2) sigma1 sigma2 (b1 : a1 Evd.evar_body) (b2 : a2 Evd.evar_body) =
+  let eq_evar_body (type a1 a2) env sigma1 sigma2 (b1 : a1 Evd.evar_body) (b2 : a2 Evd.evar_body) =
     let open Evd in
     match b1, b2 with
     | Evar_empty, Evar_empty -> true
-    | Evar_defined t1, Evar_defined t2 -> eq_constr sigma1 sigma2 t1 t2
+    | Evar_defined t1, Evar_defined t2 -> eq_constr env sigma1 sigma2 t1 t2
     | _ -> false
 
-  let eq_evar_concl (type a1 a2) sigma1 sigma2 (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
+  let eq_evar_concl (type a1 a2) env sigma1 sigma2 (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
     let open Evd in
     match Evd.evar_body e1, Evd.evar_body e2 with
-    | Evar_empty, Evar_empty -> eq_constr sigma1 sigma2 (Evd.evar_concl e1) (Evd.evar_concl e2)
+    | Evar_empty, Evar_empty -> eq_constr env sigma1 sigma2 (Evd.evar_concl e1) (Evd.evar_concl e2)
     | Evar_defined _, Evar_defined _ -> true
     | _ -> false
 
-  let eq_evar_info sigma1 sigma2 ei1 ei2 =
-    eq_evar_concl sigma1 sigma2 ei1 ei2 &&
-    eq_named_context_val sigma1 sigma2 (Evd.evar_hyps ei1) (Evd.evar_hyps ei2) &&
-    eq_evar_body sigma1 sigma2 (Evd.evar_body ei1) (Evd.evar_body ei2)
+  let eq_evar_info env sigma1 sigma2 ei1 ei2 =
+    eq_evar_concl env sigma1 sigma2 ei1 ei2 &&
+    eq_named_context_val env sigma1 sigma2 (Evd.evar_hyps ei1) (Evd.evar_hyps ei2) &&
+    eq_evar_body env sigma1 sigma2 (Evd.evar_body ei1) (Evd.evar_body ei2)
 
   let fast_eq_evar_body (type a1 a2) (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
     let open Evd in
@@ -966,17 +966,18 @@ module Progress = struct
     fast_eq_named_context_val (Evd.evar_hyps ei1) (Evd.evar_hyps ei2)
 
   (** Equality function on goals *)
-  let goal_equal ~evd ~extended_evd evar extended_evar =
+  let goal_equal env ~evd ~extended_evd evar extended_evar =
     let EvarInfo evi = Evd.find evd evar in
     let EvarInfo extended_evi = Evd.find extended_evd extended_evar in
     if fast_eq_evar_info evi extended_evi then
-      eq_evar_info evd extended_evd evi extended_evi
+      eq_evar_info env evd extended_evd evi extended_evi
     else false
 
 end
 
 let tclPROGRESS t =
   let open Proof in
+  tclENV >>= fun env ->
   Pv.get >>= fun initial ->
   t >>= fun res ->
   Pv.get >>= fun final ->
@@ -989,7 +990,7 @@ let tclPROGRESS t =
     quick_test ||
     (CList.same_length initial.comb final.comb &&
     Util.List.for_all2eq begin fun i f ->
-      Progress.goal_equal ~evd:initial.solution
+      Progress.goal_equal env ~evd:initial.solution
         ~extended_evd:final.solution (drop_state i) (drop_state f)
     end initial.comb final.comb)
   in

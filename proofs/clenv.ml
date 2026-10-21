@@ -55,12 +55,7 @@ let mk_clausenv env evd metam metas templval metaset templtyp = {
 }
 
 let merge_fsorts evd clenv =
-  let usubst = Evd.universe_subst evd in
-  (* Hackish check: the level is considered to be already fresh when it is not
-     part of the evarmap substitution. Other heuristics are more broken because
-     some parts of the UState API are not very clear about their invariants and
-     this is relied upon by e.g. Program. *)
-  let filter l = not (UnivFlex.mem l usubst) in
+  let filter l = not (Evd.is_declared_level evd l) in
   let fold accu marg = match marg.marg_templ with
   | None -> accu
   | Some (ctx, l) -> Univ.Level.Set.add l accu
@@ -153,7 +148,7 @@ let clenv_refresh env sigma ctx clenv =
     let fold (metas, sigma) marg = match marg.marg_templ with
     | None -> (metas, sigma), marg
     | Some (decls, _) ->
-      let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible_alg sigma in
+      let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible sigma in
       let t = it_mkProd_or_LetIn (mkType (Univ.Universe.make s)) decls in
       let name = Meta.meta_name clenv.metam marg.marg_meta in
       let metas = Meta.meta_declare marg.marg_meta t ~name metas in
@@ -238,7 +233,7 @@ let clenv_environments env sigma template bound t =
           | None :: templ -> sigma, t1, templ, None
           | Some _ :: templ ->
             let decls, _ = Reductionops.dest_arity env sigma t1 in
-            let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible_alg sigma in
+            let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible sigma in
             let t1 = EConstr.it_mkProd_or_LetIn (EConstr.mkType (Univ.Universe.make s)) decls in
             sigma, t1, templ, Some (decls, s)
           in

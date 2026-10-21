@@ -1,4 +1,5 @@
 Set Universe Polymorphism.
+Unset Strict Universe Declaration.
 Notation Type1 := ltac:(let U := constr:(Type) in let gt := constr:(Set : U) in exact U) (only parsing).
 Inductive Empty : Type1 := .
 Fail Check Empty : Set.

@@ -23,6 +23,7 @@ let set_local_flags flags env =
     share_reduction = flags.share_reduction;
     unfold_dep_heuristic = flags.unfold_dep_heuristic;
     unfold_height_heuristic = flags.unfold_height_heuristic;
+    cumulativity_zeta = flags.cumulativity_zeta;
     allow_uip = flags.allow_uip;
     (* These flags may not *)
     enable_VM = envflags.enable_VM;

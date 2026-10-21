@@ -553,7 +553,6 @@ let mk_eq f c1 c2 k =
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sigma, ty = type_of env sigma c1 in
-    let sigma, ty = Evarsolve.refresh_universes (Some false) env sigma ty in
     let term = mkApp (fc, [| ty; c1; c2 |]) in
     let sigma, _ =  type_of env sigma term in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (k term)

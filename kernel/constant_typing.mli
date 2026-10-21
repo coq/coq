@@ -34,15 +34,15 @@ val infer_primitive : env -> primitive_entry -> ('a, unit) pconstant_body
 val infer_symbol : env -> symbol_entry -> ('a, unit) pconstant_body
 
 val infer_parameter :
-  sec_univs:UVars.Instance.t option -> env -> parameter_entry ->
+  sec_univs:UVars.LevelInstance.t option -> env -> parameter_entry ->
     ('a, unit) pconstant_body
 
 val infer_definition :
-  sec_univs:UVars.Instance.t option -> env -> definition_entry ->
+  sec_univs:UVars.LevelInstance.t option -> env -> definition_entry ->
     HConstr.t option * ('a, unit) pconstant_body
 
 val infer_opaque :
-  sec_univs:UVars.Instance.t option -> env -> 'a opaque_entry ->
+  sec_univs:UVars.LevelInstance.t option -> env -> 'a opaque_entry ->
     (unit, unit) pconstant_body * typing_context
 
 val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output ->

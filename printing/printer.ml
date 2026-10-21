@@ -272,29 +272,30 @@ let pr_sort_context_set sigma c =
   else
     mt()
 
-let pr_universe_ctx sigma ?variance c =
+let pr_universe_ctx sigma ?variances c =
   if !PrintingFlags.print_universes && not (UVars.UContext.is_empty c) then
     fnl()++
     pr_in_comment
       (v 0
-         (UVars.UContext.pr (Evd.sort_printer sigma) ?variance c))
+         (UVars.UContext.pr (Evd.sort_printer sigma) ?variances c))
   else
     mt()
 
-let pr_abstract_universe_ctx sigma ?variance ?priv c =
+let pr_abstract_universe_ctx sigma ?variances ?priv c =
   let priv = Option.default Univ.ContextSet.empty priv in
   let has_priv = not (Univ.ContextSet.is_empty priv) in
   if !PrintingFlags.print_universes && (not (UVars.AbstractContext.is_empty c) || has_priv) then
     let prlev u = Termops.pr_evd_level sigma u in
-    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (UVars.AbstractContext.pr (Evd.sort_printer sigma) ?variance c) in
+    let variances = if PrintingFlags.print_variances () then variances else None in
+    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (UVars.AbstractContext.pr (Evd.sort_printer sigma) ?variances c) in
     let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.ContextSet.pr prlev priv) else mt() in
     fnl()++pr_in_comment (pub ++ priv)
   else
     mt()
 
-let pr_universes sigma ?variance ?priv = function
+let pr_universes sigma ?priv = function
   | Declarations.Monomorphic -> mt ()
-  | Declarations.Polymorphic ctx -> pr_abstract_universe_ctx sigma ?variance ?priv ctx
+  | Declarations.Polymorphic (ctx, variances) -> pr_abstract_universe_ctx sigma ?variances ?priv ctx
 
 (**********************************************************************)
 (* Global references *)
@@ -313,8 +314,7 @@ let pr_abstract_universe_binder evd auctx =
     else
       h (Instance.pr printer (UContext.instance uctx) ++ str " | ") ++
       h (v 0 (PConstraints.pr printer (UContext.constraints uctx)))
-  in
-  str"@{" ++ pp ++ str"}"
+  in pp
 
 let pr_universe_instance evd inst =
   str "@{" ++ UVars.Instance.pr (Evd.sort_printer evd) inst ++ str "}"

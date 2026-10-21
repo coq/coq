@@ -16,7 +16,7 @@ End S.
 Fail Primitive xx : nat := #int63_type.
 
 (* non-cumulative conversion *)
-Fail Primitive xx : Type := #int63_type.
+Fail Primitive xx : Type@{*} := #int63_type.
 
 (* check evars *)
 Fail Primitive xx : let x := _ in Set := #int63_type.
@@ -65,5 +65,5 @@ Fail Primitive array@{u | Set < u} : Type@{u} -> Type@{u} := #array_type.
 
 (* unification works for polymorphic primitives too (although universe
    counts mean it's not enough) *)
-Fail Primitive array : let x := Type in _ -> Type := #array_type.
+Fail Primitive array : let x := Type@{*} in _ -> Type@{*} := #array_type.
 Primitive array : _ -> Type := #array_type.

@@ -1,27 +1,27 @@
 File "./output/DeclareSort.v", line 4, characters 35-36:
 The command has indeed failed with message:
 In environment
-A : Univ@{s ; _}
-The term "A" has type "Univ@{s ; _}" while it is expected to have type
- "Univ@{s' ; _}"
-(universe inconsistency: Cannot enforce Type@{s; Set} <=
-Type@{s'; DeclareSort.21}).
+A : Type@{s ; _}
+The term "A" has type "Type@{s ; _}" while it is expected to have type
+ "Type@{s' ; _}"
+(universe inconsistency: Cannot enforce Type@{s ; 0} ≤
+Type@{s' ; DeclareSort.21}).
 File "./output/DeclareSort.v", line 6, characters 35-36:
 The command has indeed failed with message:
 In environment
-A : Univ@{s ; _}
-The term "A" has type "Univ@{s ; _}" while it is expected to have type 
-"Type" (universe inconsistency: Cannot enforce Type@{s; Set} <=
+A : Type@{s ; _}
+The term "A" has type "Type@{s ; _}" while it is expected to have type 
+"Type" (universe inconsistency: Cannot enforce Type@{s ; 0} ≤
 DeclareSort.22).
 File "./output/DeclareSort.v", line 8, characters 26-27:
 The command has indeed failed with message:
 In environment
 A : Set
 The term "A" has type "Set" while it is expected to have type 
-"Univ@{s ; _}" (universe inconsistency: Cannot enforce Set <=
-Type@{s; DeclareSort.23}).
-fun A : Univ@{s ; _} => A : Univ@{s ; _}
-     : Univ@{s ; _} -> Univ@{s ; _}
+"Type@{s ; _}" (universe inconsistency: Cannot enforce Set ≤
+Type@{s ; DeclareSort.23}).
+fun A : Type@{s ; _} => A : Type@{s ; _}
+     : Type@{s ; _} -> Type@{s ; _}
 File "./output/DeclareSort.v", line 15, characters 2-15:
 The command has indeed failed with message:
 Cannot declare global sort qualities inside sections.
@@ -33,39 +33,29 @@ foo is universe polymorphic
 Arguments foo _%_type_scope
 Expands to: Constant DeclareSort.foo
 Declared in library DeclareSort, line 19, characters 8-11
-foo@{S2 ; } : Univ@{S1 ; Set} -> Univ@{S2 ; Set}
-(* S2 ;  |  *)
+foo@{S2 ; } : Type@{S1 ; 0} -> Type@{S2 ; 0}
+(* S2 ;  |=  *)
 
 foo is universe polymorphic
 Arguments foo _%_type_scope
 Expands to: Constant DeclareSort.foo
 Declared in library DeclareSort, line 19, characters 8-11
-foo@{SProp ; } : Univ@{S1 ; Set} -> SProp
-     : Univ@{S1 ; Set} -> SProp
-(* {DeclareSort.25} | Set < DeclareSort.25
-Minimized universes:
- DeclareSort.25 := Set+1
-Normalized constraints:
-  *)
-foo@{Type ; } : Univ@{S1 ; Set} -> Set
-     : Univ@{S1 ; Set} -> Set
-(* {DeclareSort.26} | Set < DeclareSort.26
-Minimized universes:
- DeclareSort.26 := Set+1
-Normalized constraints:
-  *)
+foo@{SProp ; } : Type@{S1 ; 0} -> SProp
+     : Type@{S1 ; 0} -> SProp
+foo@{Type ; } : Type@{S1 ; 0} -> Set
+     : Type@{S1 ; 0} -> Set
 File "./output/DeclareSort.v", line 30, characters 11-14:
 The command has indeed failed with message:
-The term "foo@{α6 ; }" has type "Univ@{S1 ; Set} -> Univ@{α6 ; Set}"
+The term "foo@{α6 ; }" has type "Type@{S1 ; 0} -> Type@{α6 ; 0}"
 while it is expected to have type "SProp -> ?T"
-(universe inconsistency: Cannot enforce SProp <= Type@{S1; Set}).
+(universe inconsistency: Cannot enforce SProp ≤ Type@{S1 ; 0}).
 File "./output/DeclareSort.v", line 31, characters 11-14:
 The command has indeed failed with message:
-The term "foo@{α8 ; }" has type "Univ@{S1 ; Set} -> Univ@{α8 ; Set}"
+The term "foo@{α8 ; }" has type "Type@{S1 ; 0} -> Type@{α8 ; 0}"
 while it is expected to have type "Set -> ?T"
-(universe inconsistency: Cannot enforce Set <= Type@{S1; Set}).
-foo@{Type ; } : Univ@{S1 ; Set} -> Set
-     : Univ@{S1 ; Set} -> Set
+(universe inconsistency: Cannot enforce Set ≤ Type@{S1 ; 0}).
+foo@{Type ; } : Type@{S1 ; 0} -> Set
+     : Type@{S1 ; 0} -> Set
 File "./output/DeclareSort.v", line 36, characters 4-18:
 The command has indeed failed with message:
 Cannot declare global sort qualities inside module types.

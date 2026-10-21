@@ -96,9 +96,11 @@ let () =
       optwrite = (fun b -> rewriting_flag := b) }
 
 (* Util *)
-let define ~poly ?loc name sigma c types =
+let define ~poly ~cumulative ?loc name sigma c types =
   let poly =
-    PolyFlags.of_univ_poly poly (* FIXME sortpoly and cumulative not supported *)
+    PolyFlags.make ~univ_poly:poly
+      ~collapse_sort_variables:true (* FIXME sort_poly not supported *)
+      ~cumulative
   in
   let info = Declare.Info.make ~poly () in
   let cinfo = Declare.CInfo.make ~name ~typ:types () in
@@ -396,16 +398,17 @@ let do_mutual_induction_scheme ~register ?(force_mutual=false) env ?(isrec=true)
           sigma, c)
         sigma lrecspec
   in
-  let poly =
+  let poly, cumulative =
     (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
        (force_mutual is about the generated schemes) *)
     let _,_,ind,_ = List.hd l in
-    Global.is_polymorphic (Names.GlobRef.IndRef ind)
+    Global.is_polymorphic (Names.GlobRef.IndRef ind),
+    Global.is_cumulative (Names.GlobRef.IndRef ind)
   in
   let is_mutual = isrec && List.length listdecl > 1 in
   let declare decl ({CAst.v=fi; loc},dep,ind, sort) =
     let decltype = Retyping.get_type_of env sigma decl in
-    let cst = define ?loc ~poly fi sigma decl (Some decltype) in
+    let cst = define ?loc ~poly ~cumulative fi sigma decl (Some decltype) in
     let kind =
       let open Elimschemes in
       let open UnivGen.QualityOrSet in
@@ -537,8 +540,10 @@ let do_combined_scheme name csts =
      polymorphism of the inductive block). In that case if they want
      some other polymorphism they can also manually define the
      combined scheme. *)
-  let poly = Global.is_polymorphic (Names.GlobRef.ConstRef (List.hd csts)) in
-  ignore (define ~poly ?loc:name.loc name.v sigma body (Some typ));
+  let gr = Names.GlobRef.ConstRef (List.hd csts) in
+  let poly = Global.is_polymorphic gr in
+  let cumulative = Global.is_cumulative gr in
+  ignore (define ~poly ~cumulative ?loc:name.loc name.v sigma body (Some typ));
   Declare.fixpoint_message None [name.v]
 
 (**********************************************************************)
@@ -567,10 +572,11 @@ let do_scheme_all_theorem kn mib kn_nested focus strpos sAllThm keyAllThm =
   let sigma, (_, u) = Evd.fresh_inductive_instance ~sort_rigid:true ~rigid:UState.univ_rigid env sigma (kn,focus) in
   let (sigma, thm) = AllScheme.generate_all_theorem env sigma kn kn_nested focus u mib strpos in
   (* universe *)
+  let sigma = UnivVariances.register_universe_variances_of env sigma thm in
   let uctx = Evd.ustate sigma in
   let uctx = UState.collapse_sort_variables ~only_above_prop:true uctx in
   let uctx = UState.normalize_variables uctx in
-  let uctx = UState.minimize uctx in
+  let uctx = UState.minimize ~partial:false uctx in
   let sigma = Evd.set_ustate sigma uctx in
   let thm = UState.nf_universes uctx (EConstr.to_constr sigma thm) in
   let uctx = UState.restrict uctx (Vars.universes_of_constr thm) in

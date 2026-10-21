@@ -272,6 +272,7 @@ let has_no_evar sigma =
   with Exit -> false
 
 let pr_evd_level sigma = UState.pr_uctx_level (Evd.ustate sigma)
+let pr_evd_universe sigma = Univ.Universe.pr (pr_evd_level sigma)
 
 let pr_evd_qglobal sigma = UState.pr_uctx_qglobal (Evd.ustate sigma)
 
@@ -281,7 +282,7 @@ let pr_evd_quality sigma q = Quality.pr (Evd.quality_printer sigma) q
 
 let reference_of_level sigma l = UState.qualid_of_level (Evd.ustate sigma) l
 
-let pr_evar_universe_context = UState.pr
+let pr_evar_universe_context = UState.pr ~local:false
 
 let print_env_short env sigma =
   let print_constr = Internal.print_kconstr in

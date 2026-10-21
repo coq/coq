@@ -145,16 +145,17 @@ let local_lookup_scheme eff kind ind = match lookup_scheme kind ind with
 let local_check_scheme kind ind { sch_eff = eff } =
   Option.has_some (local_lookup_scheme eff kind ind)
 
-let define ?loc internal role id c poly uctx sch =
+let define ?loc internal role id c ~poly env uctx sch =
   let avoid = Safe_typing.constants_of_private (Evd.seff_private sch.sch_eff) in
   let avoid = Id.Set.of_list @@ List.map (fun cst -> Constant.label cst) avoid in
   let id = compute_name internal id avoid in
   let uctx = UState.collapse_sort_variables ~only_above_prop:true uctx in
-  let uctx = UState.normalize_variables uctx in
-  let uctx = UState.minimize uctx in
-  let c = UState.nf_universes uctx c in
-  let uctx = UState.restrict uctx (Vars.universes_of_constr c) in
-  let univs = UState.univ_entry ~poly uctx in
+  let sigma = UnivVariances.register_universe_variances_of_constr env (Evd.from_ustate uctx) c in
+  let sigma = Evd.minimize_universes_no_collapse ~partial:false sigma in
+  let c = UState.nf_universes (Evd.ustate sigma) c in
+  let sigma = Evd.restrict_ustate sigma (Vars.universes_of_constr c) in
+  let variances = if PolyFlags.cumulative poly then Some Entries.Infer_variances else None in
+  let univs = Evd.univ_entry ~poly ?variances sigma in
   let effs = sch.sch_eff in
   let cst, effs = !declare_definition_scheme ~univs ~role ~name:id ~effs c in
   let reg = (id, cst, loc, univs) :: sch.sch_reg in
@@ -217,7 +218,7 @@ let rec define_individual_scheme_base ?loc kind suff f ~internal idopt (mind,i a
   let role = Evd.Schema (ind, kind) in
   let poly, cumulative = Declareops.inductive_is_polymorphic mib, Declareops.inductive_is_cumulative mib in
   let poly = PolyFlags.make ~univ_poly:poly ~cumulative ~collapse_sort_variables:true in
-  let const, eff = define ?loc internal role id c poly ctx eff in
+  let const, eff = define ?loc internal role id c ~poly env ctx eff in
   const, eff
 
 and define_individual_scheme ?loc kind ~internal names (mind,i as ind) eff =
@@ -241,9 +242,9 @@ and define_mutual_scheme_base ?(locmap=Locmap.default None) kind suff f ~interna
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in
     let loc = Locmap.lookup ~locmap (mind,i) in
-    (* FIXME cumulativity not supported? *)
-    let poly = PolyFlags.of_univ_poly (Declareops.inductive_is_polymorphic mib) in
-    let cst, effs = define ?loc internal role id cl poly ctx effs in
+    let univ_poly, cumulative = Declareops.inductive_is_polymorphic mib, Declareops.inductive_is_cumulative mib in
+    let poly = PolyFlags.make ~univ_poly ~cumulative ~collapse_sort_variables:true in
+    let cst, effs = define ?loc internal role id cl ~poly env ctx effs in
     (effs, cst)
   in
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in

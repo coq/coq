@@ -467,21 +467,17 @@ let rec ise_app_rev_stack2 env f evd revsk1 revsk2 =
 
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)
-let compare_cumulative_instances pbty evd variances u u' =
-  match Evarutil.compare_cumulative_instances pbty variances u u' evd with
-  | Inl evd ->
-    Success evd
-  | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
+let compare_cumulative_instances ~flex pbty evd ~nargs variances u u' =
+  match Evarutil.compare_cumulative_instances ~flex pbty ~nargs variances u u' evd with
+  | Inl evd -> Success evd
+  | Inr (UnivInconsistency p) -> UnifFailure (evd, UnifUnivInconsistency p)
+  | Inr UniversesDiffer -> UnifFailure (evd, NotSameHead)
 
 let compare_constructor_instances evd u u' =
   match Evarutil.compare_constructor_instances evd u u' with
   | Inl evd ->
     Success evd
   | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
-
-type application = FullyApplied | NumArgs of int
-
-let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal m n
 
 let compare_heads pbty env evd ~nargs term term' =
   let check_strict evd u u' =
@@ -496,13 +492,18 @@ let compare_heads pbty env evd ~nargs term term' =
   in
   match EConstr.kind evd term, EConstr.kind evd term' with
   | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
-    if is_applied nargs 1 && Environ.is_array_type env c
+    if UVars.is_applied nargs 1 && Environ.is_array_type env c
     then
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-      compare_cumulative_instances pbty evd [|UVars.Variance.Irrelevant|] u u'
+      compare_cumulative_instances ~flex:false pbty evd ~nargs:(NumArgs 1) CPrimitives.array_variances u u'
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-      check_strict evd u u'
+      let cst = lookup_constant env evd c in
+      (match Declareops.universes_variances cst.const_universes with
+      | Some variance ->
+        compare_cumulative_instances ~flex:(Declareops.constant_has_body cst)
+          pbty evd ~nargs variance u u'
+      | None -> check_strict evd u u')
   | Const _, Const _ -> UnifFailure (evd, NotSameHead)
   | Ind ((mi,i) as ind , u), Ind (ind', u') when QInd.equal env ind ind' ->
     if EInstance.is_empty u && EInstance.is_empty u' then Success evd
@@ -510,14 +511,13 @@ let compare_heads pbty env evd ~nargs term term' =
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       let mind = Environ.lookup_mind mi env in
       let open Declarations in
-      begin match mind.mind_variance with
+      begin match Declareops.universes_variances mind.mind_universes with
         | None -> check_strict evd u u'
         | Some variances ->
-          let needed = Conversion.inductive_cumulativity_arguments (mind,i) in
-          if not (is_applied nargs needed)
+          let needed = UCompare.inductive_cumulativity_arguments (mind,i) in
+          if not (UVars.is_applied nargs needed)
           then check_strict evd u u'
-          else
-            compare_cumulative_instances pbty evd variances u u'
+          else compare_cumulative_instances ~flex:false pbty ~nargs evd variances u u'
       end
   | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
   | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
@@ -527,11 +527,11 @@ let compare_heads pbty env evd ~nargs term term' =
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       let mind = Environ.lookup_mind mi env in
       let open Declarations in
-      begin match mind.mind_variance with
+      begin match Declareops.universes_variances mind.mind_universes with
         | None -> check_strict evd u u'
         | Some variances ->
-          let needed = Conversion.constructor_cumulativity_arguments (mind,ind,ctor) in
-          if not (is_applied nargs needed)
+          let needed = UCompare.constructor_cumulativity_arguments (mind,ind,ctor) in
+          if not (UVars.is_applied nargs needed)
           then check_strict evd u u'
           else compare_constructor_instances evd u u'
       end
@@ -1170,7 +1170,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              allow this identification (first-order unification of universes). Otherwise
              fallback to unfolding.
           *)
-          let univs = EConstr.eq_constr_universes env evd term1 term2 in
+          let nargs =
+            let n1 = Stack.args_size sk1 and n2 = Stack.args_size sk2 in
+            if Int.equal n1 n2 then n1
+            else 0
+          in
+          let univs =
+            if pbty == CONV then EConstr.eq_constr_universes env evd ~nargs term1 term2
+            else EConstr.leq_constr_universes env evd ~nargs term1 term2
+          in
           match univs with
           | Some univs ->
               ise_and i [(fun i ->

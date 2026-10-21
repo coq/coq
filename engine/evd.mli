@@ -545,23 +545,21 @@ val evars_of_filtered_evar_info : evar_map -> 'a evar_info -> Evar.Set.t
 
 (** Rigid or flexible universe variables.
 
-   [UnivRigid] variables are user-provided or come from an explicit
-   [Type] in the source, we do not minimize them or unify them eagerly.
+   [UnivRigid] variables are user-provided [explicit = true],
+   we do not minimize the rigid universes.
 
-   [UnivFlexible alg] variables are fresh universe variables of
+   [UnivFlexible] variables are fresh universe variables of
    polymorphic constants or generated during refinement, sometimes in
    algebraic position (i.e. not appearing in the term at the moment of
-   creation). They are the candidates for minimization (if alg, to an
-   algebraic universe) and unified eagerly in the first-order
-   unification heurstic.  *)
+   creation). They are the candidates for minimization and unified eagerly
+   in the first-order unification heurstic.  *)
 
 type rigid = UState.rigid =
   | UnivRigid
-  | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
+  | UnivFlexible
 
 val univ_rigid : rigid
 val univ_flexible : rigid
-val univ_flexible_alg : rigid
 
 type 'a in_ustate = 'a * UState.t
 
@@ -577,24 +575,27 @@ val is_relevance_irrelevant : evar_map -> erelevance -> bool
 
 val universe_binders : evar_map -> UnivNames.universe_binders
 
-val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
+val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> ?strict:bool -> rigid -> evar_map -> evar_map * Univ.Level.t
+val new_univ_variable : ?loc:Loc.t -> ?name:Id.t -> ?strict:bool -> rigid -> evar_map -> evar_map * Univ.Universe.t
 val new_quality_variable : ?loc:Loc.t -> ?name:Id.t -> evar_map -> evar_map * Sorts.QVar.t
 val new_sort_info : ?loc:Loc.t -> ?sort_rigid:bool -> ?name:Names.Id.t -> rigid -> evar_map -> evar_map * Sorts.QVar.t * Univ.Universe.t
 val new_sort_variable : ?loc:Loc.t -> ?sort_rigid:bool -> ?name:Names.Id.t -> rigid -> evar_map -> evar_map * esorts
 
 val add_forgotten_univ : evar_map -> Univ.Level.t -> evar_map
 
-val make_nonalgebraic_variable : evar_map -> Univ.Level.t -> evar_map
-(** See [UState.make_nonalgebraic_variable]. *)
+(* TODO remove: used in refresh universes only *)
+val universe_rigidity : evar_map -> Univ.Level.t -> rigid
 
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
+
+val is_declared_level : evar_map -> Univ.Level.t -> bool
 
 val normalize_universe_instance : evar_map -> einstance -> einstance
 
 val set_leq_sort : evar_map -> esorts -> esorts -> evar_map
 val set_eq_sort : evar_map -> esorts -> esorts -> evar_map
-val set_eq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
-val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
+val set_eq_univ : evar_map -> Univ.Universe.t -> Univ.Universe.t -> evar_map
+val set_leq_univ : evar_map -> Univ.Universe.t -> Univ.Universe.t -> evar_map
 val set_eq_instances : ?flex:bool ->
   evar_map -> einstance -> einstance -> evar_map
 
@@ -618,16 +619,16 @@ val sort_printer : evar_map -> Sorts.printer
 
 val universe_context_set : evar_map -> Univ.ContextSet.t
 val sort_context_set : evar_map -> UnivGen.sort_context_set
-val universe_subst : evar_map -> UnivFlex.t
 val universes : evar_map -> UGraph.t
 
 (** [to_universe_context evm] extracts the local universes and
     constraints of [evm] and orders the universes *)
 val to_universe_context : evar_map -> UVars.UContext.t
 
-val univ_entry : poly:PolyFlags.t -> evar_map -> UState.named_universes_entry
+val univ_entry : poly:PolyFlags.t -> ?variances:Entries.variance_declaration_entry -> evar_map -> UState.named_universes_entry
 
-val check_univ_decl : poly:PolyFlags.t -> evar_map -> UState.universe_decl -> UState.named_universes_entry
+val check_univ_decl : poly:PolyFlags.t -> kind:PolyFlags.construction_kind ->
+  evar_map -> UState.universe_decl -> UState.named_universes_entry
 
 (** An early check of compatibility of the universe declaration before
     starting to build a declaration interactively *)
@@ -660,10 +661,25 @@ val collapse_sort_variables : ?except:Sorts.QVar.Set.t -> only_above_prop:bool -
 
 val fix_undefined_variables : evar_map -> evar_map
 
-val minimize_universes_no_collapse : evar_map -> evar_map
+(** New rigid universes unsolved flexible universes are not allowed in the resulting evar_map.
+  In or constraints between them and
+  This ensures that the [universe context] of the [evar_map] cannot change anymore. *)
+val disable_universe_extension : evar_map -> with_cstrs:bool -> evar_map
+
+(** Variances *)
+
+val get_variances : evar_map -> InferCumulativity.variances option
+val set_variances : evar_map -> InferCumulativity.variances -> evar_map
+
+val minimize_universes_no_collapse : partial:bool -> evar_map -> evar_map
 
 (** Universe minimization *)
-val minimize_universes : ?poly:PolyFlags.t -> evar_map -> evar_map
+val minimize_universes :
+  ?poly:PolyFlags.t ->
+  ?partial:bool ->
+  (* Only partial information about universes is recorded in the evar_map (false by default).
+     In partial mode, minimization should only perform simplifications, not losing any solution. *)
+  evar_map -> evar_map
 
 (** Lift [UState.update_sigma_univs] *)
 val update_sigma_univs : UGraph.t -> evar_map -> evar_map

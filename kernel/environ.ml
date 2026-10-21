@@ -404,8 +404,7 @@ let expand_arity (mib, mip) (ind, u) params nas =
   let self =
     let u =
       if Option.has_some mib.mind_template then UVars.Instance.empty
-      else UVars.Instance.abstract_instance (UVars.Instance.length u)
-    in
+      else UVars.Instance.of_level_instance @@ UVars.LevelInstance.abstract_instance (UVars.Instance.length u) in
     let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
     mkApp (mkIndU (ind, u), args)
   in
@@ -581,18 +580,21 @@ let check_constraints (elim_csts,univ_csts) env =
   check_univ_constraints univ_csts env &&
     QGraph.check_constraints elim_csts env.env_qualities
 
+let _debug_environ, debug = CDebug.create_full ~name:"environ" ()
+
 let add_universes ~strict ctx g =
-  let _, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  debug Pp.(fun () -> str"Adding universe context" ++ UVars.pr_universe_context Sorts.raw_printer ctx);
+  let _, us = UVars.LevelInstance.to_array (UVars.UContext.instance ctx) in
   let g = Array.fold_left
-      (fun g v -> UGraph.add_universe ~strict v g)
+      (fun g v -> UGraph.add_universe ~strict ~rigid:true v g)
       g us
   in
-  UGraph.merge_constraints (UVars.UContext.univ_constraints ctx) g
+  fst (UGraph.merge_constraints (UVars.UContext.univ_constraints ctx) g)
 
 let set_qualities g env = {env with env_qualities = g}
 
 let add_qualities ctx g =
-  let qs, _ = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let qs, _ = UVars.LevelInstance.to_array (UVars.UContext.instance ctx) in
   let g = Array.fold_right QGraph.add_quality qs g in
   QGraph.merge_constraints (UVars.UContext.elim_constraints ctx) g
 
@@ -607,12 +609,13 @@ let check_ucontext ctx env =
     QGraph.check_rigid_paths qgraph
 
 let add_universes_set ~strict (lvl, cstr) g =
+  debug Pp.(fun () -> str"Adding universes context" ++ Univ.ContextSet.pr Univ.Level.raw_pr (lvl, cstr));
   let g = Univ.Level.Set.fold
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
-            (fun v g -> try UGraph.add_universe ~strict v g with UGraph.AlreadyDeclared -> g)
+            (fun v g -> try UGraph.add_universe ~strict ~rigid:true v g with UGraph.AlreadyDeclared -> g)
             lvl g
   in
-  UGraph.merge_constraints cstr g
+  fst (UGraph.merge_constraints cstr g)
 
 let push_context_set ?(strict=false) ctx env =
   map_universes (add_universes_set ~strict ctx) env
@@ -651,7 +654,7 @@ let restrict_subgraph levels univ_csts =
   let g = UGraph.initial_universes in
   let mentioned_univs =
     Univ.UnivConstraints.fold (fun (u,_,v) acc ->
-        Univ.Level.Set.(add u (add v acc)))
+        Univ.Level.Set.(union (Univ.Universe.levels u) (union (Univ.Universe.levels v) acc)))
       univ_csts
       (* do not forget Set: if we have preexisting univ u and new univ v with v < u,
          this implies Set < u.
@@ -659,7 +662,7 @@ let restrict_subgraph levels univ_csts =
       (Univ.Level.Set.singleton Univ.Level.set)
   in
   let g = Univ.Level.Set.fold (fun v g ->
-      if Univ.Level.is_set v then g else UGraph.add_universe ~strict:false v g)
+      if Univ.Level.is_set v then g else UGraph.add_universe ~strict:false ~rigid:true v g)
       mentioned_univs g
   in
   (* having to merge_constraints twice (here and in add_subgraph) is
@@ -669,15 +672,21 @@ let restrict_subgraph levels univ_csts =
   let kept = Univ.Level.Set.diff mentioned_univs levels in
   UGraph.constraints_for ~kept g
 
+let gather_new_constraints restricted g =
+  let _, failed = Univ.UnivConstraints.partition (UGraph.check_constraint g) restricted in
+  failed
+
 let push_subgraph (levels, univ_csts) env =
   let add_subgraph g =
-    let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~strict:false v g) levels g in
-    let newg = UGraph.merge_constraints univ_csts newg in
+    let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~strict:false ~rigid:true v g) levels g in
+    let newg, _equivs = UGraph.merge_constraints univ_csts newg in
     let () =
       if not (Univ.UnivConstraints.is_empty univ_csts) then
         let restricted = restrict_subgraph levels univ_csts in
-        (if not (UGraph.check_constraints restricted g) then
-           CErrors.anomaly Pp.(str "Local constraints imply new transitive constraints."))
+        let missing = gather_new_constraints restricted g in
+        (if not (Univ.UnivConstraints.is_empty missing) then
+           CErrors.anomaly Pp.(str "Local constraints imply new transitive constraints: " ++ fnl () ++
+            Univ.UnivConstraints.pr Univ.Level.raw_pr missing));
     in
     newg
   in
@@ -696,6 +705,7 @@ let same_flags {
      share_reduction;
      unfold_dep_heuristic;
      unfold_height_heuristic;
+     cumulativity_zeta;
      enable_VM;
      enable_native_compiler;
      impredicative_set;
@@ -711,6 +721,7 @@ let same_flags {
   share_reduction == alt.share_reduction &&
   unfold_dep_heuristic == alt.unfold_dep_heuristic &&
   unfold_height_heuristic == alt.unfold_height_heuristic &&
+  cumulativity_zeta == alt.cumulativity_zeta &&
   enable_VM == alt.enable_VM &&
   enable_native_compiler == alt.enable_native_compiler &&
   impredicative_set == alt.impredicative_set &&
@@ -922,6 +933,9 @@ let polymorphic_pconstant (cst,u) env =
   if UVars.Instance.is_empty u then false
   else polymorphic_constant cst env
 
+let cumulative_constant cst env =
+  Declareops.constant_is_cumulative (lookup_constant cst env)
+
 let type_in_type_constant cst env =
   not (lookup_constant cst env).const_typing_flags.check_universes
 
@@ -966,6 +980,9 @@ let polymorphic_ind (mind,_i) env =
 let polymorphic_pind (ind,u) env =
   if UVars.Instance.is_empty u then false
   else polymorphic_ind ind env
+
+let cumulative_ind (mind,_i) env =
+  Declareops.inductive_is_cumulative (lookup_mind mind env)
 
 let type_in_type_ind (mind,_i) env =
   not (lookup_mind mind env).mind_typing_flags.check_universes
@@ -1166,6 +1183,14 @@ let is_polymorphic env r =
   | IndRef ind -> polymorphic_ind ind env
   | ConstructRef cstr -> polymorphic_ind (inductive_of_constructor cstr) env
 
+let is_cumulative env r =
+  let open Names.GlobRef in
+  match r with
+  | VarRef _id -> false
+  | ConstRef c -> cumulative_constant c env
+  | IndRef ind -> cumulative_ind ind env
+  | ConstructRef cstr -> cumulative_ind (inductive_of_constructor cstr) env
+
 let is_template_polymorphic env r =
   let open Names.GlobRef in
   match r with
@@ -1184,6 +1209,17 @@ let is_type_in_type env r =
 
 let ind_ignores_elim_constraints env (mind, _) =
   not (lookup_mind mind env).mind_typing_flags.check_eliminations
+
+let variances env gr =
+  let open GlobRef in
+  match gr with
+  | ConstRef cst ->
+    let cb = lookup_constant cst env in Declareops.universes_variances cb.const_universes
+  | IndRef ind ->
+    let mib = lookup_mind (fst ind) env in Declareops.universes_variances mib.mind_universes
+  | ConstructRef cstr ->
+    let mib = lookup_mind (fst (fst cstr)) env in Declareops.universes_variances mib.mind_universes
+  | VarRef _id -> None
 
 let vm_library env = env.vm_library
 

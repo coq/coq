@@ -111,7 +111,7 @@ let get_polymorphic_positions env sigma f =
       | Some templ -> templ.template_param_arguments)
   | _ -> assert false
 
-let refresh_universes ?(allowed_evars=AllowedEvars.all) ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
+let refresh_universes ?(allowed_evars=AllowedEvars.all) ~status ?(onlyalg=false) ?(refreshset=false)
                       pbty env evd t =
   let evdref = ref evd in
   (* direction: true for fresh universes lower than the existing ones *)
@@ -134,14 +134,12 @@ let refresh_universes ?(allowed_evars=AllowedEvars.all) ?(status=univ_rigid) ?(o
         (match Univ.Universe.level u with
         | None -> refresh_sort status ~direction s
         | Some l ->
-          (if Univ.Level.Set.mem l (fst @@ Evd.universe_context_set !evdref) then
-             let () = if UState.is_algebraic l (Evd.ustate !evdref) then
-                 evdref := Evd.make_nonalgebraic_variable !evdref l
-             in
-             t
-           else if not onlyalg && (not (Univ.Level.is_set l) || (refreshset && not direction))
-           then refresh_sort status ~direction s
-           else t))
+           (match Evd.universe_rigidity !evdref l with
+            | UnivRigid ->
+              if not onlyalg && (not (Univ.Level.is_set l) || (refreshset && not direction))
+              then refresh_sort status ~direction s
+               else t
+            | UnivFlexible -> t))
       | Set when refreshset && not direction ->
        (* Cannot make a universe "lower" than "Set",
           only refreshing when we want higher universes. *)
@@ -202,7 +200,7 @@ let refresh_universes ?(allowed_evars=AllowedEvars.all) ?(status=univ_rigid) ?(o
 let get_type_of_refresh ?(lax=false) env evars t =
   let tty = Retyping.get_type_of env evars t in
   let evars', tty = refresh_universes ~onlyalg:true
-    ~status:(Evd.UnivFlexible false) (Some false) env evars tty in
+    ~status:Evd.UnivFlexible (Some false) env evars tty in
   evars', tty
 
 let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
@@ -1460,6 +1458,10 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
   let downcast evk t evd = downcast evk t evd in
   let evd =
     try
+      if Evd.is_typeclass_evar evd evk1 || Evd.is_typeclass_evar evd evk2 then
+        (* Do not allow piercing through the typeclass abstraction *)
+        evd
+      else
       (* ?X : Π Δ. Type i = ?Y : Π Δ'. Type j.
          The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
       let evienv = Evd.evar_env env evi in
@@ -1477,7 +1479,7 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
           let t1 = it_mkProd_or_LetIn (mkSort j) ctx1 in
           downcast evk1 t1 evd
         else
-          let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
+          let evd, k = Evd.new_sort_variable univ_flexible evd in
           let t1 = it_mkProd_or_LetIn (mkSort k) ctx1 in
           let t2 = it_mkProd_or_LetIn (mkSort k) ctx2 in
           let evd = Evd.set_leq_sort (Evd.set_leq_sort evd k i) k j in
@@ -1823,7 +1825,7 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
     (* so we recheck acyclicity *)
     if occur_evar_upto_types evd' evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
-    let evd', body = refresh_universes pbty env evd' body in
+    let evd', body = refresh_universes ~status:univ_flexible pbty env evd' body in
     instantiate_evar unify flags env evd' evk body
   with
     | NotEnoughInformationToProgress sols ->

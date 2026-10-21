@@ -64,9 +64,20 @@ let pr_red_expr =
     (pr_constr_expr, pr_lconstr_expr, pr_smart_global, pr_constr_expr, pr_or_var int, pr_user_red_expr)
     keyword
 
-let pr_uconstraint (l, d, r) =
-  pr_sort_name_expr l ++ spc () ++ Univ.UnivConstraint.pr_kind d ++ spc () ++
-  pr_sort_name_expr r
+let pr_incr pr (x, k) =
+  pr x ++ (if k = 0 then mt() else str"+" ++ int k)
+
+let pr_universe_expr =
+  prlist_with_sep (fun () -> str",") (pr_incr pr_sort_name_expr)
+
+let pr_constraint_type d k =
+  match d with
+  | Univ.UnivConstraint.Le -> if k then str"<" else str"<="
+  | Univ.UnivConstraint.Eq -> str"="
+
+let pr_uconstraint (l, (d, k), r) =
+  pr_universe_expr l ++ spc () ++ pr_constraint_type d k ++ spc () ++
+  pr_universe_expr r
 
 let pr_elim_constraint (l, d, r) =
   pr_quality_expr l ++ spc () ++ Sorts.ElimConstraint.pr_kind d ++ spc () ++
@@ -92,12 +103,15 @@ let pr_univ_decl_qualities l extensible =
   if List.is_empty l then mt()
   else prlist_with_sep spc pr_lident l ++ strbrk " ; "
 
-let pr_univ_decl_instance l extensible =
-  prlist_with_sep spc pr_lident l ++
-  (if extensible then str"+" else mt ())
+let pr_opt_variances l v =
+  match v with
+  | None -> prlist_with_sep spc pr_lident l
+  | Some v ->
+     let l = List.combine l v in
+     prlist_with_sep spc pr_variance_lident l
 
-let pr_cumul_univ_decl_instance l extensible =
-  prlist_with_sep spc pr_variance_lident l ++
+let pr_univ_decl_instance l v extensible =
+  pr_opt_variances l v ++
   (if extensible then str"+" else mt ())
 
 let pr_univ_decl_constraints elims univs extensible =
@@ -113,26 +127,12 @@ let pr_universe_decl l =
   | Some l ->
     str"@{" ++
     pr_univ_decl_qualities l.univdecl_qualities l.univdecl_extensible_qualities ++
-    pr_univ_decl_instance l.univdecl_instance l.univdecl_extensible_instance ++
-    pr_univ_decl_constraints l.univdecl_elim_constraints l.univdecl_univ_constraints l.univdecl_extensible_constraints ++
-    str "}"
-
-let pr_cumul_univ_decl l =
-  let open UState in
-  match l with
-  | None -> mt ()
-  | Some l ->
-    str"@{" ++
-    pr_univ_decl_qualities l.univdecl_qualities l.univdecl_extensible_qualities ++
-    pr_cumul_univ_decl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+    pr_univ_decl_instance l.univdecl_instance l.univdecl_variances l.univdecl_extensible_instance ++
     pr_univ_decl_constraints l.univdecl_elim_constraints l.univdecl_univ_constraints l.univdecl_extensible_constraints ++
     str "}"
 
 let pr_ident_decl (lid, l) =
   pr_lident lid ++ pr_universe_decl l
-
-let pr_cumul_ident_decl (lid, l) =
-  pr_lident lid ++ pr_cumul_univ_decl l
 
 let string_of_fqid fqid =
   String.concat "." (List.map Id.to_string fqid)
@@ -800,7 +800,7 @@ let pr_synpure_vernac_expr v =
       | ShowGoal n -> keyword "Show" ++ pr_goal_reference n
       | ShowProof -> keyword "Show Proof"
       | ShowExistentials -> keyword "Show Existentials"
-      | ShowUniverses -> keyword "Show Universes"
+      | ShowUniverses b -> keyword "Show " ++ (if b then keyword "Local" else mt ()) ++ keyword " Universes"
       | ShowProofNames -> keyword "Show Conjectures"
       | ShowIntros b -> keyword "Show " ++ (if b then keyword "Intros" else keyword "Intro")
       | ShowMatch id -> keyword "Show Match " ++ pr_qualid id
@@ -954,7 +954,7 @@ let pr_synpure_vernac_expr v =
     let pr_oneind key (((coe,iddecl),(indupar,indpar),s,lc),ntn) =
       hov 0 (
         str key ++ spc() ++
-        str(match coe with AddCoercion -> "> " | NoCoercion -> "") ++ pr_cumul_ident_decl iddecl ++
+        str(match coe with AddCoercion -> "> " | NoCoercion -> "") ++ pr_ident_decl iddecl ++
         pr_and_type_binders_arg indupar ++
         pr_opt (fun p -> str "|" ++ spc() ++ pr_and_type_binders_arg p) indpar ++
         pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++
@@ -1270,6 +1270,14 @@ let pr_synpure_vernac_expr v =
     let pr_i = match io with None -> mt ()
                            | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
     return (pr_i ++ pr_mayeval r c)
+  | VernacCheckConstraint (c,io) ->
+    let pr_check_constraint c =
+      hov 2 (keyword "Check" ++ spc() ++ keyword "Constraint" ++
+      prlist_with_sep (fun _ -> str",") pr_pconstraint c)
+    in
+    let pr_i = match io with None -> mt ()
+    | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
+    return (pr_i ++ pr_check_constraint c)
   | VernacGlobalCheck c ->
     return (hov 2 (keyword "Type" ++ pr_constrarg c))
   | VernacDeclareReduction (s,r) ->

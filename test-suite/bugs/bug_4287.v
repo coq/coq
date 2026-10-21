@@ -40,16 +40,16 @@ Hypothesis backforth_r : forall (A:Type) (P:A->Type) (a:A),
       P a -> P (back A (forth A a)).
 
 (** Proof *)
-Definition V : Type := forall A:Type, ((up A -> Type) -> up A -> Type) -> up A -> Type.
-Definition U : Type := V -> Type.
+Definition V : Type := forall A:Type@{_}, ((up A -> Type@{_}) -> up A -> Type@{_}) -> up A -> Type@{_}.
+Definition U : Type := V -> Type@{_}.
 
 Definition sb (z:V) : V := fun A r a => r (z A r) a.
-Definition le (i:U -> Type) (x:U) : Type := x (fun A r a => i (fun v => sb v A r a)).
-Definition le' (i:up (down U) -> Type) (x:up (down U)) : Type := le (fun a:U => i (forth _ a)) (back _ x).
-Definition induct (i:U -> Type) : Type := forall x:U, up (le i x) -> up (i x).
+Definition le (i:U -> Type@{_}) (x:U) : Type := x (fun A r a => i (fun v => sb v A r a)).
+Definition le' (i:up (down U) -> Type@{_}) (x:up (down U)) : Type := le (fun a:U => i (forth _ a)) (back _ x).
+Definition induct (i:U -> Type@{_}) : Type := forall x:U, up (le i x) -> up (i x).
 Definition WF : U := fun z => down (induct (fun a => z (down U) le' (forth _ a))).
-Definition I (x:U) : Type :=
-  (forall i:U -> Type, up (le i x) -> up (i (fun v => sb v (down U) le' (forth _ x)))) -> False.
+Definition I@{i+} (x:U) : Prop :=
+  (forall i:U -> Type@{i}, up (le i x) -> up (i (fun v => sb v (down U) le' (forth _ x)))) -> False.
 
 Lemma Omega : forall i:U -> Type, induct i -> up (i WF).
 Proof.

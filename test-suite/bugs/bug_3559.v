@@ -8,6 +8,7 @@ then from 51 lines to 37 lines, then from 43 lines to 30 lines *)
 (437b91a3ffd7327975a129b95b24d3f66ad7f3e4) *)
 Require Import Corelib.Init.Notations.
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 Generalizable All Variables.
 Record prod A B := pair { fst : A ; snd : B }.
 Arguments pair {_ _} _ _.
@@ -24,12 +25,13 @@ Scheme Rewriting for paths.
 Class Contr_internal (A : Type) := { center : A ; contr : (forall y : A, center
 = y) }.
 Inductive trunc_index : Type := minus_two | trunc_S (_ : trunc_index).
-Fixpoint IsTrunc_internal (n : trunc_index) (A : Type@{i}) : Type@{i} :=
+Fixpoint IsTrunc_internal@{i} (n : trunc_index) (A : Type@{i}) : Type@{i} :=
  match n with
    | minus_two => Contr_internal A
    | trunc_S n' => forall (x y : A), IsTrunc_internal n' (x = y)
  end.
 Notation minus_one:=(trunc_S minus_two).
+
 Class IsTrunc (n : trunc_index) (A : Type) : Type := Trunc_is_trunc :
 IsTrunc_internal n A.
 #[export] Instance istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A) :
@@ -53,7 +55,6 @@ Proof.
   induction n; simpl; intros.
   destruct X. exists center0. intros. apply (paths_lift _ _ _  (contr0 y)).
 
-  rewrite paths_change.
   apply IHn, X.
 Defined.
 
@@ -61,7 +62,7 @@ Notation IsHProp := (IsTrunc minus_one).
 (* Record hProp := hp { hproptype :> Type ; isp : IsTrunc minus_one hproptype}. *)
 (* Make the truncation proof polymorphic, i.e., available at any level greater or equal
    to the carrier type level j *)
-Record hProp := hp { hproptype :> Type@{j} ; isp : IsTrunc minus_one hproptype}.
+Record hProp := hp { hproptype :> Type@{j} ; isp : IsTrunc@{j} minus_one hproptype}.
 Axiom path_iff_hprop_uncurried : forall `{IsHProp A, IsHProp B}, (A <-> B) -> A
 = B.
 Inductive V : Type@{U'} := | set {A : Type@{U}} (f : A -> V) : V.

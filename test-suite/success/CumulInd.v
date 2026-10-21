@@ -1,8 +1,9 @@
 
 (* variances other than Invariant are forbidden for non-cumul inductives *)
 Fail Inductive foo@{+u} : Prop := .
-Fail Polymorphic Inductive foo@{*u} : Prop := .
-Inductive foo@{=u} : Prop := .
+(* polymorphism implies cumulativity of inductives by default now *)
+Fail #[universes(polymorphic,cumulative=no)] Inductive foo@{*u} : Prop := .
+Inductive foo@{u} : Prop := .
 
 (* Cumulative attr forbidden without univ poly on *)
 Fail Cumulative Inductive bar@{u} : Prop := .
@@ -14,7 +15,7 @@ Fail Inductive bar@{*u} : Prop := .
 Succeed Polymorphic  Inductive bar@{*u} : Prop := .
 
 Set Universe Polymorphism.
-Set Polymorphic Inductive Cumulativity.
+(* Test Polymorphic Inductive Cumulativity. = on by default *)
 
 Inductive force_invariant@{=u} : Prop := .
 Fail Definition lift@{u v | u < v} (x:force_invariant@{u}) : force_invariant@{v} := x.
@@ -41,6 +42,6 @@ Inductive irrelevant@{*u} : Prop := .
 Definition irrelevant_with_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
 
 Unset Cumulativity Weak Constraints.
-Fail Definition irrelevant_without_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
-Definition irrelevant_without_weak@{u+} : irrelevant@{u} -> irrelevant := fun x => x.
-Check irrelevant_without_weak@{_ _}.
+Definition irrelevant_without_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
+Definition irrelevant_without_weak'@{u+} : irrelevant@{u} -> irrelevant := fun x => x.
+Check irrelevant_without_weak@{_}.

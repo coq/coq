@@ -1,5 +1,6 @@
 (* Check cast setting scopes *)
-Check nat * nat : Type.
+Check nat * nat : Type@{_}.
+Check nat * nat : Type@{*}.
 Check 0 * 0 : nat.
 Require Import BinNums IntDef.
 Infix "*" := Z.mul : Z_scope.

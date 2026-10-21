@@ -82,6 +82,8 @@ Module NotConvTypeMod.
 End NotConvTypeMod.
 Fail Module NotConvTypeTest : NotConvTypeType := NotConvTypeMod.
 
+Unset Polymorphic Inductive Cumulativity.
+
 (* 9. CumulativeStatusExpected - expected cumulative but got non-cumulative *)
 Module Type CumulExpType.
   Polymorphic Cumulative Inductive I@{u} : Type@{u} := c : I.

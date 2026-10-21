@@ -16,20 +16,24 @@ open Constr
    constants/axioms, mutual inductive definitions, modules and module
    types *)
 
+type variance_declaration_entry =
+  | Infer_variances
+  | Check_variances of UVars.Variances.t
+
+type variance_entry = variance_declaration_entry option
+
 type universes_entry =
   | Monomorphic_entry
-  | Polymorphic_entry of UVars.AbstractContext.t
+  | Polymorphic_entry of UVars.AbstractContext.t * variance_entry
 
 type inductive_universes_entry =
   | Monomorphic_ind_entry
-  | Polymorphic_ind_entry of UVars.AbstractContext.t
+  | Polymorphic_ind_entry of UVars.AbstractContext.t * variance_entry
   | Template_ind_entry of {
       uctx : UVars.AbstractContext.t;
       (* The quality part of default_univs must be all qtype *)
-      default_univs : UVars.Instance.t;
+      default_univs : UVars.LevelInstance.t;
     }
-
-type variance_entry = UVars.Variance.t option array
 
 type 'a in_universes_entry = 'a * universes_entry
 
@@ -61,10 +65,6 @@ type mutual_inductive_entry = {
   mind_entry_params : Constr.rel_context;
   mind_entry_inds : one_inductive_entry list;
   mind_entry_universes : inductive_universes_entry;
-  mind_entry_variance : variance_entry option;
-  (* [None] if non-cumulative, otherwise associates each universe of
-     the entry to [None] if to be inferred or [Some v] if to be
-     checked. *)
   mind_entry_private : bool option;
 }
 

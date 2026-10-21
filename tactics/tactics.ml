@@ -697,8 +697,6 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
         mayneedglobalcheck := true
     in
     let t2 = Retyping.get_type_of env sigma origc in
-    let sigma, t2 = Evarsolve.refresh_universes
-                      ~onlyalg:true (Some false) env sigma t2 in
     match infer_conv ~pb:Conversion.CUMUL env sigma t1 t2 with
     | None ->
       if
@@ -1323,8 +1321,10 @@ let nth_arg i c = match i with
 let index_of_ind_arg sigma t =
   let rec aux i j t = match EConstr.kind sigma t with
   | LetIn (_, _, _, t) -> aux i j t
+  | Cast (t, _, _) -> aux i j t
   | Prod (_,t,u) ->
       (* heuristic *)
+      let t = strip_outer_cast sigma t in
       if isInd sigma (fst (decompose_app sigma t)) then aux (Some j) (j+1) u
       else aux i (j+1) u
   | _ -> match i with
@@ -1675,7 +1675,6 @@ let general_apply ?(with_classes=true) ?(respect_opaque=false) with_delta with_d
     (* The actual type of the theorem. It will be matched against the goal.
        If this fails, then the head constant will be unfolded step by step. *)
     let thm_ty = nf_betaiota env sigma (Retyping.get_type_of env sigma c) in
-    let sigma, thm_ty = Evarsolve.refresh_universes ~onlyalg:true None env sigma thm_ty in
     let try_apply thm_ty nprod =
       try
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
@@ -2548,7 +2547,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
     | Some t -> (sigma, t)
     | None ->
       let t = typ_of env sigma c in
-      Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t
+      (sigma, t)
     in
     let rel = Retyping.relevance_of_term env sigma c in
     let (sigma, (newcl, eq_tac)) = match with_eq with
@@ -2594,7 +2593,6 @@ let pose_tac na c =
     let relevance = Proofview.Goal.relevance gl in
     let t = typ_of env sigma c in
     let rel = Retyping.relevance_of_term env sigma c in
-    let (sigma, t) = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t in
     let id = match na with
     | Name id ->
       let () = if mem_named_context_val id hyps then

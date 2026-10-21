@@ -8,24 +8,18 @@ foo Univ@{s ; _} S
      : Type
 File "./output/UnivNotations.v", line 22, characters 13-14:
 The command has indeed failed with message:
-The term "S" has type "Univ@{s ; _}" while it is expected to have type 
-"Type" (universe inconsistency: Cannot enforce Type@{s; Set} <=
-UnivNotations.25).
+The term "S" has type "Type@{s ; _}" while it is expected to have type 
+"Type" (universe inconsistency: Cannot enforce Type@{s ; 0} ≤
+UnivNotations.24).
 1 goal
   
   ============================
   forall A : Univ, A -> # A
 foo Type@{UnivNotations.28} nat
      : Type@{foo.u1}
-(* {UnivNotations.28} | UnivNotations.28 < foo.u0
-                        Set <= UnivNotations.28
-Normalized constraints:
- {UnivNotations.28} | UnivNotations.28 < foo.u0 *)
-foo Univ@{s ; Set} S
+(* {UnivNotations.27} |= UnivNotations.27+1 <= foo.u0 *)
+foo Type@{s ; 0} S
      : Type@{foo.u1}
-(* {} | Set < foo.u0
-Normalized constraints:
- {} | Set < foo.u0 *)
 1 goal
   
   ============================

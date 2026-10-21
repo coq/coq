@@ -34,3 +34,6 @@ val constraint_sources : unit -> (GlobRef.t * Univ.UnivConstraints.t) list
 
 (** Command [Sort]. *)
 val do_sort : poly:bool -> lident list -> unit
+
+(** Command [Check Constraint] *)
+val check_constraint : Environ.env -> Evd.evar_map -> Constrexpr.univ_constraint_expr list -> unit

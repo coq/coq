@@ -1,10 +1,12 @@
+nat * nat : Set
+     : Set
 nat * nat : Type
      : Type
 0 * 0 : nat
      : nat
 Z0 * Z0 : Z
      : Z
-File "./output/TermSyntax.v", line 11, characters 17-22:
+File "./output/TermSyntax.v", line 12, characters 17-22:
 The command has indeed failed with message:
 Unknown interpretation for notation "{ _ ; _ }".
 This notation is available in b_scope.

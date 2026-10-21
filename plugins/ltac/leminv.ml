@@ -209,6 +209,8 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   end in
   let avoid = ref Id.Set.empty in
   let Proof.{sigma} = Proof.data pf in
+  (* FIXME Not taking types into account ??*)
+  let sigma = UnivVariances.register_universe_variances_of_partial_proofs env sigma (Proof.partial_proof pf) in
   let sigma = Evd.minimize_universes ~poly sigma in
   let rec fill_holes c =
     match EConstr.kind sigma c with
@@ -242,6 +244,7 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
   let sigma = Evd.from_env env in
   let c, uctx = Constrintern.interp_type env sigma com in
   let sigma = Evd.from_ustate uctx in
+  let sigma = UnivVariances.register_universe_variances_of_type env sigma c in
   let sigma, sort = Evd.fresh_sort_in_quality ~rigid:univ_rigid sigma comsort in
   add_inversion_lemma ~poly na env sigma c sort bool tac
 

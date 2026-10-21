@@ -38,14 +38,15 @@ Unshelve.
 reflexivity.
 Qed.
 
+Unset Strict Universe Declaration.
 (* An example with polymorphic universe constraints in the witness *)
-Derive id'' : (forall {A}, A -> A) in (forall {A} (a:A), id'' a = a) as spec''.
+Derive id'' : (forall {A : Type@{u}}, A -> A) in (forall {A : Type@{u}} (a:A), id'' a = a) as spec''.
 Proof.
 unfold id''.
 reflexivity.
 Qed.
 
-Check id'@{Set} 0.
+Check id'@{0} 0.
 
 (* Test dependent types - issue fix *)
 Derive (X : Type) (l : list X) in (l = l) as foo_dep.

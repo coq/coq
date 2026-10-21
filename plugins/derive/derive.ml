@@ -53,7 +53,7 @@ let start_deriving ~atts bl suchthat name : Declare.Proof.t =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = List.iter check_allowed_binders bl in
-  let sigma, (impls_env, ((env', ctx'), _, locs)) = Constrintern.interp_named_context_evars env sigma bl in
+  let sigma, (impls_env, ((env', ctx'), _, locs)) = Constrintern.interp_named_context_evars ~poly env sigma bl in
   (* ctx' is in reverse order (last binder first), so reverse it before processing *)
   let ctx' = List.rev ctx' in
   let locs = List.rev locs in

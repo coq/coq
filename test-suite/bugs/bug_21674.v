@@ -22,7 +22,7 @@ Proof.
   eapply Q.
 Qed.
 
-(* future work: make this succeed *)
-Fail Definition should_work@{u v|} : length@{u} [| | 0 |] = length@{v} [| | 0 |]
+(* With irrelevance, this succeeds *)
+Definition should_work@{u v|} : length@{u} [| | 0 |] = length@{v} [| | 0 |]
   := eq_refl.
 (* Universe constraints are not implied by the ones declared: u = v *)

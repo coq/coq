@@ -16,7 +16,7 @@ Defined.
 Local Unset Strict Universe Declaration.
 Definition PRODinj
   (A : Type@{i})
-  (B : A -> Type)
+  (B : A -> Type@{_})
   : TYPE.
 Proof.
   refine (cType@{i} _).

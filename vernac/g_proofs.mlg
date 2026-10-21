@@ -92,7 +92,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Show"; n = natural -> { VernacSynPure (VernacShow (ShowGoal (NthGoal n))) }
       | IDENT "Show"; id = qualid -> { VernacSynPure (VernacShow (ShowGoal (GoalId id))) }
       | IDENT "Show"; IDENT "Existentials" -> { VernacSynPure (VernacShow ShowExistentials) }
-      | IDENT "Show"; IDENT "Universes" -> { VernacSynPure (VernacShow ShowUniverses) }
+      | IDENT "Show"; IDENT "Local"; IDENT "Universes" -> { VernacSynPure (VernacShow (ShowUniverses true)) }
+      | IDENT "Show"; IDENT "Universes" -> { VernacSynPure (VernacShow (ShowUniverses false)) }
       | IDENT "Show"; IDENT "Conjectures" -> { VernacSynPure (VernacShow ShowProofNames) }
       | IDENT "Show"; IDENT "Proof" -> { VernacSynPure (VernacShow ShowProof) }
       | IDENT "Show"; IDENT "Intro" -> { VernacSynPure (VernacShow (ShowIntros false)) }

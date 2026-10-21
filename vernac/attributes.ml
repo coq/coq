@@ -285,7 +285,7 @@ let is_universe_polymorphism =
         optdepr  = None;
         optkey   = universe_polymorphism_option_name;
         optread  = (fun () -> !b);
-        optwrite = ((:=) b) }
+        optwrite = (:=) b }
   in
   fun () -> !b
 
@@ -295,7 +295,13 @@ let polymorphic =
   | None -> return (is_universe_polymorphism())
 
 let { Goptions.get = is_polymorphic_inductive_cumulativity } =
-  Goptions.declare_bool_option_and_ref ~key:["Polymorphic"; "Inductive"; "Cumulativity"] ~value:false ()
+  Goptions.declare_bool_option_and_ref ~key:["Polymorphic"; "Inductive"; "Cumulativity"] ~value:true ()
+
+let { Goptions.get = is_polymorphic_definitions_cumulativity } =
+  Goptions.declare_bool_option_and_ref ~key:["Polymorphic"; "Definitions"; "Cumulativity"] ~value:true ()
+
+let { Goptions.get = is_polymorphic_assumptions_cumulativity } =
+  Goptions.declare_bool_option_and_ref ~key:["Polymorphic"; "Assumptions"; "Cumulativity"] ~value:false ()
 
 let { Goptions.get = should_collapse_sort_variables  } =
   Goptions.declare_bool_option_and_ref ~key:["Collapse"; "Sorts"; "ToType"] ~value:true ()
@@ -305,31 +311,31 @@ let collapse_sort_variables =
   qualify_attribute ukey (bool_attribute ~name)
 
 let cumulative kind =
-  match kind with
-  | PolyFlags.Inductive -> qualify_attribute ukey (bool_attribute ~name:"cumulative")
-  | PolyFlags.Assumption | PolyFlags.Definition ->
-     (* Not yet supported *)
-     return None
+  qualify_attribute ukey (bool_attribute ~name:"cumulative") >>= function
+  | Some b -> return b
+  | None ->
+     match kind with
+     | PolyFlags.Inductive ->
+        return (is_polymorphic_inductive_cumulativity())
+     | PolyFlags.Assumption ->
+        return (is_polymorphic_assumptions_cumulativity())
+     | PolyFlags.Definition ->
+        return (is_polymorphic_definitions_cumulativity())
 
 let poly kind =
-  (polymorphic ++ cumulative kind ++ collapse_sort_variables) >>= fun ((univ_poly, cumulative), collapse_sort_variables) ->
-  let cumulative =
-    match cumulative with
-    | None -> if univ_poly then is_polymorphic_inductive_cumulativity() else false
-    | Some b ->
-      if b && not univ_poly then
-        CErrors.user_err Pp.(str "Cannot set polymorphic inductive cumulativity status when not in universe polymorphism mode.")
-      else b
-  in
+  (polymorphic ++ collapse_sort_variables) >>= fun (univ_poly, collapse_sort_variables) ->
   let collapse_sort_variables =
     match collapse_sort_variables with
     | None -> if univ_poly then should_collapse_sort_variables () else true
     | Some b ->
-      if not b && not univ_poly then
-        CErrors.user_err Pp.(str "Sort metavariables must be collapsed to Type in universe monomorphic constructions.")
-      else b
+       if not b && not univ_poly then
+         CErrors.user_err Pp.(str "Sort metavariables must be collapsed to Type in universe monomorphic constructions.")
+       else b
   in
-  return (PolyFlags.make ~univ_poly ~cumulative ~collapse_sort_variables)
+  if univ_poly then
+    cumulative kind >>= fun cumulative ->
+    return (PolyFlags.make ~univ_poly ~cumulative ~collapse_sort_variables)
+  else return PolyFlags.default
 
 let poly_def = poly PolyFlags.Definition
 

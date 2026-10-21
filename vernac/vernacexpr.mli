@@ -108,7 +108,7 @@ type showable =
   | ShowGoal of goal_reference
   | ShowProof
   | ShowExistentials
-  | ShowUniverses
+  | ShowUniverses of bool
   | ShowProofNames
   | ShowIntros of bool
   | ShowMatch of qualid
@@ -228,7 +228,7 @@ type inductive_params_expr = local_binder_expr list * local_binder_expr list opt
 (** If the option is nonempty the "|" marker was used *)
 
 type inductive_expr =
-  cumul_ident_decl with_coercion
+  ident_decl with_coercion
   * inductive_params_expr * constr_expr option
   * constructor_list_or_record_decl_expr
 
@@ -484,6 +484,7 @@ type nonrec synpure_vernac_expr =
   | VernacMemOption of Goptions.option_name * Goptions.table_value list
   | VernacPrintOption of Goptions.option_name
   | VernacCheckMayEval of Redexpr.raw_red_expr option * Goal_select.t option * constr_expr
+  | VernacCheckConstraint of sort_constraint_expr list * Goal_select.t option
   | VernacGlobalCheck of constr_expr
   | VernacDeclareReduction of string * Redexpr.raw_red_expr
   | VernacPrint of printable

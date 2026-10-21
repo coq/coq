@@ -1,7 +1,7 @@
 Unset Strict Universe Declaration.
 Set Printing Universes.
 Set Universe Polymorphism.
-Definition foo (a := Type) (b := Type) (c := Type) := Type.
+Definition foo (a := Type@{_}) (b := Type@{_}) (c := Type@{_}) := Type.
 Print foo.
 (* foo@{Top.2 Top.3 Top.5 Top.6 Top.8 Top.9 Top.10} =
 let a := Type@{Top.2} in let b := Type@{Top.5} in let c := Type@{Top.8} in Type@{Top.10}
@@ -25,7 +25,7 @@ Check @bar. (* bar@{Top.27}
 (* Top.27 |=  *) *)
 
 Check @bar@{i}.
-Definition baz (a := Type) (b := Type : a) (c := Type : b) := a -> c.
+Definition baz (a := Type@{_}) (b := Type@{_} : a) (c := Type@{_} : b) := a -> c.
 Definition qux := Eval compute in baz.
 Check @qux. (* qux@{Top.38 Top.39 Top.40
 Top.41}

@@ -1,35 +1,50 @@
-UNIVERSES:
- {w v u} | u <= v
-           v <= w
-ALGEBRAIC UNIVERSES:
+UNIVERSE VARIABLES:
+ {w v u}
+DEMOTED (GLOBAL) UNIVERSE VARIABLES:
+ 
+FLEXIBLE UNIVERSE VARIABLES:
  {}
-FLEXIBLE UNIVERSES:
+UNIVERSES:
+ 0 <= u
+   <= v
+   <= w
+ u <= v
+ v <= w
  
 SORTS:
   |= Prop -> SProp
      Type -> Prop
           -> SProp
      
+
+VARIANCES:
+ ShowUnivs.23
+ ShowUnivs.22
+ ShowUnivs.21
 WEAK CONSTRAINTS:
  
 
 Normalized constraints:
- {w v u} | u <= v
-           v <= w
+ {w v u} |= u <= v
+            v <= w
+UNIVERSE VARIABLES:
+ {ShowUnivs.28 ShowUnivs.27 ShowUnivs.26 ShowUnivs.25 ShowUnivs.24}
+DEMOTED (GLOBAL) UNIVERSE VARIABLES:
+ 
+FLEXIBLE UNIVERSE VARIABLES:
+ {ShowUnivs.28 ShowUnivs.27 ShowUnivs.26 ShowUnivs.24}
 UNIVERSES:
- {ShowUnivs.28 ShowUnivs.27 ShowUnivs.26 ShowUnivs.25 ShowUnivs.24} |
-   ShowUnivs.25 < ShowUnivs.26
-   ShowUnivs.26 < ShowUnivs.27
-   ShowUnivs.26 <= ShowUnivs.28
-   ShowUnivs.27 <= ShowUnivs.24
-   ShowUnivs.28 <= ShowUnivs.24
-ALGEBRAIC UNIVERSES:
- {ShowUnivs.28 ShowUnivs.27 ShowUnivs.24}
-FLEXIBLE UNIVERSES:
- ShowUnivs.28
- ShowUnivs.27
- ShowUnivs.26
- ShowUnivs.24
+ 0 <= ShowUnivs.24
+   <= ShowUnivs.25
+   <= ShowUnivs.26
+   <= ShowUnivs.27
+   <= ShowUnivs.28
+ ShowUnivs.25 < ShowUnivs.28
+ ShowUnivs.26 <= ShowUnivs.24
+ ShowUnivs.27 <= ShowUnivs.24
+ ShowUnivs.28 <= ShowUnivs.27
+ ShowUnivs.28 < ShowUnivs.26
+ 
 SORTS:
  α1 := Type
  α2 := Type
@@ -41,8 +56,15 @@ SORTS:
    Type -> Prop
         -> SProp
    
+
+VARIANCES:
+ ShowUnivs.28
+ ShowUnivs.27
+ ShowUnivs.26
+ ShowUnivs.25
+ ShowUnivs.24
 WEAK CONSTRAINTS:
  
 
 Normalized constraints:
- {ShowUnivs.26 ShowUnivs.25} | ShowUnivs.25 < ShowUnivs.26
+ {ShowUnivs.25} |= 

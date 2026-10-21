@@ -340,7 +340,7 @@ let do_declare_instance sigma ~locality ~poly k ctx ctx' pri udecl impargs subst
   Impargs.maybe_declare_manual_implicits false cst impargs;
   instance_hook pri locality cst
 
-let declare_instance_program pm env sigma ~locality ~poly {CAst.v=name;loc} pri impargs udecl term termtype =
+let declare_instance_program pm env sigma ~locality poly {CAst.v=name;loc} pri impargs udecl term termtype =
   let hook { Declare.Hook.S.scope; dref; _ } =
     let cst = match dref with GlobRef.ConstRef kn -> kn | _ -> assert false in
     let pri = intern_info pri in
@@ -356,7 +356,7 @@ let declare_instance_program pm env sigma ~locality ~poly {CAst.v=name;loc} pri 
   let info = Declare.Info.make ~udecl ~poly ~kind ~hook () in
   Declare.Obls.add_definition ~pm ~info ~cinfo ~opaque:false ~uctx ~body obls
 
-let declare_instance_open sigma ?hook ~tac ~locality ~poly (id:lident) pri impargs udecl ids term termtype =
+let declare_instance_open sigma ?hook ~tac ~locality poly (id:lident) pri impargs udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
      the pretyping after the proof has opened. As a
      consequence, we use the low-level primitives to code
@@ -415,14 +415,16 @@ let do_instance_subst_constructor_and_ty subst k ctx =
   let term = it_mkLambda_or_LetIn app ctx in
   term, termtype
 
-let do_instance_resolve_TC ~poly termtype sigma env =
+let do_instance_resolve_TC ~poly term termtype sigma env =
   let sigma = Evarutil.nf_evar_map sigma in
   let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true env sigma in
   (* Try resolving fields that are typeclasses automatically. *)
   let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:false env sigma in
   let sigma = Evarutil.nf_evar_map_undefined sigma in
-  (* Beware of this step, it is required as to minimize universes. *)
-  let sigma = Evd.minimize_universes ~poly sigma in
+  (* Beware of this step, it is required so as to minimize universes. *)
+  let sigma = UnivVariances.register_universe_variances_of_type env sigma termtype in
+  let sigma = Option.cata (UnivVariances.register_universe_variances_of env sigma) sigma term in
+  let sigma = Evd.minimize_universes ~poly ~partial:(Option.is_empty term) sigma in
   (* Check that the type is free of evars now. *)
   Pretyping.check_evars env sigma termtype;
   termtype, sigma
@@ -489,11 +491,11 @@ let do_instance_interactive env env' sigma ?hook ~tac ~locality ~poly cty k ctx 
         else
           None, it_mkProd_or_LetIn cty ctx
       in
-      let termtype, sigma = do_instance_resolve_TC ~poly termtype sigma env in
+      let termtype, sigma = do_instance_resolve_TC ~poly term termtype sigma env in
       term, termtype, sigma
   in
   Flags.silently (fun () ->
-      declare_instance_open sigma ?hook ~tac ~locality ~poly
+      declare_instance_open sigma ?hook ~tac ~locality poly
         id pri imps decl (List.map RelDecl.get_name ctx) term termtype)
     ()
 
@@ -501,7 +503,7 @@ let do_instance env env' sigma ?hook ~locality ~poly cty k ctx ctx' pri decl imp
   let term, termtype, sigma =
     interp_props ~program_mode:false env' cty k ctx ctx' subst sigma props
   in
-  let termtype, sigma = do_instance_resolve_TC ~poly termtype sigma env in
+  let termtype, sigma = do_instance_resolve_TC ~poly (Some term) termtype sigma env in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
   declare_instance_constant pri locality imps ?hook id decl poly sigma term termtype
 
@@ -516,13 +518,13 @@ let do_instance_program ~pm env env' sigma ?hook ~locality ~poly cty k ctx ctx' 
       let term, termtype =
         do_instance_subst_constructor_and_ty subst k (ctx' @ ctx) in
       term, termtype, sigma in
-  let termtype, sigma = do_instance_resolve_TC ~poly termtype sigma env in
+  let termtype, sigma = do_instance_resolve_TC ~poly (Some term) termtype sigma env in
   if not (Evd.has_undefined sigma) && not (Option.is_empty opt_props) then
     let () = declare_instance_constant pri locality imps ?hook id decl poly
                sigma term termtype in
     pm
   else
-    declare_instance_program pm env sigma ~locality ~poly id pri imps decl term termtype
+    declare_instance_program pm env sigma ~locality poly id pri imps decl term termtype
 
 let typeclass_univ_instance env (cl, u) =
   assert (UVars.eq_sizes (UVars.AbstractContext.size cl.cl_univs) (EInstance.length u));

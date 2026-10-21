@@ -278,23 +278,29 @@ let check_record ~ignore_elim data =
 
 (* Template univs must be unbounded from below for subject reduction
    (with partially applied template poly, cf RFC 90).
-
-   We also forbid strict bounds from above because they lead
-   to problems when instantiated with algebraic universes
-   (template_u < v can become w+1 < v which we cannot yet handle). *)
+*)
 let check_unbounded_from_below (univs, csts) =
+  let check_univ u =
+    Level.Set.fold (fun l accu ->
+      match accu with
+      | None ->
+        if Level.Set.mem l univs then Some l
+        else None
+      | _ -> accu) (Universe.levels u) None
+  in
   Univ.UnivConstraints.iter (fun (l,d,r) ->
+      let open UnivConstraint in
       let bad = match d with
-        | UnivConstraint.Eq | UnivConstraint.Lt ->
-          if Level.Set.mem l univs then Some l
-          else if Level.Set.mem r univs then Some r
-          else None
-        | UnivConstraint.Le -> if Level.Set.mem r univs then Some r else None
+        | Eq ->
+          (match check_univ l with
+          | None -> check_univ r
+          | Some _ as x -> x)
+        | Le -> check_univ r
       in
       bad |> Option.iter (fun bad ->
           CErrors.user_err Pp.(str "Universe level " ++ Level.raw_pr bad ++
                                str " cannot be template because it appears in constraint " ++
-                               Level.raw_pr l ++ UnivConstraint.pr_kind d ++ Level.raw_pr r)))
+                               Universe.raw_pr l ++ UnivConstraint.pr_kind d ++ Universe.raw_pr r)))
     csts
 
 let check_not_appearing_univs ~template_univs univs =
@@ -481,10 +487,10 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   | Template_ind_entry { uctx = auctx; default_univs } ->
     let env = Environ.Internal.push_template_context (AbstractContext.repr auctx) env in
     env, Monomorphic, Some (default_univs, auctx)
-  | Polymorphic_ind_entry auctx ->
+  | Polymorphic_ind_entry (auctx, variances) ->
     let () = check_ucontext (AbstractContext.repr auctx) env in
     let env = Environ.push_context (AbstractContext.repr auctx) env in
-    env, Polymorphic auctx, None
+    env, Polymorphic (auctx, variances), None
   in
 
   let params = mie.mind_entry_params in
@@ -549,29 +555,46 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         data, Some None, Some reason (* back to FakeRecord with a reason why *)
   in
 
-  let variance = match mie.mind_entry_variance with
-    | None -> None
-    | Some variances ->
+  let univs =
       match univs with
-      | Monomorphic ->
-        CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
-      | Polymorphic auctx ->
-        (* no variance for qualities *)
-        let _qualities, univs = Instance.to_array @@ UContext.instance @@ AbstractContext.repr auctx in
-        let univs = Array.map2 (fun a b -> a,b) univs variances in
-        let univs = match sec_univs with
-          | None -> univs
-          | Some sec_univs ->
-            (* no variance for qualities *)
-            let _, sec_univs = UVars.Instance.to_array sec_univs in
-            let sec_univs = Array.map (fun u -> u, None) sec_univs in
-            Array.append sec_univs univs
+      | Monomorphic -> Monomorphic
+      | Polymorphic (auctx, variance) ->
+        let variance = match variance with
+        | None -> None
+        | Some variances ->
+          (* no variance for qualities *)
+          let _qualities, univs = LevelInstance.to_array @@ UContext.instance (AbstractContext.repr auctx) in
+          let univs =
+            match variances with
+            | Infer_variances -> Array.map (fun a -> a, None) univs
+            | Check_variances variances -> Array.map2 (fun a b -> a,Some b) univs (UVars.Variances.repr variances)
+          in
+          let univs = match sec_univs with
+            | None -> univs
+            | Some sec_univs ->
+              (* no variance for qualities *)
+              let _, sec_univs = UVars.LevelInstance.to_array sec_univs in
+              let sec_univs = Array.map (fun u -> u, None) sec_univs in
+              Array.append sec_univs univs
+          in
+          let arities, ctors = List.split @@ List.map (fun (_, arity, lc) -> (arity, lc)) blocks in
+          let variances = InferCumulativity.infer_inductive ~env_params ~env_ar_par
+              ~evars:(CClosure.default_evar_handler env)
+              ~arities
+              ~ctors
+              univs
+          in
+          Some variances
         in
-        let arities, ctors = List.split @@ List.map (fun (_, arity, lc) -> (arity, lc)) blocks in
-        let variances = InferCumulativity.infer_inductive ~env_params ~env_ar_par ~arities ~ctors univs in
-        Some variances
+        Polymorphic (auctx, variance)
   in
 
+  (* let env_ar_par =
+    let ctx = Environ.rel_context env_ar_par in
+    let ctx = Vars.subst_univs_level_context usubst ctx in
+    let env = Environ.pop_rel_context (Environ.nb_rel env_ar_par) env_ar_par in
+    Environ.push_rel_context ctx env
+  in *)
   let check_packet env (_, _, univ_info, _) =
     if not (List.is_empty univ_info.missing)
     then raise (InductiveError (env, MissingUnivConstraints (univ_info.missing,univ_info.ind_univ)));
@@ -583,4 +606,4 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   in
   let data = List.map map data in
 
-  env_ar_par, univs, template, variance, record, not_prim_reason_or_has_eta, params, Array.of_list data
+  env_ar_par, univs, template, record, not_prim_reason_or_has_eta, params, Array.of_list data

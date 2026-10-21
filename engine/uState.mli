@@ -18,7 +18,7 @@ open Sorts
 
 type universes_entry =
 | Monomorphic_entry of Univ.ContextSet.t
-| Polymorphic_entry of UVars.UContext.t
+| Polymorphic_entry of UVars.UContext.t * Entries.variance_entry
 
 exception UniversesDiffer
 
@@ -43,6 +43,8 @@ val of_names : (UnivNames.universe_binders * UnivNames.rev_binders) -> t
 [@@deprecated "(9.3) Use [UState.from_uctx]"]
 (** Main entry point when only names matter, e.g. for printing. *)
 
+val disable_universe_extension : t -> with_cstrs:bool -> t
+
 (** Misc *)
 
 val is_empty : t -> bool
@@ -57,11 +59,14 @@ val sort_context_set : t -> UnivGen.sort_context_set
 (** The local context of the state, i.e. a set of bound variables together
     with their associated constraints. *)
 
-type universe_opt_subst = UnivFlex.t
-(* Reexport because UnivSubst is private *)
-
-val subst : t -> UnivFlex.t
+val subst_fn : t -> UnivSubst.universe_subst_fn
 (** The local universes that are unification variables *)
+
+val is_flexible : Level.t -> t -> bool
+(** Is a universe level considered flexible? *)
+
+val is_declared : t -> Level.t -> bool
+(** Is a universe level declared already? *)
 
 val nf_universes : t -> Constr.t -> Constr.t
 (** Apply the local substitution [subst] *)
@@ -74,25 +79,25 @@ val elim_graph : t -> QGraph.t
 
 val is_above_prop : t -> Sorts.QVar.t -> bool
 
-val is_algebraic : Level.t -> t -> bool
-(** Can this universe be instantiated with an algebraic
-    universe (ie it appears in inferred types only). *)
-
 val constraints : t -> PConstraints.t
+
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
 
 val context : t -> UVars.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
-type named_universes_entry = universes_entry * UnivNames.universe_binders
+type named_universes_entry =
+  { universes_entry_universes : universes_entry;
+    universes_entry_binders : UnivNames.universe_binders }
 
-val univ_entry : poly:PolyFlags.t -> t -> named_universes_entry
-(** Pick from {!context} or {!context_set} based on [poly]. *)
+val univ_entry : poly:PolyFlags.t -> ?variances:Entries.variance_declaration_entry -> t -> named_universes_entry
+(** Pick from {!context} or {!context_set} based on [poly].
+  Variances can only be non-empty for the [poly = true] case. *)
 
 val universe_binders : t -> UnivNames.universe_binders
 (** Return local names of universes. *)
 
-val compute_instance_binders : t -> UVars.Instance.t -> UVars.bound_names
+val compute_instance_binders : t -> UVars.LevelInstance.t -> UVars.bound_names
 
 val nf_qvar : t -> QVar.t -> Quality.t
 (** Returns the normal form of the sort variable. *)
@@ -101,8 +106,7 @@ val nf_quality : t -> Quality.t -> Quality.t
 
 val nf_instance : t -> UVars.Instance.t -> UVars.Instance.t
 
-val nf_level : t -> Level.t -> Level.t
-(** Must not be allowed to be algebraic *)
+val nf_level : t -> Level.t -> Universe.t
 
 val nf_universe : t -> Universe.t -> Universe.t
 
@@ -182,11 +186,10 @@ val restrict_even_binders : t -> Univ.Level.Set.t -> t
 
 type rigid =
   | UnivRigid
-  | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
+  | UnivFlexible
 
 val univ_rigid : rigid
 val univ_flexible : rigid
-val univ_flexible_alg : rigid
 
 val merge_sort_context_set : ?loc:Loc.t -> ?sort_rigid:bool -> ?src:constraint_source ->
     sideff:bool -> rigid -> t -> UnivGen.sort_context_set -> t
@@ -218,48 +221,51 @@ val new_quality_variable : ?loc:Loc.t -> ?sort_rigid:bool -> ?name:Id.t ->
   t -> t * QVar.t
 (** Declare a new local sort. *)
 
-val new_univ_level_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
+val new_univ_level_variable : ?loc:Loc.t -> ?strict:bool -> rigid -> Id.t option -> t -> t * Univ.Level.t
 (** Declare a new local universe; use rigid if a global or bound
-    universe; use flexible for a universe existential variable; use
-    univ_flexible_alg for a universe existential variable allowed to
-    be instantiated with an algebraic universe *)
+    universe; use flexible for a universe existential variable.
+    Strict variables are > 0, non-strict can be lowered to 0 *)
 
 val add_forgotten_univ : t -> Univ.Level.t -> t
 (** Don't use this, it only exists for funind *)
-
-val make_nonalgebraic_variable : t -> Univ.Level.t -> t
-(** cf UnivFlex *)
-
-val make_flexible_nonalgebraic : t -> t
-(** cf UnivFlex *)
 
 val normalize_variables : t -> t
 
 val constrain_variables : Univ.Level.Set.t -> t -> t
 
 val fix_undefined_variables : t -> t
-(** cf UnivFlex *)
+(** All remaining variables are rigid after this *)
+
+(** Variances *)
+
+val get_variances : t -> InferCumulativity.variances option
+
+val set_variances : t -> InferCumulativity.variances -> t
 
 (** Universe minimization *)
-val minimize : t -> t
+
+val minimize : partial:bool -> t -> t
 
 val collapse_sort_variables : ?except:QVar.Set.t -> only_above_prop:bool -> t -> t
 
-type ('a, 'b, 'c, 'd) gen_universe_decl = {
+type ('a, 'b, 'c, 'd, 'e) gen_universe_decl = {
   univdecl_qualities : 'a;
   univdecl_extensible_qualities : bool;
   univdecl_elim_constraints : 'b;
   univdecl_instance : 'c; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)
-  univdecl_univ_constraints : 'd; (* Declared univ constraints *)
+  univdecl_variances : 'd; (* Universe variance information *)
+  univdecl_univ_constraints : 'e; (* Declared univ constraints *)
   univdecl_extensible_constraints : bool; (* Can new constraints (elim or univ) be added *) }
 
+type pre_variances = UVars.Variance.t option list option
+
 type universe_decl =
-  (QVar.t list, Sorts.ElimConstraints.t, Level.t list, Univ.UnivConstraints.t) gen_universe_decl
+  (QVar.t list, Sorts.ElimConstraints.t, Level.t list, pre_variances, Univ.UnivConstraints.t) gen_universe_decl
 
 val default_univ_decl : universe_decl
 
-(** [check_poly_decl ctx decl]
+(** [check_univ_decl ctx decl]
 
    If non extensible in [decl], check that the local universes (resp.
    universe constraints) in [ctx] are implied by [decl].
@@ -270,7 +276,8 @@ val default_univ_decl : universe_decl
    When polymorphic, the universes corresponding to
    [decl.univdecl_instance] come first in the order defined by that
    list. *)
-val check_univ_decl : poly:PolyFlags.t -> t -> universe_decl -> named_universes_entry
+val check_univ_decl : poly:PolyFlags.t -> kind:PolyFlags.construction_kind ->
+  t -> universe_decl -> named_universes_entry
 val check_univ_decl_rev : t -> universe_decl -> t * UVars.UContext.t
 val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 
@@ -303,7 +310,7 @@ val is_rigid_qvar : t -> Sorts.QVar.t -> bool
 
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 
-val pr : t -> Pp.t
+val pr : ?local:bool -> t -> Pp.t
 
 val pr_sort_opt_subst : t -> Pp.t
 

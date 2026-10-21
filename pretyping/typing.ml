@@ -455,12 +455,12 @@ let judge_of_string env v =
   { uj_val = mkString v; uj_type = type_of_string env }
 
 let judge_of_array env sigma u tj defj tyj =
-  let ulev = match UVars.Instance.to_array u with
+  let uuniv = match UVars.Instance.to_array u with
     | [||], [|u|] -> u
     | _ -> assert false
   in
   let sigma = Evd.set_leq_sort sigma tyj.utj_type
-      (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make ulev)))
+      (ESorts.make (Sorts.sort_of_univ uuniv))
   in
   let check_one sigma j = check_actual_type env sigma j tyj.utj_val in
   let sigma = check_one sigma defj in
@@ -681,11 +681,7 @@ let sort_of env sigma c =
 (* Try to solve the existential variables by typing *)
 
 let type_of ?(refresh=false) env sigma c =
-  let sigma, j = execute env sigma c in
-  (* side-effect on evdref *)
-    if refresh then
-      Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma j.uj_type
-    else sigma, j.uj_type
+  let sigma, j = execute env sigma c in sigma, j.uj_type
 
 let solve_evars env sigma c =
   let sigma, j = execute env sigma c in

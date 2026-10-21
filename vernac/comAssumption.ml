@@ -26,7 +26,16 @@ module NamedDecl = Context.Named.Declaration
     - with implicit arguments (impls)
     - with implicit status for discharge (impl)
     - virtually with named universes *)
+
+let clear_entry_variances univs =
+  let open UState in
+  match univs.universes_entry_universes with
+  | Monomorphic_entry _ -> univs
+  | Polymorphic_entry (uctx, variances) ->
+    { univs with universes_entry_universes = Polymorphic_entry (uctx, None) }
+
 let declare_local ~coe ~try_assum_as_instance ~kind ~univs ~impargs ~impl ~name body typ =
+  let univs = clear_entry_variances univs in
   let decl = match body with
     | None ->
       Declare.SectionLocalAssum {typ; impl; univs}
@@ -44,14 +53,14 @@ let declare_local ~coe ~try_assum_as_instance ~kind ~univs ~impargs ~impl ~name 
     if coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
         r ~local:true ~reversible:false in
-  (r, UVars.Instance.empty)
+  (r, UVars.LevelInstance.empty)
 
 let declare_variable ~coe ~kind ~univs ~impargs ~impl ~name typ =
   declare_local ~coe ~try_assum_as_instance:true ~kind:(Decls.IsAssumption kind) ~univs ~impargs ~impl ~name None typ
 
 let instance_of_univ_entry = function
-  | UState.Polymorphic_entry univs -> UVars.UContext.instance univs
-  | UState.Monomorphic_entry _ -> UVars.Instance.empty
+  | UState.Polymorphic_entry (univs, _) -> UVars.UContext.instance univs
+  | UState.Monomorphic_entry _ -> UVars.LevelInstance.empty
 
 (** Declares a global axiom/parameter, possibly declaring it:
     - as a coercion
@@ -61,14 +70,13 @@ let instance_of_univ_entry = function
     - with named universes *)
 let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline
     ~name:{CAst.v=name; loc} body typ =
-  let (uentry, ubinders) = univs in
   let inl = let open Declaremods in match inline with
     | NoInline -> None
     | DefaultInline -> Declaremods.default_inline_level()
     | InlineAt i -> Some i
   in
   let decl = match body with
-    | None -> Declare.ParameterEntry (Declare.parameter_entry ~univs:(uentry, ubinders) ?inline:inl typ)
+    | None -> Declare.ParameterEntry (Declare.parameter_entry ~univs ?inline:inl typ)
     | Some b -> Declare.DefinitionEntry (Declare.definition_entry ~univs ~types:typ b) in
   let kn = Declare.declare_constant ?loc ~name ~local ~kind ?user_warns decl in
   let gr = GlobRef.ConstRef kn in
@@ -87,7 +95,7 @@ let declare_global ~coe ~try_assum_as_instance ~local ~kind ?user_warns ~univs ~
     if coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
         gr ~local ~reversible:false in
-  let inst = instance_of_univ_entry uentry in
+  let inst = instance_of_univ_entry univs.UState.universes_entry_universes in
   (gr,inst)
 
 let declare_axiom ~coe ~local ~kind ?user_warns ~univs ~impargs ~inline ~name typ =
@@ -100,15 +108,20 @@ let interp_assumption ~program_mode ~poly env sigma impl_env bl c =
   let ty = EConstr.it_mkProd_or_LetIn ty ctx in
   sigma, ty, impls1@impls2
 
-let empty_poly_univ_entry = UState.Polymorphic_entry UVars.UContext.empty, UnivNames.empty_binders
-let empty_mono_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
+let empty_poly_univ_entry =
+  UState.{ universes_entry_universes = Polymorphic_entry (UVars.UContext.empty, None);
+    universes_entry_binders = UnivNames.empty_binders }
+let empty_mono_univ_entry =
+  UState.{ universes_entry_universes = Monomorphic_entry Univ.ContextSet.empty;
+    universes_entry_binders = UnivNames.empty_binders }
 let empty_univ_entry poly = if poly then empty_poly_univ_entry else empty_mono_univ_entry
 
-let clear_univs scope univ =
-  match scope, univ with
-  | Locality.Global _, (UState.Polymorphic_entry _, _ as univs) -> univs
-  | _, (UState.Monomorphic_entry _, _) -> empty_univ_entry false
-  | Locality.Discharge, (UState.Polymorphic_entry _, _) -> empty_univ_entry true
+let clear_univs scope univs =
+  match scope, univs.UState.universes_entry_universes with
+  | Locality.Global _, UState.Polymorphic_entry (uctx, variances) ->
+    UState.{ univs with universes_entry_universes = Polymorphic_entry (uctx, None) }
+  | _, (UState.Monomorphic_entry _) -> empty_univ_entry false
+  | Locality.Discharge, (UState.Polymorphic_entry _) -> empty_univ_entry true
 
 let context_subst subst (id,b,t,infos) =
   id, Option.map (Vars.replace_vars subst) b, Vars.replace_vars subst t, infos
@@ -120,7 +133,8 @@ let declare_context ~try_global_assum_as_instance ~scope ~univs ?user_warns ~inl
     let refu = match scope with
       | Locality.Discharge -> declare_local ~coe ~try_assum_as_instance:true ~kind ~univs ~impargs ~impl ~name:name.CAst.v b t
       | Locality.Global local -> declare_global ~coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind ?user_warns ~univs ~impargs ~inline ~name b t in
-    (name.v, Constr.mkRef refu) :: subst
+    let ref, u = refu in
+    (name.v, Constr.mkRef (ref, UVars.Instance.of_level_instance u)) :: subst
   in
   let _ = List.fold_left_i fn 0 [] ctx in
   ()
@@ -162,6 +176,7 @@ let find_implicits id ienv =
     List.map extract_manual_implicit impls
   with Not_found -> []
 
+
 let local_binders_of_decls ~poly l =
   let coercions, l =
     List.fold_left_map (fun coercions (is_coe,(idl,c)) ->
@@ -185,12 +200,19 @@ let find_binding_kind id impls =
     | _ -> None in
   Option.default Explicit (CList.find_map find impls)
 
-let interp_context_gen ~program_mode ~poly ~kind ~autoimp_enable ~coercions env sigma l =
+let interp_context_gen scope ~program_mode ~poly ~kind ~autoimp_enable ~coercions env sigma l =
   let initial = sigma in
   let sigma, (ienv, ((env, ctx), impls, locs)) = interp_named_context_evars ~program_mode ~poly ~autoimp_enable env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env ~initial sigma in
-  let sigma, ctx = Evarutil.finalize ~poly sigma @@ fun nf ->
+  let sigma =
+    let as_types, cumul_pb =
+      match scope with
+      | Locality.Discharge -> false, InferCumulativity.Conv
+      | Locality.Global _ -> true, InferCumulativity.Conv
+    in
+    UnivVariances.register_universe_variances_of_named_context env sigma ~as_types ~cumul_pb ctx in
+  let sigma, ctx = Evarutil.finalize ~poly ~partial:true sigma @@ fun nf ->
     List.map (NamedDecl.map_constr_het (fun x -> x) nf) ctx
   in
   (* reorder, evar-normalize and add implicit status *)
@@ -213,14 +235,14 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns ~inline l =
       List.iter (fun (lid, _) ->
           let ty = if sec then "var" else "ax" in
           Dumpglob.dump_definition lid sec ty) idl) l end;
-  let env = Global.env () in
   let udecl, l = match scope with
     | Locality.Global import_behavior -> process_assumptions_udecls l
     | Locality.Discharge -> None, process_assumptions_no_udecls l in
+  let env = Global.env () in
   let sigma, udecl = interp_univ_decl_opt env udecl in
   let coercions, ctx = local_binders_of_decls ~poly l in
-  let sigma, ctx = interp_context_gen ~program_mode ~poly ~kind ~autoimp_enable:true ~coercions env sigma ctx in
-  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let sigma, ctx = interp_context_gen scope ~program_mode ~poly ~kind ~autoimp_enable:true ~coercions env sigma ctx in
+  let univs = Evd.check_univ_decl ~poly ~kind:PolyFlags.Assumption sigma udecl in
   declare_context ~try_global_assum_as_instance:false ~scope ~univs ?user_warns ~inline ctx
 
 let warn_context_outside_section =
@@ -255,7 +277,7 @@ let do_context ~program_mode ~poly ctx =
     if sec then Discharge
     else Global (if Lib.is_modtype () then ImportDefaultBehavior else ImportNeedQualified)
   in
-  let sigma, ctx = interp_context_gen ~program_mode ~poly ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  let sigma, ctx = interp_context_gen scope ~program_mode ~poly ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
   let univs = Evd.univ_entry ~poly sigma in (* No possibility to enforce variances here *)
   declare_context ~try_global_assum_as_instance:true ~scope ~univs ~inline:Declaremods.NoInline ctx
 
@@ -266,7 +288,9 @@ let interp_context env sigma ctx =
     List.rev (snd (List.fold_left_i (fun n (subst, ctx) (id,b,t,impl) ->
         let decl = (id, Option.map (Vars.subst_vars subst) b, Vars.subst_vars subst t, impl) in
         (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
-  let poly = PolyFlags.default in (* FIXME: no poly/sort poly here *)
-  let sigma, ctx = interp_context_gen ~program_mode:false ~poly ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
+  (* FIXME: Double check sort poly flag *)
+  let poly = PolyFlags.default in
+  let sigma, ctx = interp_context_gen Locality.Discharge ~program_mode:false
+                     ~poly ~kind:Context ~autoimp_enable:false ~coercions:Id.Set.empty env sigma ctx in
   let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id.CAst.v,b,t,impl)) ctx in
   sigma, reverse_rel_context_of_reverse_named_context ctx

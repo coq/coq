@@ -31,7 +31,16 @@ Definition arrow (A B : Type) := A -> B.
 
 Definition flip {A B C : Type} (f : A -> B -> C) := fun x y => f y x.
 
-Definition iffT (A B : Type) := ((A -> B) * (B -> A))%type.
+Module Import TypeProduct.
+
+  Cumulative Record prodT A B :=
+    { fst : A; snd : B }.
+  Arguments fst {A B}.
+  Arguments snd {A B}.
+
+End TypeProduct.
+
+Definition iffT (A B : Type) := (prodT (A -> B) (B -> A)).
 
 Global Typeclasses Opaque flip arrow iffT.
 

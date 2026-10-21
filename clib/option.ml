@@ -135,6 +135,12 @@ let cata f a = function
   | Some c -> f c
   | None -> a
 
+let union f x y =
+  match x, y with
+  | Some _, None -> x
+  | None, Some _ -> y
+  | None, None -> None
+  | Some x, Some y -> Some (f x y)
 
 (** {6 More Specific operations} ***)
 

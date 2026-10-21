@@ -28,6 +28,13 @@ let raw_print = make_flag ["Printing";"All"] false
 (* XXX why does extern look at this flag? *)
 let print_universes = make_flag ["Printing";"Universes"] false
 
+(* detyping + extern? *)
+let { Goptions.get = print_variances } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Printing";"Universe";"Variances"]
+    ~value:true
+    ()
+
 (* detyping *)
 let { Goptions.get = print_sort_quality } =
   Goptions.declare_bool_option_and_ref
@@ -230,6 +237,7 @@ module Detype = struct
   type t = {
     universes : bool;
     qualities : bool;
+    variances : bool;
     relevances : bool;
     evar_instances : bool;
     wildcard : bool;
@@ -246,6 +254,7 @@ module Detype = struct
 
   let current_ignore_raw () = {
     universes = !print_universes;
+    variances = print_variances();
     qualities = print_sort_quality();
     relevances = print_relevances();
     evar_instances = !print_evar_arguments;

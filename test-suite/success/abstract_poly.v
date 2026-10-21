@@ -1,6 +1,7 @@
 Set Universe Polymorphism.
+Unset Polymorphic Inductive Cumulativity.
 
-Inductive path@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := refl : path x x.
+Cumulative Inductive path@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := refl : path x x.
 Inductive unit@{i} : Type@{i} := tt.
 
 Scheme Rewriting for path.
@@ -11,7 +12,7 @@ intros m n P e p.
 abstract (rewrite e in p; exact p).
 Defined.
 
-Check foo_subproof@{Set Set}.
+Check foo_subproof@{Set Set Set Set}.
 
 Lemma bar : forall (m n : unit) (P : unit -> Type), path m n -> P m -> P n.
 Proof.
@@ -19,4 +20,4 @@ intros m n P e p.
 abstract (rewrite e in p; exact p).
 Defined.
 
-Check bar_subproof@{Set Set}.
+Check bar_subproof@{Set Set Set Set}.
