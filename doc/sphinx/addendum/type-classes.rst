@@ -332,10 +332,12 @@ Command summary
       inductive definition. No methods or instances are defined.
 
       .. warn:: @ident is already declared as a typeclass
+         :name: already-existing-class
 
          This command has no effect when used on a typeclass.
 
    .. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
+      :name: not-a-class
 
       Using the ``::`` syntax in the :n:`@record_definition`
       or :n:`@constructor` with a right-hand-side that
@@ -565,9 +567,8 @@ Settings
    by default. Each class declaration uses this default mode for *all* its parameters,
    unless a :attr:`mode` attribute is used to set the mode explicitly.
 
-   .. _class-declaration-default-mode:
-
-   .. warn:: Using inferred default mode: “mode” for “@ident”
+   .. warn:: Using an inferred default mode: “mode” for “@ident”
+      :name: class-declaration-default-mode
 
       Indicates that the :attr:`mode` for a :cmd:`Class` declaration has been
       assigned automatically using the default mode.

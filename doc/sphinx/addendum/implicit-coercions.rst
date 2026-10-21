@@ -70,7 +70,7 @@ conditions holds:
 
 We then write :g:`f : C >-> D`.
 
-.. _ambiguous-paths:
+.. _ambiguous-paths-ref:
 
 When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion
 paths with the same classes as existing ones are ignored. When activating
@@ -203,14 +203,16 @@ Coercion Classes
      The inferred target class of the coercion differs from the one specified.
 
   .. warn:: @qualid does not respect the uniform inheritance condition.
+     :name: uniform-inheritance
 
-     The :ref:`test for ambiguous coercion paths <ambiguous-paths>`
+     The :ref:`test for ambiguous coercion paths <ambiguous-paths-ref>`
      may yield false positives involving the coercion :token:`qualid`.
      Use the :attr:`warnings` attribute with "-uniform-inheritance" to silence this warning.
 
   .. warn:: New coercion path ... is ambiguous with existing ...
+     :name: ambiguous-paths
 
-     The check for :ref:`ambiguous paths <ambiguous-paths>` failed.
+     The check for :ref:`ambiguous paths <ambiguous-paths-ref>` failed.
      The paths for which this check fails are displayed by a warning
      in the form :g:`[f₁;..;fₙ] : C >-> D`.
 
@@ -220,7 +222,7 @@ Coercion Classes
      convertible with existing ones when they have coercions that don't satisfy
      this condition.
 
-  .. warn:: ... is not definitionally an identity function.
+     This warning is disabled by default due to the cost of checking for ambiguity.
 
      If a coercion path has the same source and target class, that is said to be
      circular. When a new circular coercion path is not convertible with the

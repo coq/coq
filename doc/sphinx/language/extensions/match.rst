@@ -91,6 +91,7 @@ See also :ref:`SSReflect documentation <pattern_conditional_ssr>` for more examp
    declared as such (see :ref:`controlling-match-pp`).
 
    .. warn:: The "if <c> then _" syntax for non boolean guard is deprecated. Use "if <c> is <first_constructor> then _" instead.
+      :name: non-boolean-if
 
       The "if _ then _ else" syntax is reserved for the special
       ``bool`` type, use an explicit ``is`` for other inductive types.

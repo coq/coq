@@ -164,7 +164,7 @@ class RocqObject(ObjectDescription):
         super().__init__(*args, **kwargs)
         self._sig_names = None
 
-    def _name_from_signature(self, signature): # pylint: disable=no-self-use, unused-argument
+    def _name_from_signature(self, signature, signode): # pylint: disable=no-self-use, unused-argument
         """Convert a signature into a name to link to.
 
         ‘Signature’ is Sphinx parlance for an object's header (think “type
@@ -223,7 +223,7 @@ class RocqObject(ObjectDescription):
         self._render_signature(signature, signode)
         names = self._sig_names.get(signature)
         if names is None:
-            name = self._name_from_signature(signature) # pylint: disable=assignment-from-none
+            name = self._name_from_signature(signature, signode) # pylint: disable=assignment-from-none
             # remove trailing ‘.’ found in commands, but not ‘...’ (ellipsis)
             if name is not None and name.endswith(".") and not name.endswith("..."):
                 name = name[:-1]
@@ -367,7 +367,7 @@ class VernacObject(NotationObject):
     index_suffix = "(command)"
     annotation = "Command"
 
-    def _name_from_signature(self, signature):
+    def _name_from_signature(self, signature, signode):
         m = re.match(r"[a-zA-Z0-9_ ]+", signature)
         return m.group(0).strip() if m else None
 
@@ -378,7 +378,7 @@ class VernacVariantObject(VernacObject):
     index_suffix = "(command variant)"
     annotation = "Variant"
 
-    def _name_from_signature(self, signature):
+    def _name_from_signature(self, signature, signode):
         return None
 
 class TacticObject(NotationObject):
@@ -397,7 +397,7 @@ class AttributeObject(NotationObject):
     index_suffix = "(attribute)"
     annotation = "Attribute"
 
-    def _name_from_signature(self, signature):
+    def _name_from_signature(self, signature, signode):
         return notation_to_string(signature)
 
 class TacticVariantObject(TacticObject):
@@ -407,7 +407,7 @@ class TacticVariantObject(TacticObject):
     index_suffix = "(tactic variant)"
     annotation = "Variant"
 
-    def _name_from_signature(self, signature):
+    def _name_from_signature(self, signature, signode):
         return None
 
 class OptionObject(NotationObject):
@@ -546,7 +546,7 @@ class ExceptionObject(NotationObject):
     # Uses “exn” since “err” already is a CSS class added by “writer_aux”.
 
     # Generate names automatically
-    def _name_from_signature(self, signature):
+    def _name_from_signature(self, signature, signode):
         return notation_to_string(signature)
 
 class WarningObject(NotationObject):
@@ -558,8 +558,9 @@ class WarningObject(NotationObject):
     annotation = "Warning"
 
     # Generate names automatically
-    def _name_from_signature(self, signature):
-        return notation_to_string(signature)
+    def _name_from_signature(self, signature, signode):
+        loc = get_node_location(signode)
+        raise ExtensionError("{}: Missing name for warning '{}'".format(loc, signature))
 
 def NotationRole(role, rawtext, text, lineno, inliner, options={}, content=[]):
     #pylint: disable=unused-argument, dangerous-default-value

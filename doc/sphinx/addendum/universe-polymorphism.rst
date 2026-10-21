@@ -1298,6 +1298,7 @@ Controlling template polymorphism
    automatic template polymorphism.
 
 .. warn:: Automatically declaring @ident as template polymorphic.
+   :name: auto-template
 
    Warning ``auto-template`` can be used (it is off by default) to
    find which types are implicitly declared template polymorphic by

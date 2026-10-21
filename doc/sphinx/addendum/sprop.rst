@@ -308,13 +308,18 @@ conversion will incorrectly fail as a variable was incorrectly marked
 proof relevant.
 
 .. warn:: Bad relevance
+  :name: bad-relevance
 
   This is a developer warning, which is treated as an error by default. It is
-  emitted by the kernel when it is passed a term with incorrect relevance marks.
+  emitted by elaboration when it is passed a term with incorrect relevance marks.
   This is always caused by a bug in Rocq (or a plugin), which should thus be reported and
   fixed. In order to allow the user to work around such bugs, we leave the
   ability to unset the ``bad-relevance`` warning for the time being, so that the
-  kernel will silently repair the proof term instead of failing.
+  high level type checker will silently repair the proof term instead of failing.
+
+  The warning and term repair used to be in the kernel, but are now
+  only in the evar-aware non-trusted type checker. This type checked
+  is only called on some terms, not on all proofs.
 
 .. flag:: Printing Relevance Marks
 

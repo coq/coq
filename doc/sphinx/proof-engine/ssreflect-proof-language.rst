@@ -1178,6 +1178,7 @@ The case tactic
    The :tacn:`case` can generate the following warning:
 
    .. warn:: SSReflect: cannot obtain new equations out of ...
+      :name: spurious-ssr-injection
 
       The tactic was run on an equation that cannot generate simpler equations,
       for example `x = 1`.
@@ -1615,6 +1616,7 @@ Intro patterns
   following warning:
 
   .. warn:: Duplicate clear of H. Use %{ %}H instead of %{ H %}H
+    :name: duplicate-clear
 
     The warning can be silenced or made fatal with the :opt:`Warnings` option
     with the `duplicate-clear` key.

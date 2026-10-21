@@ -736,7 +736,8 @@ file is a particular case of a module called a *library file*.
       the appropriate solution is to recompile :n:`@ident.v` using the correct
       :term:`load path`.
 
-   .. warn:: Require inside a module is deprecated and strongly discouraged. You can Require a module at toplevel and optionally Import it inside another one.
+   .. warn:: Require inside a module is fragile.
+      :name: require-in-module
 
       Note that the :cmd:`Import` and :cmd:`Export` commands can be used inside modules.
 
@@ -851,6 +852,7 @@ in a plugin, to access the full path of the external file via the API
 ``ComExtraDeps.query_extra_dep``.
 
    .. warn:: File ... found twice in ...
+      :name: ambiguous-extra-dep
 
       The file is found in more than once in the top directories
       associated with the given :n:`@dirpath`. In this case the first occurrence
@@ -1176,8 +1178,6 @@ Printing constructions in full
 
    This flag is off by default.
 
-.. _reversible-printing:
-
 Checking that printed terms can be parsed back (reversible printing)
 --------------------------------------------------------------------
 
@@ -1211,6 +1211,7 @@ noticeably more expensive when one of these flags is set.
    context where the expected type is known.
 
    .. warn:: The printed form of this term could not be re-parsed and re-elaborated to an equal term (up to ...), even with all printing options turned on.
+      :name: reversible-printing
 
       If no printed form, however explicit, passes the check, the most
       explicit one is printed anyway and this warning is emitted. This

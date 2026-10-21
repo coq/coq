@@ -2601,6 +2601,7 @@ The following example requires the Stdlib library to use the :tacn:`lia` tactic.
 .. warn:: Ltac Profiler encountered an invalid stack (no \
          self node). This can happen if you reset the profile during \
          tactic execution
+   :name: profile-invalid-stack-no-self
 
    Currently, :tacn:`reset ltac profile` is not very well-supported,
    as it clears all profiling information about all tactics, including
