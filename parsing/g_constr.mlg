@@ -364,7 +364,7 @@ GRAMMAR EXTEND Gram
             | Some l' ->
               List.map (force_quality ~loc) l, List.map (force_univ_level ~loc) l'
           in
-          Some (l,l')
+          Some { qualities = l; levels = l' }
         }
       | -> { None } ] ]
   ;

@@ -1192,7 +1192,7 @@ let intern_sort ~local_univs (q,l) =
 
 let intern_instance ~local_univs = function
   | None -> None
-  | Some (qs, us) ->
+  | Some { qualities = qs; levels = us } ->
     let qs = List.map (intern_quality ~local_univs) qs in
     let us = List.map (map_glob_sort_gen (intern_sort_name ~local_univs)) us in
     Some (qs, us)
