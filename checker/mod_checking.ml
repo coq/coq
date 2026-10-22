@@ -8,22 +8,13 @@ open Environ
 
 (** {6 Checking constants } *)
 
-type cset = { cset : KerName.Set.t }
-type opaques = Cset.t Names.Cmap.t
+type axioms = { cset : KerName.Set.t }
 
-let empty_cset = { cset = KerName.Set.empty }
-let empty_opaques = Cmap.empty
+let empty_axioms = { cset = KerName.Set.empty }
 
-let add_opaque_cb kn cb opac accu =
-  if Declareops.constant_has_body cb then accu
-  else match Cmap.find_opt kn opac with
-  | None -> Cset.add kn accu
-  | Some s -> Cset.union s accu
+let constants_of_axioms {cset} = KerName.Set.elements cset
 
-let constants_of_opaques env opac =
-  let add c cb acc = add_opaque_cb c cb opac acc in
-  let csts = fold_constants add env Cset.empty in
-  Cset.fold (fun c acc -> c :: acc) csts []
+let axioms_add c {cset} = {cset=KerName.Set.add (Constant.user c) cset}
 
 type check_state = {
   st_retro : (int * CPrimitives.prim_ind_ex) Mindmap.t * CPrimitives.prim_type_ex Cmap.t;
@@ -37,16 +28,6 @@ let indirect_accessor : (Opaqueproof.opaque -> Opaqueproof.opaque_proofterm) ref
   ref (fun _ -> assert false)
 
 let set_indirect_accessor f = indirect_accessor := f
-
-let register_opacified_constant env opac kn cb =
-  let rec gather_consts s c =
-    match Constr.kind c with
-    | Constr.Const (c, _) -> Cset.add c s
-    | _ -> Constr.fold gather_consts s c
-  in
-  let fold c accu = add_opaque_cb c (lookup_constant c env) opac accu in
-  let wo_body = Cset.fold fold (gather_consts Cset.empty cb) Cset.empty in
-  Cmap.add kn wo_body opac
 
 exception BadConstant of Constant.t * Pp.t
 
@@ -234,18 +215,6 @@ let lookup_module mp env =
 
 let mk_mtb sign delta = Mod_declarations.make_module_type sign delta
 
-let rec collect_constants_without_body sign mp accu =
-  let collect_field s lab = function
-  | SFBconst cb ->
-     let c = KerName.make mp lab in
-     if Declareops.constant_has_body cb then s else { cset = KerName.Set.add c s.cset }
-  | SFBmodule msb -> collect_constants_without_body (mod_type msb) (MPdot(mp,lab)) s
-  | SFBmind _ | SFBrules _ | SFBmodtype _ -> s in
-  match sign with
-  | MoreFunctor _ -> empty_cset (* currently ignored *)
-  | NoFunctor struc ->
-     List.fold_left (fun s (lab,mb) -> collect_field s lab mb) accu struc
-
 let rec check_mexpr env mse mp_mse res = match mse with
   | MEident mp ->
     let mb = lookup_module mp env in
@@ -362,46 +331,47 @@ and check_signature : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> 
       in
       st
 
-let rec collect_module_opaques env opac mp mb opacify =
-  let opac = collect_signature_opaques env opac (mod_type mb) mp (mod_delta mb) opacify in
+let rec collect_module_axioms env axioms mp mb =
   match mod_expr mb with
   | Struct (reso, struc) ->
-    let opacify = collect_constants_without_body (mod_type mb) mp opacify in
+    (* Module with implementation separate from its type: don't produce axioms from the type *)
     let struc = Modops.annotate_struct_body struc (mod_type mb) in
-    collect_signature_opaques env opac struc mp reso opacify
-  | Abstract | Algebraic _ | FullStruct -> opac
+    collect_signature_axioms env axioms struc mp reso
+  | Algebraic _ ->
+    (* any axioms are already declared from the modules and functors
+       involved in the application (this means an axiom in a functor
+       is reported as coming from the functor rather than from the
+       application) *)
+    axioms
+  | Abstract | FullStruct ->
+    collect_signature_axioms env axioms (mod_type mb) mp (mod_delta mb)
 
-and collect_signature_opaques : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ -> _ =
-  fun env opac sign mp res opacify -> match sign with
+and collect_signature_axioms : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ =
+  fun env axioms sign mp res -> match sign with
   | MoreFunctor (arg_id, mtb, body) ->
     let env = Modops.add_module_parameter arg_id mtb env in
-    collect_signature_opaques env opac body mp res empty_cset
+    collect_signature_axioms env axioms body mp res
   | NoFunctor struc ->
-    let fold (env, opac) (lab, field) = match field with
+    let fold (env, axioms) (lab, field) = match field with
     | SFBconst cb ->
       let kn = Mod_subst.constant_of_delta_kn res (KerName.make mp lab) in
-      let opac =
-        if not (KerName.Set.mem (Constant.canonical kn) opacify.cset) then opac
-        else match cb.const_body with
-        | Def body -> register_opacified_constant env opac kn body
-        | OpaqueDef o -> register_opacified_constant env opac kn (fst (!indirect_accessor o))
-        | Undef _ | Primitive _ | Symbol _ -> opac
+      let axioms =
+        match cb.const_body with
+        | Def _ | OpaqueDef _ | Primitive _ -> axioms
+        | Undef _ | Symbol _ -> axioms_add kn axioms
       in
-      Environ.add_constant kn cb env, opac
+      Environ.add_constant kn cb env, axioms
     | SFBmodule mb ->
       let mp = MPdot (mp, lab) in
-      let opac = collect_module_opaques env opac mp mb opacify in
-      Modops.add_module mp mb env, opac
-    | SFBmodtype mtb -> Environ.add_modtype (MPdot (mp, lab)) mtb env, opac
+      let axioms = collect_module_axioms env axioms mp mb in
+      Modops.add_module mp mb env, axioms
+    | SFBmodtype mtb -> Environ.add_modtype (MPdot (mp, lab)) mtb env, axioms
     | SFBmind mib ->
       let kn = Mod_subst.mind_of_delta_kn res (KerName.make mp lab) in
-      Environ.add_mind kn mib env, opac
-    | SFBrules _ -> env, opac
+      Environ.add_mind kn mib env, axioms
+    | SFBrules _ -> env, axioms
     in
-    snd (List.fold_left fold (env, opac) struc)
-
-let collect_module_opaques env opac mp mb =
-  collect_module_opaques env opac mp mb empty_cset
+    snd (List.fold_left fold (env, axioms) struc)
 
 let eq_prim_ind (type a b) (p : a CPrimitives.prim_ind) (q : b CPrimitives.prim_ind) =
   String.equal (CPrimitives.prim_ind_to_string p) (CPrimitives.prim_ind_to_string q)
@@ -434,7 +404,7 @@ let get_retroknowlege env retro =
   let (imap, cmap, _) = List.fold_left fold (Mindmap.empty, Cmap.empty, Mindmap.empty) retro in
   (imap, cmap)
 
-let check_module env opac retro mp mb =
+let check_module env axioms retro mp mb =
   let retro = get_retroknowlege env retro in
   let st = { st_retro = retro } in
   let { st_retro = (imap, cmap) } = check_module env st mp mb in
@@ -445,10 +415,10 @@ let check_module env opac retro mp mb =
   | None, Some (cst, _) ->
     CErrors.user_err Pp.(str "Retroknowledge registration for unknown constant " ++ Constant.print cst ++ str ".")
   in
-  collect_module_opaques env opac mp mb
+  collect_module_axioms env axioms mp mb
 
-let check_module env opac retro mp mb =
+let check_module env axioms retro mp mb =
   NewProfile.profile "check_module"
     ~args:(fun () -> [("name", `String (ModPath.to_string mp))])
-    (fun () -> check_module env opac retro mp mb)
+    (fun () -> check_module env axioms retro mp mb)
     ()

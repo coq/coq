@@ -9,4 +9,4 @@
 (************************************************************************)
 val memory_stat : bool ref
 
-val stats : Environ.env -> Names.Constant.t list option -> unit
+val stats : Environ.env -> Names.KerName.t list option -> unit

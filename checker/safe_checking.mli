@@ -14,9 +14,9 @@ open Safe_typing
 
 val import
   : safe_environment
-  -> Mod_checking.opaques
+  -> Mod_checking.axioms
   -> compiled_library
-  -> vodigest -> safe_environment * Mod_checking.opaques
+  -> vodigest -> safe_environment * Mod_checking.axioms
 
 val unsafe_import
   : safe_environment

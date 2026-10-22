@@ -30,4 +30,4 @@ val add_load_path : physical_path * logical_path -> unit
 val recheck_library : ?output_context:bool -> safe_environment ->
   norec:object_file list ->
   admit:object_file list ->
-  check:object_file list -> safe_environment * Mod_checking.opaques
+  check:object_file list -> safe_environment * Mod_checking.axioms
