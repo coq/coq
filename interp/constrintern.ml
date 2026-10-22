@@ -3157,11 +3157,22 @@ let interp_elim_constraints env evd cstrs =
   in
   List.fold_left interp (evd, Sorts.ElimConstraints.empty) cstrs
 
+let interp_prenex_sort evd lid =
+  let user_err = str"Cannot name a polymorphic sort variable as a ground or global sort" in
+  let is_global_sort_name lid =
+    not @@ List.is_empty (Nametab.Quality.locate_all (Libnames.qualid_of_ident lid)) in
+  match lid with
+  | Ground -> CErrors.user_err user_err
+  | Ident lid ->
+     if is_global_sort_name lid.v
+     then CErrors.user_err ?loc:lid.loc user_err
+     else Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd
+
 let interp_univ_decl env decl =
   let open UState in
   let evd = Evd.from_env env in
-  let evd, qualities = List.fold_left_map (fun evd lid ->
-      Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd)
+  let evd, qualities = List.fold_left_map
+      interp_prenex_sort
       evd
       decl.univdecl_qualities
   in
@@ -3188,8 +3199,8 @@ let interp_cumul_univ_decl env decl =
   let binders = List.map fst decl.univdecl_instance in
   let variances = Array.map_of_list snd decl.univdecl_instance in
   let evd = Evd.from_env env in
-  let evd, qualities = List.fold_left_map (fun evd lid ->
-      Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd)
+  let evd, qualities = List.fold_left_map
+      interp_prenex_sort
       evd
       decl.univdecl_qualities
   in

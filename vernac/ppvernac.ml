@@ -90,7 +90,9 @@ let pr_variance_lident (lid,v) =
 let pr_univ_decl_qualities l extensible =
   (* "extensible" not really supported in syntax currently *)
   if List.is_empty l then mt()
-  else prlist_with_sep spc pr_lident l ++ strbrk " ; "
+  else
+    let l = List.map_filter (fun lid -> match lid with Ground -> None | Ident lid -> Some lid) l in
+    prlist_with_sep spc pr_lident l ++ strbrk " ; "
 
 let pr_univ_decl_instance l extensible =
   prlist_with_sep spc pr_lident l ++

@@ -326,6 +326,7 @@ module Prim =
 
     let name = Entry.make "name"
     let identref = Entry.make "identref"
+    let sort_identref = Entry.make "sort_identref"
     let univ_decl = Entry.make "univ_decl"
     let ident_decl = Entry.make "ident_decl"
     let pattern_ident = Entry.make "pattern_ident"

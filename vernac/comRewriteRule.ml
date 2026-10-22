@@ -393,8 +393,7 @@ let interp_rule ~collapse_sort_variables (udecl, lhs, rhs: Constrexpr.universe_d
     match udecl with
     | None -> evd, default_univ_decl
     | Some udecl ->
-    let evd, qualities = List.fold_left_map (fun evd lid ->
-        Evd.new_quality_variable ?loc:lid.loc ~name:lid.v evd)
+    let evd, qualities = List.fold_left_map Constrintern.interp_prenex_sort
         evd
         udecl.univdecl_qualities
     in

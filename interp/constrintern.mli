@@ -258,6 +258,9 @@ val check_duplicate : ?loc:Loc.t -> (qualid * constr_expr) list -> unit
 (** Check that a list of record field definitions doesn't contain
     duplicates. *)
 
+val interp_prenex_sort
+  : Evd.evar_map -> prenex_sort_expr -> Evd.evar_map * Sorts.QVar.t
+
 val interp_univ_constraint
   : Evd.evar_map
   -> sort_name_expr * Univ.UnivConstraint.kind * sort_name_expr
