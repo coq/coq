@@ -752,6 +752,17 @@ fix.
   constructor arguments to incorrectly convert branches
   and derive inconsistency from there)
 
+#### Universe checking state gets confused when locally changed in module
+
+- component: environ
+- introduced: V8.14
+- impacted released versions: V8.14 to V9.3.0
+- impacted rocqchk versions: none
+- fixed in: V9.3.1, V9.4
+- found by: Gaëtan Gilbert
+- issue: [rocq-prover/rocq#22287](https://github.com/rocq-prover/rocq/issues/22287)
+- risk: needs an explicit Unset Universe Checking
+
 ### Primitive projections
 
 #### check of guardedness of extra arguments of primitive projections missing
