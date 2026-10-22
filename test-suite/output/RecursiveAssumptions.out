@@ -6,3 +6,16 @@ R : forall x : P, Q x
 Q : P -> Prop
 P : Type
 Closed under the global context
+C:
+Axioms:
+B : A -> Prop
+A : Prop
+
+test:
+Axioms:
+R : forall x : P, Q x
+Q : P -> Prop
+P : Type
+
+simple:
+Closed under the global context

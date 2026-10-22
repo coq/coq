@@ -466,6 +466,12 @@ Requests to the environment
       The body of :n:`@qualid` could not be read, so the assumptions it
       relies on are not part of the reported ones.
 
+.. flag:: Printing Assumptions Per Reference
+
+   Prints a separate, named report for each reference in a multi-reference
+   :cmd:`Print Assumptions` query. This also applies to the dependency commands
+   below. Single-reference output is unchanged. The flag is off by default.
+
 .. flag:: Printing All Assumptions
 
    Turn this :term:`flag` on to make :cmd:`Print Assumptions` report
