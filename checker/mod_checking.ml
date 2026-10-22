@@ -331,12 +331,12 @@ and check_signature : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> 
       in
       st
 
-let rec collect_module_axioms env axioms mp mb =
+let rec collect_module_axioms axioms mp mb =
   match mod_expr mb with
   | Struct (reso, struc) ->
     (* Module with implementation separate from its type: don't produce axioms from the type *)
     let struc = Modops.annotate_struct_body struc (mod_type mb) in
-    collect_signature_axioms env axioms struc mp reso
+    collect_signature_axioms axioms struc mp reso
   | Algebraic _ ->
     (* any axioms are already declared from the modules and functors
        involved in the application (this means an axiom in a functor
@@ -344,15 +344,14 @@ let rec collect_module_axioms env axioms mp mb =
        application) *)
     axioms
   | Abstract | FullStruct ->
-    collect_signature_axioms env axioms (mod_type mb) mp (mod_delta mb)
+    collect_signature_axioms axioms (mod_type mb) mp (mod_delta mb)
 
-and collect_signature_axioms : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ =
-  fun env axioms sign mp res -> match sign with
+and collect_signature_axioms : type a. _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ =
+  fun axioms sign mp res -> match sign with
   | MoreFunctor (arg_id, mtb, body) ->
-    let env = Modops.add_module_parameter arg_id mtb env in
-    collect_signature_axioms env axioms body mp res
+    collect_signature_axioms axioms body mp res
   | NoFunctor struc ->
-    let fold (env, axioms) (lab, field) = match field with
+    let fold axioms (lab, field) = match field with
     | SFBconst cb ->
       let kn = Mod_subst.constant_of_delta_kn res (KerName.make mp lab) in
       let axioms =
@@ -360,18 +359,16 @@ and collect_signature_axioms : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_res
         | Def _ | OpaqueDef _ | Primitive _ -> axioms
         | Undef _ | Symbol _ -> axioms_add kn axioms
       in
-      Environ.add_constant kn cb env, axioms
+      axioms
     | SFBmodule mb ->
       let mp = MPdot (mp, lab) in
-      let axioms = collect_module_axioms env axioms mp mb in
-      Modops.add_module mp mb env, axioms
-    | SFBmodtype mtb -> Environ.add_modtype (MPdot (mp, lab)) mtb env, axioms
-    | SFBmind mib ->
-      let kn = Mod_subst.mind_of_delta_kn res (KerName.make mp lab) in
-      Environ.add_mind kn mib env, axioms
-    | SFBrules _ -> env, axioms
+      let axioms = collect_module_axioms axioms mp mb in
+      axioms
+    | SFBmodtype _ -> axioms
+    | SFBmind _ -> axioms
+    | SFBrules _ -> axioms
     in
-    snd (List.fold_left fold (env, axioms) struc)
+    List.fold_left fold axioms struc
 
 let eq_prim_ind (type a b) (p : a CPrimitives.prim_ind) (q : b CPrimitives.prim_ind) =
   String.equal (CPrimitives.prim_ind_to_string p) (CPrimitives.prim_ind_to_string q)
@@ -415,7 +412,7 @@ let check_module env axioms retro mp mb =
   | None, Some (cst, _) ->
     CErrors.user_err Pp.(str "Retroknowledge registration for unknown constant " ++ Constant.print cst ++ str ".")
   in
-  collect_module_axioms env axioms mp mb
+  collect_module_axioms axioms mp mb
 
 let check_module env axioms retro mp mb =
   NewProfile.profile "check_module"

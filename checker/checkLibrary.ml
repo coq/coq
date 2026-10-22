@@ -128,9 +128,7 @@ let check_one_lib ~output_context admit senv (dir,m) =
        let axioms =
          if not output_context then snd senv
          else
-           let env = Safe_typing.env_of_safe_env
-             (Safe_typing.check_flags_for_library md (fst senv)) in
-           Mod_checking.collect_module_axioms env (snd senv)
+           Mod_checking.collect_module_axioms (snd senv)
              (ModPath.MPfile dir) (Safe_typing.module_of_library md)
        in
        imported, axioms)

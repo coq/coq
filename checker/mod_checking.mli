@@ -20,4 +20,4 @@ val constants_of_axioms : axioms -> Names.KerName.t list
 val empty_axioms : axioms
 
 (** Record assumptions hidden by module signatures without type checking. *)
-val collect_module_axioms : Environ.env -> axioms -> Names.ModPath.t -> Mod_declarations.module_body -> axioms
+val collect_module_axioms : axioms -> Names.ModPath.t -> Mod_declarations.module_body -> axioms
