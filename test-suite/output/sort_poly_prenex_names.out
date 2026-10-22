@@ -1,0 +1,12 @@
+File "./output/sort_poly_prenex_names.v", line 1, characters 0-37:
+The command has indeed failed with message:
+Cannot name a polymorphic sort variable as a ground or global sort
+File "./output/sort_poly_prenex_names.v", line 3, characters 0-36:
+The command has indeed failed with message:
+Cannot name a polymorphic sort variable as a ground or global sort
+File "./output/sort_poly_prenex_names.v", line 5, characters 0-36:
+The command has indeed failed with message:
+Cannot name a polymorphic sort variable as a ground or global sort
+File "./output/sort_poly_prenex_names.v", line 9, characters 21-24:
+The command has indeed failed with message:
+Cannot name a polymorphic sort variable as a ground or global sort
