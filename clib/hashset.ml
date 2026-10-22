@@ -53,6 +53,7 @@ module Make (E : EqType) =
   let additional_values = Obj.size (Obj.repr emptybucket)
 
   type t = {
+    lock : Mutex.t;
     mutable table : elt Weak.t array;
     mutable hashes : int array array;
     mutable limit : int;               (* bucket size limit *)
@@ -69,6 +70,7 @@ module Make (E : EqType) =
     let sz = if sz < 7 then 7 else sz in
     let sz = if sz > Sys.max_array_length then Sys.max_array_length else sz in
     {
+      lock = Mutex.create();
       table = Array.make sz emptybucket;
       hashes = Array.make sz [| |];
       limit = limit;
@@ -77,12 +79,14 @@ module Make (E : EqType) =
     }
 
   let clear t =
+    Mutex.lock t.lock;
     for i = 0 to Array.length t.table - 1 do
       t.table.(i) <- emptybucket;
       t.hashes.(i) <- [| |];
     done;
     t.limit <- limit;
-    t.oversize <- 0
+    t.oversize <- 0;
+    Mutex.unlock t.lock
 
   let iter_weak f t =
     let rec iter_bucket i j b =
@@ -186,6 +190,7 @@ module Make (E : EqType) =
   external unsafe_weak_get : 'a Weak.t -> int -> 'a option = "caml_weak_get"
 
   let repr h d t =
+    Mutex.lock t.lock;
     let table = t.table in
     let index = get_index table h in
     let bucket = Array.unsafe_get table index in
@@ -201,13 +206,17 @@ module Make (E : EqType) =
         | _ -> incr pos
       end else incr pos
     done;
-    match !ans with
-    | Some v -> v
-    | None ->
-      let () = add_aux t Weak.set (Some d) h index in
-      d
+    let v = match !ans with
+      | Some v -> v
+      | None ->
+        let () = add_aux t Weak.set (Some d) h index in
+        d
+    in
+    Mutex.unlock t.lock;
+    v
 
   let stats t =
+    Mutex.lock t.lock;
     let fold accu bucket = max (count_bucket 0 bucket 0) accu in
     let max_length = Array.fold_left fold 0 t.table in
     let histogram = Array.make (max_length + 1) 0 in
@@ -216,6 +225,7 @@ module Make (E : EqType) =
       histogram.(len) <- succ histogram.(len)
     in
     let () = Array.iter iter t.table in
+    Mutex.unlock t.lock;
     let fold (num, len, i) k = (num + k * i, len + k, succ i) in
     let (num, len, _) = Array.fold_left fold (0, 0, 0) histogram in
     {
