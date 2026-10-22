@@ -40,8 +40,7 @@ let indirect_accessor : (Opaqueproof.opaque -> Opaqueproof.opaque_proofterm) ref
 
 let set_indirect_accessor f = indirect_accessor := f
 
-let register_opacified_constant env chkst kn cb =
-  let opac = chkst.st_opaques in
+let register_opacified_constant env opac kn cb =
   let rec gather_consts s c =
     match Constr.kind c with
     | Constr.Const (c, _) -> Cset.add c s
@@ -49,7 +48,7 @@ let register_opacified_constant env chkst kn cb =
   in
   let fold c accu = add_opaque_cb c (lookup_constant c env) opac accu in
   let wo_body = Cset.fold fold (gather_consts Cset.empty cb) Cset.empty in
-  { chkst with st_opaques = Cmap.add kn wo_body opac }
+  Cmap.add kn wo_body opac
 
 exception BadConstant of Constant.t * Pp.t
 
@@ -104,7 +103,9 @@ let check_constant_declaration env opac kn cb opacify =
     Some retro, opac
   in
   match body with
-  | Some body when opacify -> retro, register_opacified_constant env opac kn body
+  | Some body when opacify ->
+    let opaques = register_opacified_constant env opac.st_opaques kn body in
+    retro, { opac with st_opaques = opaques }
   | Some _ | None -> retro, opac
 
 let check_constant_declaration env opac kn cb opacify =
@@ -367,6 +368,50 @@ and check_signature : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> 
         check_structure_field env opac mp_mse lab res opacify mb) (env, opac) struc
       in
       opac
+
+(* Admitted libraries skip type checking, but context reporting still needs the
+   assumptions of definitions hidden by module signatures. Follow the same
+   structure and local environments as [check_module], without checking terms. *)
+let rec collect_module_opaques env opac mp mb opacify =
+  let opac = collect_signature_opaques env opac (mod_type mb) mp (mod_delta mb) opacify in
+  match mod_expr mb with
+  | Struct (reso, struc) ->
+    let opacify = collect_constants_without_body (mod_type mb) mp opacify in
+    let struc = Modops.annotate_struct_body struc (mod_type mb) in
+    collect_signature_opaques env opac struc mp reso opacify
+  | Abstract | Algebraic _ | FullStruct -> opac
+
+and collect_signature_opaques : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ -> _ =
+  fun env opac sign mp res opacify -> match sign with
+  | MoreFunctor (arg_id, mtb, body) ->
+    let env = Modops.add_module_parameter arg_id mtb env in
+    collect_signature_opaques env opac body mp res empty_cset
+  | NoFunctor struc ->
+    let fold (env, opac) (lab, field) = match field with
+    | SFBconst cb ->
+      let kn = Mod_subst.constant_of_delta_kn res (KerName.make mp lab) in
+      let opac =
+        if not (KerName.Set.mem (Constant.canonical kn) opacify.cset) then opac
+        else match cb.const_body with
+        | Def body -> register_opacified_constant env opac kn body
+        | OpaqueDef o -> register_opacified_constant env opac kn (fst (!indirect_accessor o))
+        | Undef _ | Primitive _ | Symbol _ -> opac
+      in
+      Environ.add_constant kn cb env, opac
+    | SFBmodule mb ->
+      let mp = MPdot (mp, lab) in
+      let opac = collect_module_opaques env opac mp mb opacify in
+      Modops.add_module mp mb env, opac
+    | SFBmodtype mtb -> Environ.add_modtype (MPdot (mp, lab)) mtb env, opac
+    | SFBmind mib ->
+      let kn = Mod_subst.mind_of_delta_kn res (KerName.make mp lab) in
+      Environ.add_mind kn mib env, opac
+    | SFBrules _ -> env, opac
+    in
+    snd (List.fold_left fold (env, opac) struc)
+
+let collect_module_opaques env opac mp mb =
+  collect_module_opaques env opac mp mb empty_cset
 
 let eq_prim_ind (type a b) (p : a CPrimitives.prim_ind) (q : b CPrimitives.prim_ind) =
   String.equal (CPrimitives.prim_ind_to_string p) (CPrimitives.prim_ind_to_string q)
