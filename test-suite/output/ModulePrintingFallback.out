@@ -1,0 +1,15 @@
+File "./output/ModulePrintingFallback.v", line 12, characters 0-20:
+Warning: Could not print module contents; printing field names only.
+[module-printing-fallback,vernacular,default]
+Module Type S = Sig Parameter t Parameter x End
+File "./output/ModulePrintingFallback.v", line 13, characters 0-15:
+Warning: Could not print module contents; printing field names only.
+[module-printing-fallback,vernacular,default]
+Module F := Functor (X:S) Struct Parameter t Parameter x End
+File "./output/ModulePrintingFallback.v", line 17, characters 0-25:
+The command has indeed failed with message:
+Could not print module contents; printing field names only.
+[module-printing-fallback,vernacular,default]
+Module Type S = Sig Parameter t Parameter x End
+Module F := Functor (X:S) Struct Parameter t Parameter x End
+Module M := Struct Parameter t : Type. Parameter x : t. End

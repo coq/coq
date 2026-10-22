@@ -418,27 +418,29 @@ let unsafe_print_module extent env mp with_body mb =
   in
   hv 0 (keyword "Module" ++ spc () ++ name ++ modtype ++ body)
 
-exception ShortPrinting
+let warn_module_printing_fallback =
+  CWarnings.create ~name:"module-printing-fallback"
+    ~category:CWarnings.CoreCategories.vernacular
+    (fun () -> str "Could not print module contents; printing field names only.")
+
+let print_with_fallback printer =
+  if !short then printer OnlyNames
+  else
+    try printer WithContents
+    with e when CErrors.noncritical e ->
+      let result = printer OnlyNames in
+      warn_module_printing_fallback ();
+      result
 
 let print_module ~with_body mp =
   let me = Global.lookup_module mp in
-  try
-    if !short then raise ShortPrinting;
-    unsafe_print_module WithContents
-      (Global.env ()) mp with_body me
-  with e when CErrors.noncritical e ->
-    unsafe_print_module OnlyNames
-      (Global.env ()) mp with_body me
+  print_with_fallback (fun extent ->
+    unsafe_print_module extent (Global.env ()) mp with_body me)
 
 let print_modtype kn =
   let mtb = Global.lookup_modtype kn in
   let name = print_kn [] kn in
   hv 1
     (keyword "Module Type" ++ spc () ++ name ++ str " =" ++ spc () ++
-     try
-      if !short then raise ShortPrinting;
-      print_signature' true WithContents
-        (Global.env ()) kn (mod_type mtb)
-     with e when CErrors.noncritical e ->
-      print_signature' true OnlyNames
-        (Global.env ()) kn (mod_type mtb))
+     print_with_fallback (fun extent ->
+       print_signature' true extent (Global.env ()) kn (mod_type mtb)))
