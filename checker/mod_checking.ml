@@ -50,7 +50,7 @@ let register_opacified_constant env opac kn cb =
 
 exception BadConstant of Constant.t * Pp.t
 
-let check_constant_declaration env opac kn cb =
+let check_constant_declaration env st kn cb =
   Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ Constant.print kn);
   let env = CheckFlags.set_local_flags cb.const_typing_flags env in
   let poly, env =
@@ -93,19 +93,19 @@ let check_constant_declaration env opac kn cb =
       end
     | None -> ()
   in
-  let retro, opac = match Cmap.find_opt kn (snd opac.st_retro) with
-  | None -> None, opac
+  let retro, st = match Cmap.find_opt kn (snd st.st_retro) with
+  | None -> None, st
   | Some retro ->
-    let (ind_retro, cst_retro) = opac.st_retro in
-    let opac = { st_retro = (ind_retro, Cmap.remove kn cst_retro) } in
-    Some retro, opac
+    let (ind_retro, cst_retro) = st.st_retro in
+    let st = { st_retro = (ind_retro, Cmap.remove kn cst_retro) } in
+    Some retro, st
   in
-  retro, opac
+  retro, st
 
-let check_constant_declaration env opac kn cb =
-  let retro, opac = NewProfile.profile "check_constant" ~args:(fun () ->
+let check_constant_declaration env st kn cb =
+  let retro, st = NewProfile.profile "check_constant" ~args:(fun () ->
       [("name", `String (Constant.to_string kn))])
-      (fun () -> check_constant_declaration env opac kn cb)
+      (fun () -> check_constant_declaration env st kn cb)
       ()
   in
   let env = Environ.add_constant kn cb env in
@@ -115,7 +115,7 @@ let check_constant_declaration env opac kn cb =
     (* TODO: Some checking is performed by this function, but it looks too lightweight *)
     Primred.add_retroknowledge env (Retroknowledge.Register_type (prm, kn))
   in
-  env, opac
+  env, st
 
 let check_quality_mask env qmask lincheck =
   let open Sorts.Quality in
@@ -276,13 +276,13 @@ let rec check_mexpression env sign mbtyp mp_mse res = match sign with
     MoreFunctor(arg_id,mtb,body), delta
   | MENoFunctor me -> check_mexpr env me mp_mse res
 
-let rec check_module env opac mp (mb : Mod_declarations.module_body) =
+let rec check_module env st mp (mb : Mod_declarations.module_body) =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let delta_mb = mod_delta mb in
-  let opac =
-    check_signature env opac (mod_type mb) mp delta_mb
+  let st =
+    check_signature env st (mod_type mb) mp delta_mb
   in
-  let optsign, opac = match Mod_declarations.mod_expr mb with
+  let optsign, st = match Mod_declarations.mod_expr mb with
     | Struct (reso, sign_struct) ->
       (* TODO: a bit wasteful, we recheck the types of parameters twice *)
       let sign_struct = Modops.annotate_struct_body sign_struct (mod_type mb) in
@@ -296,10 +296,10 @@ let rec check_module env opac mp (mb : Mod_declarations.module_body) =
           Environ.set_vm_library vmtab env, sign_struct
         else env, sign_struct
       in
-      let opac = check_signature env opac sign_struct mp reso in
-      Some (sign_struct, reso), opac
-    | Algebraic me -> Some (check_mexpression env me (mod_type mb) mp delta_mb), opac
-    | Abstract|FullStruct -> None, opac
+      let st = check_signature env st sign_struct mp reso in
+      Some (sign_struct, reso), st
+    | Algebraic me -> Some (check_mexpression env me (mod_type mb) mp delta_mb), st
+    | Abstract|FullStruct -> None, st
   in
   let () = match optsign with
   | None -> ()
@@ -311,7 +311,7 @@ let rec check_module env opac mp (mb : Mod_declarations.module_body) =
     let _ : UGraph.t = Subtyping.check_subtypes state env mp mp mtb2 in
     ()
   in
-  opac
+  st
 
 and check_module_type env mp (mty : Mod_declarations.module_type_body) =
   Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string @@ mp));
@@ -320,47 +320,47 @@ and check_module_type env mp (mty : Mod_declarations.module_type_body) =
   ()
 
 and check_structure_field : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ -> _  =
-  fun env opac mp lab res -> function
+  fun env st mp lab res -> function
   | SFBconst cb ->
       let kn = KerName.make mp lab in
       let kn = Mod_subst.constant_of_delta_kn res kn in
-      check_constant_declaration env opac kn cb
+      check_constant_declaration env st kn cb
   | SFBmind mib ->
       let kn = KerName.make mp lab in
       let kn = Mod_subst.mind_of_delta_kn res kn in
-      let retro = Mindmap.find_opt kn (fst opac.st_retro) in
-      let opac = match retro with
-      | None -> opac
+      let retro = Mindmap.find_opt kn (fst st.st_retro) in
+      let st = match retro with
+      | None -> st
       | Some _ ->
-        let (ind_retro, cst_retro) = opac.st_retro in
-        let opac = { st_retro = (Mindmap.remove kn ind_retro, cst_retro) } in
-        opac
+        let (ind_retro, cst_retro) = st.st_retro in
+        let st = { st_retro = (Mindmap.remove kn ind_retro, cst_retro) } in
+        st
       in
-      CheckInductive.check_inductive env kn mib retro, opac
+      CheckInductive.check_inductive env kn mib retro, st
   | SFBmodule msb ->
       let mp = MPdot(mp, lab) in
-      let opac = check_module env opac mp msb in
-      Modops.add_module mp msb env, opac
+      let st = check_module env st mp msb in
+      Modops.add_module mp msb env, st
   | SFBmodtype mty ->
       let mp = MPdot (mp, lab) in
       let () = check_module_type env mp mty in
-      add_modtype mp mty env, opac
+      add_modtype mp mty env, st
   | SFBrules rrb ->
       check_rewrite_rules_body env lab rrb;
-      Environ.add_rewrite_rules rrb.rewrules_rules env, opac
+      Environ.add_rewrite_rules rrb.rewrules_rules env, st
 
 and check_signature : type a. _ -> _ -> _ -> _ -> a Mod_subst.delta_resolver -> _ =
-  fun env opac sign mp_mse res -> match sign with
+  fun env st sign mp_mse res -> match sign with
   | MoreFunctor (arg_id, mtb, body) ->
       let () = check_module_type env (MPbound arg_id) mtb in
       let env' = Modops.add_module_parameter arg_id mtb env in
-      let opac = check_signature env' opac body mp_mse res in
-      opac
+      let st = check_signature env' st body mp_mse res in
+      st
   | NoFunctor struc ->
-      let (_:env), opac = List.fold_left (fun (env, opac) (lab,mb) ->
-        check_structure_field env opac mp_mse lab res mb) (env, opac) struc
+      let (_:env), st = List.fold_left (fun (env, st) (lab,mb) ->
+        check_structure_field env st mp_mse lab res mb) (env, st) struc
       in
-      opac
+      st
 
 let rec collect_module_opaques env opac mp mb opacify =
   let opac = collect_signature_opaques env opac (mod_type mb) mp (mod_delta mb) opacify in
