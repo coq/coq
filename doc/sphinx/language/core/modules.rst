@@ -364,6 +364,7 @@ are now available through the dot notation.
    Prints the module type corresponding to :n:`@qualid`.
 
 .. warn:: Could not print module contents; printing field names only.
+   :name: module-printing-fallback
 
    The ``module-printing-fallback`` warning is emitted when :cmd:`Print Module`
    or :cmd:`Print Module Type` falls back to printing field names.
