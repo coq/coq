@@ -349,6 +349,13 @@ univ_decl_constraints: [
 | [ "}" | "|}" ]
 ]
 
+sort_identref: [
+| ident
+| "SProp"
+| "Prop"
+| "Type"
+]
+
 term_fix: [
 | "let" "fix" fix_decl "in" term
 | "fix" fix_decl OPT ( LIST1 ( "with" fix_decl ) "for" ident )

@@ -991,8 +991,15 @@ univ_decl_constraints: [
 | [ "}" | bar_cbrace ]
 ]
 
+sort_identref: [
+| identref
+| "SProp"
+| "Prop"
+| "Type"
+]
+
 univ_decl: [
-| "@{" LIST0 identref OPT "+" ";" LIST0 identref OPT "+" univ_decl_constraints
+| "@{" test_semicolon_univ_decl LIST0 sort_identref OPT "+" ";" LIST0 identref OPT "+" univ_decl_constraints
 | "@{" LIST0 identref OPT "+" univ_decl_constraints
 ]
 
@@ -1008,7 +1015,7 @@ variance_identref: [
 ]
 
 cumul_univ_decl: [
-| "@{" test_semicolon_cumul_univ_decl LIST0 identref OPT "+" ";" LIST0 variance_identref OPT "+" univ_decl_constraints
+| "@{" test_semicolon_univ_decl LIST0 sort_identref OPT "+" ";" LIST0 variance_identref OPT "+" univ_decl_constraints
 | "@{" LIST0 variance_identref OPT "+" univ_decl_constraints
 ]
 

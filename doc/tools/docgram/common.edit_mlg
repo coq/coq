@@ -170,7 +170,7 @@ DELETE: [
 | test_leftsquarebracket_equal
 | test_sort_qvar
 | test_ltac2_ident
-| test_semicolon_cumul_univ_decl
+| test_semicolon_univ_decl
 | test_univ_cst
 ]
 
@@ -647,13 +647,13 @@ univ_level_or_quality: [
 ]
 
 univ_decl: [
-| REPLACE "@{" LIST0 identref OPT "+" ";" LIST0 identref OPT "+" univ_decl_constraints
+| REPLACE "@{" LIST0 sort_identref OPT "+" ";" LIST0 identref OPT "+" univ_decl_constraints
 | WITH    "@{" OPT [ LIST0 identref OPT "+" ";" ] LIST0 identref  OPT "+"  OPT [ "|" LIST0 sort_constraint SEP "," OPT "+" ] "}"
 | DELETE "@{" LIST0 identref OPT "+" univ_decl_constraints
 ]
 
 cumul_univ_decl: [
-| REPLACE "@{" LIST0 identref OPT "+" ";" LIST0 variance_identref OPT "+" univ_decl_constraints
+| REPLACE "@{" LIST0 sort_identref OPT "+" ";" LIST0 variance_identref OPT "+" univ_decl_constraints
 | WITH "@{" OPT [ LIST0 identref OPT "+" ";" ] LIST0 variance_identref    OPT "+"   OPT [ "|" LIST0 sort_constraint SEP "," OPT "+" ] "}"
 | DELETE "@{" LIST0 variance_identref OPT "+" univ_decl_constraints
 ]
