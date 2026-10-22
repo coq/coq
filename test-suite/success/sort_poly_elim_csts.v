@@ -2,29 +2,29 @@ Set Universe Polymorphism.
 Set Warnings "+redundant-elimination-constraint".
 
 Section Global.
-  Sort s s'.
+  Sort g g'.
 
   Fail Constraint Prop -> Type.
   Fail Constraint Type -> Prop.
-  Fail Constraint SProp -> s.
+  Fail Constraint SProp -> g.
 
-  Fail Constraint Type -> s.
-  Fail Constraint s -> s.
+  Fail Constraint Type -> g.
+  Fail Constraint g -> g.
 
-  Constraint Prop -> s.
-  Constraint s -> Prop.
-  Fail Constraint s -> SProp.
+  Constraint Prop -> g.
+  Constraint g -> Prop.
+  Fail Constraint g -> SProp.
 
   Polymorphic Axiom ad@{s;u} : forall A : Univ@{s;u}, A.
 
   Polymorphic Definition t@{s s';u v|s -> s'} (A : Univ@{s;u}) (B : Univ@{s';v}) : A := ad A.
 
-  Fail Check t@{s s';Set Set}.
-  Check t@{s Prop;Set Set}.
-  Check t@{Prop s;Set Set}.
-  Check t@{Type s;Set Set}.
-  Check t@{s' s';Set Set}.
-  Fail Check t@{s Type;Set Set}.
+  Fail Check t@{g g';Set Set}.
+  Check t@{g Prop;Set Set}.
+  Check t@{Prop g;Set Set}.
+  Check t@{Type g;Set Set}.
+  Check t@{g' g';Set Set}.
+  Fail Check t@{g Type;Set Set}.
 End Global.
 
 Definition dominant@{Exn Test;|Prop -> Test, Exn -> Test} := tt.
