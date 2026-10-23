@@ -1,0 +1,20 @@
+
+Rocq < 
+Rocq < Rocq < Rocq < Rocq < FeedbackRel is defined
+FeedbackRel_ind is defined
+FeedbackRel_sind is defined
+
+Rocq < Rocq < 
+Rocq < A is declared
+
+Rocq < Rocq < 
+Rocq < mid is declared
+
+Rocq < Rocq < Rocq < Rocq < feedback_hint is defined
+
+Rocq < Rocq < 
+Rocq < The hint feedback_hint will only be used by eauto, because applying
+feedback_hint would leave variable mid as unresolved existential variable.
+
+Rocq < 
+Rocq < 

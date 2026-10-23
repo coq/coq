@@ -26,9 +26,9 @@ Structure PointedType : Type := { Carrier :> Set; point : Carrier }.
 
 (** ** Tests of visibility attributes in a section inside a module *)
 
-(** We only test [Definition], [Coercion], [Canonical] and [Set], the other
-    commands only support the [local] attribute in sections, which is also
-    the default visibility, making them unavailable outside the section. *)
+(** We test representative declarations, settings, and persistent
+    [Hint Resolve] commands. Most other commands only support the [local]
+    attribute in sections, which is also their default visibility. *)
 
 (** *** Without attribute (default) *)
 
@@ -108,8 +108,8 @@ End M_imported.
 End InSectionLocal.
 
 (** *** With the [export] attribute *)
-(** We only need to test a setting, it is the only command for which [export]
-    is supported inside a [Section]. *)
+(** Definitions still reject [export] in sections. Settings and supported
+    resolve-style hints can persist with export locality. *)
 Module InSectionExport.
 
 Module M.
@@ -135,8 +135,8 @@ Check foo_ni@{_}.
 End M_imported.
 End InSectionExport.
 
-(** *** With the [export] attribute *)
-(** We only need to test [Coercion], [Canonical] and [Set]. *)
+(** *** With the [global] attribute *)
+(** We test [Coercion], [Canonical], [Set], and resolve hints below. *)
 
 Module InSectionGlobal.
 
@@ -179,3 +179,58 @@ Check foo_i@{_}.
 End M_imported.
 
 End InSectionGlobal.
+
+Inductive SectionHintPred (A : Type) : Prop :=
+| section_hint_intro : A -> SectionHintPred A.
+
+Create HintDb locality_section_export.
+Create HintDb locality_section_global.
+
+Module InSectionHintExport.
+
+Module M.
+Section S.
+  Context (A : Type) (a : A).
+
+  Lemma exported_section_hint : SectionHintPred A.
+  Proof. exact (section_hint_intro A a). Qed.
+
+  #[export] Hint Resolve exported_section_hint : locality_section_export.
+End S.
+End M.
+
+Module M_not_imported.
+Goal forall (A : Type) (a : A), SectionHintPred A.
+Proof.
+  intros.
+  Fail solve [auto with locality_section_export nocore].
+Abort.
+End M_not_imported.
+
+Module M_imported.
+Import M.
+Goal forall (A : Type) (a : A), SectionHintPred A.
+Proof. intros; auto with locality_section_export nocore. Qed.
+End M_imported.
+
+End InSectionHintExport.
+
+Module InSectionHintGlobal.
+
+Module M.
+Section S.
+  Context (A : Type) (a : A).
+
+  Lemma global_section_hint : SectionHintPred A.
+  Proof. exact (section_hint_intro A a). Qed.
+
+  #[global] Hint Resolve global_section_hint : locality_section_global.
+End S.
+End M.
+
+Module M_not_imported.
+Goal forall (A : Type) (a : A), SectionHintPred A.
+Proof. intros; auto with locality_section_global nocore. Qed.
+End M_not_imported.
+
+End InSectionHintGlobal.
