@@ -167,6 +167,9 @@ ci-stdlib_doc: ci-stdlib
 
 ci-waterproof: ci-stdlib
 
+ci-read_file: ci-stdlib
+ci-linux_process_semantics: ci-stdlib ci-flocq ci-iris ci-read_file
+
 ci-refman: ci-mathcomp ci-mczify
 
 # Virtual targets used by the CI to group compilation of rules in a single job

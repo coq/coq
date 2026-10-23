@@ -484,3 +484,15 @@ project trakt "https://github.com/rocq-trakt/trakt" "master"
 ########################################################################
 project mltac2 "https://github.com/epfl-systemf/mltac2" "main"
 # Contact @dhalilov on github
+
+########################################################################
+# rocq-read-file
+########################################################################
+project read_file "https://github.com/theorem-labs/rocq-read-file" "main"
+# Contact @JasonGross on github
+
+########################################################################
+# rocq-linux-process-semantics
+########################################################################
+project linux_process_semantics "https://github.com/theorem-labs/rocq-linux-process-semantics" "main"
+# Contact @JasonGross on github
