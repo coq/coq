@@ -1092,11 +1092,13 @@ let whd_betaiotazeta ?metas = red_of_state_red ?metas ~delta:false whd_betaiotaz
 
 let whd_all_state = whd_state_gen RedFlags.all
 let whd_all_stack = stack_red_of_state_red whd_all_state
-let whd_all ?metas = red_of_state_red ?metas ~delta:true whd_all_state
+(* [whd_all] and [whd_allnolet] are defined below, after [clos_whd_flags]:
+   when no metas are involved they go through CClosure so that global
+   fixpoints are refolded when contracted, while the engine machine
+   substitutes raw fix bodies. *)
 
 let whd_allnolet_state = whd_state_gen RedFlags.allnolet
 let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
-let whd_allnolet = red_of_state_red ~delta:true whd_allnolet_state
 
 let whd_stack_gen reds = stack_red_of_state_red (whd_state_gen reds)
 
@@ -1162,6 +1164,42 @@ let clos_whd_flags flgs env sigma t =
   with e when is_sync_anomaly e ->
     let _, info = Exninfo.capture e in
     user_err ~info Pp.(str "Tried to normalize ill-typed term")
+
+(* Weak-head normalization with full delta goes through CClosure, whose
+   table-based constant unfolding refolds global fixpoints when they are
+   contracted; the engine machine of [whd_state_gen] would substitute raw
+   fix bodies instead. The engine machine is kept for the meta-aware case,
+   which CClosure does not support. *)
+
+let whnf_nodelta_shortcut x =
+  (* same shortcut as [red_of_state_red] with [~delta:true]: preserve
+     physical equality on terms that no reduction can make progress on *)
+  let rec is_whnf c = match Constr.kind c with
+    | Construct _ | Ind _ | Int _ | Float _ | String _
+    | Sort _ | Prod _ -> true
+    | App (h,_) -> is_whnf h
+    | _ -> false
+  in
+  is_whnf (EConstr.Unsafe.to_constr x)
+
+let unshare_env env =
+  (* Unset the sharing flag to get a call-by-name reduction, as performed by
+     the engine machine of [whd_state_gen]. This matters for the shape of the
+     generated term: with call-by-need, copies of a subterm shared with the
+     head would come out reduced too. *)
+  Environ.set_typing_flags
+    { (Environ.typing_flags env) with Declarations.share_reduction = false } env
+
+let whd_all ?metas env sigma x =
+  match metas with
+  | Some _ -> red_of_state_red ?metas ~delta:true whd_all_state env sigma x
+  | None ->
+    if whnf_nodelta_shortcut x then x
+    else clos_whd_flags RedFlags.all (unshare_env env) sigma x
+
+let whd_allnolet env sigma x =
+  if whnf_nodelta_shortcut x then x
+  else clos_whd_flags RedFlags.allnolet (unshare_env env) sigma x
 
 let nf_beta = clos_norm_flags RedFlags.beta
 let nf_betaiota = clos_norm_flags RedFlags.betaiota
