@@ -49,6 +49,12 @@ let rec eq_lift a b = match a, b with
   | ELLFT (i, a), ELLFT (j, b) -> Int.equal i j && eq_lift a b
   | ELLFT _, (ELID | ELSHFT _) -> false
 
+(* Structural hash consistent with [eq_lift]. *)
+let rec hash_lift = function
+  | ELID -> 1
+  | ELSHFT (e, n) -> (hash_lift e) * 65599 + 2 * n + 1
+  | ELLFT (n, e) -> (hash_lift e) * 65599 + 2 * n
+
 (* compose a relocation of magnitude n *)
 let el_shft_rec n = function
   | ELSHFT(el,k) -> ELSHFT(el,k+n)
