@@ -442,6 +442,7 @@ let understand_state = function
   | "declare_program" -> "vtdeclareprogram", ["pm"]
   | "program_interactive" -> "vtopenproofprogram", ["pm"]
   | "opaque_access" -> "vtopaqueaccess", ["opaque_access"]
+  | "consume_captured_output" -> "vtconsumecapturedoutput", ["captured"]
   | s -> fatal ("unsupported state specifier: " ^ s)
 
 let rec pr_named_arguments fmt = function

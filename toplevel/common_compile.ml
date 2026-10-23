@@ -64,6 +64,19 @@ let ensure_no_pending_proofs ~filename s =
                         |> prlist_with_sep pr_comma Names.Id.print)
                     ++ str ".");
   | None ->
-    let pm = s.Vernacstate.interp.program in
-    let what_for = Pp.str ("file " ^ filename) in
-    NeList.iter (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm) pm
+    let () =
+      let pm = s.Vernacstate.interp.program in
+      let what_for = Pp.str ("file " ^ filename) in
+      NeList.iter (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm) pm
+    in
+    let () =
+      let out = s.interp.captured_output in
+      if not (CList.is_empty out) then
+        CErrors.user_err
+          Pp.(str "There remains captured output in file " ++ str filename ++ str ":" ++ spc() ++
+              qstring CapturedOutput.(
+                  print_captured_with_width
+                    (Option.get @@ Topfmt.get_margin())
+                    (from_rev_list out)))
+    in
+    ()
