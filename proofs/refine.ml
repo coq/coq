@@ -89,7 +89,7 @@ let generic_refine ~typecheck f gl =
   | Some self ->
      let sigma = match principal with
      | None -> sigma
-     | Some evk -> Evd.transfer_name self evk sigma
+     | Some evk -> Evd.transfer self evk sigma
      in Evd.define self c sigma
   in
   (* Mark goals *)
