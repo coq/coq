@@ -59,10 +59,15 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
+    'sphinx.ext.intersphinx', # refs to sphinx doc in README.rst
     'sphinxcontrib.bibtex',
     'sphinx_markdown_builder',
     'rocqrst.rocqdomain'
 ]
+
+intersphinx_mapping = {
+    "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
+}
 
 # Change this to "info" or "warning" to get notifications about undocumented Rocq
 # objects (objects with no contents).
@@ -146,8 +151,7 @@ exclude_patterns = [
     'Thumbs.db',
     '.DS_Store',
     'introduction.rst',
-    'refman-preamble.rst',
-    'README.rst'
+    'refman-preamble.rst'
 ] + ["*.{}.rst".format(fmt) for fmt in SUPPORTED_FORMATS]
 
 # The reST default role (used for this markup: `text`) to use for all

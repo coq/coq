@@ -1,39 +1,66 @@
 =============================
- Documenting Coq with Sphinx
+ Documenting Rocq with Sphinx
 =============================
 
-..
-   README.rst is auto-generated from README.template.rst and the coqrst/*.py files
-   (in particular coqdomain.py).  Use ``doc/tools/coqrst/regen_readme.py`` to rebuild it.
-
-Coq's reference manual is written in `reStructuredText <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ (“reST”), and compiled with `Sphinx <http://www.sphinx-doc.org/en/master/>`_.
+Rocq's reference manual is written in `reStructuredText <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ (“reST”), and compiled with `Sphinx <http://www.sphinx-doc.org/en/master/>`_.
 See `this README <../README.md>`_ for compilation instructions.
 
-In addition to standard reST directives (a directive is similar to a LaTeX environment) and roles (a role is similar to a LaTeX command), the ``coqrst`` plugin loaded by the documentation uses a custom *Coq domain* — a set of Coq-specific directives that define *objects* like tactics, commands (vernacs), warnings, etc. —, some custom *directives*, and a few custom *roles*.  Finally, this manual uses a small DSL to describe tactic invocations and commands.
+In addition to standard reST directives (a directive is similar to a LaTeX environment) and roles (a role is similar to a LaTeX command), the ``rocqrst`` plugin loaded by the documentation uses a custom *Rocq domain* — a set of Rocq-specific directives that define *objects* like tactics, commands (vernacs), warnings, etc. —, some custom *directives*, and a few custom *roles*.  Finally, this manual uses a small DSL to describe tactic invocations and commands.
 
-Coq objects
-===========
+.. role:: rst(code)
+   :language: rst
 
-Our Coq domain define multiple `objects`_.  Each object has a *signature* (think *type signature*), followed by an optional body (a description of that object).  The following example defines two objects: a variant of the ``simpl`` tactic, and an error that it may raise::
+Rocq objects
+============
 
-   .. tacv:: simpl @pattern at {+ @natural}
-      :name: simpl_at
+Our Rocq domain define multiple `objects`_.  Each object has a *signature* (think *type signature*), followed by an optional body (a description of that object).  The following example defines two objects: a variant of the ``simpl`` tactic, and an error that it may raise.
 
-      This applies ``simpl`` only to the :n:`{+ @natural}` occurrences of the subterms
-      matching :n:`@pattern` in the current goal.
+.. example::
 
-      .. exn:: Too few occurrences
-         :undocumented:
+   .. code-block:: RST
 
-Objects are automatically collected into indices, and can be linked to using the role version of the object's directive. For example, you could link to the tactic variant above using ``:tacv:`simpl_at```, and to its exception using ``:exn:`Too few occurrences```.
+      .. tacv:: simpl @pattern at {+ @natural}
+         :name: simpl_at
 
-Names (link targets) are auto-generated for most simple objects, though they can always be overwritten using a ``:name:`` option, as shown above.
+         This applies ``simpl`` only to the :n:`{+ @natural}` occurrences of the subterms
+         matching :n:`@pattern` in the current goal.
 
-- Options, errors, warnings have their name set to their signature, with ``...`` replacing all notation bits.  For example, the auto-generated name of ``.. exn:: @qualid is not a module`` is ``... is not a module``, and a link to it would take the form ``:exn:`... is not a module```.
-- Vernacs (commands) have their name set to the first word of their signature.  For example, the auto-generated name of ``Axiom @ident : @term`` is ``Axiom``, and a link to it would take the form ``:cmd:`Axiom```.
+         .. exn:: Too few occurrences
+            :undocumented:
+
+Objects are automatically collected into indices, and can be linked to using the role version of the object's directive. For example, you could link to the tactic variant above using :rst:`:tacv:`simpl_at``, and to its exception using :rst:`:exn:`Too few occurrences``.
+
+Names (link targets) are auto-generated for most simple objects, though they can always be overwritten using a :rst:`:name:` option, as shown above.
+
+- Options, errors, warnings have their name set to their signature, with ``...`` replacing all notation bits.  For example, the auto-generated name of
+
+  .. code-block:: RST
+
+     .. exn:: @qualid is not a module
+
+  is ``... is not a module``, and a link to it would take the form
+
+  .. code-block:: RST
+
+     :exn:`... is not a module`
+
+- Vernacs (commands) have their name set to the first word of their signature.  For example, the auto-generated name of
+
+  .. code-block:: RST
+
+     Axiom @ident : @term
+
+  is ``Axiom``, and a link to it would take the form
+
+  .. code-block:: RST
+
+     :cmd:`Axiom`
+
 - Vernac variants, tactic notations, and tactic variants do not have a default name.
 
-Most objects should have a body (i.e. a block of indented text following the signature, called “contents” in Sphinx terms).  Undocumented objects should have the ``:undocumented:`` flag instead, as shown above.  When multiple objects have a single description, they can be grouped into a single object, like this (semicolons can be used to separate the names of the objects; names starting with ``_`` will be omitted from the indexes)::
+Most objects should have a body (i.e. a block of indented text following the signature, called “contents” in Sphinx terms).  Undocumented objects should have the :rst:`:undocumented:` flag instead, as shown above.  When multiple objects have a single description, they can be grouped into a single object, like this (semicolons can be used to separate the names of the objects; names starting with ``_`` will be omitted from the indexes):
+
+.. code-block:: RST
 
    .. cmdv:: Lemma @ident {* @binder } : @type
              Remark @ident {* @binder } : @type
@@ -47,7 +74,7 @@ Most objects should have a body (i.e. a block of indented text following the sig
 Notations
 ---------
 
-The signatures of most objects can be written using a succinct DSL for Coq notations (think regular expressions written with a Lispy syntax).  A typical signature might look like ``Hint Extern @natural {? @pattern} => @tactic``, which means that the ``Hint Extern`` command takes a number (``natural``), followed by an optional pattern, and a mandatory tactic.  The language has the following constructs (the full grammar is in `TacticNotations.g </doc/tools/coqrst/notations/TacticNotations.g>`_):
+The signatures of most objects can be written using a succinct DSL for Rocq notations (think regular expressions written with a Lispy syntax).  A typical signature might look like ``Hint Extern @natural {? @pattern} => @tactic``, which means that the ``Hint Extern`` command takes a number (``natural``), followed by an optional pattern, and a mandatory tactic.  The language has the following constructs (the full grammar is in `TacticNotations.g </doc/tools/rocqrst/notations/TacticNotations.g>`_):
 
 ``@…``
   A placeholder (``@ident``, ``@natural``, ``@tactic``\ …)
@@ -88,79 +115,112 @@ As an exercise, what do the following patterns mean?
 Objects
 -------
 
-Here is the list of all objects of the Coq domain (The symbol :black_nib: indicates an object whose signature can be written using the notations DSL):
+Here is the list of all objects of the Rocq domain (The symbol ✒ indicates an object whose signature can be written using the notations DSL):
 
-``.. attr::`` :black_nib: An attribute.
-Example::
+.. rst:directive:: attr
 
-   .. attr:: local
+   ✒ An attribute.
 
-``.. cmd::`` :black_nib: A Rocq command.
-Example::
+.. example::
 
-   .. cmd:: Infix @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @ident }
+   .. code-block:: RST
 
-      This command is equivalent to :n:`…`.
+      .. attr:: local
 
-``.. cmdv::`` :black_nib: A variant of a Rocq command.
-Example::
+.. rst:directive:: cmd
 
-   .. cmd:: Axiom @ident : @term.
+   ✒ A Rocq command.
 
-      This command links :token:`term` to the name :token:`term` as its specification in
-      the global environment. The fact asserted by :token:`term` is thus assumed as a
-      postulate.
+.. example::
 
-      .. cmdv:: Parameter @ident : @term.
+   .. code-block:: RST
 
-         This is equivalent to :n:`Axiom @ident : @term`.
+      .. cmd:: Infix @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @ident }
 
-``.. exn::`` :black_nib: An error raised by a Rocq command or tactic.
-This commonly appears nested in the ``.. tacn::`` that raises the
-exception.
+         This command is equivalent to :n:`…`.
 
-Example::
+.. rst:directive:: cmdv
 
-   .. tacv:: assert @form by @tactic
+   ✒ A variant of a Rocq command.
 
-      This tactic applies :n:`@tactic` to solve the subgoals generated by
-      ``assert``.
+.. example::
 
-      .. exn:: Proof is not complete
+   .. code-block:: RST
 
-         Raised if :n:`@tactic` does not fully solve the goal.
+      .. cmd:: Axiom @ident : @term.
 
-``.. flag::`` :black_nib: A Rocq flag (i.e. a boolean setting).
-Example::
+         This command links :token:`term` to the name :token:`term` as its specification in
+         the global environment. The fact asserted by :token:`term` is thus assumed as a
+         postulate.
 
-   .. flag:: Nonrecursive Elimination Schemes
+         .. cmdv:: Parameter @ident : @term.
 
-      Controls whether types declared with the keywords
-      :cmd:`Variant` and :cmd:`Record` get an automatic declaration of
-      induction principles.
+            This is equivalent to :n:`Axiom @ident : @term`.
 
-``.. opt::`` :black_nib: A Rocq option (a setting with non-boolean value, e.g. a string or numeric value).
-Example::
+.. rst:directive:: exn
 
-   .. opt:: Hyps Limit @natural
-      :name Hyps Limit
+   ✒ An error raised by a Rocq command or tactic.
+   This commonly appears nested in the :rst:dir:`tacn` that raises the exception.
 
-      Controls the maximum number of hypotheses displayed in goals after
-      application of a tactic.
+.. example::
 
-``.. prodn::`` A grammar production.
-Use ``.. prodn`` to document grammar productions instead of Sphinx
-`production lists
-<http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_.
+   .. code-block:: RST
 
-prodn displays multiple productions together with alignment similar to ``.. productionlist``,
-however unlike ``.. productionlist``\ s, this directive accepts notation syntax.
+      .. tacv:: assert @form by @tactic
 
-Example::
+         This tactic applies :n:`@tactic` to solve the subgoals generated by
+         ``assert``.
 
-    .. prodn:: occ_switch ::= { {? {| + | - } } {* @natural } }
-    term += let: @pattern := @term in @term
-    | second_production
+         .. exn:: Proof is not complete
+
+            Raised if :n:`@tactic` does not fully solve the goal.
+
+.. rst:directive:: flag
+
+   ✒ A Rocq flag (i.e. a boolean setting).
+
+.. example::
+
+   .. code-block:: RST
+
+      .. flag:: Nonrecursive Elimination Schemes
+
+         Controls whether types declared with the keywords
+         :cmd:`Variant` and :cmd:`Record` get an automatic declaration of
+         induction principles.
+
+.. rst:directive:: opt
+
+   ✒ A Rocq option (a setting with non-boolean value, e.g. a string or numeric value).
+
+.. example::
+
+   .. code-block:: RST
+
+      .. opt:: Hyps Limit @natural
+         :name: Hyps Limit
+
+         Controls the maximum number of hypotheses displayed in goals after
+         application of a tactic.
+
+.. rst:directive:: prodn
+
+   A grammar production.
+
+   Use :rst:dir:`prodn` to document grammar productions instead of Sphinx
+   `production lists
+   <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_.
+
+   prodn displays multiple productions together with alignment similar to :rst:dir:`productionlist`,
+   however unlike :rst:dir:`productionlist`\ s, this directive accepts notation syntax.
+
+.. example::
+
+   .. code-block:: RST
+
+       .. prodn:: occ_switch ::= { {? {| + | - } } {* @natural } }
+          term += let: @pattern := @term in @term
+          | second_production
 
    The first line defines "occ_switch", which must be unique in the document.  The second
    references and expands the definition of "term", whose main definition is elsewhere
@@ -168,74 +228,105 @@ Example::
    definition of a nonterminal when it has multiple productions.  It leaves the first
    column in the output blank.
 
-``.. table::`` :black_nib: A Rocq table, i.e. a setting that is a set of values.
-Example::
+.. rst:directive:: table
 
-   .. table:: Search Blacklist @string
-      :name: Search Blacklist
+   ✒ A Rocq table, i.e. a setting that is a set of values.
 
-      Controls ...
+.. example::
 
-``.. tacn::`` :black_nib: A tactic, or a tactic notation.
-Example::
+   .. code-block:: RST
 
-   .. tacn:: do @natural @expr
+      .. table:: Search Blacklist @string
+         :name: Search Blacklist
 
-      :token:`expr` is evaluated to ``v`` which must be a tactic value. …
+         Controls ...
 
-``.. tacv::`` :black_nib: A variant of a tactic.
-Example::
+.. rst:directive:: tacn
 
-   .. tacn:: fail
+   A tactic, or a tactic notation.
 
-      This is the always-failing tactic: it does not solve any goal. It is
-      useful for defining other tacticals since it can be caught by
-      :tacn:`try`, :tacn:`repeat`, :tacn:`match goal`, or the branching
-      tacticals. …
+.. example::
 
-      .. tacv:: fail @natural
+   .. code-block:: RST
 
-         The number is the failure level. If no level is specified, it
-         defaults to 0. …
+      .. tacn:: do @natural @expr
 
-``.. thm::`` A theorem.
-Example::
+         :token:`expr` is evaluated to ``v`` which must be a tactic value. …
 
-   .. thm:: Bound on the ceiling function
+.. rst:directive:: tacv
 
-      Let :math:`p` be an integer and :math:`c` a rational constant. Then
-      :math:`p \ge c \rightarrow p \ge \lceil{c}\rceil`.
+   ✒ A variant of a tactic.
 
-``.. warn::`` :black_nib: An warning raised by a Rocq command or tactic..
-Do not mistake this for ``.. warning::``; this directive is for warning
-messages produced by Rocq.
+.. example::
 
+   .. code-block:: RST
 
-Example::
+      .. tacn:: fail
 
-   .. warn:: Ambiguous path
+         This is the always-failing tactic: it does not solve any goal. It is
+         useful for defining other tacticals since it can be caught by
+         :tacn:`try`, :tacn:`repeat`, :tacn:`match goal`, or the branching
+         tacticals. …
 
-      When the coercion :token:`qualid` is added to the inheritance graph, non
-      valid coercion paths are ignored.
+         .. tacv:: fail @natural
 
-Coq directives
-==============
+            The number is the failure level. If no level is specified, it
+            defaults to 0. …
 
-In addition to the objects above, the ``coqrst`` Sphinx plugin defines the following directives:
+.. rst:directive:: thm
 
-``.. rocqtop::`` A reST directive to describe interactions with Rocqtop.
-Usage::
+   A theorem.
 
-   .. rocqtop:: options…
+.. example::
 
-      Rocq code to send to rocq top
+   .. code-block:: RST
 
-Example::
+      .. thm:: Bound on the ceiling function
 
-   .. rocqtop:: in reset
+         Let :math:`p` be an integer and :math:`c` a rational constant. Then
+         :math:`p \ge c \rightarrow p \ge \lceil{c}\rceil`.
 
-      Print nat.
-      Definition a := 1.
+.. rst:directive:: warn
+
+   ✒ An warning raised by a Rocq command or tactic.
+
+   Do not mistake this for :rst:dir:`warning`; this directive is for warning
+   messages produced by Rocq.
+
+.. example::
+
+   .. code-block:: RST
+
+      .. warn:: Ambiguous path
+
+         When the coercion :token:`qualid` is added to the inheritance graph, non
+         valid coercion paths are ignored.
+
+Rocq directives
+===============
+
+In addition to the objects above, the ``rocqrst`` Sphinx plugin defines the following directives:
+
+.. rst:directive:: rocqtop
+
+   A reST directive to describe interactions with rocq top.
+
+   Usage:
+
+   .. code-block:: RST
+
+      .. rocqtop:: options…
+
+         Rocq code to send to rocq top
+
+.. example::
+
+   .. code-block:: RST
+
+      .. rocqtop:: in reset
+
+         Print nat.
+         Definition a := 1.
 
 The blank line after the directive is required.  If you begin a proof,
 use the ``abort`` option to reset rocq top for the next example.
@@ -261,115 +352,157 @@ Here is a list of permissible options:
     This is typically used to showcase examples of things outside coq-core or rocq-core.
     `foo` should be the name of the external requirement, e.g. `stdlib` or `mathcomp`.
 
-``rocqtop``\ 's state is preserved across consecutive ``.. rocqtop::`` blocks
-of the same document (``rocqrst`` creates a single ``rocqtop`` process per
+``rocq top``\ 's state is preserved across consecutive :rst:dir:`rocqtop` blocks
+of the same document (``rocqrst`` creates a single ``rocq top`` process per
 reST source file).  Use the ``reset`` option to reset Rocq's state.
 
-``.. rocqdoc::`` A reST directive to display Rocqtop-formatted source code.
-Usage::
+.. rst:directive:: rocqdoc
 
-   .. rocqdoc::
+   A reST directive to display Rocqtop-formatted source code.
 
-      Rocq code to highlight
+   Usage:
 
-Example::
-
-   .. rocqdoc::
-
-      Definition test := 1.
-
-``.. example::`` A reST directive for examples.
-This behaves like a generic admonition; see
-http://docutils.sourceforge.net/docs/ref/rst/directives.html#generic-admonition
-for more details.
-
-Optionally, any text immediately following the ``.. example::`` header is
-used as the example's title.
-
-Example::
-
-   .. example:: Adding a hint to a database
-
-      The following adds ``plus_comm`` to the ``plu`` database:
+   .. code-block:: RST
 
       .. rocqdoc::
 
-         Hint Resolve plus_comm : plu.
+         Rocq code to highlight
 
-``.. inference::`` A reST directive to format inference rules.
-This also serves as a small illustration of the way to create new Sphinx
-directives.
+.. example::
 
-Usage::
+   .. code-block:: RST
 
-   .. inference:: name
+      .. rocqdoc::
 
-      newline-separated premises
-      --------------------------
-      conclusion
+         Definition test := 1.
 
-Example::
+.. rst:directive:: example
 
-   .. inference:: Prod-Pro
+      A reST directive for examples.
+      This behaves like a generic admonition; see
+      http://docutils.sourceforge.net/docs/ref/rst/directives.html#generic-admonition
+      for more details.
 
-      \WTEG{T}{s}
-      s \in \Sort
-      \WTE{\Gamma::(x:T)}{U}{\Prop}
-      -----------------------------
-      \WTEG{\forall~x:T,U}{\Prop}
+      Optionally, any text immediately following the :rst:dir:`example` header is
+      used as the example's title.
 
-``.. preamble::`` A reST directive to include a TeX file.
-Mostly useful to let MathJax know about `\def`\s and `\newcommand`\s.  The
-contents of the TeX file are wrapped in a math environment, as MathJax
-doesn't process LaTeX definitions otherwise.
+.. example::
 
-Usage::
+   .. code-block:: RST
 
-   .. preamble:: preamble.tex
+      .. example:: Adding a hint to a database
 
-Coq roles
-=========
+         The following adds ``plus_comm`` to the ``plu`` database:
 
-In addition to the objects and directives above, the ``coqrst`` Sphinx plugin defines the following roles:
+         .. rocqdoc::
 
-``:g:`` Rocq code.
-Use this for Gallina and Ltac snippets::
+            Hint Resolve plus_comm : plu.
 
-   :g:`apply plus_comm; reflexivity`
-   :g:`Set Printing All.`
-   :g:`forall (x: t), P(x)`
+.. rst:directive:: inference
 
-``:n:`` Any text using the notation syntax (``@id``, ``{+, …}``, etc.).
-Use this to explain tactic equivalences.  For example, you might write
-this::
+   A reST directive to format inference rules.
+   This also serves as a small illustration of the way to create new Sphinx
+   directives.
 
-   :n:`generalize @term as @ident` is just like :n:`generalize @term`, but
-   it names the introduced hypothesis :token:`ident`.
+   Usage:
 
-Note that this example also uses ``:token:``.  That's because ``ident`` is
-defined in the Rocq manual as a grammar production, and ``:token:``
-creates a link to that.  When referring to a placeholder that happens to be
-a grammar production, ``:token:`…``` is typically preferable to ``:n:`@…```.
+   .. code-block:: RST
 
-``:production:`` A grammar production not included in a ``prodn`` directive.
-Useful to informally introduce a production, as part of running text.
+      .. inference:: name
 
-Example::
+         newline-separated premises
+         --------------------------
+         conclusion
 
-   :production:`string` indicates a quoted string.
+.. example::
 
-You're not likely to use this role very commonly; instead, use a ``prodn``
+
+   .. code-block:: RST
+
+      .. inference:: Prod-Pro
+
+         \WTEG{T}{s}
+         s \in \Sort
+         \WTE{\Gamma::(x:T)}{U}{\Prop}
+         -----------------------------
+         \WTEG{\forall~x:T,U}{\Prop}
+
+.. rst:directive:: preamble
+
+   A reST directive to include a TeX file.
+   Mostly useful to let MathJax know about `\def`\s and `\newcommand`\s.  The
+   contents of the TeX file are wrapped in a math environment, as MathJax
+   doesn't process LaTeX definitions otherwise.
+
+.. example::
+
+
+   .. code-block:: RST
+
+      .. preamble:: preamble.tex
+
+Rocq roles
+==========
+
+In addition to the objects and directives above, the ``rocqrst`` Sphinx plugin defines the following roles:
+
+.. rst:role:: g
+
+   Rocq code.
+   Use this for Gallina and Ltac snippets.
+
+.. example::
+
+   .. code-block:: RST
+
+      :g:`apply plus_comm; reflexivity`
+      :g:`Set Printing All.`
+      :g:`forall (x: t), P(x)`
+
+.. rst:role:: n
+
+   Any text using the notation syntax (``@id``, ``{+, …}``, etc.).
+   Use this to explain tactic equivalences.
+
+.. example::
+
+   .. code-block:: RST
+
+      :n:`generalize @term as @ident` is just like :n:`generalize @term`, but
+      it names the introduced hypothesis :token:`ident`.
+
+   Note that this example also uses ``:token:``.  That's because ``ident`` is
+   defined in the Rocq manual as a grammar production, and ``:token:``
+   creates a link to that.  When referring to a placeholder that happens to be
+   a grammar production, ``:token:`…``` is typically preferable to ``:n:`@…```.
+
+.. rst:role:: production
+
+   A grammar production not included in a :rst:dir:`prodn` directive.
+   Useful to informally introduce a production, as part of running text.
+
+.. example::
+
+   .. code-block:: RST
+
+      :production:`string` indicates a quoted string.
+
+You're not likely to use this role very commonly; instead, use a :rst:dir:`prodn`
 directive and reference its tokens using ``:token:`…```.
 
-``:gdef:`` Marks the definition of a glossary term inline in the text.  Matching :term:`XXX`
-constructs will link to it.  Use the form :gdef:`text <term>` to display "text"
-for the definition of "term", such as when "term" must be capitalized or plural
-for grammatical reasons.  The term will also appear in the Glossary Index.
+.. rst:role:: gdef
 
-Examples::
+   Marks the definition of a glossary term inline in the text.  Matching ``:term:`XXX```
+   constructs will link to it.  Use the form :rst:`:gdef:`text <term>`` to display "text"
+   for the definition of "term", such as when "term" must be capitalized or plural
+   for grammatical reasons.  The term will also appear in the Glossary Index.
 
-   A :gdef:`prime` number is divisible only by itself and 1.
-   :gdef:`Composite <composite>` numbers are the non-prime numbers.
+.. example::
+
+   .. code-block:: RST
+
+      A :gdef:`prime` number is divisible only by itself and 1.
+      :gdef:`Composite <composite>` numbers are the non-prime numbers.
 
 Common mistakes
 ===============
@@ -378,7 +511,7 @@ Improper nesting
 ----------------
 
 DO
-  .. code::
+  .. code-block:: RST
 
      .. cmd:: Foo @bar
 
@@ -390,7 +523,7 @@ DO
            the current context
 
 DON'T
-  .. code::
+  .. code-block:: RST
 
      .. cmd:: Foo @bar
 
@@ -401,31 +534,31 @@ DON'T
      Foo all the :token:`bar`\ s in
      the current context
 
-You can set the ``report_undocumented_coq_objects`` setting in ``conf.py`` to ``"info"`` or ``"warning"`` to get a list of all Coq objects without a description.
+You can set the ``report_undocumented_coq_objects`` setting in ``conf.py`` to ``"info"`` or ``"warning"`` to get a list of all Rocq objects without a description.
 
 Overusing ``:token:``
 ---------------------
 
 DO
-  .. code::
+  .. code-block:: RST
 
      This is equivalent to :n:`Axiom @ident : @term`.
 
 DON'T
-  .. code::
+  .. code-block:: RST
 
      This is equivalent to ``Axiom`` :token:`ident` : :token:`term`.
 
 ..
 
 DO
-  .. code::
+  .. code-block:: RST
 
      :n:`power_tac @term [@ltac]`
        allows :tacn:`ring` and :tacn:`ring_simplify` to recognize …
 
 DON'T
-  .. code::
+  .. code-block:: RST
 
      power_tac :n:`@term` [:n:`@ltac`]
        allows :tacn:`ring` and :tacn:`ring_simplify` to recognize …
@@ -433,12 +566,12 @@ DON'T
 ..
 
 DO
-  .. code::
+  .. code-block:: RST
 
      :n:`name={*; attr}`
 
 DON'T
-  .. code::
+  .. code-block:: RST
 
      ``name=``:n:`{*; attr}`
 
@@ -446,20 +579,20 @@ Omitting annotations
 --------------------
 
 DO
-  .. code::
+  .. code-block:: RST
 
      .. tacv:: assert @form as @simple_intropattern
 
 DON'T
-  .. code::
+  .. code-block:: RST
 
      .. tacv:: assert form as simple_intropattern
 
-Using the ``.. rocqtop::`` directive for syntax highlighting
------------------------------------------------------------
+Using the :rst:dir:`rocqtop` directive for syntax highlighting
+--------------------------------------------------------------
 
 DO
-  .. code::
+  .. code-block:: RST
 
      A tactic of the form:
 
@@ -474,7 +607,7 @@ DO
         first [ t1 | … | tn ].
 
 DON'T
-  .. code::
+  .. code-block:: RST
 
      A tactic of the form:
 
@@ -492,13 +625,13 @@ Overusing plain quotes
 ----------------------
 
 DO
-  .. code::
+  .. code-block:: RST
 
      The :tacn:`refine` tactic can raise the :exn:`Invalid argument` exception.
      The term :g:`let a = 1 in a a` is ill-typed.
 
 DON'T
-  .. code::
+  .. code-block:: RST
 
      The ``refine`` tactic can raise the ``Invalid argument`` exception.
      The term ``let a = 1 in a a`` is ill-typed.
@@ -509,7 +642,7 @@ Overusing the ``example`` directive
 -----------------------------------
 
 DO
-  .. code::
+  .. code-block:: RST
 
      Here is a useful axiom:
 
@@ -518,14 +651,14 @@ DO
         Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
 DO
-  .. code::
+  .. code-block:: RST
 
      .. example:: Using proof-irrelevance
 
         If you assume the axiom above, …
 
 DON'T
-  .. code::
+  .. code-block:: RST
 
      Here is a useful axiom:
 
@@ -541,7 +674,9 @@ Tips and tricks
 Nested lemmas
 -------------
 
-The ``.. rocqtop::`` directive does *not* reset Coq after running its contents.  That is, the following will create two nested lemmas (which by default results in a failure)::
+The :rst:dir:`rocqtop` directive does *not* reset Rocq after running its contents.  That is, the following will create two nested lemmas (which by default results in a failure)::
+
+.. code-block:: RST
 
    .. rocqtop:: all
 
