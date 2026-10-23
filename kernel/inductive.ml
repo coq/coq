@@ -1145,7 +1145,8 @@ type fix_check_result =
 type stack_element =
   (* arguments in the evaluation stack *)
   (* [constr] is typed in [guard_env] and [int] is the number of
-     binders added in the current env on top of [guard_env.env] *)
+     binders added in the current env on top of [guard_env.env],
+     affecting this element and all that follow *)
   | SClosure of fix_check_result * guard_env * int * constr
   (* arguments applied to a "match": only their spec traverse the match *)
   | SArg of Subterm.t Lazy.t
@@ -1170,10 +1171,10 @@ let push_stack_closures renv l stack =
 let push_stack_args l stack =
   List.fold_right (fun spec stack -> SArg spec :: stack) l stack
 
-let lift_stack k =
-   List.map (function
-       | SClosure (needreduce,s,n,c) -> SClosure (needreduce,s,n+k,c)
-       | x -> x)
+let rec lift_stack k = function
+  | SArg _ as elt :: stack -> elt :: lift_stack k stack
+  | SClosure (needreduce,s,n,c) :: stack -> SClosure (needreduce,s,n+k,c) :: stack
+  | [] -> []
 
 let lift1_stack = lift_stack 1
 
@@ -1498,16 +1499,24 @@ let pop_argument ?evars needreduce renv elt stack x a b =
     let spec = stack_element_specif ?evars elt in
     (* Thus, args do not a priori require to be rechecked, so we push a let *)
     (* maybe the body of the let will have to be locally expanded though, see Rel case *)
-    push_let renv (x,lift n c,a,spec), lift1_stack stack, b
+    push_let renv (x,lift n c,a,spec), lift_stack (n + 1) stack, b
   | _, SClosure (_, _, n, c) ->
     (* Either function or args have rec call on internally bound variables *)
-    renv, stack, subst1 (lift n c) b
+    renv, lift_stack n stack, subst1 (lift n c) b
   | _, SArg spec ->
     (* Going down a case branch *)
     push_var renv (x,a,spec), lift1_stack stack, b
 
 let judgment_of_fixpoint (_, types, bodies) =
   Array.map2 (fun typ body -> { uj_val = body ; uj_type = typ }) types bodies
+
+let rec get_stack_term k i = function
+  | [] -> None
+  | SArg _ :: stack -> if Int.equal i 0 then None else get_stack_term k (i-1) stack
+  | SClosure (_, _, k', t) :: stack ->
+      if Int.equal i 0 then Some (lift (k + k') t)
+      else get_stack_term (k + k') (i-1) stack
+let get_stack_term i s = get_stack_term 0 i s
 
 let rec reduce_and_contract_cofix ?evars env c =
   let c = whd_all ?evars env c in
@@ -1629,11 +1638,10 @@ let check_one_fix ?evars renv recpos trees def =
             check_rec_call_state renv needreduce_fix non_absorbed_stack rs (fun () ->
               (* we try hard to reduce the fix away by looking for a
                  constructor in [decrArg] (we unfold definitions too) *)
-              if List.length stack <= decrArg then None else
-              match List.nth stack decrArg with
-              | SArg _ -> (* A match on the way *) None
-              | SClosure (_,_,n,recArg) ->
-              let c = whd_all ?evars renv.env (lift n recArg) in
+              match get_stack_term decrArg stack with
+              | None -> (* A match on the way *) None
+              | Some recArg ->
+              let c = whd_all ?evars renv.env recArg in
               let hd, _ = decompose_app_list c in
               match kind hd with
               | Construct _ -> Some (contract_fix fix, absorbed_stack)
