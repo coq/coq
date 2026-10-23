@@ -27,9 +27,11 @@ Axiom bar : forall (A : Prop) (P : foo A -> Prop), (A -> P (Foo A)) -> Prop.
 
 (* This used to fail with a Not_found, we fail more graciously but a
    heuristic could be implemented, e.g. in some smart occur-check
-   function, to find a solution of then form ?P := fun _ => ?P' *)
+   function, to find a solution of then form ?P := fun _ => ?P'
 
-Fail Check (fun e : ?[T] => bar ?[A] ?[P] (fun g : ?[A'] => g e)).
+   Well, now we do.*)
+
+Check (fun e : ?[T] => bar ?[A] ?[P] (fun g : ?[A'] => g e)).
 
 (* This works and tells which solution we could have inferred *)
 
