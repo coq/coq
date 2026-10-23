@@ -237,6 +237,7 @@ type axiom =
   | UIP of MutInd.t (* An inductive using the special reduction rule. *)
   | IndicesNotMattering of MutInd.t (* An inductive relying on indices not mattering. *)
   | ImpredicativeSet of GlobRef.t (* a definition typed with impredicative Set *)
+  | UncheckedOpaque of Constant.t (* an opaque constant whose proof the kernel did not type *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)

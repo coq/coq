@@ -56,6 +56,8 @@ val add_constant :
   ?typing_flags:typing_flags ->
   Id.t -> Entries.constant_entry -> Constant.t
 val fill_opaque : Safe_typing.opaque_certificate -> unit
+val fill_unchecked_opaque : Opaqueproof.opaque_handle -> Constr.t ->
+  Univ.ContextSet.t Opaqueproof.delayed_universes -> unit
 val add_rewrite_rules : Id.t -> rewrite_rules_body -> unit
 val add_mind :
   ?typing_flags:typing_flags ->
@@ -140,6 +142,9 @@ val mind_of_delta_kn : KerName.t -> MutInd.t
 
 type indirect_accessor = {
   access_proof : Opaqueproof.opaque -> Opaqueproof.opaque_proofterm option;
+  access_unchecked : Opaqueproof.opaque -> bool;
+  (** Whether the kernel did not type this opaque proof when it was declared,
+      because of [-skip-qed-typecheck]. *)
 }
 
 val force_proof : indirect_accessor -> Opaqueproof.opaque -> Opaqueproof.opaque_proofterm

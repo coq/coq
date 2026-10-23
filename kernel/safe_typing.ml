@@ -1253,6 +1253,19 @@ let check_opaque senv (i : Opaqueproof.opaque_handle) pf =
   in
   { opq_body = c; opq_univs = ctx; opq_handle = i; opq_nonce = nonce }
 
+let fill_unchecked_opaque i body ctx senv =
+  let ty_ctx, _, _ =
+    try HandleMap.find i senv.future_cst
+    with Not_found ->
+      CErrors.anomaly Pp.(str "Missing opaque handle" ++ spc () ++ int (Opaqueproof.repr_handle i))
+  in
+  let () = Constant_typing.check_delayed_section_variables ty_ctx body in
+  let senv = match ctx with
+  | Opaqueproof.PrivateMonomorphic ctx -> push_context_set ~strict:true ctx senv
+  | Opaqueproof.PrivatePolymorphic _ -> senv
+  in
+  { senv with future_cst = HandleMap.remove i senv.future_cst }
+
 let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
   let () = if not @@ HandleMap.mem i senv.future_cst then
     CErrors.anomaly Pp.(str "Missing opaque handle" ++ spc () ++ int (Opaqueproof.repr_handle i))

@@ -70,6 +70,7 @@ type coqargs_config = {
   test_mode : bool;
   profile : string option;
   print_emacs : bool;
+  skip_qed_typecheck : bool;
 }
 
 type vo_path = {
@@ -131,6 +132,7 @@ let default_config = {
   test_mode = false;
   profile = None;
   print_emacs  = false;
+  skip_qed_typecheck = false;
 
   (* Quiet / verbosity options should be here *)
 }
@@ -416,6 +418,7 @@ let parse_args ~init arglist : t * string list =
     |"-time" -> { oval with config = { oval.config with time = Some ToFeedback }}
     |"-time-file" -> { oval with config = { oval.config with time = Some (ToFile (next())) }}
     | "-profile" -> { oval with config = { oval.config with profile = Some (next()) } }
+    |"-skip-qed-typecheck" -> { oval with config = { oval.config with skip_qed_typecheck = true } }
     |"-type-in-type" -> set_logic (fun o -> { o with type_in_type = true }) oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some Import)
     |"-where" -> set_query oval PrintWhere

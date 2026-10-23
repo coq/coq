@@ -10,16 +10,22 @@
 
 type 'a const_entry_body = 'a Entries.proof_output Future.computation
 
-val declare_defined_opaque : ?feedback_id:Stateid.t ->
+(** When set, {!declare_defined_opaque} does not let the kernel check the
+    proof, and records it as not checked. Default [false]. *)
+val skip_qed_typecheck : bool ref
+
+val declare_defined_opaque : ?feedback_id:Stateid.t -> poly:bool ->
   Opaqueproof.opaque_handle -> Safe_typing.private_constants const_entry_body -> unit
 val declare_private_opaque : Safe_typing.exported_opaque -> unit
 
+(** A table of opaque proofs. Each entry also records whether the kernel did
+    not check the proof, see {!skip_qed_typecheck}. *)
 type opaque_disk
 
-val get_opaque_disk : Opaqueproof.opaque_handle -> opaque_disk -> Opaqueproof.opaque_proofterm option
+val get_opaque_disk : Opaqueproof.opaque_handle -> opaque_disk -> (Opaqueproof.opaque_proofterm * bool) option
 val set_opaque_disk : Opaqueproof.opaque_handle -> Opaqueproof.opaque_proofterm -> opaque_disk -> unit
 
-val get_current_opaque : Opaqueproof.opaque_handle -> Opaqueproof.opaque_proofterm option
+val get_current_opaque : Opaqueproof.opaque_handle -> (Opaqueproof.opaque_proofterm * bool) option
 val get_current_constraints : Opaqueproof.opaque_handle -> Univ.ContextSet.t option
 
 val dump : ?except:Future.UUIDSet.t -> unit -> opaque_disk * Opaqueproof.opaque_handle Future.UUIDMap.t

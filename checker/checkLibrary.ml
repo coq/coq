@@ -51,7 +51,9 @@ let pr_path sp =
 
 type compilation_unit_name = DirPath.t
 
-type seg_proofs = Opaqueproof.opaque_proofterm option array
+(* The boolean beside each proof records that coqc did not type it. The
+   checker types every proof regardless, so it never reads the boolean. *)
+type seg_proofs = (Opaqueproof.opaque_proofterm * bool) option array
 
 type library_t = {
   library_name : compilation_unit_name;
@@ -106,7 +108,7 @@ let indirect_accessor o =
   let c = access_opaque_table dp i in
   let c = match c with
   | None ->  CErrors.user_err Pp.(str "Cannot access opaque delayed proof.")
-  | Some c -> c
+  | Some (c, _unchecked) -> c
   in
   let (c, prv) = Discharge.cook_opaque_proofterm ci c in
   let c = Mod_subst.subst_mps_list sub c in

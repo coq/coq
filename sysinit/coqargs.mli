@@ -65,6 +65,7 @@ type coqargs_config = {
   test_mode : bool;
   profile : string option;
   print_emacs : bool;
+  skip_qed_typecheck : bool;
 }
 
 type vo_path = {

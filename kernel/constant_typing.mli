@@ -47,3 +47,7 @@ val infer_opaque :
 
 val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output ->
   HConstr.t option * Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes
+
+(** Check that the section variables used by the proof of the opaque constant
+    described by the context are declared. {!check_delayed} also does it. *)
+val check_delayed_section_variables : typing_context -> Constr.t -> unit

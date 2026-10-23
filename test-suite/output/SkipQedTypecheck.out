@@ -1,0 +1,17 @@
+Axioms:
+ax : True
+uses_ax has an opaque proof not checked by the kernel.
+Axioms:
+plain has an opaque proof not checked by the kernel.
+Axioms:
+ax : True
+uses_plain has an opaque proof not checked by the kernel.
+uses_ax has an opaque proof not checked by the kernel.
+plain has an opaque proof not checked by the kernel.
+Closed under the global context
+Closed under the global context
+Axioms:
+loop is assumed to be guarded.
+uses_loop has an opaque proof not checked by the kernel.
+Axioms:
+uses_abstract has an opaque proof not checked by the kernel.

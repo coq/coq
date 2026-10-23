@@ -265,8 +265,17 @@ let infer_opaque ~sec_univs env entry =
     const_def_height = None
   }, context
 
+let check_delayed_section_variables tyenv body =
+  let TyCtx (env, tyj, declared, _) = tyenv in
+  let declared =
+    if List.is_empty (named_context env) then declared
+    else Environ.really_needed env (Id.Set.union declared (global_vars_set env tyj.utj_val))
+  in
+  let declared' = check_section_variables env declared (Some body) tyj.utj_val in
+  assert (Id.Set.equal declared declared')
+
 let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_output) =
-  let TyCtx (env, tyj, declared, univs) = tyenv in
+  let TyCtx (env, tyj, _, univs) = tyenv in
   let ((body, uctx), side_eff) = body in
   let (body, uctx', valid_signatures) = handle env body side_eff in
   let uctx = Univ.ContextSet.union uctx uctx' in
@@ -286,12 +295,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
     let j = { uj_val = HConstr.self hbody; uj_type = j.uj_type } in
     Typeops.check_cast eff_env j DEFAULTcast tyj
   in
-  let declared =
-    if List.is_empty (named_context env) then declared
-    else Environ.really_needed env (Id.Set.union declared (global_vars_set env tyj.utj_val))
-  in
-  let declared' = check_section_variables env declared (Some body) tyj.utj_val in
-  let () = assert (Id.Set.equal declared declared') in
+  let () = check_delayed_section_variables tyenv body in
   let def = HConstr.self hbody in
   let hbody = Some hbody in
   hbody, def, univs

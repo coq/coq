@@ -100,6 +100,7 @@ let rewrite_rules_allowed () = Environ.rewrite_rules_allowed (env())
 let export_private_constants cd = globalize (Safe_typing.export_private_constants cd)
 let add_constant ?typing_flags id d = globalize (Safe_typing.add_constant ?typing_flags id d)
 let fill_opaque c = globalize0 (Safe_typing.fill_opaque c)
+let fill_unchecked_opaque i c ctx = globalize0 (Safe_typing.fill_unchecked_opaque i c ctx)
 let add_rewrite_rules id c = globalize0 (Safe_typing.add_rewrite_rules id c)
 let add_mind ?typing_flags id mie = globalize (Safe_typing.add_mind ?typing_flags id mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype id me inl)
@@ -181,6 +182,7 @@ let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
 type indirect_accessor = {
   access_proof : Opaqueproof.opaque -> Opaqueproof.opaque_proofterm option;
+  access_unchecked : Opaqueproof.opaque -> bool;
 }
 
 let force_proof access o = match access.access_proof o with
