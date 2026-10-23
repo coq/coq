@@ -82,6 +82,8 @@ val repr : t -> Names.GlobRef.t
 end
 
 
+val debug_canonical_structures : CDebug.t
+
 (** A ValuePattern.t characterizes the form of a component of canonical
     instance and is used to query the data base of canonical instances *)
 module ValuePattern : sig

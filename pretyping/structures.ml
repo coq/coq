@@ -158,6 +158,9 @@ type obj_typ = {
   o_NPARAMS : int;
   o_TCOMPS : constr list } (* ordered *)
 
+let debug_canonical_structures =
+  CDebug.create ~name:"canonical" ()
+
 module ValuePattern = struct
 
 type t =
@@ -212,6 +215,15 @@ let print = function
 
 end
 
+let pr_debug_field label pp = hov 2 (str label ++ str ":" ++ spc () ++ pp)
+
+let pr_debug_fields fields =
+  v 0 (prlist_with_sep (fun () -> fnl ()) (fun x -> x) fields)
+
+let pr_econstr_list env sigma l =
+  hov 1 (str "[" ++ prlist_with_sep (fun () -> str ";" ++ spc ())
+    (fun c -> hov 1 (Termops.Internal.print_constr_env env sigma c)) l ++ str "]")
+
 module PatMap = Environ.QMap(Map.Make(ValuePattern))(ValuePattern)
 
 module GlobRefMap = Environ.QGlobRef.Map
@@ -255,17 +267,41 @@ let compute_canonical_projections env sigma ~warn (gref,ind) =
   let o_TPARAMS, projs = List.chop p args in
   let o_NPARAMS = List.length o_TPARAMS in
   let lpj = keep_true_projections lpj in
-  List.fold_left2 (fun acc (spopt, canonical) t ->
-      let t = EConstr.Unsafe.to_constr (shrink_eta sigma (EConstr.of_constr t)) in
+  List.fold_left2 (fun acc (spopt, canonical) raw_t ->
+      let t = EConstr.Unsafe.to_constr (shrink_eta sigma (EConstr.of_constr raw_t)) in
       if canonical
       then
         Option.cata (fun proji_sp ->
             match ValuePattern.of_constr sigma (EConstr.of_constr t) with
             | patt, o_INJ, o_TCOMPS ->
+              let () =
+                debug_canonical_structures (fun () ->
+                  let env = Environ.push_rel_context sign env in
+                  let sigma = Evd.from_env env in
+                  pr_debug_fields [
+                    str "register canonical projection";
+                    pr_debug_field "projection" (Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef proji_sp));
+                    pr_debug_field "instance" (Nametab.pr_global_env Id.Set.empty gref);
+                    pr_debug_field "raw field" (Termops.Internal.print_constr_env env sigma (EConstr.of_constr raw_t));
+                    pr_debug_field "stored field" (Termops.Internal.print_constr_env env sigma (EConstr.of_constr t));
+                    pr_debug_field "eta-shrunk" (str (if Constr.equal raw_t t then "no" else "yes"));
+                    pr_debug_field "key" (ValuePattern.print patt);
+                    pr_debug_field "stored key args" (pr_econstr_list env sigma o_TCOMPS)])
+              in
               ((GlobRef.ConstRef proji_sp, (patt, t)),
                { o_ORIGIN = gref ; o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS = List.map EConstr.Unsafe.to_constr o_TCOMPS })
               :: acc
             | exception DestKO ->
+              let () =
+                debug_canonical_structures (fun () ->
+                  let env = Environ.push_rel_context sign env in
+                  let sigma = Evd.from_env env in
+                  pr_debug_fields [
+                    str "ignore canonical projection with no head constant";
+                    pr_debug_field "projection" (Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef proji_sp));
+                    pr_debug_field "instance" (Nametab.pr_global_env Id.Set.empty gref);
+                    pr_debug_field "field" (Termops.Internal.print_constr_env env sigma (EConstr.of_constr t))])
+              in
               if warn then warn_projection_no_head_constant (sign, env, t, gref, proji_sp);
               acc
           ) acc spopt

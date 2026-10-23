@@ -344,6 +344,13 @@ let { Goptions.get = is_keyed_unification } =
 
 let debug_tactic_unification = CDebug.create ~name:"tactic-unification" ()
 
+let debug_canonical_tactic_unification pp =
+  Structures.debug_canonical_structures (fun () -> v 0 (str "tactic-unification:" ++ fnl () ++ pp ()))
+
+let pr_cs_constr env sigma c = hov 1 (Termops.Internal.print_constr_env env sigma c)
+
+let pr_cs_field label pp = hov 2 (str label ++ str ":" ++ spc () ++ pp)
+
 let occur_meta_or_undefined_evar evd c =
   (* This is performance-critical. Using the evar-insensitive API changes the
      resulting heuristic. *)
@@ -1547,18 +1554,28 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env pb flags m n
           else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 
   and solve_canonical_projection curenvnb pb opt cM cN substn =
+    let env = fst curenvnb in
     let sigma = substn.subst_sigma in
     let metas = substn.subst_metam in
-    let f1l1 = whd_nored_state ~metas:(Meta.meta_handler metas) (fst curenvnb) sigma (cM,Stack.empty) in
-    let f2l2 = whd_nored_state ~metas:(Meta.meta_handler metas) (fst curenvnb) sigma (cN,Stack.empty) in
+    let () =
+      debug_canonical_tactic_unification (fun () ->
+        v 0 (str "try canonical projection" ++ fnl () ++
+          pr_cs_field "projection side" (pr_cs_constr env sigma cM) ++ fnl () ++
+          pr_cs_field "rhs side" (pr_cs_constr env sigma cN)))
+    in
+    let f1l1 = whd_nored_state ~metas:(Meta.meta_handler metas) env sigma (cM,Stack.empty) in
+    let f2l2 = whd_nored_state ~metas:(Meta.meta_handler metas) env sigma (cN,Stack.empty) in
     let metasfn substn mv = match Metamap.find mv substn.subst_metam with
       | Cltyp (_, b) -> Some b.rebus
       | Clval (_, _, b) -> Some b.rebus
       | exception Not_found -> None
     in
+    let solve () =
     let (sigma,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
-      try Evarconv.check_conv_record (fst curenvnb) sigma (Evarconv.decompose_proj ~metas:(metasfn substn) (fst curenvnb) sigma f1l1) f2l2
-      with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
+      try Evarconv.check_conv_record env sigma (Evarconv.decompose_proj ~metas:(metasfn substn) env sigma f1l1) f2l2
+      with Not_found ->
+        let () = debug_canonical_tactic_unification (fun () -> str "no canonical entry selected") in
+        error_cannot_unify env sigma (cM,cN)
     in
     if Reductionops.Stack.compare_shape ts ts1 then
       let substn = push_sigma sigma substn in
@@ -1594,8 +1611,20 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env pb flags m n
       let substn = test substn in
       unirec_rec curenvnb pb opt' substn (snd t) (fst (decompose_app substn.subst_sigma (substl ks (fst t))))
       with Reductionops.Stack.IncompatibleFold2 ->
-        error_cannot_unify (fst curenvnb) sigma (cM,cN)
-    else error_cannot_unify (fst curenvnb) sigma (cM,cN)
+        let () = debug_canonical_tactic_unification (fun () -> str "reject canonical projection: incompatible stacks") in
+        error_cannot_unify env sigma (cM,cN)
+    else
+      let () = debug_canonical_tactic_unification (fun () -> str "reject canonical projection: different stack shapes") in
+      error_cannot_unify env sigma (cM,cN)
+    in
+    try
+      let substn = solve () in
+      let () = debug_canonical_tactic_unification (fun () -> str "canonical projection solved") in
+      substn
+    with e when precatchable_exception e ->
+      let e = Exninfo.capture e in
+      let () = debug_canonical_tactic_unification (fun () -> str "canonical projection failed") in
+      Exninfo.iraise e
   in
 
   let sigma = subst.subst_sigma in

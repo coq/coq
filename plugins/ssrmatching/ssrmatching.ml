@@ -531,8 +531,19 @@ let nb_cs_proj_args env ise pc f u =
   let open ValuePattern in
   let na k =
     let open CanonicalSolution in
-    let _, { cvalue_arguments } = find env ise (GlobRef.ConstRef pc, k) in
-    List.length cvalue_arguments in
+    let _, { constant; body; cvalue_arguments } = find env ise (GlobRef.ConstRef pc, k) in
+    let n = List.length cvalue_arguments in
+    let () =
+      debug_canonical_structures (fun () ->
+        let field label pp = hov 2 (str label ++ str ":" ++ spc () ++ pp) in
+        v 0 (str "ssrmatching canonical projection arity" ++
+          fnl () ++ field "projection" (Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef pc)) ++
+          fnl () ++ field "key" (ValuePattern.print k) ++
+          fnl () ++ field "instance" (hov 1 (Termops.Internal.print_constr_env env ise constant)) ++
+          fnl () ++ field "registered body" (hov 1 (Termops.Internal.print_constr_env env ise body)) ++
+          fnl () ++ field "stored key arg count" (int n)))
+    in
+    n in
   let nargs_of_proj t = match EConstr.kind ise t with
       | App(_,args) -> Array.length args
       | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
