@@ -112,6 +112,18 @@ val mk_clos_vect : usubs -> constr array -> fconstr array
 val zip : fconstr -> stack -> fconstr
 
 val fterm_of : fconstr -> fterm
+
+(** Stable id of a cell, lazily assigned; survives in-place reduction
+    updates. Used by the conversion cache. *)
+val get_fid : fconstr -> int
+val has_default_fid : fconstr -> bool
+
+(** Stable discriminator and identity test for substitution entries, in
+    terms of the fids of the cells they carry. Two entries testing equal
+    denote the same substitution value. *)
+val subs_content_fid : subs_content -> int
+val subs_content_equal : subs_content -> subs_content -> bool
+
 val term_of_fconstr : fconstr -> constr
 val term_of_process : fconstr -> stack -> constr
 val destFLambda :

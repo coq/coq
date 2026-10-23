@@ -126,6 +126,9 @@ val lift_subst : (lift -> 'a -> 'b) -> lift -> 'a subs -> 'b subs
 (** Structural equality for lifts *)
 val eq_lift : lift -> lift -> bool
 
+(** Structural hash consistent with [eq_lift]. *)
+val hash_lift : lift -> int
+
 (** Debugging utilities *)
 module Internal :
 sig
@@ -142,4 +145,20 @@ type 'a or_rel = REL of int | VAL of int * 'a
     relocation shift that must be applied to any variable pointing outside of
     the substitution. *)
 val repr : 'a subs -> 'a or_rel list * int
+
+(** Number of entries in [repr], using cached subtree sizes without
+    traversing the entries or expanding identity substitutions. *)
+val size : 'a subs -> int
+
+(** Allocation-free fold over the entries of a substitution, in [repr]
+    order: [frel] receives the relocated index of each [REL] entry, [fval]
+    the accumulated shift and value of each [VAL] entry. Also returns the
+    total relocation shift (the second component of [repr]). *)
+val fold : ('acc -> int -> 'acc) -> ('acc -> int -> 'a -> 'acc) ->
+  'acc -> 'a subs -> 'acc * int
+
+(** [equal eq s1 s2] decides semantic equality of substitutions (equality
+    of [repr]s, values compared with [eq]), without allocating when the
+    two substitutions are built the same way. *)
+val equal : ('a -> 'a -> bool) -> 'a subs -> 'a subs -> bool
 end
