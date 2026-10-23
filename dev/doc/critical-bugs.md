@@ -30,7 +30,12 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [guard checker does not check arguments of recursive calls in uniformity analysis](#guard-checker-does-not-check-arguments-of-recursive-calls-in-uniformity-analysis)
       - [guard checker sometimes does reduction in the wrong context accepting wrong fixpoints](#guard-checker-sometimes-does-reduction-in-the-wrong-context-accepting-wrong-fixpoints)
       - [guard checker sometimes forgets to check lambda domains in nested fixpoints](#guard-checker-sometimes-forgets-to-check-lambda-domains-in-nested-fixpoints)
+      - [incorrect reification in lazy machine of matches with universe polymorphism](#incorrect-reification-in-lazy-machine-of-matches-with-universe-polymorphism)
+      - [variance inference ignores stack of stuck irrelevant to relevant matches](#variance-inference-ignores-stack-of-stuck-irrelevant-to-relevant-matches)
+      - [missing universe substitution when converting matches with letin in constructor type](#missing-universe-substitution-when-converting-matches-with-letin-in-constructor-type)
+      - [incorrect variance inference with letin in constructor type](#incorrect-variance-inference-with-letin-in-constructor-type)
       - [cofixpoint guard checker passes wrong rectree for nested mutual cofixpoints](#cofixpoint-guard-checker-passes-wrong-rectree-for-nested-mutual-cofixpoints)
+      - [cofixpoint guard checker computes rectree in the wrong environment](#cofixpoint-guard-checker-computes-rectree-in-the-wrong-environment)
       - [guard checker counts local definitions as formal arguments in uniformity analysis](#guard-checker-counts-local-definitions-as-formal-arguments-in-uniformity-analysis)
     - [Module system](#module-system)
       - [missing universe constraints in typing "with" clause of a module type](#missing-universe-constraints-in-typing-with-clause-of-a-module-type)
@@ -43,6 +48,9 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [Incorrect subtyping rule for universe polymorphic "with Definition".](#incorrect-subtyping-rule-for-universe-polymorphic-with-definition)
       - [Subtyping ignored elimination constraints](#subtyping-ignored-elimination-constraints)
       - [kernel and checker accept incorrect name aliasing information](#kernel-and-checker-accept-incorrect-name-aliasing-information)
+    - [Incorrect subtyping of inductives with letins in constructor types](#incorrect-subtyping-of-inductives-with-letins-in-constructor-types)
+    - [Including functor application generates garbage delta-resolvers](#including-functor-application-generates-garbage-delta-resolvers)
+      - [Subtyping of inductive types ignores uniform parameters making it inconsistent with propext](#subtyping-of-inductive-types-ignores-uniform-parameters-making-it-inconsistent-with-propext)
     - [Universes](#universes)
       - [issue with two parameters in the same universe level](#issue-with-two-parameters-in-the-same-universe-level)
       - [universe polymorphism can capture global universes](#universe-polymorphism-can-capture-global-universes)
@@ -57,6 +65,7 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [Missing universe substitution in primitive array instance in lazy](#missing-universe-substitution-in-primitive-array-instance-in-lazy)
       - [Double universe substitution in letins from indices in match return clause](#double-universe-substitution-in-letins-from-indices-in-match-return-clause)
       - [Double universe substitution in letins from constructor arguments in match branches](#double-universe-substitution-in-letins-from-constructor-arguments-in-match-branches)
+      - [Universe checking state gets confused when locally changed in module](#universe-checking-state-gets-confused-when-locally-changed-in-module)
     - [Primitive projections](#primitive-projections)
       - [check of guardedness of extra arguments of primitive projections missing](#check-of-guardedness-of-extra-arguments-of-primitive-projections-missing)
       - [records based on primitive projections became possibly recursive without the guard condition being updated](#records-based-on-primitive-projections-became-possibly-recursive-without-the-guard-condition-being-updated)
@@ -83,6 +92,7 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
       - [incorrect handling of universe polymorphism](#incorrect-handling-of-universe-polymorphism)
       - [Forgotten universe substitution with Register Inline on universe polymorphic definition](#forgotten-universe-substitution-with-register-inline-on-universe-polymorphic-definition)
       - [conversion under contexts is done in the wrong environment](#conversion-under-contexts-is-done-in-the-wrong-environment)
+      - [translation of identifiers from Coq to OCaml was not injective](#translation-of-identifiers-from-coq-to-ocaml-was-not-injective)
     - [Side-effects](#side-effects)
       - [polymorphic side-effects inside monomorphic definitions incorrectly handled as not inlined](#polymorphic-side-effects-inside-monomorphic-definitions-incorrectly-handled-as-not-inlined)
       - [Section variables used in side effects not checked by Proof using](#section-variables-used-in-side-effects-not-checked-by-proof-using)
@@ -751,6 +761,17 @@ fix.
 - risk: unknown (needs to use universe substitution in letin from the
   constructor arguments to incorrectly convert branches
   and derive inconsistency from there)
+
+#### Universe checking state gets confused when locally changed in module
+
+- component: environ
+- introduced: V8.14
+- impacted released versions: V8.14 to V9.3.0
+- impacted rocqchk versions: none
+- fixed in: V9.3.1, V9.4
+- found by: Gaëtan Gilbert
+- issue: [rocq-prover/rocq#22287](https://github.com/rocq-prover/rocq/issues/22287)
+- risk: needs an explicit Unset Universe Checking
 
 ### Primitive projections
 
