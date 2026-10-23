@@ -36,7 +36,7 @@ val detype : 'a delay ->
   flags:PrintingFlags.Detype.t -> ?isgoal:bool -> ?avoid:'g Namegen.Generator.input ->
   env -> evar_map -> constr -> 'a glob_constr_g
 
-val detype_sort : universes:bool -> qualities:bool -> evar_map -> Sorts.t -> glob_sort
+val detype_sort : universes:bool -> sorts:bool -> qualities:bool -> evar_map -> Sorts.t -> glob_sort
 
 val detype_rel_context : 'a delay ->
   flags:PrintingFlags.Detype.t ->
