@@ -1,0 +1,6 @@
+- **Fixed:**
+  scope annotations ``%scope`` and ``%_scope`` no longer close shallow
+  scope openings, as obtained from :cmd:`Arguments` for instance
+  (`#22548 <https://github.com/rocq-prover/rocq/pull/22548>`_,
+  fixes `#22547 <https://github.com/rocq-prover/rocq/issues/22547>`_,
+  by Pierre Roux).
