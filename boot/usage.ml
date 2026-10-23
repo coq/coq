@@ -93,6 +93,7 @@ let print_usage_common co command =
 \n  -time                  display the time taken by each command, outputting to the message system (stdout for coqc)\
 \n  -time-file f           display the time taken by each command, outputting to file f\
 \n  -profile-ltac          display the time taken by each (sub)tactic\
+\n  -profile-lazy          display profiling information of the lazy machine at process exit\
 \n  -m, --memory           display total heap size at program exit\
 \n                         (use environment variable\
 \n                          OCAML_GC_STATS=\"/tmp/gclog.txt\"\

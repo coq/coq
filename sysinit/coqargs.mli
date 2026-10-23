@@ -62,6 +62,7 @@ type coqargs_config = {
   exclude_dirs : CUnix.physical_path list;
   quiet : bool;
   time : time_config option;
+  profile_lazy : bool;
   test_mode : bool;
   profile : string option;
   print_emacs : bool;

@@ -1,21 +1,16 @@
-(library
- (name table)
- (modules table)
- (libraries clib))
-
 (executable
  (name render_results)
  (modules render_results)
- (libraries unix table clib))
+ (libraries unix clib))
 
 (executable
  (name render_line_results)
  (modules render_line_results)
- (libraries unix table str clib))
+ (libraries unix str clib))
 
 (library
  (name benchlib)
- (modules :standard \ render_results render_line_results rocqtimelog2html table)
+ (modules :standard \ render_results render_line_results rocqtimelog2html)
  (libraries unix str clib zarith yojson camlzip))
 
 (executable

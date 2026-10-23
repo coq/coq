@@ -113,6 +113,7 @@ before_script:
   extends: .auto-use-tags
   script:
     - cp dev/ci/dune-workspace.ci dune-workspace
+    - ./configure -relocatable -lazy-profiler yes
     - make $DUNE_TARGET
     - tar cfj _build.tar.bz2 _build
   variables:

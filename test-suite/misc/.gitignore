@@ -4,3 +4,4 @@
 _test
 load-succeed/
 locate-library/
+lazyprof/conftest

@@ -31,6 +31,7 @@ type t = {
   browser : string option;
   bytecodecompiler : bool;
   nativecompiler : nativecompiler;
+  lazyprof : bool;
   coqwebsite : string;
   debug : bool;
 }
@@ -52,6 +53,7 @@ let default_prefs = {
   browser = None;
   bytecodecompiler = true;
   nativecompiler = NativeNo;
+  lazyprof = false;
   coqwebsite = "http://rocq-prover.org/";
   debug = false;
 }
@@ -120,6 +122,8 @@ let args_options = Arg.align [
      yes: -native-compiler option of coqc will default to 'yes', stdlib will be precompiled\n\
      no (default): no native compilation available at all\n\
      ondemand: -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
+  "-lazy-profiler", arg_bool (fun p lazyprof -> { p with lazyprof }),
+   "(yes|no) Enable the profiler for the lazy machine";
   "-warn-error", arg_bool (fun p _warn_error -> warn_warn_error (); p),
     " Deprecated option: warnings are now adjusted in the corresponding build tool.";
   "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
