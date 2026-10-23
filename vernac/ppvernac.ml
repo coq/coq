@@ -76,12 +76,29 @@ let pr_pconstraint = function
   | UnivCst (l,d,r as c) -> pr_uconstraint c
   | ElimCst (l,d,r as c) -> pr_elim_constraint c
 
-let pr_full_univ_name_list = function
+let pr_full_univ_name_list = let open UnivNames in
+  function
   | None -> mt()
-  | Some (ql, ul) ->
-    str "@{" ++ prlist_with_sep spc pr_lname ql ++
-    (if List.is_empty ql then mt() else strbrk " ; ") ++
-    prlist_with_sep spc pr_lname ul ++ str "}"
+  | Some {qualities; ext_ql; univlevels; ext_ul} ->
+    str "@{" ++ (
+      (* If the list of qualities is empty and without ext_ql,
+      then we only print the universe levels *)
+      if (not ext_ql)&&(List.is_empty qualities) then
+        prlist_with_sep spc pr_lname univlevels ++
+        (if ext_ul then
+          (if (List.is_empty univlevels) then str "+" else strbrk " +")
+        else mt())
+      else
+        prlist_with_sep spc pr_lname qualities ++
+        (if ext_ql then
+          (if (List.is_empty qualities) then str "+" else strbrk " +")
+        else mt()) ++
+        strbrk " ; " ++
+        prlist_with_sep spc pr_lname univlevels ++
+        (if ext_ul then
+          (if (List.is_empty univlevels) then str "+" else strbrk " +")
+        else mt())
+    ) ++ str "}"
 
 let pr_variance_lident (lid,v) =
   let v = Option.cata UVars.Variance.pr (mt()) v in

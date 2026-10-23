@@ -115,3 +115,8 @@ Fail Check iff_sortpoly@{_ _ _ _}.
 (* Shouldn't this be equivalent to `iff_sortpoly@{+;_ _ _ _}` ? Not yet at least.
   See discussion about this topic in PR #22621 (github.com/rocq-prover/rocq/pull/22621).
  *)
+
+(* Changed `univ_name_list` *)
+Print le@{+}.
+About le@{+}.
+Fail Print le@{_ _ _ +}.

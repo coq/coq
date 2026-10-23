@@ -226,15 +226,24 @@ let u_ident = Id.of_string "u"
     - the existing names in [uctx], eventually freshened; or
     - fresh names generated from the default id *)
 let fill_names ?user_names uctx =
-  let open UVars in
+  let open UVars in let open UnivNames in
   let { quals; univs } = AbstractContext.names uctx in
   let user_qnames, user_unames = match user_names with
   | None -> Array.map (fun _ -> Anonymous) quals, Array.map (fun _ -> Anonymous) univs
-  | Some (gref, (qdecl, udecl)) ->
-    let quals = Array.map_of_list (fun lname -> lname.CAst.v) qdecl in
-    let univs = Array.map_of_list (fun lname -> lname.CAst.v) udecl in
+  | Some (gref, {qualities; ext_ql; univlevels; ext_ul}) ->
+    let quals = Array.map_of_list (fun lname -> lname.CAst.v) qualities in
+    let univs = Array.map_of_list (fun lname -> lname.CAst.v) univlevels in
+    let context_size = AbstractContext.size uctx in
+    let quals = if ext_ql then
+        let n = max (fst context_size - Array.length quals) 0 in
+          Array.append quals (Array.init n (fun _ -> Anonymous))
+      else quals in
+    let univs = if ext_ul then
+        let n = max (snd context_size - Array.length univs) 0 in
+          Array.append univs (Array.init n (fun _ -> Anonymous))
+      else univs in
     let user_size = Array.length quals, Array.length univs in
-    if not (eq_sizes (AbstractContext.size uctx) user_size) then
+    if not (eq_sizes context_size user_size) then
       let open UnivGen in
       raise (UniverseLengthMismatch {
           gref;
