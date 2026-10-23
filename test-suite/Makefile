@@ -64,10 +64,16 @@ ifeq ($(ARCH),win32)
   # (Coqcargs.add_compile)
   # for test stability across platforms we turn the \ from Filename.concat into a /
   CLEANUP_WINPATH=| sed 's:.\\$(<):./$(<):'
+
+  # -j needs Unix.fork: rocqchk falls back to checking sequentially, with a
+  # warning, which this test's expected output does not have.
+  OUTPUT_COQCHK_TESTS:=$(filter-out output-coqchk/rocqchk_parallel.v,$(wildcard output-coqchk/*.v))
 else
   export FINDLIB_SEP=:
 
   CLEANUP_WINPATH=
+
+  OUTPUT_COQCHK_TESTS:=$(wildcard output-coqchk/*.v)
 endif
 
 # The $(shell echo) trick is necessary due to configure quoting
@@ -349,10 +355,19 @@ unit-tests/src/utest.cmi: unit-tests/src/utest.mli
 
 unit-tests: $(UNIT_LOGFILES)
 
+UNIT_PACKAGES:=rocq-runtime.toplevel,ounit2
+
+# The checker's tests are linked without rocq-runtime.toplevel: through
+# findlib.dynload it links with -linkall, which would also link the
+# checker's main module, and both declare the same warnings. A
+# target-specific variable, unlike a second pattern rule, is chosen the
+# same way by every version of make.
+$(patsubst %.ml,%.ml.log,$(wildcard unit-tests/checker/*.ml)): UNIT_PACKAGES:=rocq-runtime.checklib,ounit2
+
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package rocq-runtime.toplevel,ounit2 \
+	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package $(UNIT_PACKAGES) \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)$(call WITH_TIMER,$@,./$<.test)
 	$(HIDE)$(call REPORT_TIMER,$@)
@@ -480,8 +495,8 @@ $(addsuffix .log,$(wildcard output-coqtop/*.v)): %.v.log: %.v %.out $(PREREQUISI
 	} > "$@"
 	$(HIDE)$(call REPORT_TIMER,$@)
 
-output-coqchk: $(addsuffix .log,$(wildcard output-coqchk/*.v))
-$(addsuffix .log,$(wildcard output-coqchk/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
+output-coqchk: $(addsuffix .log,$(OUTPUT_COQCHK_TESTS))
+$(addsuffix .log,$(OUTPUT_COQCHK_TESTS)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	$(SHOW) "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \

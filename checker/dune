@@ -8,7 +8,7 @@
  (synopsis "Rocq's Standalone Proof Checker")
  (modules :standard \ rocqchk coqchk votour)
  (wrapped true)
- (libraries rocq-runtime.boot rocq-runtime.kernel))
+ (libraries unix rocq-runtime.boot rocq-runtime.kernel))
 
 (executable
  (name rocqchk)
