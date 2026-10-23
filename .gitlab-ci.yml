@@ -1035,6 +1035,16 @@ library:ci-trakt:
   - plugin:ci-elpi_hb
   stage: build-2
 
+library:ci-linux_process_semantics:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
+  - library:ci-flocq
+  - library:ci-iris
+  - plugin:ci-read_file
+  stage: build-3+
+
 # Plugins are by definition the projects that depend on Rocq's ML API
 
 plugin:ci-aac_tactics:
@@ -1247,6 +1257,12 @@ plugin:ci-rocq_lsp:
   variables:
     # test exes increase the saved _build_ci size too much so disable saving _build_ci
     SAVE_BUILD_CI: "0"
+
+plugin:ci-read_file:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-stdlib+flambda
 
 plugin:ci-vsrocq:
   extends: .ci-template-flambda
