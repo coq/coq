@@ -386,9 +386,11 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
   let has_impredicative_set = ref false in
   let has_rewrite_rules = ref false in
   let has_type_in_type = ref false in
+  let has_unchecked_eliminations = ref false in
   let collect_theory_flags (tf : Declarations.typing_flags) =
     if tf.impredicative_set then has_impredicative_set := true;
-    if not tf.check_universes then has_type_in_type := true
+    if not tf.check_universes then has_type_in_type := true;
+    if not tf.check_eliminations then has_unchecked_eliminations := true
   in
   let fold obj contents accu = match obj with
   | VarRef id ->
@@ -415,6 +417,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
         else
           let l = try GlobRef.Map.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
+      in
+      let accu =
+        if cb.const_typing_flags.check_eliminations then accu
+        else
+          let l = try GlobRef.Map.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (UncheckedEliminations obj, l)) Constr.mkProp accu
       in
       let accu =
         if not cb.const_typing_flags.impredicative_set then accu
@@ -461,6 +469,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
           ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
       in
       let accu =
+        if mind.mind_typing_flags.check_eliminations then accu
+        else
+          let l = try GlobRef.Map.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (UncheckedEliminations obj, l)) Constr.mkProp accu
+      in
+      let accu =
         if not (uses_uip mind) then accu
         else
           let l = try GlobRef.Map.find obj ax2ty with Not_found -> [] in
@@ -485,5 +499,6 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
     has_impredicative_set = !has_impredicative_set;
     has_rewrite_rules = !has_rewrite_rules;
     has_type_in_type = !has_type_in_type;
+    has_unchecked_eliminations = !has_unchecked_eliminations;
   } in
   (theory, map)

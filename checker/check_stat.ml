@@ -45,6 +45,14 @@ let pr_type_in_type env =
   let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_universes then MutInd.to_string c :: acc else acc) env csts in
   pr_assumptions "Constants/Inductives relying on type-in-type" csts
 
+(* Kept out of the report when empty: this flag has no vernacular setter and
+   should stay obscure (see #22294 discussion). *)
+let pr_unchecked_eliminations env =
+  let csts = fold_constants (fun c cb acc -> if not cb.const_typing_flags.check_eliminations then Constant.to_string c :: acc else acc) env [] in
+  let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_eliminations then MutInd.to_string c :: acc else acc) env csts in
+  if csts = [] then mt ()
+  else str "* " ++ hov 0 (pr_assumptions "Constants/Inductives relying on unchecked sort eliminations" csts ++ fnl()) ++ fnl()
+
 let pr_unguarded env =
   let csts = fold_constants (fun c cb acc -> if not cb.const_typing_flags.check_guarded then Constant.to_string c :: acc else acc) env [] in
   let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_guarded then MutInd.to_string c :: acc else acc) env csts in
@@ -73,6 +81,7 @@ let print_context env opac = match opac with
     str "* " ++ hov 0 (pr_rewrite_rules env ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_axioms env opac ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_type_in_type env ++ fnl()) ++ fnl() ++
+    pr_unchecked_eliminations env ++
     str "* " ++ hov 0 (pr_unguarded env ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_nonpositive env ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_indices_matter env ++ fnl()))
