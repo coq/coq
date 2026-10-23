@@ -77,3 +77,10 @@ Ltac2 rec loop : 'a -> 'b := fun x => loop x.
 Fail Ltac2 rec loop2 : bool -> bool := fun x => if x then loop2 false else 0.
 
 Fail Ltac2 rec not_a_fun := ().
+
+(** Warning when defining Named type variables. *)
+
+Set Warnings "+ltac2-defined-named-type-variable".
+
+Fail Ltac2 foo (x:'a) : 'b := x.
+Fail Ltac2 foo (x:'a) : int := x.
