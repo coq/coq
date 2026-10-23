@@ -484,23 +484,6 @@ does not build a match expression.
                        | y => y
                        end).
 
-
-.. _aliasing-subpatterns:
-
-Aliasing subpatterns
---------------------
-
-We can also use :n:`as @ident` to associate a name to a sub-pattern:
-
-.. rocqtop:: in reset
-
-   Fixpoint max (n m:nat) {struct n} : nat :=
-     match n, m with
-     | O, _ => m
-     | S n' as p, O => p
-     | S n', S m' => S (max n' m')
-     end.
-
 .. _nested-patterns:
 
 Nested patterns
@@ -578,6 +561,34 @@ example:
                  | x => true
                  end).
 
+.. _aliasing-subpatterns:
+
+Aliasing subpatterns
+--------------------
+
+We can also use :n:`as @ident` to associate a name to a sub-pattern:
+
+.. rocqtop:: in reset
+
+   Fixpoint max (n m:nat) {struct n} : nat :=
+     match n, m with
+     | O, _ => m
+     | S n' as p, O => p
+     | S n', S m' => S (max n' m')
+     end.
+
+This is particularly useful with nested patterns:
+
+.. rocqtop:: in reset
+
+   Fixpoint fib n :=
+     match n with
+     | 0 | 1 => 1
+     | S (S k as p) => fib k + fib p
+     end.
+
+Recursing on `S k` instead of `p` would not work as constructors are
+never considered subterms of the structural argument.
 
 Disjunctive patterns
 --------------------
@@ -617,6 +628,35 @@ notation :n:`({+| @pattern})`, as in:
      | ((2 as m | 4 as m), (3 as n | 5 as n)) => (m,n)
      | _ => (0,0)
      end.
+
+Default pattern (degenerate match)
+----------------------------------
+
+A match whose only pattern is a default pattern (wildcard `_` or a variable name)
+does not produce a match term and is directly elaborated to its only branch.
+
+For instance, the following generate different terms:
+
+.. rocqtop:: all reset
+
+   Check fun x : nat => match x with _ => 0 end.
+   Check fun x : nat => match x with 0 | S _ => 0 end.
+
+In particular the first function is definitionally equal to `fun x =>
+0`, but the second only evaluates to `0` when passed an argument which
+evaluates to a constructor.
+
+This can be used to bind a term to a name without generating a letin, for instance
+
+.. rocqtop:: all
+
+   Check fun x : nat => match x + x with y => y + y end.
+
+and it works even when the match is not on an inductive type
+
+.. rocqtop:: all
+
+   Check match nat with nat_alias => 0 : nat_alias end.
 
 About patterns of parametric types
 ----------------------------------
