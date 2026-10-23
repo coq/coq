@@ -1,0 +1,11 @@
+Axioms:
+M1.foo relies on an unsafe hierarchy.
+Axioms:
+M2.u relies on an unsafe hierarchy.
+Axioms:
+M3.u relies on an unsafe hierarchy.
+Axioms:
+M4.t relies on an unsafe hierarchy.
+Axioms:
+M5.g is assumed to be guarded.
+Closed under the global context
