@@ -157,7 +157,11 @@ let decomp_lambda_constr env sigma ts decomp : EConstr.t -> EConstr.t -> constr_
       let ds = List.skipn n ds in
       let args = List.firstn (nargs - n) args in
       let p = EConstr.mkApp (EConstr.of_kind f, Array.of_list args) in
-      let p = EConstr.Vars.lift (-n) p in
+      (* hack: Generating negative Rels when we chop off binders that
+         might still be used could be problematic but works fine in
+         practice because Rels are translated to None (for constrs)
+         and Nothing (for patterns). *)
+      let p = Termops.popn n p in
       begin
         match decomp [] p with
         | _ as c when ds = [] ->

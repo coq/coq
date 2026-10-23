@@ -1393,7 +1393,7 @@ struct
             let ccl = nf_evar sigma fj.uj_type in
             let ccl =
               if noccur_between sigma 1 cs.cs_nargs ccl then
-                lift (- cs.cs_nargs) ccl
+                popn cs.cs_nargs ccl
               else
                 error_cant_find_case_type ?loc !!env sigma
                   cj.uj_val in
@@ -1464,7 +1464,7 @@ struct
         let sigma, pj = eval_type_pretyper self ~flags empty_valcon env_p sigma p in
         let ccl = nf_evar sigma pj.utj_val in
         let pred = it_mkLambda_or_LetIn ccl psign in
-        let typ = lift (- nar) (beta_applist sigma (pred,[cj.uj_val])) in
+        let typ = popn nar (beta_applist sigma (pred,[cj.uj_val])) in
         sigma, pred, typ
       | None ->
         let sigma, p = match tycon with

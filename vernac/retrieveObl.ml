@@ -155,12 +155,11 @@ let trunc_named_context n ctx =
   CList.firstn (len - n) ctx
 
 let rec chop_product n t =
-  let pop t = Vars.lift (-1) t in
   if Int.equal n 0 then Some t
   else
     match Constr.kind t with
     | Constr.Prod (_, _, b) ->
-      if Vars.noccurn 1 b then chop_product (pred n) (pop b) else None
+      if Vars.noccurn 1 b then chop_product (pred n) (Termops.popC b) else None
     | _ -> None
 
 let evar_dependencies evm oev =

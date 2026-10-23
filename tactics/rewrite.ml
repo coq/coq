@@ -406,7 +406,7 @@ end) = struct
   let pointwise_or_dep_relation env evars n t car rel =
     let evars, car = refresh_univs env evars car in
     if noccurn (goalevars evars) 1 car && noccurn (goalevars evars) 1 rel then
-      app_poly env evars pointwise_relation [| t; lift (-1) car; lift (-1) rel |]
+      app_poly env evars pointwise_relation [| t; pop car; pop rel |]
     else
       app_poly env evars forall_relation
         [| t; mkLambda (make_annot n ERelevance.relevant, t, car);
@@ -427,7 +427,7 @@ end) = struct
         match EConstr.kind sigma (Reductionops.whd_all env sigma prod) with
         | Prod (na, ty, b) ->
           if noccurn sigma 1 b then
-            let b' = lift (-1) b in
+            let b' = pop b in
             let evars, rb = aux evars env b' (pred n) in
               app_poly env evars pointwise_relation [| ty; b'; rb |]
           else

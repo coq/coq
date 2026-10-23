@@ -26,7 +26,7 @@ exception Toberemoved_with_rel of int * constr
 exception Toberemoved
 
 let observe s = if do_observe () then Feedback.msg_debug s
-let pop t = Vars.lift (-1) t
+let pop = Termops.popC
 
 (*
    Transform an inductive induction principle into

@@ -444,7 +444,7 @@ let abstract_args gl generalize_vars dep id defined f args =
           let sigma, eq, refl =
             if leq then
               let sigma, eq = mkEq env  sigma (lift 1 ty) (mkRel 1) liftarg in
-              let sigma, refl = mkRefl env sigma (lift (-lenctx) ty) arg in
+              let sigma, refl = mkRefl env sigma (popn lenctx ty) arg in
               sigma, eq, refl
             else
               let sigma, eq = mkHEq env sigma (lift 1 ty) (mkRel 1) liftargty liftarg in

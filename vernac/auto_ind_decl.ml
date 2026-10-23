@@ -760,7 +760,7 @@ let build_beq_scheme env handle kn =
               if is_irrelevant env_lift.env cc then (ndx-1,env_lift',l)
               else
                 if Vars.noccur_between 1 (nb_cstr_args-ndx) cc then
-                  let cc = lift (ndx-nb_cstr_args) cc in
+                  let cc = Termops.strengthen_betweenC 1 (nb_cstr_args-ndx) cc in
                   match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch cc with
                   | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
                   | Some eqA ->
@@ -794,7 +794,7 @@ let build_beq_scheme env handle kn =
                      if is_irrelevant env_lift.env cc then (ndx-1,env_lift',l)
                      else
                        if Vars.noccur_between 1 (nb_cstr_args-ndx) cc then
-                         let cc = lift (ndx-nb_cstr_args) cc in
+                         let cc = Termops.strengthen_betweenC 1 (nb_cstr_args-ndx) cc in
                          match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch_csargsij cc with
                          | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
                          | Some eqA ->

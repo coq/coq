@@ -53,7 +53,7 @@ let rec eq_lift a b = match a, b with
 let el_shft_rec n = function
   | ELSHFT(el,k) -> ELSHFT(el,k+n)
   | el           -> ELSHFT(el,n)
-let el_shft n el = if Int.equal n 0 then el else el_shft_rec n el
+let el_shft n el = assert (n>=0); if Int.equal n 0 then el else el_shft_rec n el
 
 (* cross n binders *)
 let el_liftn_rec n = function

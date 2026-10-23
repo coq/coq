@@ -864,13 +864,16 @@ let rec exliftn el c =
 
 (* Lifting the binding depth across k bindings *)
 
-let liftn n k c =
-  let open Esubst in
-  match el_liftn (pred k) (el_shft n el_id) with
-    | ELID -> c
-    | el -> exliftn el c
+let rec liftn n k c =
+  match kind c with
+  | Rel i ->
+    if i < k then c
+    else mkRel (i+n)
+  | _ -> map_with_binders succ (fun k c -> liftn n k c) k c
 
-let lift n = liftn n 1
+let liftn n k c = if Int.equal n 0 then c else liftn n k c
+
+let lift n c = liftn n 1 c
 
 type 'univs instance_compare_fn = (GlobRef.t * int) option ->
   'univs -> 'univs -> bool

@@ -541,7 +541,7 @@ let mkLambda_with_eta sigma x t c =
   if List.is_empty args then mkLambda (x, t, c)
   else
     let b, args = List.sep_last args in
-    if isRelN sigma 1 b then applist (f, List.map (Vars.lift (-1)) args)
+    if isRelN sigma 1 b then applist (f, List.map pop args)
     else mkLambda (x, t, c)
 
 let contract_rec env sigma f nbodies mk_rec contract body =
@@ -564,7 +564,7 @@ let contract_rec env sigma f nbodies mk_rec contract body =
       | Some (ref, u) ->
         let body = applist (mkEvalRef ref u, la) in
         List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
-            let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
+            let subst = List.map (popn q) (List.firstn (n-ij) la) in
             let tij' = Vars.substl (List.rev subst) tij in
             let x = make_annot xname ERelevance.relevant in  (* TODO relevance *)
             mkLambda_with_eta sigma x tij' c)

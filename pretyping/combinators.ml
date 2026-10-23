@@ -112,7 +112,7 @@ let make_tuple env sigma (rterm,rty) lind =
   let a = Tacred.simpl env sigma a in
   let na = Context.Rel.Declaration.get_annot (lookup_rel lind env) in
   (* We move [lind] to [1] and lift other rels > [lind] by 1 *)
-  let rty = Vars.lift (1-lind) (Vars.liftn lind (lind+1) rty) in
+  let rty = popn (lind-1) (Vars.liftn lind (lind+1) rty) in
   (* Now [lind] is [mkRel 1] and we abstract on (na:a) *)
   let p = mkLambda (na, a, rty) in
   let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
