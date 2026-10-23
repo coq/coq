@@ -1180,17 +1180,45 @@ let closure_of_filter ~can_drop evd evk = function
   | None -> None
   | Some filter ->
   let evi = Evd.find_undefined evd evk in
-  let vars = collect_vars evd (evar_concl evi) in
-  let test b decl = b || Id.Set.mem (get_id decl) vars ||
-                    match decl with
-                    | LocalAssum _ ->
-                       false
-                    | LocalDef (_,c,_) ->
-                       not (can_drop || isRel evd c || isVar evd c)
+  let ctxt = evar_context evi in
+  let vars_of_kept_def = function
+  | LocalAssum _ -> Id.Set.empty
+  | LocalDef _ as decl ->
+    fold_constr
+      (fun c vars -> Id.Set.union (collect_vars evd c) vars)
+      decl Id.Set.empty
   in
-  let newfilter = Filter.map_along test filter (evar_context evi) in
-  (* Now ensure that restriction is at least what is was originally *)
-  let newfilter = Option.cata (Filter.map_along (&&) newfilter) newfilter (Filter.repr (evar_filter evi)) in
+  (* Named contexts are ordered from innermost to outermost.  When keeping a
+     local definition, also keep the outer declarations mentioned by its
+     body/type, so the filtered context remains well-formed. *)
+  let rec close needed filter ctxt = match filter, ctxt with
+  | [], [] -> []
+  | b :: filter, decl :: ctxt ->
+    let keep = b || Id.Set.mem (get_id decl) needed ||
+               match decl with
+               | LocalAssum _ ->
+                  false
+               | LocalDef (_,c,_) ->
+                  not (can_drop || isRel evd c || isVar evd c)
+    in
+    let needed =
+      if keep then Id.Set.union needed (vars_of_kept_def decl)
+      else needed
+    in
+    keep :: close needed filter ctxt
+  | _ -> assert false
+  in
+  let filter =
+    Option.default (List.map (fun _ -> true) ctxt) (Filter.repr filter)
+  in
+  let needed = collect_vars evd (evar_concl evi) in
+  let newfilter = close needed filter ctxt in
+  (* Now ensure that restriction is at least what it was originally. *)
+  let newfilter = match Filter.repr (evar_filter evi) with
+  | None -> newfilter
+  | Some oldfilter -> List.map2 (fun b old -> b && old) newfilter oldfilter
+  in
+  let newfilter = Filter.make newfilter in
   if Filter.equal newfilter (evar_filter evi) then None else Some newfilter
 
 (* The filter is assumed to be at least stronger than the original one *)
