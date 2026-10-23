@@ -28,6 +28,7 @@ Hexadecimal.hexadecimal_beq:
 Decimal.uint_beq: Decimal.uint -> Decimal.uint -> bool
 Decimal.signed_int_beq: Decimal.signed_int -> Decimal.signed_int -> bool
 Decimal.decimal_beq: Decimal.decimal -> Decimal.decimal -> bool
+Nat.gcd_0: forall b : nat, Nat.gcd 0 b = b
 plus_n_O: forall n : nat, n = n + 0
 plus_O_n: forall n : nat, 0 + n = n
 mult_n_O: forall n : nat, 0 = n * 0
@@ -42,6 +43,9 @@ max_l: forall n m : nat, m <= n -> Nat.max n m = n
 plus_n_Sm: forall n m : nat, S (n + m) = n + S m
 plus_Sn_m: forall n m : nat, S n + m = S (n + m)
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
+Nat.gcd0_spec: forall a k b : nat, Nat.gcd0 a k b = Nat.gcd (a - k) b
+Nat.gcd_S:
+  forall a' b : nat, Nat.gcd (S a') b = Nat.gcd (Nat.modulo b (S a')) (S a')
 f_equal2_plus:
   forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2
 f_equal2_mult:
