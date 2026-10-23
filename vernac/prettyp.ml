@@ -55,7 +55,7 @@ let print_basename cst = pr_global (GlobRef.ConstRef cst)
 
 let print_ref env reduce ref udecl =
   let typ, univs = Typeops.type_of_global_in_context env ref in
-  let inst = UVars.make_abstract_instance univs in
+
   let udecl = Option.map (fun x -> ref, x) udecl in
   let sigma = Evd.from_auctx env (Printer.fill_names ?user_names:udecl univs) in
   let typ =
@@ -66,20 +66,17 @@ let print_ref env reduce ref udecl =
   let typ = Arguments_renaming.rename_type env typ ref in
   let impargs = select_stronger_impargs (implicits_of_global ref) in
   let impargs = List.map binding_kind_of_status impargs in
-  let variance = let open GlobRef in match ref with
-    | VarRef _ | ConstRef _ -> None
-    | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
-      let mind = Environ.lookup_mind ind env in
-      mind.Declarations.mind_variance
-  in
+  let variances = Environ.variances env ref in
   let inst =
     if Environ.is_polymorphic env ref
-    then Printer.pr_universe_instance sigma inst
+    then
+      let inst = UVars.Instance.of_level_instance @@ UVars.make_abstract_level_instance univs in
+      Printer.pr_universe_instance sigma inst
     else mt ()
   in
   let priv = None in (* We deliberately don't print private univs in About. *)
   hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype_env env sigma ~impargs typ ++
-         Printer.pr_abstract_universe_ctx sigma ?variance univs ?priv)
+         Printer.pr_abstract_universe_ctx sigma ?variances univs ?priv)
 
 (** Command [Print Implicit], somehow subsumed by [About] *)
 
@@ -196,14 +193,14 @@ let print_if_is_coercion ref =
 (* XXX TODO print based on the actual binders not from the monomorphic data *)
 let template_poly_variables env ind =
   let mib, mip = Inductive.lookup_mind_specif env ind in
-  match mib.mind_template with
-  | None -> assert false
-  | Some { template_defaults; template_concl } ->
+  match mib.mind_universes with
+  | Polymorphic _ -> assert false
+  | Template { template_defaults; template_concl } ->
     let pseudo_poly = match template_concl with
       | VSort (q, _) when Option.has_some (Sorts.QVar.var_index q) -> true
       | _ -> false
     in
-    let _, vars = UVars.Instance.levels template_defaults in
+    let _, vars = UVars.LevelInstance.levels template_defaults in
     Univ.Level.Set.elements vars, pseudo_poly
 
 let get_template_poly_variables env = function
@@ -221,8 +218,10 @@ let pr_template_variables env ref =
 let print_polymorphism env ref =
   let poly = Environ.is_polymorphic env ref in
   let template_poly = Environ.is_template_polymorphic env ref in
+  let cumulative = Environ.is_cumulative env ref in
   [ pr_global ref ++ str " is " ++
-      (if poly then str "universe polymorphic"
+      (if poly then str "universe polymorphic" ++
+          (if cumulative then str" and cumulative" else mt())
        else if template_poly then
          str "template universe polymorphic"
          ++ if !PrintingFlags.print_universes then h (pr_template_variables env ref) else mt()
@@ -565,9 +564,9 @@ let print_section_variable_with_infos env sigma id =
   with_line_skip (print_name_infos env (GlobRef.VarRef id))
 
 let print_instance sigma cb =
-  if Declareops.constant_is_polymorphic cb then
-    let univs = Declareops.constant_polymorphic_context cb in
-    let inst = UVars.make_abstract_instance univs in
+  let univs = Declareops.constant_polymorphic_context cb in
+  if not (UVars.AbstractContext.is_empty univs) then
+    let inst = UVars.Instance.of_level_instance @@ UVars.make_abstract_level_instance univs in
     pr_universe_instance sigma inst
   else mt()
 

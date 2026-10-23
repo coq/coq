@@ -221,7 +221,7 @@ Check (fun x => match x with | nil => NONE | h :' t => SOME3 _ t end).
    universe than the actual one; but it would be the same anyway
    without a notation *)
 
-Abbreviation s := Type.
+Abbreviation s := Type@{*}.
 Check s.
 
 (* Test bug #2835: notations were not uniformly managed under prod and lambda *)

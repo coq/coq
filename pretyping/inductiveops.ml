@@ -219,11 +219,11 @@ let inductive_nalldecls env ind =
 
 (* Others *)
 
-let get_template_instance mib u = match mib.mind_template with
+let get_template_instance mib u = match Declareops.inductive_template mib with
 | None -> u
 | Some templ ->
   let () = assert (UVars.Instance.is_empty (EConstr.Unsafe.to_instance u)) in
-  EInstance.make templ.template_defaults
+  EInstance.make (UVars.Instance.of_level_instance templ.template_defaults)
 
 let inductive_paramdecls env (ind,u) =
   let u = EConstr.Unsafe.to_instance u in
@@ -802,11 +802,11 @@ let control_only_guard env sigma c =
     and returns the context of parameters, the new evar_map, and the
     substitution for the template variable if there is one. *)
 let paramdecls_fresh_template sigma (mib,u) =
-  match mib.mind_template with
-  | None ->
+  match mib.mind_universes with
+  | Polymorphic _ ->
     let params = Inductive.inductive_paramdecls (mib, EConstr.Unsafe.to_instance u) in
     sigma, EConstr.of_rel_context params, None
-  | Some templ ->
+  | Template templ ->
     assert (EConstr.EInstance.is_empty u);
     let sigma, univs = List.fold_left_map (fun sigma -> function
         | None -> sigma, (fun ~default -> assert false)

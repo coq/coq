@@ -1,5 +1,4 @@
 Primitive array := #array_type.
-
 Check [| | 0 |].
 
 Check [| 1; 2; 3 | 0 |].

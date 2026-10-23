@@ -40,10 +40,8 @@ Definition FunctorProduct' `(F : Functor C D) : SpecializedFunctor C D.
 admit.
 Defined.
 
-Definition TypeCat : @SpecializedCategory Type.
-  admit.
-Defined.
-
+Definition TypeCat : @SpecializedCategory Type :=
+  {| Morphism := fun x y => x -> y |}.
 
 Definition CovariantHomFunctor `(C : @SpecializedCategory objC) : SpecializedFunctor C TypeCat.
   refine (Build_SpecializedFunctor C TypeCat

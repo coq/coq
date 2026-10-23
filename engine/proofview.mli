@@ -427,6 +427,7 @@ module Progress : sig
     universe constraints in [extended_evd] are assumed to be an
     extension of the universe constraints in [evd]. *)
   val goal_equal :
+    Environ.env ->
     evd:Evd.evar_map ->
     extended_evd:Evd.evar_map ->
     Evar.t ->

@@ -26,7 +26,7 @@ type template_arity =
 
 let get_template_arity env ind ~ctoropt =
   let mib, mip = Inductive.lookup_mind_specif env ind in
-  let template = match mib.mind_template with
+  let template = match Declareops.inductive_template mib with
     | None -> assert false
     | Some t -> t
   in
@@ -54,7 +54,7 @@ let get_template_arity env ind ~ctoropt =
     | Some bind_sort :: is_template, LocalAssum (na,t) :: params ->
       let ctx, _ = Term.decompose_prod_decls t in
       let codom = aux is_template params in
-      let default = UVars.subst_instance_sort template.template_defaults bind_sort in
+      let default = UVars.subst_level_instance_sort template.template_defaults bind_sort in
       let binder = { bind_sort; default } in
       TemplateArg (EConstr.of_binder_annot na, EConstr.of_rel_context ctx, binder, codom)
   in

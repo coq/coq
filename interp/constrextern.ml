@@ -834,10 +834,14 @@ let extern_glob_sort uvars (q, l) =
   Option.map (extern_glob_quality uvars) q,
   map_glob_sort_gen (List.map (on_fst (extern_glob_sort_name uvars))) l
 
+let extern_glob_univ uvars u =
+  let map l = List.map (on_fst (extern_glob_sort_name uvars)) l in
+  map_glob_sort_gen map u
+
 let extern_instance uvars = function
   | Some (ql,ul) ->
     let ql = List.map (extern_glob_quality uvars) ql in
-    let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) ul in
+    let ul = List.map (extern_glob_univ uvars) ul in
     Some (ql,ul)
   | None -> None
 

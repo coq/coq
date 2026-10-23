@@ -31,8 +31,7 @@ Local Obligation Tactic := try solve [ simpl_relation ].
    The relation [R] will be instantiated by [respectful] and [A] by an arrow
    type for usual morphisms. *)
 Section Proper.
-  Let U := Type.
-  Context {A B : U}.
+  Context {A B : Type}.
 
   Class Proper (R : relation A) (m : A) : Prop :=
     proper_prf : R m m.
@@ -166,8 +165,7 @@ Ltac reflexive_proxy_tac A R :=
 Hint Extern 1 (@ReflexiveProxy ?A ?R) => reflexive_proxy_tac A R : typeclass_instances.
 
 Section ForallRelation.
-  Let U := Type.
-  Context {A : U} (P : A -> U).
+  Context {A : Type} (P : A -> Type).
 
   (** Dependent pointwise lifting of a relation on the range. *)
   Definition forall_relation
@@ -240,8 +238,7 @@ Ltac f_equiv :=
  end.
 
 Section Relations.
-  Let U := Type.
-  Context {A B : U} (P : A -> U).
+  Context {A B : Type} (P : A -> Type).
 
   (** [forall_def] reifies the dependent product as a definition. *)
   
@@ -339,9 +336,7 @@ Hint Extern 4 (subrelation (@forall_relation ?A ?B ?R) (@forall_relation _ _ ?S)
   apply (@forall_subrelation A B R S) ; intro : typeclass_instances.
 
 Section GenericInstances.
-  (* Share universes *)
-  Let U := Type.
-  Context {A B C : U}.
+  Context {A B C : Type}.
 
   (** We can build a PER on the Rocq function space if we have PERs on the domain and
    codomain. *)

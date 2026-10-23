@@ -84,7 +84,7 @@ let lookup_polymorphism env base kind fqid =
         match Id.equal lab id, obj with
         | false, _ | _, (SFBrules _ | SFBmodule _ | SFBmodtype _) -> None
         | true, SFBmind mind -> Some (Declareops.inductive_is_polymorphic mind)
-        | true, SFBconst const -> Some (Declareops.constant_is_polymorphic const)
+        | true, SFBconst const -> Some true
       in
       (match CList.find_map test m with Some v -> v | None -> false (* error later *))
     | id::rem ->
@@ -134,20 +134,25 @@ let interp_with_decl env base kind = function
   | WithMod (fqid,mp) -> WithMod (fqid,mp), Univ.ContextSet.empty
   | WithDef(fqid,(udecl,c)) ->
     let sigma, udecl = interp_univ_decl_opt env udecl in
-    let c, ectx = interp_constr env sigma c in
     let poly = lookup_polymorphism env base kind fqid in
     let poly =
       PolyFlags.of_univ_poly poly (* MS: FIXME: no sortpoly/cumulative support *)
     in
-    begin match fst (UState.check_univ_decl ~poly ectx udecl) with
-      | UState.Polymorphic_entry ctx ->
+    let flags = { Pretyping.all_and_fail_flags with poly } in
+    let c, ectx = interp_constr ~flags env sigma c in
+    let sigma = UnivVariances.register_universe_variances_of env (Evd.from_ustate ectx) c in
+    let sigma = Evd.minimize_universes ~poly sigma in
+    let c = Evarutil.nf_evar sigma c in
+    begin match (UState.check_univ_decl ~poly ~kind:PolyFlags.Definition
+      (Evd.ustate sigma) udecl).universes_entry_universes with
+      | UState.Polymorphic_entry (ctx, variances) ->
         let inst, ctx = UVars.abstract_universes ctx in
         let c = EConstr.Vars.subst_univs_level_constr (UVars.make_instance_subst inst) c in
         let c = EConstr.to_constr sigma c in
-        WithDef (fqid,(c, Some ctx)), Univ.ContextSet.empty
+        WithDef (fqid,(c, ctx)), Univ.ContextSet.empty
       | UState.Monomorphic_entry ctx ->
         let c = EConstr.to_constr sigma c in
-        WithDef (fqid,(c, None)), ctx
+        WithDef (fqid,(c, UVars.AbstractContext.empty)), ctx
     end
 
 let rec interp_module_ast env kind base m cst = match m with

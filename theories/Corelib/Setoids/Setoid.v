@@ -15,9 +15,9 @@ Export Morphisms.ProperNotations.
 Require Corelib.ssr.ssrsetoid.
 
 (** For backward compatibility *)
-
-Definition Setoid_Theory := @Equivalence.
-Definition Build_Setoid_Theory := @Build_Equivalence.
+(* MS: FIXME minimization problem on partial application *)
+Definition Setoid_Theory A := @Equivalence A.
+Definition Build_Setoid_Theory A := @Build_Equivalence A.
 
 Register Build_Setoid_Theory as plugins.ring.Build_Setoid_Theory.
 

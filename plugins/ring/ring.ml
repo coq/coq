@@ -179,7 +179,9 @@ let decl_constant name univs c =
   let univs = UState.restrict_universe_context univs vars in
   let () = Global.push_context_set univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
-  let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
+  let univs =
+    UState.{ universes_entry_universes = Monomorphic_entry Univ.ContextSet.empty;
+      universes_entry_binders = UnivNames.empty_binders } in
   (* UnsafeMonomorphic: we always do poly:false *)
   UnsafeMonomorphic.mkConst
     (declare_constant ~name
@@ -194,8 +196,8 @@ let decl_constant na suff univs c =
 let ltac_call tac (args:glob_tactic_arg list) =
   CAst.make @@ TacArg (TacCall (CAst.make (ArgArg(Loc.tag tac),args)))
 
-let constr_of sigma v = match Value.to_constr v with
-  | Some c -> EConstr.to_constr sigma c
+let constr_of v = match Value.to_constr v with
+  | Some c -> c
   | None -> failwith "Ring.exec_tactic: anomaly"
 
 let tactic_res = ref [||]
@@ -230,10 +232,12 @@ let exec_tactic env sigma n f args =
   let _, pv = Proofview.init sigma [env, EConstr.mkProp] in
   let tac = Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter])) in
   let ((), pv, _, _, _) = Proofview.apply ~name:(Id.of_string "ring") ~poly:ist.Tacinterp.poly (Global.env ()) tac pv in
-  let sigma = Evd.minimize_universes (Proofview.return pv) in
-  let nf c = constr_of sigma c in
-  let uctx = UState.check_mono_univ_decl (Evd.ustate sigma) UState.default_univ_decl in
-  Array.map nf !tactic_res, uctx
+  let sigma = (Proofview.return pv) in
+  let nf c = constr_of c in
+  let res = Array.map nf !tactic_res in
+  let sigma = UnivVariances.register_universe_variances_of_partial_proofs env sigma (Array.to_list res) in
+  let sigma = Evd.minimize_universes sigma in
+  Array.map (EConstr.to_constr sigma) res, Evd.universe_context_set sigma
 
 let gen_reference n = (); fun () -> (Rocqlib.lib_ref n)
 
@@ -863,9 +867,8 @@ let ftheory_to_obj : field_info -> obj =
 let field_equality env sigma r inv req =
   match EConstr.kind sigma req with
   | App (f, [| _ |]) when isRefX env sigma (rocq_eq ()) f ->
-    let c = UnivGen.constr_of_monomorphic_global (Global.env ()) Rocqlib.(lib_ref "core.eq.congr") in
-    let c = EConstr.of_constr c in
-    sigma, mkApp(c,[|r;r;inv|])
+    let feq = fun () -> Rocqlib.(lib_ref "core.eq.congr") in
+    plapp sigma feq [|r;r;inv|]
   | _ ->
     let _setoid = setoid_of_relation env sigma r req in
     let signature = [Some (r,Some req)],Some(r,Some req) in

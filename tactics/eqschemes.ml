@@ -81,8 +81,8 @@ let fresh env id avoid =
 let with_context_set ctx (b, ctx') =
   (b, UnivGen.sort_context_union ctx ctx')
 
-let of_context_set env ctx =
-  UState.merge_sort_context_set ~sideff:false ~src:UState.Internal UnivRigid (UState.from_env env) ctx
+let of_context_set env ?(rigid=UState.UnivRigid) ctx =
+  UState.merge_sort_context_set ~sideff:false ~src:UState.Internal rigid (UState.from_env env) ctx
 
 let build_dependent_inductive ind (mib,mip) =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
@@ -106,15 +106,16 @@ let build_dependent_inductive ind (mib,mip) =
    scheme applying a previously declared scheme also needs constraints
    relating its universes to those of the latter (see
    [enforce_scheme_param_univs]). *)
-let maybe_template_instance (mib, mip) u = match mib.mind_template with
+let maybe_template_instance (mib, mip) u = match Declareops.inductive_template mib with
 | None -> u, UnivGen.empty_sort_context
 | Some templ ->
   let () = assert (UVars.Instance.is_empty u) in
-  let qdefaults, _ = UVars.Instance.to_array templ.template_defaults in
+  let qdefaults, _ = UVars.LevelInstance.to_array templ.template_defaults in
   let _, ulen = UVars.AbstractContext.size templ.template_context in
   let uinst = Array.init ulen (fun _ -> UnivGen.fresh_level ()) in
-  let inst = UVars.Instance.of_array (qdefaults, uinst) in
+  let inst = UVars.LevelInstance.of_array (qdefaults, uinst) in
   let us = Array.fold_right Univ.Level.Set.add uinst Univ.Level.Set.empty in
+  let inst = UVars.Instance.of_level_instance inst in
   let csts = UVars.AbstractContext.instantiate inst templ.template_context in
   inst, ((Sorts.QVar.Set.empty, us), csts)
 
@@ -623,7 +624,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
           (if dep then realsign_ind_P 1 applied_ind_P' else realsign_P 2) s)
       (mkNamedLambda (make_annot varHC sr) applied_PC'
         (mkVar varHC))|]))))))
-  in c, of_context_set env ctx
+  in  c, of_context_set env ctx
 
 (**********************************************************************)
 (* Build the right-to-left rewriting lemma for hypotheses associated  *)

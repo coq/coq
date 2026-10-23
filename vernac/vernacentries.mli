@@ -46,14 +46,14 @@ module Preprocessed_Mind_decl : sig
   type flags = ComInductive.flags
   type record = {
     flags : flags;
-    udecl : Constrexpr.cumul_univ_decl_expr option;
+    udecl : Constrexpr.universe_decl_expr option;
     primitive_proj : bool;
     kind : Vernacexpr.inductive_kind;
     records : Record.Ast.t list;
   }
   type inductive = {
     flags : flags;
-    udecl : Constrexpr.cumul_univ_decl_expr option;
+    udecl : Constrexpr.universe_decl_expr option;
     typing_flags : Declarations.typing_flags option;
     private_ind : bool;
     uniform : ComInductive.uniform_inductive_flag;

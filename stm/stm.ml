@@ -1737,7 +1737,7 @@ and Reach : sig
 end = struct (* {{{ *)
 
 let async_policy () =
-  if Attributes.is_universe_polymorphism () then false (* FIXME this makes no sense, it is the default value of the attribute *)
+  if UnivOptions.is_universe_polymorphism () then false (* FIXME this makes no sense, it is the default value of the attribute *)
   else if VCS.is_interactive () then
     (async_proofs_is_master (cur_opt()) || (cur_opt()).async_proofs_mode = APonLazy)
   else

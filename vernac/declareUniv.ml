@@ -146,7 +146,7 @@ let label_of = let open GlobRef in function
   CErrors.anomaly ~label:"declare_univ_binders"
     Pp.(str "declare_univ_binders on a constructor reference")
 
-let declare_univ_binders gr (univs, pl) =
+let declare_univ_binders gr UState.{ universes_entry_universes = univs; universes_entry_binders = pl } =
   let l = label_of gr in
   match univs with
   | UState.Polymorphic_entry _ -> ()
@@ -210,7 +210,7 @@ let do_universe ~poly l =
     let us = CArray.map_of_list (fun (_,l) -> Level.make l) l in
     let ctx =
       UVars.UContext.make {quals = [||]; univs = names}
-        (UVars.Instance.of_array ([||],us), PConstraints.empty)
+        (UVars.LevelInstance.of_array ([||],us), PConstraints.empty)
     in
     Global.push_section_context ctx
 
@@ -249,7 +249,7 @@ let do_sort_poly l =
   let qs = CArray.map_of_list snd l in
   let ctx =
     UVars.UContext.make {quals=names; univs=[||]}
-      (UVars.Instance.of_array (qs,[||]), PConstraints.empty)
+      (UVars.LevelInstance.of_array (qs,[||]), PConstraints.empty)
   in
   Global.push_section_context ctx
 
@@ -293,7 +293,7 @@ let do_constraint ~poly l =
   | true ->
     let uctx = UVars.UContext.make
         UVars.empty_bound_names
-        (UVars.Instance.empty, (qcst, ucst))
+        (UVars.LevelInstance.empty, (qcst, ucst))
     in
     Global.push_section_context uctx
 
@@ -324,3 +324,13 @@ let add_constraint_source x ctx =
   else
     let v = x, csts in
     Lib.add_leaf (constraint_obj v)
+
+(* TODO: MS generalize to elim constraints? *)
+let check_constraint env sigma l =
+  let constraints = List.fold_left (fun acc cst ->
+      let cst = Constrintern.interp_univ_constraint sigma cst in
+      PConstraints.add_univ cst acc)
+      PConstraints.empty l
+  in
+  if Evd.check_poly_constraints sigma constraints then ()
+  else CErrors.user_err (Pp.str"Constraints do not hold")

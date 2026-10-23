@@ -286,8 +286,8 @@ Module NoRetractToImpredicativeUniverse.
 
 Section Paradox.
 
-Let      U2    := Type.
-Let      U1:U2 := Type.
+Let      U2    := Type@{_}.
+Let      U1:U2 := Type@{_}.
 Variable U0:U1.
 
 (** *** [U1] is impredicative *)
@@ -573,16 +573,16 @@ End NoRetractFromSmallPropositionToProp.
 
 Module NoRetractFromTypeToProp.
 
-Definition Type2 := Type.
-Definition Type1 := Type : Type2.
-
 Section Paradox.
+
+Universe u.
 
 (** ** Assumption of a retract from Type into Prop *)
 
-Variable down : Type1 -> Prop.
-Variable up : Prop -> Type1.
-Hypothesis up_down : forall (A:Type1), up (down A) = A :> Type1.
+Variable down : Type@{u} -> Prop.
+Variable up : Prop -> Type@{u}.
+
+Hypothesis up_down : forall (A:Type@{u}), up (down A) = A :> Type@{u}.
 
 (** ** Paradox *)
 
@@ -591,7 +591,7 @@ Proof.
   intros P.
   Generic.paradox h.
   (** Large universe. *)
-  + exact Type1.
+  + exact Type@{u}.
   + exact (fun X => X).
   + cbn. exact (fun u F => forall x, F x).
   + cbn. exact (fun _ _ x => x).
@@ -636,7 +636,7 @@ Section Paradox.
 
 (** ** Universe [U] is equal to one of its elements. *)
 
-Let U := Type.
+Let U := Type@{_}.
 Variable A:U.
 Hypothesis h : U=A.
 

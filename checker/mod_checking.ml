@@ -55,18 +55,14 @@ exception BadConstant of Constant.t * Pp.t
 let check_constant_declaration env opac kn cb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ Constant.print kn);
   let env = CheckFlags.set_local_flags cb.const_typing_flags env in
-  let poly, env =
-    match cb.const_universes with
-    | Monomorphic ->
-      (* Monomorphic universes are stored at the library level, the
-         ones in const_universes should not be needed *)
-      false, env
-    | Polymorphic auctx ->
-      let ctx = UVars.AbstractContext.repr auctx in
-      (* [env] contains De Bruijn universe variables *)
-      let () = check_ucontext ctx env in
-      let env = push_context ~strict:false ctx env in
-      true, env
+  let env =
+    let (auctx, _variances) = cb.const_universes in
+    (* FIXME check variances *)
+    let ctx = UVars.AbstractContext.repr auctx in
+    (* [env] contains De Bruijn universe variables *)
+    let () = check_ucontext ctx env in
+    let env = push_context ~strict:false ctx env in
+    env
   in
   let ty = cb.const_type in
   let jty = Typeops.infer_type env ty in
@@ -77,11 +73,9 @@ let check_constant_declaration env opac kn cb opacify =
     | Def c -> Some c, env
     | OpaqueDef o ->
       let c, u = !indirect_accessor o in
-      let env = match u, cb.const_universes with
-        | Opaqueproof.PrivateMonomorphic (), Monomorphic -> env
-        | Opaqueproof.PrivatePolymorphic local, Polymorphic _ ->
-          push_subgraph local env
-        | _ -> assert false
+      let env = match u with
+        | Opaqueproof.PrivateMonomorphic () -> env
+        | Opaqueproof.PrivatePolymorphic local -> push_subgraph local env      
       in
       Some c, env
   in
@@ -132,13 +126,11 @@ let check_quality_mask env qmask lincheck =
 
 let check_instance_mask env udecl umask lincheck =
   match udecl, umask with
-    | Monomorphic, ([||], [||]) -> lincheck
-    | Polymorphic uctx, (qmask, umask) ->
+    | (uctx, _), (qmask, umask) ->
         let lincheck = Array.fold_left_i (fun i lincheck mask -> check_quality_mask env mask lincheck) lincheck qmask in
         let lincheck = Array.fold_left_i (fun i lincheck mask -> Partial_subst.maybe_add_univ mask () lincheck) lincheck umask in
         if (Array.length qmask, Array.length umask) <> UVars.AbstractContext.size uctx then CErrors.anomaly Pp.(str "Bad univ mask length.");
         lincheck
-    | _ -> CErrors.anomaly Pp.(str "Bad univ mask length.")
 
 let rec get_holes_profiles env nargs ndecls lincheck el =
   List.fold_left (get_holes_profiles_elim env nargs ndecls) lincheck el
@@ -170,10 +162,10 @@ and get_holes_profiles_head env nargs ndecls lincheck = function
       check_instance_mask env cb.const_universes u lincheck
   | PHConstr (c, u) ->
       let (mib, _) = Inductive.lookup_mind_specif env (inductive_of_constructor c) in
-      check_instance_mask env mib.mind_universes u lincheck
+      check_instance_mask env Declareops.(inductive_universes mib) u lincheck
   | PHInd (ind, u) ->
       let (mib, _) = Inductive.lookup_mind_specif env ind in
-      check_instance_mask env mib.mind_universes u lincheck
+      check_instance_mask env Declareops.(inductive_universes mib) u lincheck
   | PHInt _  | PHFloat _ | PHString _ -> lincheck
   | PHSort PSSProp -> if Environ.sprop_allowed env then lincheck else Type_errors.error_not_allowed_sprop env
   | PHSort PSGlobal (_, io)

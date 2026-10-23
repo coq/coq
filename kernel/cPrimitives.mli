@@ -121,7 +121,7 @@ and ind_or_type =
   | PITT_type : 'a prim_type * 'a -> ind_or_type
   | PITT_param : int -> ind_or_type (* DeBruijn index referring to prenex type quantifiers *)
 
-val typ_univs : 'a prim_type -> UVars.AbstractContext.t
+val typ_univs : 'a prim_type -> UVars.AbstractContext.t * UVars.variances option
 
 type prim_type_ex = PTE : 'a prim_type -> prim_type_ex
 
@@ -136,7 +136,7 @@ type op_or_type =
   | OT_type : 'a prim_type -> op_or_type
   | OT_const of const
 
-val op_or_type_univs : op_or_type -> UVars.AbstractContext.t
+val op_or_type_univs : op_or_type -> UVars.AbstractContext.t * UVars.variances option
 
 val prim_ind_to_string : 'a prim_ind -> string
 
@@ -147,7 +147,7 @@ val op_or_type_to_string : op_or_type -> string
 
 val parse_op_or_type : ?loc:Loc.t -> string -> op_or_type
 
-val univs : t -> UVars.AbstractContext.t
+val univs : t -> UVars.AbstractContext.t * UVars.variances option
 
 val types : t -> Constr.rel_context * ind_or_type list * ind_or_type
 (** Parameters * Reduction relevant arguments * output type
@@ -156,3 +156,5 @@ val types : t -> Constr.rel_context * ind_or_type list * ind_or_type
   like array are assumed to use universe 0). *)
 
 val body_of_prim_const : const -> Constr.t
+
+val array_variances : UVars.variances

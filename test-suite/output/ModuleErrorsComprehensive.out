@@ -36,75 +36,80 @@ File "./output/ModuleErrorsComprehensive.v", line 83, characters 0-64:
 The command has indeed failed with message:
 Signature components for field x do not match: expected type 
 "nat" but found type "bool".
-File "./output/ModuleErrorsComprehensive.v", line 92, characters 0-55:
+File "./output/ModuleErrorsComprehensive.v", line 94, characters 0-55:
 The command has indeed failed with message:
 Signature components for field I do not match:
-a cumulative declaration was expected, but a non-cumulative declaration was found.
-File "./output/ModuleErrorsComprehensive.v", line 101, characters 0-52:
+incompatible variance information:  (= (* for typing) in term) but expected
+*
+(incompatible variances).
+File "./output/ModuleErrorsComprehensive.v", line 103, characters 0-52:
 The command has indeed failed with message:
 Signature components for field x do not match:
-a polymorphic declaration was expected, but a monomorphic declaration was found.
-File "./output/ModuleErrorsComprehensive.v", line 110, characters 0-58:
+the universe constraints are inconsistent: Cannot enforce PolyExpMod.x.u0 ≤
+Set because 0 < 1 ≤ PolyExpMod.x.u0 when comparing 
+"Type" and "Set".
+File "./output/ModuleErrorsComprehensive.v", line 112, characters 0-58:
 The command has indeed failed with message:
 Signature components for field I do not match: constructor names differ:
 expected foo, bar but found baz, qux.
-File "./output/ModuleErrorsComprehensive.v", line 121, characters 0-55:
+File "./output/ModuleErrorsComprehensive.v", line 123, characters 0-55:
 The command has indeed failed with message:
 Signature components for field A do not match: inductive type names differ:
 expected B but found C.
-File "./output/ModuleErrorsComprehensive.v", line 130, characters 0-49:
+File "./output/ModuleErrorsComprehensive.v", line 132, characters 0-49:
 The command has indeed failed with message:
 Signature components for field I do not match:
 type is expected to be inductive.
-File "./output/ModuleErrorsComprehensive.v", line 140, characters 0-49:
+File "./output/ModuleErrorsComprehensive.v", line 142, characters 0-49:
 The command has indeed failed with message:
 Signature components for field I1 do not match:
 number of inductive types differs: expected 2 but found 1.
-File "./output/ModuleErrorsComprehensive.v", line 149, characters 0-49:
+File "./output/ModuleErrorsComprehensive.v", line 151, characters 0-49:
 The command has indeed failed with message:
 Signature components for field I do not match: parameters differs: expected
 (A B : Univ@{β0 ; _}) but found (A : Univ@{β0 ; _}).
-File "./output/ModuleErrorsComprehensive.v", line 158, characters 0-49:
+File "./output/ModuleErrorsComprehensive.v", line 160, characters 0-49:
 The command has indeed failed with message:
 Signature components for field R do not match:
 type is expected to be non-recursive.
-File "./output/ModuleErrorsComprehensive.v", line 167, characters 0-52:
+File "./output/ModuleErrorsComprehensive.v", line 169, characters 0-52:
 The command has indeed failed with message:
 Signature components for field R do not match: projection names differ:
 expected foo and bar but found baz and qux.
-File "./output/ModuleErrorsComprehensive.v", line 176, characters 0-67:
+File "./output/ModuleErrorsComprehensive.v", line 178, characters 0-67:
 The command has indeed failed with message:
 Signature components for field f do not match:
-incompatible polymorphic binders: got @{u v | u <= v} but expected 
-@{u}.
-File "./output/ModuleErrorsComprehensive.v", line 185, characters 0-55:
+incompatible polymorphic binders: got u v | u <= v but expected 
+u.
+File "./output/ModuleErrorsComprehensive.v", line 187, characters 0-55:
 The command has indeed failed with message:
 Signature components for field f do not match:
-incompatible polymorphic binders: got @{u v | v < u} but expected
-@{u v | u < v}
+incompatible polymorphic binders: got u v | v+1 <= u but expected
+u v | u+1 <= v
 (incompatible constraints).
-File "./output/ModuleErrorsComprehensive.v", line 197, characters 0-55:
+File "./output/ModuleErrorsComprehensive.v", line 199, characters 0-55:
 The command has indeed failed with message:
 Signature components for field I do not match:
-incompatible variance information.
-File "./output/ModuleErrorsComprehensive.v", line 214, characters 0-72:
+incompatible variance information:  (= (* for typing) in term) but expected
+(+ (* for typing) in term)
+(incompatible variances).
+File "./output/ModuleErrorsComprehensive.v", line 216, characters 0-72:
 The command has indeed failed with message:
 Incorrect constraint for label "x": expected type 
 "nat" but found type "bool"
-File "./output/ModuleErrorsComprehensive.v", line 220, characters 0-70:
+File "./output/ModuleErrorsComprehensive.v", line 222, characters 0-70:
 The command has indeed failed with message:
 Incorrect constraint for label "x": the body of definitions differs: expected
 "5" but found "10"
-File "./output/ModuleErrorsComprehensive.v", line 227, characters 0-76:
+File "./output/ModuleErrorsComprehensive.v", line 229, characters 0-76:
 The command has indeed failed with message:
 Incorrect constraint for label "x": the universe constraints are inconsistent:
-Cannot enforce big_type.u0 < Set because Set < big_type.u0 when comparing
-"Type" and "Set"
-File "./output/ModuleErrorsComprehensive.v", line 233, characters 0-71:
+Cannot enforce big_type.u0+1 ≤ Set because 0 < 1 ≤ big_type.u0
+< big_type.u0+1 when comparing "Type" and "Set"
+File "./output/ModuleErrorsComprehensive.v", line 235, characters 0-71:
 The command has indeed failed with message:
-Incorrect constraint for label "p": incompatible polymorphic binders: got 
-@{} but expected @{u}
-File "./output/ModuleErrorsComprehensive.v", line 240, characters 0-95:
+Incorrect constraint for label "p": a monomorphic declaration was expected, but a polymorphic declaration was found
+File "./output/ModuleErrorsComprehensive.v", line 242, characters 0-95:
 The command has indeed failed with message:
 Incorrect constraint for label "b": expected type
 "ModuleErrorsComprehensive.WithAbsType.a" but found type 

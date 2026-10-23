@@ -37,8 +37,8 @@ type template_universes = {
   template_concl : Sorts.t;
   template_context : UVars.AbstractContext.t;
   (** Template_defaults qualities are all QType.
-      Also the universes are all levels so we can use Instance. *)
-  template_defaults : UVars.Instance.t;
+      Also the universes are all levels so we can use LevelInstance. *)
+  template_defaults : UVars.LevelInstance.t;
 }
 
 (** Inlining level of parameters at functor applications.
@@ -57,9 +57,10 @@ type ('a, 'opaque, 'rules) constant_def =
   | Primitive of CPrimitives.t (** or a primitive operation *)
   | Symbol of 'rules                      (** or a symbol *)
 
-type universes =
-  | Monomorphic
-  | Polymorphic of UVars.AbstractContext.t
+type universes = UVars.AbstractContext.t * UVars.Variances.t option
+type ind_universes =
+  | Template of template_universes
+  | Polymorphic of universes
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -93,6 +94,9 @@ type typing_flags = {
   (** If [true], use definitional height heuristic when unfolding constants during conversion.
       A strategy level is assigned to each constant when it's defined.
       The level is [-h] where [h] is the definitional height of the constant. *)
+  cumulativity_zeta : bool;
+  (** Reduce let-bound variables during cumulativity inference
+      (can have a huge performance impact) *)
 
   enable_VM : bool;
   (** If [false], all VM conversions fall back to interpreted ones *)
@@ -120,13 +124,20 @@ type typing_flags = {
  * the OpaqueDef *)
 type ('opaque, 'bytecode) pconstant_body = {
     const_hyps : Constr.named_context; (** younger hyp at top *)
-    const_univ_hyps : UVars.Instance.t;
+    const_univ_ctx : UVars.UContext.t list;
+    const_univ_hyps : UVars.LevelInstance.t;
     const_body : (Constr.t, 'opaque, bool) constant_def;
                     (** [bool] is for [unfold_fix] in symbols *)
     const_type : types;
     const_relevance : Sorts.relevance;
     const_body_code : 'bytecode;
     const_universes : universes;
+
+    const_sec_variance : UVars.variances option;
+    (** Variance info for section polymorphic universes. [None]
+       outside sections. The final variance once all sections are
+       discharged is [const_sec_variance ++ const_universes.variance]. *)
+
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for
@@ -287,7 +298,8 @@ type mutual_inductive_body = {
 
     mind_hyps : Constr.named_context;  (** Section hypotheses on which the block depends *)
 
-    mind_univ_hyps : UVars.Instance.t; (** Section polymorphic universes. *)
+    mind_univ_ctx : UVars.UContext.t list; (** Section polymorphic universes. *)
+    mind_univ_hyps : UVars.LevelInstance.t; (** Section polymorphic universes. *)
 
     mind_nparams : int;  (** Number of expected parameters including non-uniform ones (i.e. length of mind_params_ctxt w/o let-in) *)
 
@@ -295,16 +307,12 @@ type mutual_inductive_body = {
 
     mind_params_ctxt : Constr.rel_context;  (** The context of parameters (includes let-in declaration) *)
 
-    mind_universes : universes; (** Information about monomorphic/polymorphic/cumulative inductives and their universes *)
+    mind_universes : ind_universes; (** Information about monomorphic/polymorphic/cumulative inductives and their universes *)
 
-    mind_template : template_universes option;
-
-    mind_variance : UVars.Variance.t array option; (** Variance info, [None] when non-cumulative. *)
-
-    mind_sec_variance : UVars.Variance.t array option;
+    mind_sec_variance : UVars.variances option;
     (** Variance info for section polymorphic universes. [None]
        outside sections. The final variance once all sections are
-       discharged is [mind_sec_variance ++ mind_variance]. *)
+       discharged is [mind_sec_variance ++ mind_universes.variance]. *)
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
 
@@ -396,7 +404,7 @@ type 'uconstr functor_alg_expr =
 
 (** A module expression is an algebraic expression, possibly functorized. *)
 
-type module_expression = (constr * UVars.AbstractContext.t option) functor_alg_expr
+type module_expression = (constr * UVars.AbstractContext.t) functor_alg_expr
 
 (** A component of a module structure *)
 

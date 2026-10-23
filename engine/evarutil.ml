@@ -31,8 +31,8 @@ let create_clos_infos env sigma flags =
 (* Expanding/testing/exposing existential variables *)
 (****************************************************)
 
-let finalize ?abort_on_undefined_evars ?poly sigma f =
-  let sigma = minimize_universes ?poly sigma in
+let finalize ?abort_on_undefined_evars ?poly sigma ?(partial=false) f =
+  let sigma = minimize_universes ~partial ?poly sigma in
   let uvars = ref Univ.Level.Set.empty in
   let nf_constr c =
     let _, varsc = EConstr.universes_of_constr sigma c in
@@ -747,9 +747,13 @@ let subterm_source evk ?where (loc,k) =
     | _ -> evk in
   (loc,Evar_kinds.SubEvar (where,evk))
 
+type compare_result =
+  | UnivInconsistency of UGraph.univ_inconsistency
+  | UniversesDiffer
+
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)
-let compare_cumulative_instances cv_pb variances u u' sigma =
+let compare_cumulative_instances ~flex cv_pb ~nargs variances u u' sigma =
   let open UnivProblem in
   let cstrs = Univ.UnivConstraints.empty in
   let soft = Set.empty in
@@ -757,21 +761,30 @@ let compare_cumulative_instances cv_pb variances u u' sigma =
   and qs', us' = UVars.Instance.to_array u' in
   let qcstrs = enforce_eq_qualities qs qs' Set.empty in
   match Evd.add_constraints sigma qcstrs with
-  | exception UGraph.UniverseInconsistency p -> Inr p
+  | exception UGraph.UniverseInconsistency p -> Inr (UnivInconsistency p)
   | sigma ->
   let cstrs, soft = Array.fold_left3 (fun (cstrs, soft) v u u' ->
       let open UVars.Variance in
-      match v with
+      let open Univ in
+      let v = UVars.VarianceOccurrence.variance_app nargs v in
+      match v.cumul_variance with
       | Irrelevant -> cstrs, Set.add (UWeak (u,u')) soft
       | Covariant when cv_pb == Conversion.CUMUL ->
-        Univ.UnivConstraints.add (u,Univ.UnivConstraint.Le,u') cstrs, soft
-      | Covariant | Invariant -> Univ.UnivConstraints.add (u,Univ.UnivConstraint.Eq,u') cstrs, soft)
-      (cstrs,soft) variances us us'
+        if flex then cstrs, Set.add (ULub (Le,u,u')) soft
+        else UnivConstraints.add (u,Le,u') cstrs, soft
+      | Contravariant when cv_pb == Conversion.CUMUL ->
+        if flex then cstrs, Set.add (ULub (Le,u',u)) soft
+        else UnivConstraints.add (u',Le,u) cstrs, soft
+      | Covariant | Contravariant | Invariant ->
+        if flex then cstrs, Set.add (ULub (Eq,u,u')) soft
+        else UnivConstraints.add (u,Eq,u') cstrs, soft)
+      (cstrs,soft) (UVars.Variances.repr variances) us us'
   in
-  match Evd.add_univ_constraints sigma cstrs with
-  | sigma ->
+  try
+    let sigma = Evd.add_univ_constraints sigma cstrs in
     Inl (Evd.add_constraints sigma soft)
-  | exception UGraph.UniverseInconsistency p -> Inr p
+  with UGraph.UniverseInconsistency p -> Inr (UnivInconsistency p)
+    | UniversesDiffer -> Inr (UniversesDiffer)
 
 let compare_constructor_instances evd u u' =
   let open UnivProblem in
@@ -787,17 +800,20 @@ let compare_constructor_instances evd u u' =
     in
     Inl (Evd.add_constraints evd soft)
 
-(** [eq_constr_univs_test ~evd ~extended_evd t u] tests equality of
+(** [eq_constr_univs_test env ~evd ~extended_evd t u] tests equality of
     [t] and [u] up to existential variable instantiation and
     equal universes. The term [t] is interpreted in [evd] while
     [u] is interpreted in [extended_evd]. The universe constraints in
     [extended_evd] are assumed to be an extension of those in [evd]. *)
-let eq_constr_univs_test ~evd ~extended_evd t u =
+let eq_constr_univs_test env ~evd ~extended_evd t u =
   (* spiwack: mild code duplication with {!Evd.eq_constr_univs}. *)
   let t = EConstr.Unsafe.to_constr t
   and u = EConstr.Unsafe.to_constr u in
-  let eq_universes _ u1 u2 =
-    EConstr.EInstance.(equal extended_evd (make u1) (make u2))
+  let eq_universes head u1 u2 =
+    let u1 = EConstr.EInstance.(kind extended_evd (make u1)) in
+    let u2 = EConstr.EInstance.(kind extended_evd (make u2)) in
+    let check_qeq q1 q2 = UState.check_eq_quality (Evd.ustate extended_evd) q1 q2 in
+    Conversion.cumul_head_instances_gen env check_qeq (universes extended_evd) UCompare.CONV head u1 u2
   in
   let eq_sorts s1 s2 = EConstr.ESorts.(equal extended_evd (make s1) (make s2)) in
   let eq_existential eq e1 e2 =

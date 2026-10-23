@@ -555,7 +555,7 @@ record_definition: [
 
 (* No mixed inductive-record definitions, opt_coercion is meaningless for Inductive *)
 inductive_definition: [
-| cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] ":=" OPT [ OPT "|" LIST1 constructor SEP "|" ] decl_notations
+| ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] ":=" OPT [ OPT "|" LIST1 constructor SEP "|" ] decl_notations
 ]
 
 (* No mutual recursion, no inductive classes, type must be a sort *)
@@ -1536,6 +1536,8 @@ query_command: [
 | WITH "Compute" lconstr
 | REPLACE "Check" lconstr "."
 | WITH "Check" lconstr
+| REPLACE "Check" "Constraint" LIST1 univ_constraint SEP "," "."
+| WITH "Check" "Constraint" LIST1 univ_constraint SEP ","
 | REPLACE "About" LIST1 [ smart_global OPT univ_name_list ] SEP "," "."
 | WITH "About" LIST1 [ smart_global OPT univ_name_list ] SEP ","
 | REPLACE "SearchPattern" constr_pattern in_or_out_modules "."
@@ -2422,7 +2424,7 @@ SPLICE: [
 | firstorder_rhs
 | firstorder_using
 | ref_or_pattern_occ
-| cumul_ident_decl
+| ident_decl
 | variance
 | variance_identref
 | rewriter

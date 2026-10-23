@@ -119,12 +119,12 @@ module DefAttributes = struct
   let clearbody = bool_attribute ~name:"clearbody"
 
   (* [XXX] EJGA: coercion is unused here *)
-  let def_attributes_gen ?(coercion=false) ?(discharge=NoDischarge,"","") () =
+  let def_attributes_gen ?(coercion=false) ?(discharge=NoDischarge,"","") ?(ass_or_def=PolyFlags.Definition) () =
     let discharge, deprecated_thing, replacement = discharge in
     let clearbody = match discharge with DoDischarge -> clearbody | NoDischarge -> return None in
     (* It is important because it prevents early evaluation of [active_hooks ()] *)
     return () >>= fun () ->
-    (locality ++ user_warns_with_use_globref_instead ++ poly PolyFlags.Definition ++ program ++
+    (locality ++ user_warns_with_use_globref_instead ++ poly ass_or_def ++ program ++
                canonical_instance ++ typing_flags ++ using ++
                reversible ++ clearbody ++ active_hooks ()) >>=
     fun (((((((((locality, user_warns), poly), program),
@@ -138,15 +138,15 @@ module DefAttributes = struct
       let scope = scope_of_locality locality discharge deprecated_thing replacement in
       return { hooks; scope; locality; poly; program; user_warns; canonical_instance; typing_flags; using; reversible; clearbody }
 
-  let parse ?coercion ?discharge f (* : DefAttributes.t  *) =
-    Attributes.parse (def_attributes_gen ?coercion ?discharge ()) f
+  let parse ?coercion ?discharge ?ass_or_def f (* : DefAttributes.t  *) =
+    Attributes.parse (def_attributes_gen ?coercion ?discharge ?ass_or_def ()) f
 
   let def_attributes = def_attributes_gen ()
 
 end
 
-let with_def_attributes ?coercion ?discharge ~atts f =
-  let atts = DefAttributes.parse ?coercion ?discharge atts in
+let with_def_attributes ?coercion ?discharge ?ass_or_def ~atts f =
+  let atts = DefAttributes.parse ?coercion ?discharge ?ass_or_def atts in
   if atts.DefAttributes.program then Declare.Obls.check_program_libraries ();
   f ~atts
 
@@ -163,7 +163,7 @@ let show_proof ~pstate =
   try
     let pstate = match pstate with None -> raise Exit | Some s -> s in
     let p = Declare.Proof.get pstate in
-    let sigma, _ = Declare.Proof.get_current_context pstate in
+    let sigma, _env = Declare.Proof.get_current_context pstate in
     let pprf = Proof.partial_proof p in
     (* In the absence of an environment explicitly attached to the
        proof and on top of which side effects of the proof would be pushed, ,
@@ -184,15 +184,17 @@ let show_top_evars ~proof =
   let given_up = Evar.Set.elements @@ Evd.given_up sigma in
   pr_evars_int sigma ~shelf ~given_up 1 (Evd.undefined_map sigma)
 
-let show_universes_aux ~poly sigma =
-  let ctx = Evd.sort_context_set (Evd.minimize_universes ~poly sigma) in
-  UState.pr (Evd.ustate sigma) ++ fnl () ++
-  v 1 (str "Normalized constraints:" ++ cut() ++
-       UnivGen.pr_sort_context (Evd.sort_printer sigma) ctx)
+let show_universes_aux ~poly sigma ~local proof =
+  let env = Global.env () in
+  let sigma = UnivVariances.register_universe_variances_of_partial_proofs env sigma proof in
+  let ctx = Evd.sort_context_set (Evd.minimize_universes ~poly ~partial:true sigma) in
+  UState.pr ~local (Evd.ustate sigma) ++ fnl () ++
+    v 1 (str "Normalized constraints:" ++ cut() ++
+           UnivGen.pr_sort_context (Evd.sort_printer sigma) ctx)
 
-let show_universes ~proof =
+let show_universes ~proof ~local =
   let Proof.{ sigma; poly } = Proof.data proof in
-  show_universes_aux ~poly sigma
+  show_universes_aux ~poly sigma ~local (Proof.partial_proof proof)
 
 (* Simulate the Intro(s) tactic *)
 let show_intro ~proof all =
@@ -308,7 +310,6 @@ let print_namespace ~pstate ns =
     print_list Id.print qn
   in
   let print_constant ~pstate k body =
-    (* FIXME: universes *)
     let t = body.Declarations.const_type in
     let sigma, env = get_current_or_global_context ~pstate in
     print_kn k ++ str":" ++ spc() ++ Printer.pr_type_env env sigma t
@@ -410,17 +411,23 @@ let print_registered_schemes () =
   in
   hov 0 (prlist_with_sep fnl pr_schemes_of_ref (GlobRef.Map.bindings schemes))
 
+type kind = Lt | Le | Eq
+
 let dump_universes output g =
   let open Univ in
   let dump_arc u = function
     | UGraph.Node ltle ->
-      Univ.Level.Map.iter (fun v strict ->
-          let typ = if strict then UnivConstraint.Lt else UnivConstraint.Le in
-          output typ u v) ltle;
+      List.iter (fun (k, v) ->
+        if k = 1 then
+          output Lt (Universe.of_expr (u, 0)) v
+        else
+          output Le (Universe.of_expr (u, k)) v)
+        ltle;
     | UGraph.Alias v ->
-      output UnivConstraint.Eq u v
+      output Eq (Universe.make u) v
   in
   Univ.Level.Map.iter dump_arc g
+
 
 let dump_universes_gen prl g s =
   let fulls = System.get_output_path s in
@@ -433,11 +440,11 @@ let dump_universes_gen prl g s =
       begin fun kind left right ->
         let () = Lazy.force init in
         match kind with
-          | Univ.UnivConstraint.Lt ->
+          | Lt ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=bold];\n" right left
-          | Univ.UnivConstraint.Le ->
+          | Le ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" right left
-          | Univ.UnivConstraint.Eq ->
+          | Eq ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=dashed];\n" left right
       end, begin fun () ->
         if Lazy.is_val init then Printf.fprintf output "}\n";
@@ -446,9 +453,9 @@ let dump_universes_gen prl g s =
     end else begin
       begin fun kind left right ->
         let kind = match kind with
-          | Univ.UnivConstraint.Lt -> "<"
-          | Univ.UnivConstraint.Le -> "<="
-          | Univ.UnivConstraint.Eq -> "="
+          | Lt -> "<"
+          | Le -> "<="
+          | Eq -> "="
         in
         Printf.fprintf output "%s %s %s ;\n" left kind right
       end, (fun () -> close_out output)
@@ -491,18 +498,14 @@ let universe_subgraph kept univ =
   let kept = List.fold_left (fun kept q -> Level.Set.add (parse q) kept) Level.Set.empty kept in
   let csts = UGraph.constraints_for ~kept univ in
   let add u newgraph =
-    let strict = UGraph.check_constraint univ (Level.set,Lt,u) in
-    UGraph.add_universe u ~strict newgraph
+    let strict = UGraph.check_constraint univ (Universe.type1,Le,Universe.make u) in
+    UGraph.add_universe u ~strict ~rigid:true newgraph
   in
   let univ = Level.Set.fold add kept UGraph.initial_universes in
-  UGraph.merge_constraints csts univ
+  fst (UGraph.merge_constraints csts univ)
 
 let sort_universes g =
   let open Univ in
-  let rec normalize u = match Level.Map.find u g with
-  | UGraph.Alias u -> normalize u
-  | UGraph.Node _ -> u
-  in
   let get_next u = match Level.Map.find u g with
   | UGraph.Alias u -> assert false (* nodes are normalized *)
   | UGraph.Node ltle -> ltle
@@ -511,7 +514,6 @@ let sort_universes g =
   let rec traverse accu todo = match todo with
   | [] -> accu
   | (u, n) :: todo ->
-    let () = assert (Level.equal (normalize u) u) in
     let n = match Level.Map.find u accu with
     | m -> if m < n then Some n else None
     | exception Not_found -> Some n
@@ -521,31 +523,42 @@ let sort_universes g =
     | Some n ->
       let accu = Level.Map.add u n accu in
       let next = get_next u in
-      let fold v lt todo =
-        let v = normalize v in
-        if lt then (v, n + 1) :: todo else (v, n) :: todo
+      let fold (k, u) todo =
+        let u = Universe.repr u in
+        let v = List.map (fun (v, kv) -> (v, k + n - kv)) u in
+        v @ todo
       in
-      let todo = Level.Map.fold fold next todo in
+      let todo = List.fold_right fold next todo in
       traverse accu todo
   in
   (* Only contains normalized nodes *)
-  let levels = traverse Level.Map.empty [normalize Level.set, 0] in
+  let levels = traverse Level.Map.empty [(Level.set, 0)] in
   let max_level = Level.Map.fold (fun _ n accu -> max n accu) levels 0 in
   let dummy_mp = Names.DirPath.make [Names.Id.of_string "Type"] in
   let ulevels = Array.init max_level (fun i -> Level.(make (UGlobal.make dummy_mp "" i))) in
   (* Add the normal universes *)
   let fold (cur, ans) u =
-    let ans = Level.Map.add cur (UGraph.Node (Level.Map.singleton u true)) ans in
+    let ans = Level.Map.add cur (UGraph.Node [1, Universe.make u]) ans in
     (u, ans)
   in
   let _, ans = Array.fold_left fold (Level.set, Level.Map.empty) ulevels in
   let ulevels = Array.cons Level.set ulevels in
   (* Add alias pointers *)
-  let fold u _ ans =
+  let fold u n ans =
     if Level.is_set u then ans
     else
-      let n = Level.Map.find (normalize u) levels in
-      Level.Map.add u (UGraph.Alias ulevels.(n)) ans
+      match n with
+      | UGraph.Node _ ->
+        let v, k = (u, 0) in
+        let n = Level.Map.find v levels in
+        Level.Map.add u (UGraph.Alias (Universe.of_expr (ulevels.(n), k))) ans
+      | UGraph.Alias v ->
+        let interp (v, k) =
+          let n = Level.Map.find v levels in
+          ulevels.(n), k
+        in
+        let v' = Universe.of_list (List.map interp (Universe.repr v)) in
+        Level.Map.add u (UGraph.Alias v') ans
   in
   Level.Map.fold fold g ans
 
@@ -560,10 +573,10 @@ type constraint_source = GlobRef of GlobRef.t | Library of DirPath.t
    (either [<] or [=], NB we can't get both at the same time).
 *)
 type constraint_sources = {
-  edges : (constraint_source * Univ.UnivConstraint.kind) Univ.Level.Map.t Univ.Level.Map.t;
+  edges : (constraint_source * Univ.UnivConstraint.kind) Univ.Universe.Map.t Univ.Universe.Map.t;
 }
 
-let empty_sources = { edges = Univ.Level.Map.empty }
+let empty_sources = { edges = Univ.Universe.Map.empty }
 
 let mk_sources () =
   let open Univ in
@@ -571,20 +584,17 @@ let mk_sources () =
   let srcs = DeclareUniv.constraint_sources () in
   let pick_stricter_constraint (_,k as v) (_,k' as v') =
     match k, k' with
-    | Le, Lt | Le, Eq -> v'
-    | Lt, Le | Eq, Le -> v
-    | Le, Le | Lt, Lt | Eq, Eq ->
+    | Le, Eq -> v'
+    | Eq, Le -> v
+    | Le, Le | Eq, Eq ->
       (* same: prefer [v]
          (the older refs are encountered last, and fallback libraries first) *)
       v
-    | Lt, Eq | Eq, Lt ->
-      (* XXX don't assert in case of type in type? *)
-      assert false
   in
   let add_edge_unidirectional (u,k,v) ref edges =
-    Level.Map.update u (fun uedges ->
-        let uedges = Option.default Level.Map.empty uedges in
-        Some (Level.Map.update v (function
+    Universe.Map.update u (fun uedges ->
+        let uedges = Option.default Universe.Map.empty uedges in
+        Some (Universe.Map.update v (function
             | None -> Some (ref, k)
             | Some v' -> Some (pick_stricter_constraint (ref, k) v'))
             uedges))
@@ -594,7 +604,7 @@ let mk_sources () =
     let edges = add_edge_unidirectional cst ref edges in
     if k = Eq then add_edge_unidirectional (v,k,u) ref edges else edges
   in
-  let edges = Level.Map.empty in
+  let edges = Universe.Map.empty in
   let edges =
     let libs = Library.loaded_libraries () in
     List.fold_left (fun edges dp ->
@@ -614,7 +624,7 @@ let mk_sources () =
     edges;
   }
 
-exception Found of (Univ.UnivConstraint.kind * Univ.Level.t * constraint_source) list
+exception Found of (Univ.UnivConstraint.kind * Univ.Universe.t * constraint_source) list
 
 (* We are looking for a path from [source] to [target].
    If [k] is [Lt] the path must contain at least one [Lt].
@@ -624,7 +634,7 @@ exception Found of (Univ.UnivConstraint.kind * Univ.Level.t * constraint_source)
    path had enough [Lt] (always true if the original [k] is [Le] or [Eq]).
 *)
 let search src ~target k ~source =
-  let module UMap = Univ.Level.Map in
+  let module UMap = Univ.Universe.Map in
   let rec loop visited todo next_todo =
     match todo, next_todo with
     | [], [] -> ()
@@ -635,25 +645,25 @@ let search src ~target k ~source =
         | Some has_enough_lt ->
           if has_enough_lt then true
           else (* original k was [Lt], if current k is also [Lt] we have no new info on this path *)
-            k = Univ.UnivConstraint.Lt
+            false
       in
       if is_visited then loop visited todo next_todo
       else
-        let visited = UMap.add source (k <> Univ.UnivConstraint.Lt) visited in
+        let visited = UMap.add source true visited in
         let visited, next_todo =
           UMap.fold (fun u (ref,k') (visited,next_todo) ->
-              if k = Univ.UnivConstraint.Eq && k' = Univ.UnivConstraint.Lt then
+              (* if k = Univ.UnivConstraint.Eq && k' = Univ.UnivConstraint.Lt then
                 (* no point searching for a loop involving [u]  *)
                 (UMap.add u true visited, next_todo)
-              else
-                let next_k = if k = Univ.UnivConstraint.Lt && k' = Univ.UnivConstraint.Lt
-                             then Univ.UnivConstraint.Le
-                             else k
-                in
+              else *)
+                (* let next_k = if k = Univ.UnivConstraint.Lt && k' = Univ.UnivConstraint.Lt then Univ.UnivConstraint.Le *)
+                  (* else k *)
+                (* in *)
                 let revpath = (k',u,ref) :: revpath in
-                if Univ.Level.equal u target && next_k <> Univ.UnivConstraint.Lt
+                if Univ.Universe.equal u target
+                    (* && next_k <> Univ.UnivConstraint.Lt *)
                 then raise (Found revpath)
-                else (visited, (u, next_k, revpath) :: next_todo))
+                else (visited, (u, k, revpath) :: next_todo))
             (Option.default UMap.empty (UMap.find_opt source src.edges))
             (visited,next_todo)
         in
@@ -676,7 +686,7 @@ let search src (u,k,v) =
     else Some path
 
 let find_source (u,k,v as cst) src =
-  if Univ.Level.is_set u && k = Univ.UnivConstraint.Lt then []
+  if Univ.Universe.is_typen 1 u && k = Univ.UnivConstraint.Le then []
   else Option.default [] (search src cst)
 
 let pr_constraint_source = function
@@ -687,40 +697,70 @@ let pr_constraint_source = function
     end
   | Library dp -> str "library " ++ pr_qualid (Nametab.shortest_qualid_of_module (MPfile dp))
 
+let to_source_path u p =
+  let rec aux decomp_ok u p =
+    match p with
+    | [] -> u, []
+    | (k, v, ref) :: p ->
+      match k with
+      | Univ.UnivConstraint.Le ->
+        if decomp_ok then
+          match Univ.Universe.decompose_succ u with
+          | None -> let v', p' = aux decomp_ok v p in
+            u, (Le, v', ref) :: p'
+          | Some u' ->
+            let v', p' = aux decomp_ok v p in
+            u', (Lt, v', ref) :: p'
+        else let v', p' = aux decomp_ok v p in
+          (u, (Le, v', ref) :: p')
+      | Univ.UnivConstraint.Eq -> let v', p' = aux false v p in
+        u, (Eq, v', ref) :: p'
+    in aux true u p
+
 let pr_source_path prl u src =
   if CList.is_empty src then mt()
   else
-    let open Univ in
     let pr_rel = function
-      | UnivConstraint.Eq -> str"=" | UnivConstraint.Lt -> str"<" | UnivConstraint.Le -> str"<="
+      | Eq -> str"=" | Le -> str"<=" | Lt -> str"<"
     in
     let pr_one (k,v,ref) =
       spc() ++
       h (pr_rel k ++ surround (str "from " ++ pr_constraint_source ref) ++
          spc() ++ prl v)
     in
+    let u, src = to_source_path u src in
     spc() ++ surround (str"because" ++ spc() ++ prl u ++ prlist_with_sep mt pr_one src)
 
 let pr_pmap sep pr map =
   let cmp (u,_) (v,_) = Univ.Level.compare u v in
   Pp.prlist_with_sep sep pr (List.sort cmp (Univ.Level.Map.bindings map))
 
+
 let pr_arc srcs prl = let open Pp in
-  function
-  | u, UGraph.Node ltle ->
-    if Univ.Level.Map.is_empty ltle then mt ()
-    else
-      prl u ++ str " " ++
-      v 0
-        (pr_pmap spc (fun (v, strict) ->
-             let k = if strict then Univ.UnivConstraint.Lt else Univ.UnivConstraint.Le in
-             let src = find_source (u,k,v) srcs in
-             hov 2 ((if strict then str "< " else str "<= ") ++ prl v ++ pr_source_path prl u src))
-            ltle) ++
-      fnl ()
-  | u, UGraph.Alias v ->
-    let src = find_source (u,Eq,v) srcs in
-    prl u  ++ str " = " ++ prl v ++ pr_source_path prl u src ++ fnl ()
+let open Univ in
+function
+| u, UGraph.Node l ->
+  if CList.is_empty l then mt ()
+  else
+    (* In increasing order *)
+    let l = List.sort (fun (i, _) (i', _) -> Int.compare i i') l in
+    let l = CList.factorize_left Int.equal l in
+    let pr_cstrs (i, l) =
+      let ui = Universe.of_expr (u, i) in
+      let l = List.sort Universe.compare l in
+      let k, is_lt = if i >= 1 then pred i, true else 0, false in
+      let u' = (u, k) in
+      let prv v =
+        let src = find_source (ui, Univ.UnivConstraint.Le, v) srcs in
+        str (if is_lt then "< " else "<= ") ++ Universe.pr prl v ++ pr_source_path (Universe.pr prl) ui src
+      in
+      LevelExpr.pr prl u' ++ spc () ++ v 0 (prlist_with_sep spc prv l)
+    in
+    prlist_with_sep spc pr_cstrs l ++ fnl ()
+| u, UGraph.Alias v ->
+  let uu = Universe.make u in
+  let src = find_source (uu,Eq,v) srcs in
+  prl u  ++ str " = " ++ Universe.pr prl v ++ pr_source_path (Universe.pr prl) uu src ++ fnl  ()
 
 let pr_universes srcs prl g = pr_pmap Pp.mt (pr_arc srcs prl) g
 
@@ -746,7 +786,7 @@ let print_universes { sort; subgraph; with_sources; file; } =
     in
     let srcs = if with_sources then mk_sources () else empty_sources in
     pr_universes srcs prl univ ++ pr_remaining
-  | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
+  | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (Univ.Universe.pr prl u)) univ s
   end
 
 let print_sorts () =
@@ -1084,14 +1124,14 @@ module Preprocessed_Mind_decl = struct
   type flags = ComInductive.flags
   type record = {
     flags : flags;
-    udecl : Constrexpr.cumul_univ_decl_expr option;
+    udecl : Constrexpr.universe_decl_expr option;
     primitive_proj : bool;
     kind : Vernacexpr.inductive_kind;
     records : Record.Ast.t list;
   }
   type inductive = {
     flags : flags;
-    udecl : Constrexpr.cumul_univ_decl_expr option;
+    udecl : Constrexpr.universe_decl_expr option;
     typing_flags : Declarations.typing_flags option;
     private_ind : bool;
     uniform : ComInductive.uniform_inductive_flag;
@@ -1432,6 +1472,9 @@ let vernac_constraint ~poly l =
                  (str"Polymorphic constraints can only be declared"
                   ++ str " inside sections, use Monomorphic Constraint instead.");
   DeclareUniv.do_constraint ~poly l
+let vernac_cumulativity_transparent qid =
+  let gr = smart_global qid in
+  UnivVariances.add_cumulativity_transparent_state gr
 
 (**********************)
 (* Modules            *)
@@ -1977,6 +2020,14 @@ let () =
       optkey   = ["Kernel"; "Conversion"; "Height"; "Heuristic"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.unfold_height_heuristic);
       optwrite = Global.set_unfold_height_heuristic }
+      
+let () =
+  declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
+      optkey   = ["Kernel"; "Cumulativity"; "Zeta"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.cumulativity_zeta);
+      optwrite = Global.set_cumulativity_zeta }
 
 let () =
   declare_int_option
@@ -2156,6 +2207,9 @@ let check_may_eval env sigma redexp rc =
     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
   in
   let hdr = if Option.has_some redexp then str "     = " else mt() in
+  (* TODO: Default to Type or use sort poly flag? *)
+  let sigma = UnivVariances.register_universe_variances_of env sigma c in
+  let sigma = UnivVariances.register_universe_variances_of_undefined env sigma in
   let ppunivs =
     let ctx = Evd.sort_context_set sigma in
     (* NB: flags only used for collapse_sort_variables
@@ -2194,6 +2248,15 @@ let vernac_check_may_eval ~pstate redexp glopt rc =
   let glopt = query_command_selector glopt in
   let sigma, env = get_current_context_of_args ~pstate glopt in
   check_may_eval env sigma redexp rc
+
+let vernac_check_constraint ~pstate c glopt =
+  let glopt = query_command_selector glopt in
+  let sigma, env = get_current_context_of_args ~pstate glopt in
+  let elims, univs = List.partition_map (function
+                         | Constrexpr.ElimCst cst -> Left cst
+                         | UnivCst u -> Right u) c in
+  if not (List.is_empty elims) then CErrors.user_err Pp.(str"Elimination constraint checking not implemented yet");
+  DeclareUniv.check_constraint env sigma univs
 
 let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
@@ -2569,7 +2632,7 @@ let vernac_show ~pstate =
     begin function
     | ShowGoal goalref -> show_goal goalref proof None
     | ShowExistentials -> show_top_evars ~proof
-    | ShowUniverses -> show_universes ~proof
+    | ShowUniverses local -> show_universes ~proof ~local
     (* Deprecate *)
     | ShowProofNames ->
       Id.print (Declare.Proof.get_name pstate)
@@ -2629,10 +2692,7 @@ let vernac_validate_proof ~pstate =
       Univ.UnivConstraints.filter (fun cst -> not @@ UGraph.check_constraint ugraph cst) ucsts'
     in
     let missing_ucsts =
-      let nf u = match Univ.Universe.level (UState.nf_universe ustate (Univ.Universe.make u)) with
-        | None -> u
-        | Some u -> u
-      in
+      let nf u = UState.nf_universe ustate u in
       Univ.UnivConstraints.map (fun (u1,k,u2) -> nf u1, k, nf u2) missing_ucsts
     in
 
@@ -2796,16 +2856,18 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
     let atts, refine = Attributes.(parse_with_extra Classes.refine_att) atts in
     if refine then
       vtopenproof(fun () ->
-        with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
+        with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"")
+        ~ass_or_def:PolyFlags.Definition ~atts
          vernac_definition_refine dkind lid bl red_option c typ)
     else
       vtmodifyprogram (fun ~pm ->
         with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
-        vernac_definition ~pm dkind lid bl red_option c typ)
+        ~ass_or_def:PolyFlags.Definition vernac_definition ~pm dkind lid bl red_option c typ)
   | VernacDefinition ((discharge,kind as dkind),lid,ProveBody(bl,typ)) ->
     let coercion = match kind with Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
-      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"") ~atts
+      with_def_attributes ~coercion ~discharge:(discharge, "\"Let\"", "\"#[local] Definition\"")
+       ~ass_or_def:PolyFlags.Definition ~atts
        vernac_definition_interactive dkind lid bl typ)
 
   | VernacStartTheoremProof (k,l) ->
@@ -2817,7 +2879,7 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacAssumption ((discharge,kind),nl,l) ->
     vtdefault(fun () ->
-        with_def_attributes ~atts
+        with_def_attributes ~ass_or_def:PolyFlags.Assumption ~atts
           ~discharge:(discharge,
                       "\"Variable\" or \"Hypothesis\"",
                       "\"#[local] Parameter\" or \"#[local] Axiom\"")
@@ -2886,6 +2948,9 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacConstraint l ->
     vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)
+
+  | VernacCumulativityTransparent qid ->
+    vtdefault (fun () -> vernac_cumulativity_transparent qid)
 
   | VernacAddRewRule (id, c) ->
     vtdefault (fun () ->
@@ -3001,7 +3066,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
         unsupported_attributes atts;
         Feedback.msg_notice @@
         vernac_check_may_eval ~pstate r g c)
-
+  | VernacCheckConstraint (c,g) ->
+    vtreadproofopt(fun ~pstate ->
+        unsupported_attributes atts;
+        vernac_check_constraint ~pstate c g)
   | VernacDeclareReduction (s,r) ->
     vtdefault(fun () ->
         with_locality ~atts vernac_declare_reduction s r)

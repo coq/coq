@@ -32,8 +32,8 @@ type 'a t = {
   (** Global universes introduced in the section *)
   poly_universes : UContext.t;
   (** Universes local to the section *)
-  all_poly_univs : Instance.t;
-  (** All polymorphic universes, including from previous sections. *)
+  all_poly_univs : UContext.t list;
+  (** All polymorphic universe contexts, including from previous sections. *)
   has_poly_univs : bool;
   (** Are there polymorphic universes or constraints, including in previous sections. *)
   expand_info_map : expand_info;
@@ -47,10 +47,13 @@ let rec depth sec = 1 + match sec.prev with None -> 0 | Some prev -> depth prev
 
 let has_poly_univs sec = sec.has_poly_univs
 
+let poly_universes sec = sec.poly_universes
+
 let all_poly_univs sec = sec.all_poly_univs
 
 let section_qvar_count sec =
-  fst @@ UVars.Instance.length @@ all_poly_univs sec
+  CList.fold_left (fun c uctx -> c +
+    (fst @@ UVars.LevelInstance.length @@ UVars.UContext.instance uctx)) 0 (all_poly_univs sec)
 
 let map_custom f sec = {sec with custom = f sec.custom}
 
@@ -63,17 +66,25 @@ let push_local_universe_context ctx sec =
   else
     let sctx = sec.poly_universes in
     let poly_universes = UContext.union sctx ctx in
-    let all_poly_univs = Instance.append sec.all_poly_univs (UContext.instance ctx) in
+    let all_poly_univs = match sec.all_poly_univs with
+      | [] -> assert false
+      | hd :: tl ->
+        UContext.union hd ctx :: tl
+    in
     { sec with poly_universes; all_poly_univs; has_poly_univs = true }
 
 let is_polymorphic_univ u sec =
-  let _, us = Instance.to_array sec.all_poly_univs in
-  Array.exists (fun u' -> Level.equal u u') us
+  let test uctx =
+    let _, us = LevelInstance.to_array @@ UContext.instance uctx in
+    Array.exists (fun u' -> Level.equal u u') us
+  in List.exists test sec.all_poly_univs
 
 let push_level_constraints uctx sec =
   if sec.has_poly_univs &&
      UnivConstraints.exists
-       (fun (l,_,r) -> is_polymorphic_univ l sec || is_polymorphic_univ r sec)
+       (fun (l,_,r) ->
+        Universe.exists (fun (l, _) -> is_polymorphic_univ l sec) l ||
+        Universe.exists (fun (l, _) -> is_polymorphic_univ l sec) r)
        (snd uctx)
   then CErrors.user_err
       Pp.(str "Cannot add monomorphic constraints which refer to section polymorphic universes.");
@@ -87,7 +98,7 @@ let open_section ~custom prev =
     context = [];
     mono_universes = Univ.ContextSet.empty;
     poly_universes = UContext.empty;
-    all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) Instance.empty prev;
+    all_poly_univs = UContext.empty :: Option.cata (fun sec -> sec.all_poly_univs) [] prev;
     has_poly_univs = Option.cata has_poly_univs false prev;
     entries = [];
     expand_info_map = (Cmap.empty, Mindmap.empty);
@@ -105,15 +116,40 @@ let extract_hyps vars used =
   (* Only keep the part that is used by the declaration *)
   List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) used) vars
 
-let segment_of_entry env e uctx sec =
-  let hyps = match e with
-  | SecDefinition con -> (Environ.lookup_constant con env).Declarations.const_hyps
-  | SecInductive mind -> (Environ.lookup_mind mind env).Declarations.mind_hyps
+(* let mentions univ univs = Univ.Universe.exists (fun (l, _) -> Level.Set.mem l univs) univ *)
+
+(* [restrict_uctx uctx hyps] Restrict the context quantification to universes in [hyps],
+  and filters out constraints not mentionning [hyps]. *)
+(* let restrict_uctx uctx hyps =
+  let _qvars, lvars = LevelInstance.levels hyps in
+  let uinst, cstrs = UContext.instance uctx, UContext.constraints uctx in
+  let names = UContext.names uctx in
+  let qs, us = LevelInstance.to_array uinst in
+  let names', us' = List.filter2 (fun _ i -> Univ.Level.Set.mem i lvars) (Array.to_list names.univs) (Array.to_list us) in
+  let names = { quals = names.quals; univs = Array.of_list names' } in
+  let levels = LevelInstance.of_array (qs, Array.of_list us') in
+  let qcstrs, ucstrs = cstrs in
+  let ucstrs = Univ.UnivConstraints.filter (fun (l, _, r) -> mentions l lvars || mentions r lvars) ucstrs in
+  Feedback.msg_debug Pp.(str"restricting section context from " ++ LevelInstance.pr Sorts.raw_printer uinst ++ str " to " ++
+    LevelInstance.pr Sorts.raw_printer levels ++ str "hyps = " ++ LevelInstance.pr Sorts.raw_printer hyps);
+  UContext.make names (levels, (qcstrs, ucstrs)) *)
+
+let segment_of_entry env e sec =
+  let hyps, univ_hyps =
+    let open Declarations in
+    match e with
+    | SecDefinition con ->
+      let cb = Environ.lookup_constant con env in
+      cb.const_hyps, cb.const_univ_ctx
+    | SecInductive mind ->
+      let mib = Environ.lookup_mind mind env in
+      mib.mind_hyps, mib.mind_univ_ctx
   in
   let hyps = Context.Named.to_vars hyps in
   (* [sec.context] are the named hypotheses, [hyps] the subset that is
      declared by the global *)
   let ctx = extract_hyps sec.context hyps in
+  let uctx = match univ_hyps with hd :: _ -> hd | [] -> UContext.empty in
   (* Add recursive calls: projections are recursively referring to the
      mind they belong to *)
   let recursive = match e with
@@ -128,7 +164,7 @@ let push_global env ~poly e sec =
       Pp.(str "Cannot add a universe monomorphic declaration when \
                section polymorphic universes are present.")
   else
-    let cooking_info, abstr_inst_info = segment_of_entry env e sec.poly_universes sec in
+    let cooking_info, abstr_inst_info = segment_of_entry env e sec in
     let cooking_info_map = add_emap e cooking_info sec.cooking_info_map in
     let expand_info_map = add_emap e abstr_inst_info sec.expand_info_map in
     { sec with entries = e :: sec.entries; expand_info_map; cooking_info_map }

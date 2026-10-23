@@ -133,7 +133,7 @@ module CoreCategories : sig
   val user_warn : category
   val vernacular : category
   val internal : category
-
+  val universes : category
 end
 
 val warn_ignored_coqlib : unit -> unit

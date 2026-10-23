@@ -55,7 +55,7 @@ End Reduction.
 
 Module Conversion.
 
-  Inductive Box@{s;u|} (A:Univ@{s;u}) := box (_:A).
+  Cumulative Inductive Box@{s;u|} (A:Univ@{s;u}) := box (_:A).
 
   Definition t1@{s;u|} (A:Univ@{s;u}) (x y : A) := box _ x.
   Definition t2@{s;u|} (A:Univ@{s;u}) (x y : A) := box _ y.
@@ -261,7 +261,7 @@ Module Inductives.
   Qed.
 
   (* sigma as a primitive record works better *)
-  Record Rsigma@{s;u v|} (A:Univ@{s;u}) (B:A -> Univ@{s;v}) : Univ@{s;max(u,v)}
+  Cumulative Record Rsigma@{s;u v|} (A:Univ@{s;u}) (B:A -> Univ@{s;v}) : Univ@{s;max(u,v)}
     := Rpair { Rpr1 : A; Rpr2 : B Rpr1 }.
 
   (* match desugared to primitive projections using definitional eta *)
@@ -280,7 +280,7 @@ Module Inductives.
   (* we can eliminate to Prop *)
   Check sexists_ind.
 
-  Inductive sigma3@{s s' s'';u v| } (A:Univ@{s;u}) (P:A -> Univ@{s';v}) :
+  Cumulative Inductive sigma3@{s s' s'';u v| } (A:Univ@{s;u}) (P:A -> Univ@{s';v}) :
     Univ@{s'';max(u,v)} :=
     exist3 : forall x:A, P x -> sigma3 A P.
 

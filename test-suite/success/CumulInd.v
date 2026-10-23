@@ -1,8 +1,8 @@
-
 (* variances other than Invariant are forbidden for non-cumul inductives *)
-Fail Inductive foo@{+u} : Prop := .
-Fail Polymorphic Inductive foo@{*u} : Prop := .
-Inductive foo@{=u} : Prop := .
+Fail #[universes(cumulative=no)] Inductive foo@{+u} : Prop := .
+(* polymorphism implies cumulativity of inductives by default now *)
+Fail #[universes(polymorphic,cumulative=no)] Inductive foo@{*u} : Prop := .
+Inductive foo@{u} : Prop := .
 
 (* Cumulative attr forbidden without univ poly on *)
 Fail Cumulative Inductive bar@{u} : Prop := .
@@ -14,7 +14,7 @@ Fail Inductive bar@{*u} : Prop := .
 Succeed Polymorphic  Inductive bar@{*u} : Prop := .
 
 Set Universe Polymorphism.
-Set Polymorphic Inductive Cumulativity.
+(* Test Polymorphic Inductive Cumulativity. = on by default *)
 
 Inductive force_invariant@{=u} : Prop := .
 Fail Definition lift@{u v | u < v} (x:force_invariant@{u}) : force_invariant@{v} := x.
@@ -30,9 +30,17 @@ Fail Inductive not_covariant@{+u} : Prop := ncov (_ : Type@{u} -> nat).
 
 Inductive must_unfold@{+u *v} : Prop := cmust (_ : @id Type@{v} Type@{u}).
 
-Inductive actually_default_unfold@{u v} : Prop := cnodef (_ : @id Type@{v} Type@{u}).
-Inductive actually_default_unfold_check@{+u *v} : Prop
-  := cnodef_check (_ : actually_default_unfold@{u v}).
+Inductive actually_default_not_unfold@{u v} : Prop := cnodef (_ : @id Type@{v} Type@{u}).
+Fail Inductive actually_default_not_unfold_check@{+u *v} : Prop
+  := cnodef_check (_ : actually_default_not_unfold@{u v}).
+
+Cumulativity Transparent id.
+
+Inductive actually_unfold_if_asked@{u v} : Prop := cnodef' (_ : @id Type@{v} Type@{u}).
+Inductive actually_unfold_if_asked_check@{+u *v} : Prop
+  := cnodef_check' (_ : actually_unfold_if_asked@{u v}).
+
+
 
 
 Inductive irrelevant@{*u} : Prop := .
@@ -41,6 +49,6 @@ Inductive irrelevant@{*u} : Prop := .
 Definition irrelevant_with_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
 
 Unset Cumulativity Weak Constraints.
-Fail Definition irrelevant_without_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
-Definition irrelevant_without_weak@{u+} : irrelevant@{u} -> irrelevant := fun x => x.
-Check irrelevant_without_weak@{_ _}.
+Definition irrelevant_without_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
+Definition irrelevant_without_weak'@{u+} : irrelevant@{u} -> irrelevant := fun x => x.
+Check irrelevant_without_weak@{_}.

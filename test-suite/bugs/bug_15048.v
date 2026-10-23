@@ -32,7 +32,7 @@ Class Symmetric {A} (R : Relation A) :=
 
 Notation Type0 := Set.
 
-Cumulative Inductive paths {A : Type} (a : A) : A -> Type :=
+Cumulative Inductive paths@{u} {A : Type@{u}} (a : A) : A -> Type@{u} :=
   idpath : paths a a.
 
 Arguments idpath {A a} , [A] a.

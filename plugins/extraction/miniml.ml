@@ -54,7 +54,7 @@ struct
 
   let instantiate actx inst =
     let u = UVars.make_abstract_instance actx in
-    let fl l = l in
+    let fl l = Univ.Universe.make l in
     let fq q = match Sorts.QVar.var_index q with
     | None -> assert false
     | Some i ->

@@ -53,3 +53,5 @@ Add Search Blacklist "_subproof" "_subterm" "Private_".
 Coercion reverse_coercion {T' T} (x' : T') (x : ReverseCoercionSource T)
   : ReverseCoercionTarget T' := x'.
 Register reverse_coercion as core.coercion.reverse_coercion.
+
+#[global] Cumulativity Transparent reverse_coercion.

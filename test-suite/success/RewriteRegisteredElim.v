@@ -1,7 +1,7 @@
 
 Set Universe Polymorphism.
 
-Cumulative Inductive EQ {A} (x : A) : A -> Type
+Cumulative Inductive EQ@{i} {A : Type@{i}} (x : A) : A -> Type@{i}
   := EQ_refl : EQ x x.
 
 Register EQ as core.eq.type.

@@ -126,7 +126,7 @@ val substnl : substl -> int -> constr -> constr
 (** [substl σ c] is a short-hand for [substnl σ 0 c] *)
 val substl : substl -> constr -> constr
 
-(** [substl a c] is a short-hand for [substnl [a] 0 c] *)
+(** [subst1 a c] is a short-hand for [substnl [a] 0 c] *)
 val subst1 : constr -> constr -> constr
 
 (** [substnl_decl [a₁;...;an] k Ω] substitutes in parallel [a₁], ..., [an] for
@@ -197,6 +197,9 @@ val subst_univs_level_context : sort_level_subst -> Constr.rel_context -> Constr
 val subst_instance_constr : Instance.t -> constr -> constr
 val subst_instance_context : Instance.t -> Constr.rel_context -> Constr.rel_context
 
+(** LevelInstance substitution *)
+val subst_level_instance_constr : LevelInstance.t -> constr -> constr
+
 val univ_instantiate_constr : Instance.t -> constr univ_abstracted -> constr
 (** Ignores the constraints carried by [univ_abstracted]. *)
 
@@ -208,12 +211,16 @@ val sort_and_universes_of_constr : ?init:Sorts.Quality.Set.t * Univ.Level.Set.t 
 (** Constant qualities not included in the output. *)
 
 val universes_of_constr : ?init:Univ.Level.Set.t -> constr -> Univ.Level.Set.t
+val universes_of_named_context : ?init:Univ.Level.Set.t -> named_context -> Univ.Level.Set.t
 
 type ('a,'s,'u,'r) univ_visitor = {
   visit_sort : 'a -> 's -> 'a;
   visit_instance : 'a -> 'u -> 'a;
   visit_relevance : 'a -> 'r -> 'a;
+  visit_ref : 'a -> GlobRef.t -> 'a;
 }
+
+val univs_and_qvars_visitor : (Sorts.Quality.Set.t * Univ.Level.Set.t, Sorts.t, Instance.t, Sorts.relevance) univ_visitor
 
 val visit_kind_univs : ('acc, 'sort, 'instance, 'relevance) univ_visitor ->
   'acc ->

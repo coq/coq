@@ -242,6 +242,8 @@ let rec same_hd env ise metas p c =
   | Proj(p1,_,x), Proj(p2,_,y) when Environ.QProjection.equal env p1 p2 ->
     let metas, ise = unif_FO_skip_impl env ise metas x y in
     CompareArgs (ise,metas,[])
+  | Proj (p1, _, _), _ when Structures.Structure.is_projection 
+    (Environ.projection_repr_constant env (Projection.repr p1)) -> CanonicalInfRequired
   | _ -> Different
 and unif_FO_skip_impl env ise metas p c =
   match EConstr.kind ise p, EConstr.kind ise c with
@@ -543,7 +545,7 @@ let nb_cs_proj_args env ise pc f u =
   | Sort s -> na (Sort_cs (ESorts.quality_or_set ise s))
   | Const (c',_) when Environ.QConstant.equal env c' pc -> nargs_of_proj u.up_f
   | Proj (c',_,_) when Environ.QConstant.equal env ((Environ.projection_repr_constant env (Projection.repr c'))) pc -> nargs_of_proj u.up_f
-  | Proj (c',_,_) -> let _ = na (Proj_cs (Names.Projection.repr c')) in 0
+  | Proj (c',_,_) -> na (Proj_cs (Names.Projection.repr c')) - 1
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef ise f))
   | _ -> -1
   with Not_found -> -1
@@ -704,6 +706,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
         let ise' = match u.up_k with
         | KpatFixed
         | KpatConst -> (* Ensure universe instances are unified *)
+          pp(lazy(str"match_upats_HO: " ++ pr_econstr_env env ise u.up_f ++ str" = " ++ pr_econstr_env env ise f));
           unif_HO env ise u.up_f f
         | KpatEvar _ ->
           let open EConstr in
@@ -728,6 +731,9 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
                 * the type of the arguments to retrieve that information *)
                let tuf = Retyping.get_type_of ~lax:true env ise u.up_f in
                let tfa = Retyping.get_type_of ~lax:true env ise fa in
+               pp(lazy(str"match_upats_HO, unifying types of projections: " ++ 
+                pr_econstr_env env ise u.up_f ++ str" = " ++ pr_econstr_env env ise f ++ spc () ++
+                pr_econstr_env env ise tuf ++ str" = " ++ pr_econstr_env env ise tfa));
                unif_HO env ise tuf tfa
             | _ -> ise in
           pp(lazy(str"FLEX " ++ pr_econstr_env env ise u.up_f ++ str" = " ++ pr_econstr_env env ise fa));
@@ -1345,7 +1351,7 @@ let mk_in_pattern env sigma0 (x, rp) =
   | Some ist -> ist
   in
   let src = Loc.tag (BinderType (Name x)) in
-  let sigma, (ty, s) = Evarutil.new_type_evar env sigma Evd.univ_flexible_alg in
+  let sigma, (ty, s) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
   let na = Context.make_annot (Name x) (Retyping.relevance_of_sort s) in
   let nenv = EConstr.push_rel (Context.Rel.Declaration.LocalAssum (na, ty)) env in
   let sigma, rp0 = Tacinterp.interp_open_constr ist nenv sigma rp.pattern in

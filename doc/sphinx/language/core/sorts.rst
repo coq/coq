@@ -21,6 +21,7 @@ Sorts
    | Univ @%{ {? {| @qualid | _ } ; } @universe %}
    universe ::= max ( {+, @universe_expr } )
    | _
+   universe ::= max ( {+, @universe_expr } )
    | @universe_expr
    universe_expr ::= @universe_name {? + @natural }
    | @natural

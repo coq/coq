@@ -13,25 +13,41 @@ open Names
 open Constr
 open Term
 open Declarations
-open UVars
 open Cooking
 
 module NamedDecl = Context.Named.Declaration
 
-let lift_univs info univ_hyps = function
-  | Monomorphic ->
-    assert (UVars.Instance.is_empty univ_hyps);
-    info, univ_hyps, Monomorphic
-  | Polymorphic auctx ->
-    let info, (qn, un), auctx = lift_poly_univs info auctx in
-    let univ_hyps =
-      let open UVars.Instance in
-      let qs, us = to_array univ_hyps in
-      let qs = Array.sub qs 0 (Array.length qs - qn) in
-      let us = Array.sub us 0 (Array.length us - un) in
-      of_array (qs,us)
+let debug = CDebug.create ~name:"discharge" ()
+
+let lift_univs info univ_hyps univs sec_variance =
+  let (auctx, variances) = univs in
+  let info, (qn, un), auctx = lift_poly_univs info auctx in
+  let univ_hyps =
+    let open UVars.LevelInstance in
+    let qs, us = to_array univ_hyps in
+    let qs = Array.sub qs 0 (Array.length qs - qn) in
+    let us = Array.sub us 0 (Array.length us - un) in
+    of_array (qs,us)
+  in
+  let variances, sec_variances =
+  match variances, sec_variance with
+  | None, None -> None, None
+  | None, Some _| Some _, None -> assert false
+  | Some variance, Some sec_variance ->
+    (* no variance for qualities *)
+    debug Pp.(fun () -> str"discharging with variances = " ++ UVars.Variances.pr variance ++
+        str " and sec_variance = " ++
+      UVars.Variances.pr sec_variance);
+    let sec_variance = UVars.Variances.repr sec_variance in
+    let sec_variance, newvariance =
+      Array.chop (Array.length sec_variance - un) sec_variance
     in
-    info, univ_hyps, Polymorphic auctx
+    let newbinders = List.count NamedDecl.is_local_assum (Cooking.named_context_of_cooking_info info) in
+    let variance = UVars.Variances.lift newbinders variance in
+    Some (UVars.Variances.make (Array.append newvariance (UVars.Variances.repr variance))),
+    Some (UVars.Variances.make sec_variance)
+  in
+  info, univ_hyps, (auctx, variances), sec_variances
 
 (********************************)
 (* Discharging opaque proof terms *)
@@ -57,7 +73,7 @@ let cook_opaque_proofterm info c =
 
 let cook_constant env info cb =
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
-  let info, univ_hyps, univs = lift_univs info cb.const_univ_hyps cb.const_universes in
+  let info, univ_hyps, univs, sec_variance = lift_univs info cb.const_univ_hyps cb.const_universes cb.const_sec_variance in
   let cache = create_cache info in
   let map c = abstract_as_body cache c in
   let body = match cb.const_body with
@@ -73,12 +89,14 @@ let cook_constant env info cb =
   let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) names)) cb.const_hyps in
   {
     const_hyps = hyps;
+    const_univ_ctx = (match cb.const_univ_ctx with [] -> [] | _ :: univs -> univs);
     const_univ_hyps = univ_hyps;
     const_body = body;
     const_type = typ;
     const_body_code = ();
     const_universes = univs;
-    const_relevance =  lift_relevance info cb.const_relevance;
+    const_sec_variance = sec_variance;
+    const_relevance = lift_relevance info cb.const_relevance;
     const_inline_code = cb.const_inline_code;
     const_typing_flags = cb.const_typing_flags;
     const_def_height = Some (Environ.constant_definitional_height env body);
@@ -157,8 +175,19 @@ let cook_one_ind info cache ~params mip =
   }
 
 let cook_inductive info mib =
-  let info, univ_hyps, mind_universes = lift_univs info mib.mind_univ_hyps mib.mind_universes in
-  let cache = create_cache info in
+  let info, cache, univ_hyps, mind_universes, mind_sec_variance =
+    match mib.mind_universes with
+    | Template {template_param_arguments=levels; template_context; template_concl; template_defaults;} ->
+      let cache = create_cache info in
+      let sec_levels = List.make (Context.Rel.nhyps (rel_context_of_cooking_cache cache)) None in
+      let levels = List.rev_append sec_levels levels in
+      assert (UVars.LevelInstance.is_empty mib.mind_univ_hyps);
+      info, cache, mib.mind_univ_hyps, Template {template_param_arguments=levels; template_context; template_concl; template_defaults}, None
+    | Polymorphic univs ->
+      let info, univ_hyps, univs, mind_sec_variance = lift_univs info mib.mind_univ_hyps univs mib.mind_sec_variance in
+      let cache = create_cache info in
+      info, cache, univ_hyps, Polymorphic univs, mind_sec_variance
+  in
   let nnewparams = Context.Rel.nhyps (rel_context_of_cooking_cache cache) in
   let mind_params_ctxt = cook_rel_context cache mib.mind_params_ctxt in
   let mind_packets = Array.map (cook_one_ind info cache ~params:mib.mind_params_ctxt) mib.mind_packets in
@@ -167,36 +196,16 @@ let cook_inductive info mib =
     List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) names))
       mib.mind_hyps
   in
-  let mind_variance, mind_sec_variance =
-    match mib.mind_variance, mib.mind_sec_variance with
-    | None, None -> None, None
-    | None, Some _ | Some _, None -> assert false
-    | Some variance, Some sec_variance ->
-      (* no variance for qualities *)
-      let ulen  = snd (AbstractContext.size (universe_context_of_cooking_info info)) in
-      let sec_variance, newvariance =
-        Array.chop (Array.length sec_variance - ulen) sec_variance
-      in
-      Some (Array.append newvariance variance), Some sec_variance
-  in
-  let mind_template = match mib.mind_template with
-  | None -> None
-  | Some {template_param_arguments=levels; template_context; template_concl; template_defaults;} ->
-      let sec_levels = List.make (Context.Rel.nhyps (rel_context_of_cooking_cache cache)) None in
-      let levels = List.rev_append sec_levels levels in
-      Some {template_param_arguments=levels; template_context; template_concl; template_defaults}
-  in
   {
     mind_packets;
     mind_finite = mib.mind_finite;
     mind_hyps;
+    mind_univ_ctx = (match mib.mind_univ_ctx with [] -> [] | _ :: univs -> univs);
     mind_univ_hyps = univ_hyps;
     mind_nparams = mib.mind_nparams + nnewparams;
     mind_nparams_rec = mib.mind_nparams_rec + nnewparams;
     mind_params_ctxt;
     mind_universes;
-    mind_template;
-    mind_variance;
     mind_sec_variance;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;

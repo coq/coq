@@ -16,6 +16,7 @@ This interface provides processor operators for the Binary64 format of the
 IEEE 754-2008 standard. *)
 
 (** ** Type definition for the co-domain of [compare] *)
+#[universes(polymorphic=no)]
 Variant float_comparison : Set := FEq | FLt | FGt | FNotComparable.
 
 Register float_comparison as kernel.ind_f_cmp.

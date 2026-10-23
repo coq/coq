@@ -1,8 +1,13 @@
+File "./output/bug_20242.v", line 1, characters 35-45:
+Warning: Support for Type@{s;l} is deprecated. Use "Univ@{s;l}" instead.
+[deprecated-type-sort-poly-syntax,deprecated-since-9.3,deprecated,default]
+Quickfix:
+Replace File "./output/bug_20242.v", line 1, characters 35-39 with Univ
 File "./output/bug_20242.v", line 6, characters 52-63:
 The command has indeed failed with message:
 Signature components for field B do not match:
 conversion of polymorphic values generates additional constraints: 
-""foo@{Prop ; Set} bug_20242.B.A@{Var(0)}"" compared to 
+""foo@{Prop ; 0} bug_20242.B.A@{Var(0)}"" compared to 
 ""foo@{Type ; Var(0)} bug_20242.B.A@{Var(0)}"".
 Error: The module B needs to be closed.
 

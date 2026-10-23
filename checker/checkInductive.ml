@@ -45,17 +45,12 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       in
       Some (Some (Array.map get_id mb.mind_packets))
   in
-  let template = Option.map template_univ_entry mb.mind_template in
   let mind_entry_universes = match mb.mind_universes with
-    | Monomorphic ->
-      begin match template with
-      | None -> Monomorphic_ind_entry
-      | Some template -> template
-      end
-    | Polymorphic auctx -> Polymorphic_ind_entry auctx
+    | Template template -> template_univ_entry template
+    | Polymorphic (auctx, variances) -> Polymorphic_ind_entry (auctx, Option.map (fun v -> Check_variances v) variances)
   in
   let ntyps = Array.length mb.mind_packets in
-  let mind_entry_params = match mb.mind_template with
+  let mind_entry_params = match Declareops.inductive_template mb with
     | None -> mb.mind_params_ctxt
     | Some template ->
       let open Context.Rel.Declaration in
@@ -75,7 +70,7 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
       let mind_entry_arity =
-        match mb.mind_template with
+        match Declareops.inductive_template mb with
         | None ->
           let ctx, arity = Term.decompose_prod_n_decls nparams ind.mind_user_arity in
           ignore ctx; (* we will check that the produced user_arity is equal to the input *)
@@ -98,14 +93,12 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       })
       mb.mind_packets
   in
-  let mind_entry_variance = Option.map (Array.map (fun v -> Some v)) mb.mind_variance in
   {
     mind_entry_record;
     mind_entry_finite = mb.mind_finite;
     mind_entry_params;
     mind_entry_inds;
     mind_entry_universes;
-    mind_entry_variance;
     mind_entry_private = mb.mind_private;
   }
 
@@ -115,13 +108,11 @@ let check_abstract_uctx a b =
     (UContext.constraints @@ AbstractContext.repr b)
 
 let check_template ar1 ar2 = match ar1, ar2 with
-| None, None -> true
-| Some ar, Some {template_context; template_param_arguments; template_concl; template_defaults} ->
+| ar, {template_context; template_param_arguments; template_concl; template_defaults} ->
   List.equal (Option.equal Sorts.equal) ar.template_param_arguments template_param_arguments &&
   check_abstract_uctx template_context ar.template_context &&
   Sorts.equal ar.template_concl template_concl &&
-  Instance.equal ar.template_defaults template_defaults
-| None, Some _ | Some _, None -> false
+  LevelInstance.equal ar.template_defaults template_defaults
 
 (* if the generated inductive is squashed the original one must be squashed *)
 let check_squashed orig generated = match orig, generated with
@@ -214,9 +205,9 @@ let check_packet mind ind
 
 let check_inductive env mind mb retro =
   let entry = to_entry mind mb in
-  let { mind_packets; mind_finite; mind_hyps; mind_univ_hyps;
+  let { mind_packets; mind_finite; mind_hyps; mind_univ_ctx; mind_univ_hyps;
         mind_nparams; mind_nparams_rec; mind_params_ctxt;
-        mind_universes; mind_template; mind_variance; mind_sec_variance;
+        mind_universes; mind_sec_variance;
         mind_private; mind_typing_flags; }
     =
     (* Locally set typing flags for further typechecking *)
@@ -234,7 +225,8 @@ let check_inductive env mind mb retro =
   Array.iter2 (check_packet mind) mb.mind_packets mind_packets;
   check "mind_finite" (mb.mind_finite == mind_finite);
   check "mind_hyps" (List.is_empty mind_hyps);
-  check "mind_univ_hyps" (UVars.Instance.is_empty mind_univ_hyps);
+  check "mind_univ_hyps" (List.is_empty mind_univ_ctx);
+  check "mind_univ_hyps" (LevelInstance.is_empty mind_univ_hyps);
   check "mind_nparams" Int.(equal mb.mind_nparams mind_nparams);
 
   check "mind_nparams_rec" (mb.mind_nparams_rec <= mind_nparams_rec);
@@ -243,10 +235,11 @@ let check_inductive env mind mb retro =
 
   check "mind_params_ctxt" (Context.Rel.equal Sorts.relevance_equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
   ignore mind_universes; (* Indtypes did the necessary checking *)
-  check "mind_template" (check_template mb.mind_template mind_template);
-  check "mind_variance" (Option.equal (Array.equal UVars.Variance.equal)
-                           mb.mind_variance mind_variance);
-  check "mind_sec_variance" (Option.is_empty mind_sec_variance);
+  (match mb.mind_universes, mind_universes with
+    | Template template, Template mind_template -> check "mind_template" (check_template template mind_template)
+    | Polymorphic _, Polymorphic _ -> ()
+    | _, _ -> check "mind_universes" false);
+  check "mind_sec_variance" (match mind_sec_variance with None -> true | Some arr -> UVars.Variances.is_empty arr);
   ignore mind_private; (* passed through Indtypes *)
 
   ignore mind_typing_flags;

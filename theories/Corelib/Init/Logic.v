@@ -8,10 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+#[global] Set Universe Polymorphism.
 Set Implicit Arguments.
 
-Require Export Notations.
-Require Import Ltac.
+From Corelib Require Export Notations.
+From Corelib Require Import Ltac.
 
 (** * Propositional connectives *)
 
@@ -22,6 +23,7 @@ Inductive True : Prop :=
 
 Register True as core.True.type.
 Register I as core.True.I.
+Scheme Rewriting for True.
 
 (** [False] is the always false proposition *)
 Inductive False : Prop :=.
@@ -376,6 +378,7 @@ End universal_quantification.
     as it expresses that [x] and [y] are equal iff every property on
     [A] which is true of [x] is also true of [y] *)
 
+#[universes(template)]
 Inductive eq (A:Type) (x:A) : A -> Prop :=
     eq_refl : x = x :>A
 
@@ -453,7 +456,7 @@ Section Logic_lemmas.
     Proof.
       red; intros h1 h2; apply h1; destruct h2; trivial.
     Qed.
-
+Set Debug "backtrace".
   End equality.
 
   Definition eq_sind_r :

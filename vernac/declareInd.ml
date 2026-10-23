@@ -218,7 +218,7 @@ let rec declare_mutual_inductive_with_eliminations
   let mind, why_not_prim_record = declare_mind ?typing_flags ~indlocs mie in
   why_not_prim_record |> Option.iter (fun why_not_prim_record ->
       warn_non_primitive_record (mind,why_not_prim_record));
-  let () = match fst ubinders with
+  let () = match ubinders.UState.universes_entry_universes with
     | UState.Polymorphic_entry _ -> ()
     | UState.Monomorphic_entry ctx ->
       DeclareUniv.add_constraint_source (IndRef (mind,0)) ctx

@@ -3,14 +3,15 @@ The command has indeed failed with message:
 The reference True_all was not found in the current environment.
 Inductive
 list_all@{α ; u u0} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : list A -> Type@{max(Set,u,u0)} :=
+  : list A -> Type@{max(u,u0)} :=
     nil_all : list_all@{α ; u u0} A PA (nil A)
   | cons_all : forall a : A,
                PA a ->
                forall l : list A,
                list_all@{α ; u u0} A PA l ->
                list_all@{α ; u u0} A PA (cons A a l).
-(* α ; *u *u0 |  *)
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) | 
+    *)
 
 Arguments list_all A%_type_scope PA%_function_scope l
 Arguments nil_all A%_type_scope PA%_function_scope
@@ -18,9 +19,9 @@ Arguments cons_all A%_type_scope PA%_function_scope a _ l _
 list_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) -> forall l : list A, list_all@{α ; u u0} A PA l
-(* α ; u u0 |  *)
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-list_all_forall is universe polymorphic
+list_all_forall is universe polymorphic and cumulative
 Arguments list_all_forall A%_type_scope (PA HPA)%_function_scope l
 list_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.list_all_forall
@@ -28,7 +29,7 @@ Declared in library nested_eliminators, line 36, characters 2-88
 Inductive
 list_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
 (PPA : forall a : A, PA a -> Univ@{α0 ; u1})
-  : forall l : list A, list_all@{α ; u u0} A PA l -> Type@{max(Set,u,u0,u1)} :=
+  : forall l : list A, list_all@{α ; u u0} A PA l -> Type@{max(u,u0,u1)} :=
     nil_all_all : list_all_all@{α α0 ; u u0 u1} A PA PPA 
                     (nil A) (nil_all@{α ; u u0} A PA)
   | cons_all_all : forall (a : A) (p : PA a),
@@ -37,7 +38,8 @@ list_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
                    list_all_all@{α α0 ; u u0 u1} A PA PPA l l0 ->
                    list_all_all@{α α0 ; u u0 u1} A PA PPA 
                      (cons A a l) (cons_all@{α ; u u0} A PA a p l l0).
-(* α α0 ; *u *u0 *u1 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 3rd binder, + in type) | 
+    *)
 
 Arguments list_all_all A%_type_scope (PA PPA)%_function_scope l l0
 Arguments nil_all_all A%_type_scope (PA PPA)%_function_scope
@@ -48,9 +50,10 @@ forall (A : Type@{u}) (PA : A -> Univ@{α ; u0})
 (forall (a : A) (p : PA a), PPA a p) ->
 forall (l : list A) (l0 : list_all@{α ; u u0} A PA l),
 list_all_all@{α α0 ; u u0 u1} A PA PPA l l0
-(* α α0 ; u u0 u1 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 3rd binder) | 
+    *)
 
-list_all_all_forall is universe polymorphic
+list_all_all_forall is universe polymorphic and cumulative
 Arguments list_all_all_forall A%_type_scope (PA PPA HPPA)%_function_scope 
   l l0
 list_all_all_forall is transparent
@@ -58,7 +61,7 @@ Expands to: Constant nested_eliminators.Template.list_all_all_forall
 Declared in library nested_eliminators, line 36, characters 2-88
 MRT_ind :
 forall P : MRT -> Prop,
-(forall l : list MRT, list_all@{Prop ; Set Set} MRT P l -> P (MRTnode l)) ->
+(forall l : list MRT, list_all@{Prop ; 0 0} MRT P l -> P (MRTnode l)) ->
 forall m : MRT, P m
 
 MRT_ind is not universe polymorphic
@@ -70,7 +73,7 @@ RoseTree_ind :
 forall (A : Type@{RoseTree_ind.u0}) (P : RoseTree A -> Prop),
 (forall a : A, P (RTleaf A a)) ->
 (forall l : list (RoseTree A),
- list_all@{Prop ; RoseTree_ind.u1 Set} (RoseTree A) P l -> P (RTnode A l)) ->
+ list_all@{Prop ; RoseTree_ind.u0 0} (RoseTree A) P l -> P (RTnode A l)) ->
 forall r : RoseTree A, P r
 
 RoseTree_ind is not universe polymorphic
@@ -79,55 +82,47 @@ RoseTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.RoseTree_ind
 Declared in library nested_eliminators, line 53, characters 2-113
 Inductive
-RoseTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : RoseTree A -> Type@{max(Set,u,u0,u1)} :=
+RoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : RoseTree A -> Type@{max(u,u0,u1)} :=
     RTleaf_all : forall a : A,
-                 PA a -> RoseTree_all@{α ; u u0 u1 u2} A PA (RTleaf A a)
+                 PA a -> RoseTree_all@{α ; u u0 u1} A PA (RTleaf A a)
   | RTnode_all : forall l : list (RoseTree A),
-                 list_all@{Type ; u2 u1} (RoseTree A)
-                   (RoseTree_all@{α ; u u0 u1 u2} A PA) l ->
-                 RoseTree_all@{α ; u u0 u1 u2} A PA (RTnode A l).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                 list_all@{Type ; u u1} (RoseTree A)
+                   (RoseTree_all@{α ; u u0 u1} A PA) l ->
+                 RoseTree_all@{α ; u u0 u1} A PA (RTnode A l).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments RoseTree_all A%_type_scope PA%_function_scope r
 Arguments RTleaf_all A%_type_scope PA%_function_scope a _
 Arguments RTnode_all A%_type_scope PA%_function_scope l _
-RoseTree_all_forall@{α ; u u0 u1 u2} :
+RoseTree_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall r : RoseTree A, RoseTree_all@{α ; u u0 u1 u2} A PA r
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall r : RoseTree A, RoseTree_all@{α ; u u0 max(u,u0)} A PA r
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-RoseTree_all_forall is universe polymorphic
+RoseTree_all_forall is universe polymorphic and cumulative
 Arguments RoseTree_all_forall A%_type_scope (PA HPA)%_function_scope r
 RoseTree_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.RoseTree_all_forall
 Declared in library nested_eliminators, line 53, characters 2-113
 Inductive
 RoseTreeMut_all@{α ; u} (A : Type@{RoseTreeMut.u0}) 
-(PA : A -> Univ@{α ; u})
-  : RoseTreeMut A -> Type@{max(Set,RoseTreeMut.u0,u)} :=
+(PA : A -> Univ@{α ; u}) : RoseTreeMut A -> Type@{max(RoseTreeMut.u0,u)} :=
     node_mut_all : forall f : forest A,
                    forest_all@{α ; u} A PA f ->
                    RoseTreeMut_all@{α ; u} A PA (node_mut A f)
   with forest_all@{α ; u} (A : Type@{RoseTreeMut.u0})
-       (PA : A -> Univ@{α ; u})
-         : forest A -> Type@{max(Set,RoseTreeMut.u0,u)} :=
+       (PA : A -> Univ@{α ; u}) : forest A -> Type@{max(RoseTreeMut.u0,u)} :=
     forest_nil_all : forest_all@{α ; u} A PA (forest_nil A)
   | forest_cons_all : forall a : A,
                       PA a ->
                       forall r : RoseTreeMut A,
                       RoseTreeMut_all@{α ; u} A PA r ->
                       forest_all@{α ; u} A PA (forest_cons A a r).
-(* α ; *u |  *)
+(* α ; u(= in 2nd binder, + in type) |  *)
 
 Arguments RoseTreeMut_all A%_type_scope PA%_function_scope r
 Arguments node_mut_all A%_type_scope PA%_function_scope f _
@@ -138,9 +133,9 @@ RoseTreeMut_all_forall@{α ; u} :
 forall (A : Type@{RoseTreeMut.u0}) (PA : A -> Univ@{α ; u}),
 (forall a : A, PA a) ->
 forall r : RoseTreeMut A, RoseTreeMut_all@{α ; u} A PA r
-(* α ; u |  *)
+(* α ; u(= in 2nd binder) |  *)
 
-RoseTreeMut_all_forall is universe polymorphic
+RoseTreeMut_all_forall is universe polymorphic and cumulative
 Arguments RoseTreeMut_all_forall A%_type_scope (PA HPA)%_function_scope r
 RoseTreeMut_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.RoseTreeMut_all_forall
@@ -149,7 +144,7 @@ Inductive
 RoseTreeMut_all_all@{α α0 ; u u0} (A : Type@{RoseTreeMut.u0})
 (PA : A -> Univ@{α ; u}) (PPA : forall a : A, PA a -> Univ@{α0 ; u0})
   : forall r : RoseTreeMut A,
-    RoseTreeMut_all@{α ; u} A PA r -> Type@{max(Set,RoseTreeMut.u0,u,u0)} :=
+    RoseTreeMut_all@{α ; u} A PA r -> Type@{max(RoseTreeMut.u0,u,u0)} :=
     node_mut_all_all : forall (f : forest A) (f0 : forest_all@{α ; u} A PA f),
                        forest_all_all@{α α0 ; u u0} A PA PPA f f0 ->
                        RoseTreeMut_all_all@{α α0 ; u u0} A PA PPA
@@ -157,7 +152,7 @@ RoseTreeMut_all_all@{α α0 ; u u0} (A : Type@{RoseTreeMut.u0})
   with forest_all_all@{α α0 ; u u0} (A : Type@{RoseTreeMut.u0})
        (PA : A -> Univ@{α ; u}) (PPA : forall a : A, PA a -> Univ@{α0 ; u0})
          : forall f : forest A,
-           forest_all@{α ; u} A PA f -> Type@{max(Set,RoseTreeMut.u0,u,u0)} :=
+           forest_all@{α ; u} A PA f -> Type@{max(RoseTreeMut.u0,u,u0)} :=
     forest_nil_all_all : forest_all_all@{α α0 ; u u0} A PA PPA 
                            (forest_nil A) (forest_nil_all@{α ; u} A PA)
   | forest_cons_all_all : forall (a : A) (p : PA a),
@@ -168,7 +163,8 @@ RoseTreeMut_all_all@{α α0 ; u u0} (A : Type@{RoseTreeMut.u0})
                           forest_all_all@{α α0 ; u u0} A PA PPA
                             (forest_cons A a r)
                             (forest_cons_all@{α ; u} A PA a p r r0).
-(* α α0 ; *u *u0 |  *)
+(* α α0 ; u(= in 2nd binder, + in type) u0(= in 3rd binder, + in type) | 
+    *)
 
 Arguments RoseTreeMut_all_all A%_type_scope (PA PPA)%_function_scope r r0
 Arguments node_mut_all_all A%_type_scope (PA PPA)%_function_scope f f _
@@ -182,9 +178,10 @@ forall (A : Type@{RoseTreeMut.u0}) (PA : A -> Univ@{α ; u})
 (forall (a : A) (p : PA a), PPA a p) ->
 forall (r : RoseTreeMut A) (r0 : RoseTreeMut_all@{α ; u} A PA r),
 RoseTreeMut_all_all@{α α0 ; u u0} A PA PPA r r0
-(* α α0 ; u u0 |  *)
+(* α α0 ; u(= in 2nd binder) u0(= in 3rd binder) | 
+    *)
 
-RoseTreeMut_all_all_forall is universe polymorphic
+RoseTreeMut_all_all_forall is universe polymorphic and cumulative
 Arguments RoseTreeMut_all_all_forall A%_type_scope
   (PA PPA HPPA)%_function_scope r r0
 RoseTreeMut_all_all_forall is transparent
@@ -192,21 +189,19 @@ Expands to: Constant nested_eliminators.Template.RoseTreeMut_all_all_forall
 Declared in library nested_eliminators, line 61, characters 2-164
 Inductive
 RoseTreeMut_all@{α ; u} (A : Type@{RoseTreeMut.u0}) 
-(PA : A -> Univ@{α ; u})
-  : RoseTreeMut A -> Type@{max(Set,RoseTreeMut.u0,u)} :=
+(PA : A -> Univ@{α ; u}) : RoseTreeMut A -> Type@{max(RoseTreeMut.u0,u)} :=
     node_mut_all : forall f : forest A,
                    forest_all@{α ; u} A PA f ->
                    RoseTreeMut_all@{α ; u} A PA (node_mut A f)
   with forest_all@{α ; u} (A : Type@{RoseTreeMut.u0})
-       (PA : A -> Univ@{α ; u})
-         : forest A -> Type@{max(Set,RoseTreeMut.u0,u)} :=
+       (PA : A -> Univ@{α ; u}) : forest A -> Type@{max(RoseTreeMut.u0,u)} :=
     forest_nil_all : forest_all@{α ; u} A PA (forest_nil A)
   | forest_cons_all : forall a : A,
                       PA a ->
                       forall r : RoseTreeMut A,
                       RoseTreeMut_all@{α ; u} A PA r ->
                       forest_all@{α ; u} A PA (forest_cons A a r).
-(* α ; *u |  *)
+(* α ; u(= in 2nd binder, + in type) |  *)
 
 Arguments RoseTreeMut_all A%_type_scope PA%_function_scope r
 Arguments node_mut_all A%_type_scope PA%_function_scope f _
@@ -216,9 +211,9 @@ Arguments forest_cons_all A%_type_scope PA%_function_scope a _ r _
 forest_all_forall@{α ; u} :
 forall (A : Type@{RoseTreeMut.u0}) (PA : A -> Univ@{α ; u}),
 (forall a : A, PA a) -> forall f : forest A, forest_all@{α ; u} A PA f
-(* α ; u |  *)
+(* α ; u(= in 2nd binder) |  *)
 
-forest_all_forall is universe polymorphic
+forest_all_forall is universe polymorphic and cumulative
 Arguments forest_all_forall A%_type_scope (PA HPA)%_function_scope f
 forest_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.forest_all_forall
@@ -227,7 +222,7 @@ Inductive
 RoseTreeMut_all_all@{α α0 ; u u0} (A : Type@{RoseTreeMut.u0})
 (PA : A -> Univ@{α ; u}) (PPA : forall a : A, PA a -> Univ@{α0 ; u0})
   : forall r : RoseTreeMut A,
-    RoseTreeMut_all@{α ; u} A PA r -> Type@{max(Set,RoseTreeMut.u0,u,u0)} :=
+    RoseTreeMut_all@{α ; u} A PA r -> Type@{max(RoseTreeMut.u0,u,u0)} :=
     node_mut_all_all : forall (f : forest A) (f0 : forest_all@{α ; u} A PA f),
                        forest_all_all@{α α0 ; u u0} A PA PPA f f0 ->
                        RoseTreeMut_all_all@{α α0 ; u u0} A PA PPA
@@ -235,7 +230,7 @@ RoseTreeMut_all_all@{α α0 ; u u0} (A : Type@{RoseTreeMut.u0})
   with forest_all_all@{α α0 ; u u0} (A : Type@{RoseTreeMut.u0})
        (PA : A -> Univ@{α ; u}) (PPA : forall a : A, PA a -> Univ@{α0 ; u0})
          : forall f : forest A,
-           forest_all@{α ; u} A PA f -> Type@{max(Set,RoseTreeMut.u0,u,u0)} :=
+           forest_all@{α ; u} A PA f -> Type@{max(RoseTreeMut.u0,u,u0)} :=
     forest_nil_all_all : forest_all_all@{α α0 ; u u0} A PA PPA 
                            (forest_nil A) (forest_nil_all@{α ; u} A PA)
   | forest_cons_all_all : forall (a : A) (p : PA a),
@@ -246,7 +241,8 @@ RoseTreeMut_all_all@{α α0 ; u u0} (A : Type@{RoseTreeMut.u0})
                           forest_all_all@{α α0 ; u u0} A PA PPA
                             (forest_cons A a r)
                             (forest_cons_all@{α ; u} A PA a p r r0).
-(* α α0 ; *u *u0 |  *)
+(* α α0 ; u(= in 2nd binder, + in type) u0(= in 3rd binder, + in type) | 
+    *)
 
 Arguments RoseTreeMut_all_all A%_type_scope (PA PPA)%_function_scope r r0
 Arguments node_mut_all_all A%_type_scope (PA PPA)%_function_scope f f _
@@ -260,9 +256,10 @@ forall (A : Type@{RoseTreeMut.u0}) (PA : A -> Univ@{α ; u})
 (forall (a : A) (p : PA a), PPA a p) ->
 forall (f : forest A) (f0 : forest_all@{α ; u} A PA f),
 forest_all_all@{α α0 ; u u0} A PA PPA f f0
-(* α α0 ; u u0 |  *)
+(* α α0 ; u(= in 2nd binder) u0(= in 3rd binder) | 
+    *)
 
-forest_all_all_forall is universe polymorphic
+forest_all_all_forall is universe polymorphic and cumulative
 Arguments forest_all_all_forall A%_type_scope (PA PPA HPPA)%_function_scope 
   f f0
 forest_all_all_forall is transparent
@@ -272,9 +269,9 @@ RoseRoseTree_ind :
 forall (A : Type@{RoseRoseTree_ind.u0}) (P : RoseRoseTree A -> Prop),
 (forall a : A, P (Nleaf A a)) ->
 (forall p : list (list (RoseRoseTree A)),
- list_all@{Type ; RoseRoseTree_ind.u1 RoseRoseTree_ind.u1}
+ list_all@{Type ; RoseRoseTree_ind.u0 RoseRoseTree_ind.u0}
    (list (RoseRoseTree A))
-   (list_all@{Prop ; RoseRoseTree_ind.u1 Set} (RoseRoseTree A) P) p ->
+   (list_all@{Prop ; RoseRoseTree_ind.u0 0} (RoseRoseTree A) P) p ->
  P (Nnode A p)) ->
 forall r : RoseRoseTree A, P r
 
@@ -284,36 +281,30 @@ RoseRoseTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.RoseRoseTree_ind
 Declared in library nested_eliminators, line 77, characters 2-136
 Inductive
-RoseRoseTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : RoseRoseTree A -> Type@{max(Set,u,u0,u1)} :=
+RoseRoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : RoseRoseTree A -> Type@{max(u,u0,u1)} :=
     Nleaf_all : forall a : A,
-                PA a -> RoseRoseTree_all@{α ; u u0 u1 u2} A PA (Nleaf A a)
+                PA a -> RoseRoseTree_all@{α ; u u0 u1} A PA (Nleaf A a)
   | Nnode_all : forall p : list (list (RoseRoseTree A)),
-                list_all@{Type ; u2 u1} (list (RoseRoseTree A))
-                  (list_all@{Type ; u2 u1} (RoseRoseTree A)
-                     (RoseRoseTree_all@{α ; u u0 u1 u2} A PA))
+                list_all@{Type ; u u1} (list (RoseRoseTree A))
+                  (list_all@{Type ; u u1} (RoseRoseTree A)
+                     (RoseRoseTree_all@{α ; u u0 u1} A PA))
                   p ->
-                RoseRoseTree_all@{α ; u u0 u1 u2} A PA (Nnode A p).
-(* α ; *u *u0 =u1 =u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                RoseRoseTree_all@{α ; u u0 u1} A PA (Nnode A p).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments RoseRoseTree_all A%_type_scope PA%_function_scope r
 Arguments Nleaf_all A%_type_scope PA%_function_scope a _
 Arguments Nnode_all A%_type_scope PA%_function_scope p _
-RoseRoseTree_all_forall@{α ; u u0 u1 u2} :
+RoseRoseTree_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall r : RoseRoseTree A, RoseRoseTree_all@{α ; u u0 u1 u2} A PA r
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall r : RoseRoseTree A, RoseRoseTree_all@{α ; u u0 max(u,u0)} A PA r
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-RoseRoseTree_all_forall is universe polymorphic
+RoseRoseTree_all_forall is universe polymorphic and cumulative
 Arguments RoseRoseTree_all_forall A%_type_scope (PA HPA)%_function_scope r
 RoseRoseTree_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.RoseRoseTree_all_forall
@@ -323,7 +314,7 @@ forall (A : Type@{ArrowTree1_ind.u0}) (P : ArrowTree1 A -> Prop),
 (forall a : A, P (ATleaf1 A a)) ->
 (forall l : bool -> list (ArrowTree1 A),
  (forall H : bool,
-  list_all@{Prop ; ArrowTree1_ind.u1 Set} (ArrowTree1 A) P (l H)) ->
+  list_all@{Prop ; ArrowTree1_ind.u0 0} (ArrowTree1 A) P (l H)) ->
  P (ATnode1 A l)) ->
 forall a : ArrowTree1 A, P a
 
@@ -333,36 +324,30 @@ ArrowTree1_ind is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree1_ind
 Declared in library nested_eliminators, line 85, characters 2-133
 Inductive
-ArrowTree1_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : ArrowTree1 A -> Type@{max(Set,u,u0,u1)} :=
+ArrowTree1_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : ArrowTree1 A -> Type@{max(u,u0,u1)} :=
     ATleaf1_all : forall a : A,
-                  PA a -> ArrowTree1_all@{α ; u u0 u1 u2} A PA (ATleaf1 A a)
+                  PA a -> ArrowTree1_all@{α ; u u0 u1} A PA (ATleaf1 A a)
   | ATnode1_all : forall l : bool -> list (ArrowTree1 A),
                   (forall H : bool,
-                   list_all@{Type ; u2 u1} (ArrowTree1 A)
-                     (ArrowTree1_all@{α ; u u0 u1 u2} A PA) 
+                   list_all@{Type ; u u1} (ArrowTree1 A)
+                     (ArrowTree1_all@{α ; u u0 u1} A PA) 
                      (l H)) ->
-                  ArrowTree1_all@{α ; u u0 u1 u2} A PA (ATnode1 A l).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                  ArrowTree1_all@{α ; u u0 u1} A PA (ATnode1 A l).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments ArrowTree1_all A%_type_scope PA%_function_scope a
 Arguments ATleaf1_all A%_type_scope PA%_function_scope a _
 Arguments ATnode1_all A%_type_scope (PA l _)%_function_scope
-ArrowTree1_all_forall@{α ; u u0 u1 u2} :
+ArrowTree1_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall a : ArrowTree1 A, ArrowTree1_all@{α ; u u0 u1 u2} A PA a
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall a : ArrowTree1 A, ArrowTree1_all@{α ; u u0 max(u,u0)} A PA a
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-ArrowTree1_all_forall is universe polymorphic
+ArrowTree1_all_forall is universe polymorphic and cumulative
 Arguments ArrowTree1_all_forall A%_type_scope (PA HPA)%_function_scope a
 ArrowTree1_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree1_all_forall
@@ -371,7 +356,7 @@ ArrowTree2_ind :
 forall (A : Type@{ArrowTree2_ind.u0}) (P : ArrowTree2 A -> Prop),
 (forall a : A, P (ATleaf2 A a)) ->
 (forall l : list (nat -> ArrowTree2 A),
- list_all@{Prop ; ArrowTree2_ind.u1 Set} (nat -> ArrowTree2 A)
+ list_all@{Prop ; ArrowTree2_ind.u0 0} (nat -> ArrowTree2 A)
    (fun H : nat -> ArrowTree2 A => forall H0 : nat, P (H H0)) l ->
  P (ATnode2 A l)) ->
 forall a : ArrowTree2 A, P a
@@ -382,37 +367,31 @@ ArrowTree2_ind is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree2_ind
 Declared in library nested_eliminators, line 93, characters 2-130
 Inductive
-ArrowTree2_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : ArrowTree2 A -> Type@{max(Set,u,u0,u1)} :=
+ArrowTree2_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : ArrowTree2 A -> Type@{max(u,u0,u1)} :=
     ATleaf2_all : forall a : A,
-                  PA a -> ArrowTree2_all@{α ; u u0 u1 u2} A PA (ATleaf2 A a)
+                  PA a -> ArrowTree2_all@{α ; u u0 u1} A PA (ATleaf2 A a)
   | ATnode2_all : forall l : list (nat -> ArrowTree2 A),
-                  list_all@{Type ; u2 u1} (nat -> ArrowTree2 A)
+                  list_all@{Type ; u u1} (nat -> ArrowTree2 A)
                     (fun H : nat -> ArrowTree2 A =>
                      forall H0 : nat,
-                     ArrowTree2_all@{α ; u u0 u1 u2} A PA (H H0))
+                     ArrowTree2_all@{α ; u u0 u1} A PA (H H0))
                     l ->
-                  ArrowTree2_all@{α ; u u0 u1 u2} A PA (ATnode2 A l).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                  ArrowTree2_all@{α ; u u0 u1} A PA (ATnode2 A l).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments ArrowTree2_all A%_type_scope PA%_function_scope a
 Arguments ATleaf2_all A%_type_scope PA%_function_scope a _
 Arguments ATnode2_all A%_type_scope PA%_function_scope l _
-ArrowTree2_all_forall@{α ; u u0 u1 u2} :
+ArrowTree2_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall a : ArrowTree2 A, ArrowTree2_all@{α ; u u0 u1 u2} A PA a
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall a : ArrowTree2 A, ArrowTree2_all@{α ; u u0 max(u,u0)} A PA a
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-ArrowTree2_all_forall is universe polymorphic
+ArrowTree2_all_forall is universe polymorphic and cumulative
 Arguments ArrowTree2_all_forall A%_type_scope (PA HPA)%_function_scope a
 ArrowTree2_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree2_all_forall
@@ -422,7 +401,7 @@ forall (A : Type@{ArrowTree3_ind.u0}) (P : ArrowTree3 A -> Prop),
 (forall a : A, P (ATleaf3 A a)) ->
 (forall l : bool -> list (nat -> ArrowTree3 A),
  (forall H : bool,
-  list_all@{Prop ; ArrowTree3_ind.u1 Set} (nat -> ArrowTree3 A)
+  list_all@{Prop ; ArrowTree3_ind.u0 0} (nat -> ArrowTree3 A)
     (fun H0 : nat -> ArrowTree3 A => forall H1 : nat, P (H0 H1)) 
     (l H)) ->
  P (ATnode3 A l)) ->
@@ -434,38 +413,32 @@ ArrowTree3_ind is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree3_ind
 Declared in library nested_eliminators, line 101, characters 2-140
 Inductive
-ArrowTree3_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : ArrowTree3 A -> Type@{max(Set,u,u0,u1)} :=
+ArrowTree3_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : ArrowTree3 A -> Type@{max(u,u0,u1)} :=
     ATleaf3_all : forall a : A,
-                  PA a -> ArrowTree3_all@{α ; u u0 u1 u2} A PA (ATleaf3 A a)
+                  PA a -> ArrowTree3_all@{α ; u u0 u1} A PA (ATleaf3 A a)
   | ATnode3_all : forall l : bool -> list (nat -> ArrowTree3 A),
                   (forall H : bool,
-                   list_all@{Type ; u2 u1} (nat -> ArrowTree3 A)
+                   list_all@{Type ; u u1} (nat -> ArrowTree3 A)
                      (fun H0 : nat -> ArrowTree3 A =>
                       forall H1 : nat,
-                      ArrowTree3_all@{α ; u u0 u1 u2} A PA (H0 H1))
+                      ArrowTree3_all@{α ; u u0 u1} A PA (H0 H1))
                      (l H)) ->
-                  ArrowTree3_all@{α ; u u0 u1 u2} A PA (ATnode3 A l).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                  ArrowTree3_all@{α ; u u0 u1} A PA (ATnode3 A l).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments ArrowTree3_all A%_type_scope PA%_function_scope a
 Arguments ATleaf3_all A%_type_scope PA%_function_scope a _
 Arguments ATnode3_all A%_type_scope (PA l _)%_function_scope
-ArrowTree3_all_forall@{α ; u u0 u1 u2} :
+ArrowTree3_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall a : ArrowTree3 A, ArrowTree3_all@{α ; u u0 u1 u2} A PA a
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall a : ArrowTree3 A, ArrowTree3_all@{α ; u u0 max(u,u0)} A PA a
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-ArrowTree3_all_forall is universe polymorphic
+ArrowTree3_all_forall is universe polymorphic and cumulative
 Arguments ArrowTree3_all_forall A%_type_scope (PA HPA)%_function_scope a
 ArrowTree3_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.ArrowTree3_all_forall
@@ -478,7 +451,8 @@ prod_all@{α α0 ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
                PA a ->
                forall b : B,
                PB b -> prod_all@{α α0 ; u u0 u1 u2} A PA B PB (pair A B a b).
-(* α α0 ; *u *u0 *u1 *u2 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 3rd binder, + in type) u1(= in 2nd binder, + in type) u2(= in 4th binder, + in type) | 
+    *)
 
 Arguments prod_all A%_type_scope PA%_function_scope 
   B%_type_scope PB%_function_scope p
@@ -490,9 +464,10 @@ forall (A : Type@{u}) (PA : A -> Univ@{α ; u1}),
 forall (B : Type@{u0}) (PB : B -> Univ@{α0 ; u2}),
 (forall b : B, PB b) ->
 forall p : prod A B, prod_all@{α α0 ; u u0 u1 u2} A PA B PB p
-(* α α0 ; u u0 u1 u2 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 4th binder) u1(= in 2nd binder) u2(= in 5th binder) | 
+    *)
 
-prod_all_forall is universe polymorphic
+prod_all_forall is universe polymorphic and cumulative
 Arguments prod_all_forall A%_type_scope (PA HPA)%_function_scope
   B%_type_scope (PB HPB)%_function_scope p
 prod_all_forall is transparent
@@ -512,7 +487,8 @@ prod_all_all@{α α0 α1 α2 ; u u0 u1 u2 u3 u4} (A : Type@{u})
                    prod_all_all@{α α0 α1 α2 ; u u0 u1 u2 u3 u4} A PA PPA B PB
                      PPB (pair A B a b)
                      (pair_all@{α α0 ; u u0 u1 u2} A PA B PB a p b p0).
-(* α α0 α1 α2 ; *u *u0 *u1 *u2 *u3 *u4 |  *)
+(* α α0 α1 α2 ; u(= in 1st binder, + in type) u0(= in 4th binder, + in type) u1(= in 2nd binder, + in type) u2(= in 5th binder, + in type) u3(= in 3rd binder, + in type) u4(= in 6th binder, + in type) | 
+    *)
 
 Arguments prod_all_all A%_type_scope (PA PPA)%_function_scope 
   B%_type_scope (PB PPB)%_function_scope p p0
@@ -528,9 +504,10 @@ forall (B : Type@{u0}) (PB : B -> Univ@{α0 ; u2})
 (forall (b : B) (p : PB b), PPB b p) ->
 forall (p : prod A B) (p0 : prod_all@{α α0 ; u u0 u1 u2} A PA B PB p),
 prod_all_all@{α α0 α1 α2 ; u u0 u1 u2 u3 u4} A PA PPA B PB PPB p p0
-(* α α0 α1 α2 ; u u0 u1 u2 u3 u4 |  *)
+(* α α0 α1 α2 ; u(= in 1st binder) u0(= in 5th binder) u1(= in 2nd binder) u2(= in 6th binder) u3(= in 3rd binder) u4(= in 7th binder) | 
+    *)
 
-prod_all_all_forall is universe polymorphic
+prod_all_all_forall is universe polymorphic and cumulative
 Arguments prod_all_all_forall A%_type_scope (PA PPA HPPA)%_function_scope
   B%_type_scope (PB PPB HPPB)%_function_scope p p0
 prod_all_all_forall is transparent
@@ -540,7 +517,7 @@ PairTree_ind :
 forall (A : Type@{PairTree_ind.u0}) (P : PairTree A -> Prop),
 (forall a : A, P (Pleaf A a)) ->
 (forall p : prod (PairTree A) (PairTree A),
- prod_all@{Prop Prop ; PairTree_ind.u1 PairTree_ind.u1 Set Set} 
+ prod_all@{Prop Prop ; PairTree_ind.u0 PairTree_ind.u0 0 0} 
    (PairTree A) P (PairTree A) P p ->
  P (Pnode A p)) ->
 forall p : PairTree A, P p
@@ -551,35 +528,29 @@ PairTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.PairTree_ind
 Declared in library nested_eliminators, line 121, characters 2-124
 Inductive
-PairTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : PairTree A -> Type@{max(Set,u,u0,u1)} :=
+PairTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : PairTree A -> Type@{max(u,u0,u1)} :=
     Pleaf_all : forall a : A,
-                PA a -> PairTree_all@{α ; u u0 u1 u2} A PA (Pleaf A a)
+                PA a -> PairTree_all@{α ; u u0 u1} A PA (Pleaf A a)
   | Pnode_all : forall p : prod (PairTree A) (PairTree A),
-                prod_all@{Type Type ; u2 u2 u1 u1} 
-                  (PairTree A) (PairTree_all@{α ; u u0 u1 u2} A PA)
-                  (PairTree A) (PairTree_all@{α ; u u0 u1 u2} A PA) p ->
-                PairTree_all@{α ; u u0 u1 u2} A PA (Pnode A p).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                prod_all@{Type Type ; u u u1 u1} (PairTree A)
+                  (PairTree_all@{α ; u u0 u1} A PA) 
+                  (PairTree A) (PairTree_all@{α ; u u0 u1} A PA) p ->
+                PairTree_all@{α ; u u0 u1} A PA (Pnode A p).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments PairTree_all A%_type_scope PA%_function_scope p
 Arguments Pleaf_all A%_type_scope PA%_function_scope a _
 Arguments Pnode_all A%_type_scope PA%_function_scope p _
-PairTree_all_forall@{α ; u u0 u1 u2} :
+PairTree_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall p : PairTree A, PairTree_all@{α ; u u0 u1 u2} A PA p
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall p : PairTree A, PairTree_all@{α ; u u0 max(u,u0)} A PA p
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-PairTree_all_forall is universe polymorphic
+PairTree_all_forall is universe polymorphic and cumulative
 Arguments PairTree_all_forall A%_type_scope (PA HPA)%_function_scope p
 PairTree_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.PairTree_all_forall
@@ -588,8 +559,8 @@ LeftTree_ind :
 forall (A : Type@{LeftTree_ind.u0}) (P : LeftTree A -> Prop),
 (forall a : A, P (Lleaf A a)) ->
 (forall p : prod (LeftTree A) nat,
- prod_all@{Prop Type ; LeftTree_ind.u1 Set Set Set} 
-   (LeftTree A) P nat (fun _ : nat => unit) p ->
+ prod_all@{Prop Type ; LeftTree_ind.u0 0 0 0} (LeftTree A) P nat
+   (fun _ : nat => unit) p ->
  P (Lnode A p)) ->
 forall l : LeftTree A, P l
 
@@ -600,35 +571,29 @@ Expands to: Constant
             nested_eliminators.Template.AutoGeneratedScheme.LeftTree_ind
 Declared in library nested_eliminators, line 131, characters 4-121
 Inductive
-LeftTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : LeftTree A -> Type@{max(Set,u,u0,u1)} :=
+LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : LeftTree A -> Type@{max(u,u0,u1)} :=
     Lleaf_all : forall a : A,
-                PA a -> LeftTree_all@{α ; u u0 u1 u2} A PA (Lleaf A a)
+                PA a -> LeftTree_all@{α ; u u0 u1} A PA (Lleaf A a)
   | Lnode_all : forall p : prod (LeftTree A) nat,
-                prod_all@{Type Type ; u2 Set u1 Set} 
-                  (LeftTree A) (LeftTree_all@{α ; u u0 u1 u2} A PA) nat
+                prod_all@{Type Type ; u 0 u1 0} (LeftTree A)
+                  (LeftTree_all@{α ; u u0 u1} A PA) nat 
                   (fun _ : nat => unit) p ->
-                LeftTree_all@{α ; u u0 u1 u2} A PA (Lnode A p).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                LeftTree_all@{α ; u u0 u1} A PA (Lnode A p).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments LeftTree_all A%_type_scope PA%_function_scope l
 Arguments Lleaf_all A%_type_scope PA%_function_scope a _
 Arguments Lnode_all A%_type_scope PA%_function_scope p _
-LeftTree_all_forall@{α ; u u0 u1 u2} :
+LeftTree_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall l : LeftTree A, LeftTree_all@{α ; u u0 u1 u2} A PA l
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall l : LeftTree A, LeftTree_all@{α ; u u0 max(u,u0)} A PA l
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-LeftTree_all_forall is universe polymorphic
+LeftTree_all_forall is universe polymorphic and cumulative
 Arguments LeftTree_all_forall A%_type_scope (PA HPA)%_function_scope l
 LeftTree_all_forall is transparent
 Expands to: Constant
@@ -638,8 +603,8 @@ LeftTree_ind :
 forall (A : Type@{LeftTree_ind.u0}) (P : LeftTree A -> Prop),
 (forall a : A, P (Lleaf A a)) ->
 (forall p : prod (LeftTree A) nat,
- prod_all@{Prop Type ; LeftTree_ind.u1 Set Set Set} 
-   (LeftTree A) P nat (fun _ : nat => unit) p ->
+ prod_all@{Prop Type ; LeftTree_ind.u0 0 0 0} (LeftTree A) P nat
+   (fun _ : nat => unit) p ->
  P (Lnode A p)) ->
 forall l : LeftTree A, P l
 
@@ -649,35 +614,29 @@ LeftTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.Scheme.LeftTree_ind
 Declared in library nested_eliminators, line 149, characters 4-44
 Inductive
-LeftTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : LeftTree A -> Type@{max(Set,u,u0,u1)} :=
+LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : LeftTree A -> Type@{max(u,u0,u1)} :=
     Lleaf_all : forall a : A,
-                PA a -> LeftTree_all@{α ; u u0 u1 u2} A PA (Lleaf A a)
+                PA a -> LeftTree_all@{α ; u u0 u1} A PA (Lleaf A a)
   | Lnode_all : forall p : prod (LeftTree A) nat,
-                prod_all@{Type Type ; u2 Set u1 Set} 
-                  (LeftTree A) (LeftTree_all@{α ; u u0 u1 u2} A PA) nat
+                prod_all@{Type Type ; u 0 u1 0} (LeftTree A)
+                  (LeftTree_all@{α ; u u0 u1} A PA) nat 
                   (fun _ : nat => unit) p ->
-                LeftTree_all@{α ; u u0 u1 u2} A PA (Lnode A p).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                LeftTree_all@{α ; u u0 u1} A PA (Lnode A p).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments LeftTree_all A%_type_scope PA%_function_scope l
 Arguments Lleaf_all A%_type_scope PA%_function_scope a _
 Arguments Lnode_all A%_type_scope PA%_function_scope p _
-LeftTree_all_forall@{α ; u u0 u1 u2} :
+LeftTree_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall l : LeftTree A, LeftTree_all@{α ; u u0 u1 u2} A PA l
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall l : LeftTree A, LeftTree_all@{α ; u u0 max(u,u0)} A PA l
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-LeftTree_all_forall is universe polymorphic
+LeftTree_all_forall is universe polymorphic and cumulative
 Arguments LeftTree_all_forall A%_type_scope (PA HPA)%_function_scope l
 LeftTree_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.Scheme.LeftTree_all_forall
@@ -688,7 +647,8 @@ prod_all_10@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
     pair_all_10 : forall a : A,
                   PA a ->
                   forall b : B, prod_all_10@{α ; u u0 u1} A PA B (pair a b).
-(* α ; *u *u0 *u1 |  *)
+(* α ; u(= in 1st binder, + in type) u0(= in 3rd binder, + in type) u1(= in 2nd binder, + in type) | 
+    *)
 
 Arguments prod_all_10 A%_type_scope PA%_function_scope B%_type_scope p
 Arguments pair_all_10 A%_type_scope PA%_function_scope B%_type_scope a _ b
@@ -696,9 +656,10 @@ prod_all_forall_10@{α ; u u0 u1} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u1}),
 (forall a : A, PA a) ->
 forall (B : Type@{u0}) (p : prod A B), prod_all_10@{α ; u u0 u1} A PA B p
-(* α ; u u0 u1 |  *)
+(* α ; u(= in 1st binder) u0(= in 4th binder) u1(= in 2nd binder) | 
+    *)
 
-prod_all_forall_10 is universe polymorphic
+prod_all_forall_10 is universe polymorphic and cumulative
 Arguments prod_all_forall_10 A%_type_scope (PA HPA)%_function_scope
   B%_type_scope p
 prod_all_forall_10 is transparent
@@ -716,7 +677,8 @@ prod_all_10_all@{α α0 ; u u0 u1 u2} (A : Type@{u})
                       forall b : B,
                       prod_all_10_all@{α α0 ; u u0 u1 u2} A PA PPA B
                         (pair a b) (pair_all_10@{α ; u u0 u1} A PA B a p b).
-(* α α0 ; *u *u0 *u1 *u2 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 4th binder, + in type) u1(= in 2nd binder, + in type) u2(= in 3rd binder, + in type) | 
+    *)
 
 Arguments prod_all_10_all A%_type_scope (PA PPA)%_function_scope
   B%_type_scope p p0
@@ -729,9 +691,10 @@ forall (A : Type@{u}) (PA : A -> Univ@{α ; u1})
 forall (B : Type@{u0}) (p : prod A B)
   (p0 : prod_all_10@{α ; u u0 u1} A PA B p),
 prod_all_10_all@{α α0 ; u u0 u1 u2} A PA PPA B p p0
-(* α α0 ; u u0 u1 u2 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 5th binder) u1(= in 2nd binder) u2(= in 3rd binder) | 
+    *)
 
-prod_all_10_all_forall is universe polymorphic
+prod_all_10_all_forall is universe polymorphic and cumulative
 Arguments prod_all_10_all_forall A%_type_scope (PA PPA HPPA)%_function_scope
   B%_type_scope p p0
 prod_all_10_all_forall is transparent
@@ -742,7 +705,7 @@ LeftTree_ind :
 forall (A : Type@{LeftTree_ind.u0}) (P : LeftTree A -> Prop),
 (forall a : A, P (Lleaf A a)) ->
 (forall p : prod (LeftTree A) nat,
- prod_all_10@{Prop ; LeftTree_ind.u1 Set Set} (LeftTree A) P nat p ->
+ prod_all_10@{Prop ; LeftTree_ind.u0 0 0} (LeftTree A) P nat p ->
  P (Lnode A p)) ->
 forall l : LeftTree A, P l
 
@@ -752,34 +715,28 @@ LeftTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.PartialAll.LeftTree_ind
 Declared in library nested_eliminators, line 165, characters 4-121
 Inductive
-LeftTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : LeftTree A -> Type@{max(Set,u,u0,u1)} :=
+LeftTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : LeftTree A -> Type@{max(u,u0,u1)} :=
     Lleaf_all : forall a : A,
-                PA a -> LeftTree_all@{α ; u u0 u1 u2} A PA (Lleaf A a)
+                PA a -> LeftTree_all@{α ; u u0 u1} A PA (Lleaf A a)
   | Lnode_all : forall p : prod (LeftTree A) nat,
-                prod_all_10@{Type ; u2 Set u1} (LeftTree A)
-                  (LeftTree_all@{α ; u u0 u1 u2} A PA) nat p ->
-                LeftTree_all@{α ; u u0 u1 u2} A PA (Lnode A p).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                prod_all_10@{Type ; u 0 u1} (LeftTree A)
+                  (LeftTree_all@{α ; u u0 u1} A PA) nat p ->
+                LeftTree_all@{α ; u u0 u1} A PA (Lnode A p).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments LeftTree_all A%_type_scope PA%_function_scope l
 Arguments Lleaf_all A%_type_scope PA%_function_scope a _
 Arguments Lnode_all A%_type_scope PA%_function_scope p _
-LeftTree_all_forall@{α ; u u0 u1 u2} :
+LeftTree_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall l : LeftTree A, LeftTree_all@{α ; u u0 u1 u2} A PA l
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall l : LeftTree A, LeftTree_all@{α ; u u0 max(u,u0)} A PA l
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-LeftTree_all_forall is universe polymorphic
+LeftTree_all_forall is universe polymorphic and cumulative
 Arguments LeftTree_all_forall A%_type_scope (PA HPA)%_function_scope l
 LeftTree_all_forall is transparent
 Expands to: Constant
@@ -789,7 +746,7 @@ RightTree_ind :
 forall (A : Type@{RightTree_ind.u0}) (P : RightTree A -> Prop),
 (forall a : A, P (Rleaf A a)) ->
 (forall p : prod nat (RightTree A),
- prod_all@{Type Prop ; Set RightTree_ind.u1 Set Set} nat
+ prod_all@{Type Prop ; 0 RightTree_ind.u0 0 0} nat 
    (fun _ : nat => unit) (RightTree A) P p ->
  P (Rnode A p)) ->
 forall r : RightTree A, P r
@@ -800,49 +757,44 @@ RightTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.RightTree_ind
 Declared in library nested_eliminators, line 175, characters 2-119
 Inductive
-RightTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : RightTree A -> Type@{max(Set,u,u0,u1)} :=
+RightTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : RightTree A -> Type@{max(u,u0,u1)} :=
     Rleaf_all : forall a : A,
-                PA a -> RightTree_all@{α ; u u0 u1 u2} A PA (Rleaf A a)
+                PA a -> RightTree_all@{α ; u u0 u1} A PA (Rleaf A a)
   | Rnode_all : forall p : prod nat (RightTree A),
-                prod_all@{Type Type ; Set u2 Set u1} nat
+                prod_all@{Type Type ; 0 u 0 u1} nat 
                   (fun _ : nat => unit) (RightTree A)
-                  (RightTree_all@{α ; u u0 u1 u2} A PA) p ->
-                RightTree_all@{α ; u u0 u1 u2} A PA (Rnode A p).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                  (RightTree_all@{α ; u u0 u1} A PA) p ->
+                RightTree_all@{α ; u u0 u1} A PA (Rnode A p).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments RightTree_all A%_type_scope PA%_function_scope r
 Arguments Rleaf_all A%_type_scope PA%_function_scope a _
 Arguments Rnode_all A%_type_scope PA%_function_scope p _
-RightTree_all_forall@{α ; u u0 u1 u2} :
+RightTree_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall r : RightTree A, RightTree_all@{α ; u u0 u1 u2} A PA r
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall r : RightTree A, RightTree_all@{α ; u u0 max(u,u0)} A PA r
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-RightTree_all_forall is universe polymorphic
+RightTree_all_forall is universe polymorphic and cumulative
 Arguments RightTree_all_forall A%_type_scope (PA HPA)%_function_scope r
 RightTree_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.RightTree_all_forall
 Declared in library nested_eliminators, line 175, characters 2-119
 Inductive
 vec_all@{α ; u u0} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : forall n : nat, vec A n -> Type@{max(Set,u,u0)} :=
+  : forall n : nat, vec A n -> Type@{max(u,u0)} :=
     vnil_all : vec_all@{α ; u u0} A PA zero (vnil A)
   | vcons_all : forall a : A,
                 PA a ->
                 forall (n : nat) (v : vec A n),
                 vec_all@{α ; u u0} A PA n v ->
                 vec_all@{α ; u u0} A PA (S n) (vcons A a n v).
-(* α ; *u *u0 |  *)
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) | 
+    *)
 
 Arguments vec_all A%_type_scope PA%_function_scope n v
 Arguments vnil_all A%_type_scope PA%_function_scope
@@ -851,9 +803,9 @@ vec_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall (n : nat) (v : vec A n), vec_all@{α ; u u0} A PA n v
-(* α ; u u0 |  *)
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-vec_all_forall is universe polymorphic
+vec_all_forall is universe polymorphic and cumulative
 Arguments vec_all_forall A%_type_scope (PA HPA)%_function_scope n v
 vec_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.vec_all_forall
@@ -862,7 +814,7 @@ Inductive
 vec_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
 (PPA : forall a : A, PA a -> Univ@{α0 ; u1})
   : forall (n : nat) (v : vec A n),
-    vec_all@{α ; u u0} A PA n v -> Type@{max(Set,u,u0,u1)} :=
+    vec_all@{α ; u u0} A PA n v -> Type@{max(u,u0,u1)} :=
     vnil_all_all : vec_all_all@{α α0 ; u u0 u1} A PA PPA zero 
                      (vnil A) (vnil_all@{α ; u u0} A PA)
   | vcons_all_all : forall (a : A) (p : PA a),
@@ -873,7 +825,8 @@ vec_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
                     vec_all_all@{α α0 ; u u0 u1} A PA PPA 
                       (S n) (vcons A a n v)
                       (vcons_all@{α ; u u0} A PA a p n v v0).
-(* α α0 ; *u *u0 *u1 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 3rd binder, + in type) | 
+    *)
 
 Arguments vec_all_all A%_type_scope (PA PPA)%_function_scope n v v0
 Arguments vnil_all_all A%_type_scope (PA PPA)%_function_scope
@@ -884,9 +837,10 @@ forall (A : Type@{u}) (PA : A -> Univ@{α ; u0})
 (forall (a : A) (p : PA a), PPA a p) ->
 forall (n : nat) (v : vec A n) (v0 : vec_all@{α ; u u0} A PA n v),
 vec_all_all@{α α0 ; u u0 u1} A PA PPA n v v0
-(* α α0 ; u u0 u1 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 3rd binder) | 
+    *)
 
-vec_all_all_forall is universe polymorphic
+vec_all_all_forall is universe polymorphic and cumulative
 Arguments vec_all_all_forall A%_type_scope (PA PPA HPPA)%_function_scope 
   n v v0
 vec_all_all_forall is transparent
@@ -896,7 +850,7 @@ VecTree_ind :
 forall (A : Type@{VecTree_ind.u0}) (P : VecTree A -> Prop),
 (forall a : A, P (VNleaf A a)) ->
 (forall (n : nat) (p : vec (VecTree A) n),
- vec_all@{Prop ; VecTree_ind.u1 Set} (VecTree A) P n p -> P (VNnode A n p)) ->
+ vec_all@{Prop ; VecTree_ind.u0 0} (VecTree A) P n p -> P (VNnode A n p)) ->
 forall v : VecTree A, P v
 
 VecTree_ind is not universe polymorphic
@@ -905,34 +859,28 @@ VecTree_ind is transparent
 Expands to: Constant nested_eliminators.Template.VecTree_ind
 Declared in library nested_eliminators, line 194, characters 2-112
 Inductive
-VecTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : VecTree A -> Type@{max(Set,u,u0,u1)} :=
+VecTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : VecTree A -> Type@{max(u,u0,u1)} :=
     VNleaf_all : forall a : A,
-                 PA a -> VecTree_all@{α ; u u0 u1 u2} A PA (VNleaf A a)
+                 PA a -> VecTree_all@{α ; u u0 u1} A PA (VNleaf A a)
   | VNnode_all : forall (n : nat) (p : vec (VecTree A) n),
-                 vec_all@{Type ; u2 u1} (VecTree A)
-                   (VecTree_all@{α ; u u0 u1 u2} A PA) n p ->
-                 VecTree_all@{α ; u u0 u1 u2} A PA (VNnode A n p).
-(* α ; *u *u0 *u1 *u2 | Set <= u1
-                        Set <= u2
-                        u <= u1
-                        u <= u2
-                        u0 <= u1
-                        u2 <= u1 *)
+                 vec_all@{Type ; u u1} (VecTree A)
+                   (VecTree_all@{α ; u u0 u1} A PA) n p ->
+                 VecTree_all@{α ; u u0 u1} A PA (VNnode A n p).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments VecTree_all A%_type_scope PA%_function_scope v
 Arguments VNleaf_all A%_type_scope PA%_function_scope a _
 Arguments VNnode_all A%_type_scope PA%_function_scope n p _
-VecTree_all_forall@{α ; u u0 u1 u2} :
+VecTree_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall v : VecTree A, VecTree_all@{α ; u u0 u1 u2} A PA v
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u2
-                    u0 <= u1
-                    u2 <= u1 *)
+forall v : VecTree A, VecTree_all@{α ; u u0 max(u,u0)} A PA v
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-VecTree_all_forall is universe polymorphic
+VecTree_all_forall is universe polymorphic and cumulative
 Arguments VecTree_all_forall A%_type_scope (PA HPA)%_function_scope v
 VecTree_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.VecTree_all_forall
@@ -943,7 +891,7 @@ All2i_all@{α ; u u0 u1 u2} (A : Type@{u}) (B : Type@{u0})
 (PR : forall (n : nat) (a : A) (b : B), R n a b -> Univ@{α ; u2}) 
 (n : nat)
   : forall (l : list A) (l0 : list B),
-    All2i A B R n l l0 -> Type@{max(Set,u,u0,u1,u2)} :=
+    All2i A B R n l l0 -> Type@{max(u,u0,u1,u2)} :=
     All2i_nil_all : All2i_all@{α ; u u0 u1 u2} A B R PR n nil nil
                       (All2i_nil A B R n)
   | All2i_cons_all : forall (a : A) (b : B) (lA : list A) 
@@ -954,7 +902,8 @@ All2i_all@{α ; u u0 u1 u2} (A : Type@{u}) (B : Type@{u0})
                      All2i_all@{α ; u u0 u1 u2} A B R PR n 
                        (cons a lA) (cons b lB)
                        (All2i_cons A B R n a b lA lB r a0).
-(* α ; *u *u0 *u1 *u2 |  *)
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 3rd binder, + in type) u2(= in 4th binder, + in type) | 
+    *)
 
 Arguments All2i_all (A B)%_type_scope (R PR)%_function_scope n l l a
 Arguments All2i_nil_all (A B)%_type_scope (R PR)%_function_scope n
@@ -966,9 +915,10 @@ forall (A : Type@{u}) (B : Type@{u0}) (R : nat -> A -> B -> Type@{u1})
 (forall (n : nat) (a : A) (b : B) (r : R n a b), PR n a b r) ->
 forall (n : nat) (l : list A) (l0 : list B) (a : All2i A B R n l l0),
 All2i_all@{α ; u u0 u1 u2} A B R PR n l l0 a
-(* α ; u u0 u1 u2 |  *)
+(* α ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 3rd binder) u2(= in 4th binder) | 
+    *)
 
-All2i_all_forall is universe polymorphic
+All2i_all_forall is universe polymorphic and cumulative
 Arguments All2i_all_forall (A B)%_type_scope (R PR HPR)%_function_scope 
   n l l a
 All2i_all_forall is transparent
@@ -982,8 +932,7 @@ All2i_all_all@{α α0 ; u u0 u1 u2 u3} (A : Type@{u})
        PR n a b r -> Univ@{α0 ; u3})
 (n : nat)
   : forall (l : list A) (l0 : list B) (a : All2i A B R n l l0),
-    All2i_all@{α ; u u0 u1 u2} A B R PR n l l0 a ->
-    Type@{max(Set,u,u0,u1,u2,u3)} :=
+    All2i_all@{α ; u u0 u1 u2} A B R PR n l l0 a -> Type@{max(u,u0,u1,u2,u3)} :=
     All2i_nil_all_all : All2i_all_all@{α α0 ; u u0 u1 u2 u3} A B R PR PPR n
                           nil nil (All2i_nil A B R n)
                           (All2i_nil_all@{α ; u u0 u1 u2} A B R PR n)
@@ -1001,7 +950,8 @@ All2i_all_all@{α α0 ; u u0 u1 u2 u3} (A : Type@{u})
                            (All2i_cons A B R n a b lA lB r a0)
                            (All2i_cons_all@{α ; u u0 u1 u2} A B R PR n a b lA
                               lB r p a0 a1).
-(* α α0 ; *u *u0 *u1 *u2 *u3 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 3rd binder, + in type) u2(= in 4th binder, + in type) u3(= in 5th binder, + in type) | 
+    *)
 
 Arguments All2i_all_all (A B)%_type_scope (R PR PPR)%_function_scope 
   n l l a a0
@@ -1018,9 +968,10 @@ forall (A : Type@{u}) (B : Type@{u0}) (R : nat -> A -> B -> Type@{u1})
 forall (n : nat) (l : list A) (l0 : list B) (a : All2i A B R n l l0)
   (a0 : All2i_all@{α ; u u0 u1 u2} A B R PR n l l0 a),
 All2i_all_all@{α α0 ; u u0 u1 u2 u3} A B R PR PPR n l l0 a a0
-(* α α0 ; u u0 u1 u2 u3 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 3rd binder) u2(= in 4th binder) u3(= in 5th binder) | 
+    *)
 
-All2i_all_all_forall is universe polymorphic
+All2i_all_all_forall is universe polymorphic and cumulative
 Arguments All2i_all_all_forall (A B)%_type_scope
   (R PR PPR HPPR)%_function_scope n l l a a0
 All2i_all_all_forall is transparent
@@ -1036,8 +987,9 @@ forall (A : Type@{typing_ind.u0}) (B : Type@{typing_ind.u1})
 (forall (n : nat) (a : A) (b : B), P n a b (typ_nil A B n a b)) ->
 (forall (n : nat) (a : A) (b : B) (lA : list A) (lB : list B)
    (a0 : All2i A B (fun n0 : nat => typing A B n0) n lA lB),
- All2i_all@{Prop ; typing_ind.u0 typing_ind.u1 typing_ind.u2 Set} A B
-   (fun (n0 : nat) (H : A) (H0 : B) => typing A B n0 H H0) P n lA lB a0 ->
+ All2i_all@{Prop ; typing_ind.u0 typing_ind.u1
+            max(typing_ind.u0,typing_ind.u1) 0}
+   A B (fun (n0 : nat) (H : A) (H0 : B) => typing A B n0 H H0) P n lA lB a0 ->
  P n a b (typ_cons A B n a b lA lB a0)) ->
 forall (n : nat) (a : A) (b : B) (t : typing A B n a b), P n a b t
 
@@ -1054,7 +1006,7 @@ All2i_bis_all@{α α0 ; u u0 u1 u2 u3 u4} (A : Type@{u})
 (PR : forall (n : nat) (a : A) (b : B), R n a b -> Univ@{α0 ; u4}) 
 (n : nat)
   : forall (l : list A) (l0 : list B),
-    All2i_bis A B C R n l l0 -> Type@{max(Set,u,u0,u1,u2,u3,u4)} :=
+    All2i_bis A B C R n l l0 -> Type@{max(u,u0,u1,u2,u3,u4)} :=
     All2i_bis_nil_all : forall c : C,
                         PC c ->
                         All2i_bis_all@{α α0 ; u u0 u1 u2 u3 u4} A B C PC R PR
@@ -1068,7 +1020,8 @@ All2i_bis_all@{α α0 ; u u0 u1 u2 u3 u4} (A : Type@{u})
                          All2i_bis_all@{α α0 ; u u0 u1 u2 u3 u4} A B C PC R
                            PR n (cons a lA) (cons b lB)
                            (All2i_bis_cons A B C R n a b lA lB r a0).
-(* α α0 ; *u *u0 *u1 *u2 *u3 *u4 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 3rd binder, + in type) u2(= in 5th binder, + in type) u3(= in 4th binder, + in type) u4(= in 6th binder, + in type) | 
+    *)
 
 Arguments All2i_bis_all (A B C)%_type_scope (PC R PR)%_function_scope n l l a
 Arguments All2i_bis_nil_all (A B C)%_type_scope (PC R PR)%_function_scope 
@@ -1084,9 +1037,10 @@ forall (R : nat -> A -> B -> Type@{u2})
 (forall (n : nat) (a : A) (b : B) (r : R n a b), PR n a b r) ->
 forall (n : nat) (l : list A) (l0 : list B) (a : All2i_bis A B C R n l l0),
 All2i_bis_all@{α α0 ; u u0 u1 u2 u3 u4} A B C PC R PR n l l0 a
-(* α α0 ; u u0 u1 u2 u3 u4 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 3rd binder) u2(= in 6th binder) u3(= in 4th binder) u4(= in 7th binder) | 
+    *)
 
-All2i_bis_all_forall is universe polymorphic
+All2i_bis_all_forall is universe polymorphic and cumulative
 Arguments All2i_bis_all_forall (A B C)%_type_scope
   (PC HPC R PR HPR)%_function_scope n l l a
 All2i_bis_all_forall is transparent
@@ -1102,7 +1056,7 @@ All2i_bis_all_all@{α α0 α1 α2 ; u u0 u1 u2 u3 u4 u5 u6}
 (n : nat)
   : forall (l : list A) (l0 : list B) (a : All2i_bis A B C R n l l0),
     All2i_bis_all@{α α0 ; u u0 u1 u2 u3 u4} A B C PC R PR n l l0 a ->
-    Type@{max(Set,u,u0,u1,u2,u3,u4,u5,u6)} :=
+    Type@{max(u,u0,u1,u2,u3,u4,u5,u6)} :=
     All2i_bis_nil_all_all : forall (c : C) (p : PC c),
                             PPC c p ->
                             All2i_bis_all_all@{α α0 α1 α2 ; u u0 u1 u2 u3 u4
@@ -1130,7 +1084,8 @@ All2i_bis_all_all@{α α0 α1 α2 ; u u0 u1 u2 u3 u4 u5 u6}
                                (All2i_bis_cons A B C R n a b lA lB r a0)
                                (All2i_bis_cons_all@{α α0 ; u u0 u1 u2 u3 u4}
                                   A B C PC R PR n a b lA lB r p a0 a1).
-(* α α0 α1 α2 ; *u *u0 *u1 *u2 *u3 *u4 *u5 *u6 |  *)
+(* α α0 α1 α2 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 3rd binder, + in type) u2(= in 6th binder, + in type) u3(= in 4th binder, + in type) u4(= in 7th binder, + in type) u5(= in 5th binder, + in type) u6(= in 8th binder, + in type) | 
+    *)
 
 Arguments All2i_bis_all_all (A B C)%_type_scope
   (PC PPC R PR PPR)%_function_scope n l l a a0
@@ -1153,9 +1108,10 @@ forall (n : nat) (l : list A) (l0 : list B) (a : All2i_bis A B C R n l l0)
   (a0 : All2i_bis_all@{α α0 ; u u0 u1 u2 u3 u4} A B C PC R PR n l l0 a),
 All2i_bis_all_all@{α α0 α1 α2 ; u u0 u1 u2 u3 u4 u5 u6} A B C PC PPC R PR PPR
   n l l0 a a0
-(* α α0 α1 α2 ; u u0 u1 u2 u3 u4 u5 u6 |  *)
+(* α α0 α1 α2 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 3rd binder) u2(= in 7th binder) u3(= in 4th binder) u4(= in 8th binder) u5(= in 5th binder) u6(= in 9th binder) | 
+    *)
 
-All2i_bis_all_all_forall is universe polymorphic
+All2i_bis_all_all_forall is universe polymorphic and cumulative
 Arguments All2i_bis_all_all_forall (A B C)%_type_scope
   (PC PPC HPPC R PR PPR HPPR)%_function_scope n l 
   l a a0
@@ -1167,8 +1123,8 @@ forall P : triv_All2_bis -> Prop,
 (forall
    a : All2i_bis bool bool triv_All2_bis (fun (_ : nat) (_ _ : bool) => nat)
          zero nil nil,
- All2i_bis_all@{Prop Type ; Set Set Set Set Set Set} bool bool triv_All2_bis
-   P (fun (_ : nat) (_ _ : bool) => nat)
+ All2i_bis_all@{Prop Type ; 0 0 triv_All2_bis.u0 0 0 0} bool bool
+   triv_All2_bis P (fun (_ : nat) (_ _ : bool) => nat)
    (fun (_ : nat) (_ _ : bool) (_ : nat) => unit) zero nil nil a ->
  P (ctriv_All2_bis a)) ->
 forall t : triv_All2_bis, P t
@@ -1186,7 +1142,8 @@ sig_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
                 PA x ->
                 forall p : P x,
                 PP x p -> sig_all@{α α0 ; u u0 u1} A PA P PP (exist A P x p).
-(* α α0 ; *u *u0 *u1 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 4th binder, + in type) | 
+    *)
 
 Arguments sig_all A%_type_scope (PA P PP)%_function_scope s
 Arguments exist_all A%_type_scope (PA P PP)%_function_scope x _ p _
@@ -1196,9 +1153,10 @@ forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 forall (P : A -> Prop) (PP : forall a : A, P a -> Univ@{α0 ; u1}),
 (forall (a : A) (p : P a), PP a p) ->
 forall s : sig A P, sig_all@{α α0 ; u u0 u1} A PA P PP s
-(* α α0 ; u u0 u1 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 5th binder) | 
+    *)
 
-sig_all_forall is universe polymorphic
+sig_all_forall is universe polymorphic and cumulative
 Arguments sig_all_forall A%_type_scope (PA HPA P PP HPP)%_function_scope s
 sig_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.sig_all_forall
@@ -1210,7 +1168,8 @@ sig_all_10@{α ; u u0} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
                    PA x ->
                    forall p : P x,
                    sig_all_10@{α ; u u0} A PA P (exist A P x p).
-(* α ; *u *u0 |  *)
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) | 
+    *)
 
 Arguments sig_all_10 A%_type_scope (PA P)%_function_scope s
 Arguments exist_all_10 A%_type_scope (PA P)%_function_scope x _ p
@@ -1218,9 +1177,9 @@ sig_all_forall_10@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall (P : A -> Prop) (s : sig A P), sig_all_10@{α ; u u0} A PA P s
-(* α ; u u0 |  *)
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-sig_all_forall_10 is universe polymorphic
+sig_all_forall_10 is universe polymorphic and cumulative
 Arguments sig_all_forall_10 A%_type_scope (PA HPA P)%_function_scope s
 sig_all_forall_10 is transparent
 Expands to: Constant nested_eliminators.Template.sig_all_forall_10
@@ -1230,7 +1189,8 @@ sig_all_01@{α ; u u0} (A : Type@{u}) (P : A -> Prop)
 (PP : forall a : A, P a -> Univ@{α ; u0}) : sig A P -> Type@{max(u,u0)} :=
     exist_all_01 : forall (x : A) (p : P x),
                    PP x p -> sig_all_01@{α ; u u0} A P PP (exist A P x p).
-(* α ; *u *u0 |  *)
+(* α ; u(= in 1st binder, + in type) u0(= in 3rd binder, + in type) | 
+    *)
 
 Arguments sig_all_01 A%_type_scope (P PP)%_function_scope s
 Arguments exist_all_01 A%_type_scope (P PP)%_function_scope x p _
@@ -1239,9 +1199,9 @@ forall (A : Type@{u}) (P : A -> Prop)
   (PP : forall a : A, P a -> Univ@{α ; u0}),
 (forall (a : A) (p : P a), PP a p) ->
 forall s : sig A P, sig_all_01@{α ; u u0} A P PP s
-(* α ; u u0 |  *)
+(* α ; u(= in 1st binder) u0(= in 3rd binder) |  *)
 
-sig_all_forall_01 is universe polymorphic
+sig_all_forall_01 is universe polymorphic and cumulative
 Arguments sig_all_forall_01 A%_type_scope (P PP HPP)%_function_scope s
 sig_all_forall_01 is transparent
 Expands to: Constant nested_eliminators.Template.sig_all_forall_01
@@ -1253,23 +1213,25 @@ NestRel_all@{α α0 ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
     mkR_all : forall x : A,
               PA x ->
               forall o : or (and (R x x) (R x x)) True,
-              or_all@{Prop Type ; Set Set} (and (R x x) (R x x))
+              or_all@{Prop Type ; 0 0} (and (R x x) (R x x))
                 (and_all@{α0 α0 ; u1 u1} (R x x) (PR x x) (R x x) (PR x x))
                 True (fun _ : True => unit) o ->
               NestRel_all@{α α0 ; u u0 u1 u2} A PA R PR (mkR A R x o).
-(* α α0 ; *u *u0 =u1 *u2 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 4th binder, + in type) u2*(+ in type) | 
+    *)
 
 Arguments NestRel_all A%_type_scope (PA R PR)%_function_scope n
 Arguments mkR_all A%_type_scope (PA R PR)%_function_scope x _ o _
-NestRel_all_forall@{α α0 ; u u0 u1 u2} :
+NestRel_all_forall@{α α0 ; u u0 u1} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
 forall (R : A -> A -> Prop) (PR : forall a a0 : A, R a a0 -> Univ@{α0 ; u1}),
 (forall (a a0 : A) (r : R a a0), PR a a0 r) ->
-forall n : NestRel A R, NestRel_all@{α α0 ; u u0 u1 u2} A PA R PR n
-(* α α0 ; u u0 u1 u2 |  *)
+forall n : NestRel A R, NestRel_all@{α α0 ; u u0 u1 0} A PA R PR n
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 5th binder) | 
+    *)
 
-NestRel_all_forall is universe polymorphic
+NestRel_all_forall is universe polymorphic and cumulative
 Arguments NestRel_all_forall A%_type_scope (PA HPA R PR HPR)%_function_scope
   n
 NestRel_all_forall is transparent
@@ -1287,7 +1249,8 @@ ex_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
                    forall p : P x,
                    PP x p ->
                    ex_all@{α α0 ; u u0 u1} A PA P PP (ex_intro A P x p).
-(* α α0 ; *u *u0 *u1 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 4th binder) | 
+    *)
 
 Arguments ex_all A%_type_scope (PA P PP)%_function_scope e
 Arguments ex_intro_all A%_type_scope (PA P PP)%_function_scope x _ p _
@@ -1297,9 +1260,10 @@ forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 forall (P : A -> Prop) (PP : forall a : A, P a -> Univ@{α0 ; u1}),
 (forall (a : A) (p : P a), PP a p) ->
 forall e : ex A P, ex_all@{α α0 ; u u0 u1} A PA P PP e
-(* α α0 ; u u0 u1 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 5th binder) | 
+    *)
 
-ex_all_forall is universe polymorphic
+ex_all_forall is universe polymorphic and cumulative
 Arguments ex_all_forall A%_type_scope (PA HPA P PP HPP)%_function_scope e
 ex_all_forall is transparent
 Expands to: Constant nested_eliminators.Template.ex_all_forall
@@ -1319,18 +1283,18 @@ Declared in library nested_eliminators, line 298, characters 2-131
 adequate_all@{α ; u u0} :
 forall (L : language) (φ : unit -> Type@{u}),
 (forall u : unit, φ u -> Univ@{α ; u0}) -> adequate L φ -> Prop
-(* α ; *u *u0 |  *)
+(* α ; u(= in 2nd binder) u0(= in 3rd binder) |  *)
 
-adequate_all is universe polymorphic
+adequate_all is universe polymorphic and cumulative
 Arguments adequate_all L (φ Pφ)%_function_scope a
 Expands to: Inductive nested_eliminators.Template.adequate_all
 Declared in library nested_eliminators, line 298, characters 2-131
 casenat_all@{α ; u} :
 forall P : nat -> Set,
-(forall n : nat, P n -> Univ@{α ; u}) -> casenat P -> Type@{max(Set,u)}
-(* α ; *u |  *)
+(forall n : nat, P n -> Univ@{α ; u}) -> casenat P -> Type@{u}
+(* α ; u(= in 2nd binder, + in type) |  *)
 
-casenat_all is universe polymorphic
+casenat_all is universe polymorphic and cumulative
 Arguments casenat_all (P PP)%_function_scope c
 Expands to: Inductive nested_eliminators.Template.casenat_all
 Declared in library nested_eliminators, line 305, characters 2-94
@@ -1339,10 +1303,11 @@ forall (A : nat -> Set) (PZ : Set),
 (PZ -> Univ@{α ; u}) ->
 forall PS : forall n : nat, A n -> Set,
 (forall (n : nat) (a : A n), PS n a -> Univ@{α0 ; u0}) ->
-casenat' A PZ PS -> Type@{max(Set,u,u0)}
-(* α α0 ; *u *u0 |  *)
+casenat' A PZ PS -> Type@{max(u,u0)}
+(* α α0 ; u(= in 3rd binder, + in type) u0(= in 5th binder, + in type) | 
+    *)
 
-casenat'_all is universe polymorphic
+casenat'_all is universe polymorphic and cumulative
 Arguments casenat'_all A%_function_scope PZ%_type_scope
   (PPZ PS PPS)%_function_scope c
 Expands to: Inductive nested_eliminators.Template.casenat'_all
@@ -1352,14 +1317,15 @@ The command has indeed failed with message:
 The reference True_all was not found in the current environment.
 Inductive
 list_all@{α ; u u0} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
-  : list@{u} A -> Type@{max(Set,u,u0)} :=
+  : list@{u} A -> Type@{max(u,u0)} :=
     nil_all : list_all@{α ; u u0} A PA (nil@{u} A)
   | cons_all : forall a : A,
                PA a ->
                forall l : list@{u} A,
                list_all@{α ; u u0} A PA l ->
                list_all@{α ; u u0} A PA (cons@{u} A a l).
-(* α ; =u *u0 |  *)
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) | 
+    *)
 
 Arguments list_all A%_type_scope PA%_function_scope l
 Arguments nil_all A%_type_scope PA%_function_scope
@@ -1367,9 +1333,9 @@ Arguments cons_all A%_type_scope PA%_function_scope a _ l _
 list_all_forall@{α ; u u0} :
 forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) -> forall l : list@{u} A, list_all@{α ; u u0} A PA l
-(* α ; u u0 |  *)
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-list_all_forall is universe polymorphic
+list_all_forall is universe polymorphic and cumulative
 Arguments list_all_forall A%_type_scope (PA HPA)%_function_scope l
 list_all_forall is transparent
 Expands to: Constant nested_eliminators.UnivPoly.list_all_forall
@@ -1377,8 +1343,7 @@ Declared in library nested_eliminators, line 331, characters 2-88
 Inductive
 list_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
 (PPA : forall a : A, PA a -> Univ@{α0 ; u1})
-  : forall l : list@{u} A,
-    list_all@{α ; u u0} A PA l -> Type@{max(Set,u,u0,u1)} :=
+  : forall l : list@{u} A, list_all@{α ; u u0} A PA l -> Type@{max(u,u0,u1)} :=
     nil_all_all : list_all_all@{α α0 ; u u0 u1} A PA PPA 
                     (nil@{u} A) (nil_all@{α ; u u0} A PA)
   | cons_all_all : forall (a : A) (p : PA a),
@@ -1387,7 +1352,8 @@ list_all_all@{α α0 ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
                    list_all_all@{α α0 ; u u0 u1} A PA PPA l l0 ->
                    list_all_all@{α α0 ; u u0 u1} A PA PPA 
                      (cons@{u} A a l) (cons_all@{α ; u u0} A PA a p l l0).
-(* α α0 ; =u *u0 *u1 |  *)
+(* α α0 ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1(= in 3rd binder, + in type) | 
+    *)
 
 Arguments list_all_all A%_type_scope (PA PPA)%_function_scope l l0
 Arguments nil_all_all A%_type_scope (PA PPA)%_function_scope
@@ -1398,321 +1364,290 @@ forall (A : Type@{u}) (PA : A -> Univ@{α ; u0})
 (forall (a : A) (p : PA a), PPA a p) ->
 forall (l : list@{u} A) (l0 : list_all@{α ; u u0} A PA l),
 list_all_all@{α α0 ; u u0 u1} A PA PPA l l0
-(* α α0 ; u u0 u1 |  *)
+(* α α0 ; u(= in 1st binder) u0(= in 2nd binder) u1(= in 3rd binder) | 
+    *)
 
-list_all_all_forall is universe polymorphic
+list_all_all_forall is universe polymorphic and cumulative
 Arguments list_all_all_forall A%_type_scope (PA PPA HPPA)%_function_scope 
   l l0
 list_all_all_forall is transparent
 Expands to: Constant nested_eliminators.UnivPoly.list_all_all_forall
 Declared in library nested_eliminators, line 331, characters 2-88
-MRT_ind@{} :
+MRT_ind :
 forall P : MRT -> Prop,
-(forall l : list@{Set} MRT,
- list_all@{Prop ; Set Set} MRT P l -> P (MRTnode l)) ->
+(forall l : list@{0} MRT, list_all@{Prop ; 0 0} MRT P l -> P (MRTnode l)) ->
 forall m : MRT, P m
 
-MRT_ind is universe polymorphic
+MRT_ind is not universe polymorphic
 Arguments MRT_ind (P MRTnode)%_function_scope m
 MRT_ind is transparent
 Expands to: Constant nested_eliminators.UnivPoly.MRT_ind
 Declared in library nested_eliminators, line 340, characters 2-55
-RoseTree_ind@{u u0} :
-forall (A : Type@{u}) (P : RoseTree@{u u0} A -> Prop),
-(forall a : A, P (RTleaf@{u u0} A a)) ->
-(forall l : list@{u0} (RoseTree@{u u0} A),
- list_all@{Prop ; u0 Set} (RoseTree@{u u0} A) P l -> P (RTnode@{u u0} A l)) ->
-forall r : RoseTree@{u u0} A, P r
-(* u u0 | u <= u0 *)
+RoseTree_ind@{u} :
+forall (A : Type@{u}) (P : RoseTree@{u} A -> Prop),
+(forall a : A, P (RTleaf@{u} A a)) ->
+(forall l : list@{u} (RoseTree@{u} A),
+ list_all@{Prop ; u 0} (RoseTree@{u} A) P l -> P (RTnode@{u} A l)) ->
+forall r : RoseTree@{u} A, P r
+(* u(= in 1st binder) |  *)
 
-RoseTree_ind is universe polymorphic
+RoseTree_ind is universe polymorphic and cumulative
 Arguments RoseTree_ind A%_type_scope (P RTleaf RTnode)%_function_scope r
 RoseTree_ind is transparent
 Expands to: Constant nested_eliminators.UnivPoly.RoseTree_ind
 Declared in library nested_eliminators, line 345, characters 2-113
 Inductive
-RoseTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
-  : RoseTree@{u u0} A -> Type@{max(u0,u1,u2)} :=
+RoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : RoseTree@{u} A -> Type@{max(u,u0,u1)} :=
     RTleaf_all : forall a : A,
-                 PA a ->
-                 RoseTree_all@{α ; u u0 u1 u2} A PA (RTleaf@{u u0} A a)
-  | RTnode_all : forall l : list@{u0} (RoseTree@{u u0} A),
-                 list_all@{Type ; u0 u2} (RoseTree@{u u0} A)
-                   (RoseTree_all@{α ; u u0 u1 u2} A PA) l ->
-                 RoseTree_all@{α ; u u0 u1 u2} A PA (RTnode@{u u0} A l).
-(* α ; =u =u0 *u1 *u2 | u <= u0
-                        u0 <= u2
-                        u1 <= u2 *)
+                 PA a -> RoseTree_all@{α ; u u0 u1} A PA (RTleaf@{u} A a)
+  | RTnode_all : forall l : list@{u} (RoseTree@{u} A),
+                 list_all@{Type ; u u1} (RoseTree@{u} A)
+                   (RoseTree_all@{α ; u u0 u1} A PA) l ->
+                 RoseTree_all@{α ; u u0 u1} A PA (RTnode@{u} A l).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments RoseTree_all A%_type_scope PA%_function_scope r
 Arguments RTleaf_all A%_type_scope PA%_function_scope a _
 Arguments RTnode_all A%_type_scope PA%_function_scope l _
-RoseTree_all_forall@{α ; u u0 u1 u2} :
-forall (A : Type@{u}) (PA : A -> Univ@{α ; u1}),
+RoseTree_all_forall@{α ; u u0} :
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall r : RoseTree@{u u0} A, RoseTree_all@{α ; u u0 u1 u2} A PA r
-(* α ; u u0 u1 u2 | u <= u0
-                    u0 <= u2
-                    u1 <= u2 *)
+forall r : RoseTree@{u} A, RoseTree_all@{α ; u u0 max(u,u0)} A PA r
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-RoseTree_all_forall is universe polymorphic
+RoseTree_all_forall is universe polymorphic and cumulative
 Arguments RoseTree_all_forall A%_type_scope (PA HPA)%_function_scope r
 RoseTree_all_forall is transparent
 Expands to: Constant nested_eliminators.UnivPoly.RoseTree_all_forall
 Declared in library nested_eliminators, line 345, characters 2-113
-RoseRoseTree_ind@{u u0 u1} :
-forall (A : Type@{u}) (P : RoseRoseTree@{u u0} A -> Prop),
-(forall a : A, P (Nleaf@{u u0} A a)) ->
-(forall p : list@{u0} (list@{u0} (RoseRoseTree@{u u0} A)),
- list_all@{Type ; u0 u1} (list@{u0} (RoseRoseTree@{u u0} A))
-   (list_all@{Prop ; u0 Set} (RoseRoseTree@{u u0} A) P) p ->
- P (Nnode@{u u0} A p)) ->
-forall r : RoseRoseTree@{u u0} A, P r
-(* u u0 u1 | Set <= u1
-             u <= u0
-             u0 <= u1 *)
+RoseRoseTree_ind@{u} :
+forall (A : Type@{u}) (P : RoseRoseTree@{u} A -> Prop),
+(forall a : A, P (Nleaf@{u} A a)) ->
+(forall p : list@{u} (list@{u} (RoseRoseTree@{u} A)),
+ list_all@{Type ; u u} (list@{u} (RoseRoseTree@{u} A))
+   (list_all@{Prop ; u 0} (RoseRoseTree@{u} A) P) p ->
+ P (Nnode@{u} A p)) ->
+forall r : RoseRoseTree@{u} A, P r
+(* u(= in 1st binder) |  *)
 
-RoseRoseTree_ind is universe polymorphic
+RoseRoseTree_ind is universe polymorphic and cumulative
 Arguments RoseRoseTree_ind A%_type_scope (P Nleaf Nnode)%_function_scope r
 RoseRoseTree_ind is transparent
 Expands to: Constant nested_eliminators.UnivPoly.RoseRoseTree_ind
 Declared in library nested_eliminators, line 353, characters 2-136
 Inductive
-RoseRoseTree_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
-  : RoseRoseTree@{u u0} A -> Type@{max(u0,u1,u2)} :=
+RoseRoseTree_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : RoseRoseTree@{u} A -> Type@{max(u,u0,u1)} :=
     Nleaf_all : forall a : A,
-                PA a ->
-                RoseRoseTree_all@{α ; u u0 u1 u2} A PA (Nleaf@{u u0} A a)
-  | Nnode_all : forall p : list@{u0} (list@{u0} (RoseRoseTree@{u u0} A)),
-                list_all@{Type ; u0 u2} (list@{u0} (RoseRoseTree@{u u0} A))
-                  (list_all@{Type ; u0 u2} (RoseRoseTree@{u u0} A)
-                     (RoseRoseTree_all@{α ; u u0 u1 u2} A PA))
+                PA a -> RoseRoseTree_all@{α ; u u0 u1} A PA (Nleaf@{u} A a)
+  | Nnode_all : forall p : list@{u} (list@{u} (RoseRoseTree@{u} A)),
+                list_all@{Type ; u u1} (list@{u} (RoseRoseTree@{u} A))
+                  (list_all@{Type ; u u1} (RoseRoseTree@{u} A)
+                     (RoseRoseTree_all@{α ; u u0 u1} A PA))
                   p ->
-                RoseRoseTree_all@{α ; u u0 u1 u2} A PA (Nnode@{u u0} A p).
-(* α ; =u =u0 *u1 =u2 | Set <= u2
-                        u <= u0
-                        u0 <= u2
-                        u1 <= u2 *)
+                RoseRoseTree_all@{α ; u u0 u1} A PA (Nnode@{u} A p).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments RoseRoseTree_all A%_type_scope PA%_function_scope r
 Arguments Nleaf_all A%_type_scope PA%_function_scope a _
 Arguments Nnode_all A%_type_scope PA%_function_scope p _
-RoseRoseTree_all_forall@{α ; u u0 u1 u2} :
-forall (A : Type@{u}) (PA : A -> Univ@{α ; u1}),
+RoseRoseTree_all_forall@{α ; u u0} :
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall r : RoseRoseTree@{u u0} A, RoseRoseTree_all@{α ; u u0 u1 u2} A PA r
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u0
-                    u0 <= u2
-                    u1 <= u2 *)
+forall r : RoseRoseTree@{u} A, RoseRoseTree_all@{α ; u u0 max(u,u0)} A PA r
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-RoseRoseTree_all_forall is universe polymorphic
+RoseRoseTree_all_forall is universe polymorphic and cumulative
 Arguments RoseRoseTree_all_forall A%_type_scope (PA HPA)%_function_scope r
 RoseRoseTree_all_forall is transparent
 Expands to: Constant nested_eliminators.UnivPoly.RoseRoseTree_all_forall
 Declared in library nested_eliminators, line 353, characters 2-136
-ArrowTree3_ind@{u u0} :
-forall (A : Type@{u}) (P : ArrowTree3@{u u0} A -> Prop),
-(forall a : A, P (ATleaf3@{u u0} A a)) ->
-(forall l : bool -> list@{u0} (nat -> ArrowTree3@{u u0} A),
+ArrowTree3_ind@{u} :
+forall (A : Type@{u}) (P : ArrowTree3@{u} A -> Prop),
+(forall a : A, P (ATleaf3@{u} A a)) ->
+(forall l : bool -> list@{u} (nat -> ArrowTree3@{u} A),
  (forall H : bool,
-  list_all@{Prop ; u0 Set} (nat -> ArrowTree3@{u u0} A)
-    (fun H0 : nat -> ArrowTree3@{u u0} A => forall H1 : nat, P (H0 H1)) 
+  list_all@{Prop ; u 0} (nat -> ArrowTree3@{u} A)
+    (fun H0 : nat -> ArrowTree3@{u} A => forall H1 : nat, P (H0 H1)) 
     (l H)) ->
- P (ATnode3@{u u0} A l)) ->
-forall a : ArrowTree3@{u u0} A, P a
-(* u u0 | u <= u0 *)
+ P (ATnode3@{u} A l)) ->
+forall a : ArrowTree3@{u} A, P a
+(* u(= in 1st binder) |  *)
 
-ArrowTree3_ind is universe polymorphic
+ArrowTree3_ind is universe polymorphic and cumulative
 Arguments ArrowTree3_ind A%_type_scope (P ATleaf3 ATnode3)%_function_scope a
 ArrowTree3_ind is transparent
 Expands to: Constant nested_eliminators.UnivPoly.ArrowTree3_ind
 Declared in library nested_eliminators, line 361, characters 2-140
 Inductive
-ArrowTree3_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
-  : ArrowTree3@{u u0} A -> Type@{max(u0,u1,u2)} :=
+ArrowTree3_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : ArrowTree3@{u} A -> Type@{max(u,u0,u1)} :=
     ATleaf3_all : forall a : A,
-                  PA a ->
-                  ArrowTree3_all@{α ; u u0 u1 u2} A PA (ATleaf3@{u u0} A a)
-  | ATnode3_all : forall l : bool -> list@{u0} (nat -> ArrowTree3@{u u0} A),
+                  PA a -> ArrowTree3_all@{α ; u u0 u1} A PA (ATleaf3@{u} A a)
+  | ATnode3_all : forall l : bool -> list@{u} (nat -> ArrowTree3@{u} A),
                   (forall H : bool,
-                   list_all@{Type ; u0 u2} (nat -> ArrowTree3@{u u0} A)
-                     (fun H0 : nat -> ArrowTree3@{u u0} A =>
+                   list_all@{Type ; u u1} (nat -> ArrowTree3@{u} A)
+                     (fun H0 : nat -> ArrowTree3@{u} A =>
                       forall H1 : nat,
-                      ArrowTree3_all@{α ; u u0 u1 u2} A PA (H0 H1))
+                      ArrowTree3_all@{α ; u u0 u1} A PA (H0 H1))
                      (l H)) ->
-                  ArrowTree3_all@{α ; u u0 u1 u2} A PA (ATnode3@{u u0} A l).
-(* α ; =u =u0 *u1 *u2 | Set <= u2
-                        u <= u0
-                        u0 <= u2
-                        u1 <= u2 *)
+                  ArrowTree3_all@{α ; u u0 u1} A PA (ATnode3@{u} A l).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments ArrowTree3_all A%_type_scope PA%_function_scope a
 Arguments ATleaf3_all A%_type_scope PA%_function_scope a _
 Arguments ATnode3_all A%_type_scope (PA l _)%_function_scope
-ArrowTree3_all_forall@{α ; u u0 u1 u2} :
-forall (A : Type@{u}) (PA : A -> Univ@{α ; u1}),
+ArrowTree3_all_forall@{α ; u u0} :
+forall (A : Type@{u}) (PA : A -> Univ@{α ; u0}),
 (forall a : A, PA a) ->
-forall a : ArrowTree3@{u u0} A, ArrowTree3_all@{α ; u u0 u1 u2} A PA a
-(* α ; u u0 u1 u2 | Set <= u2
-                    u <= u0
-                    u0 <= u2
-                    u1 <= u2 *)
+forall a : ArrowTree3@{u} A, ArrowTree3_all@{α ; u u0 max(u,u0)} A PA a
+(* α ; u(= in 1st binder) u0(= in 2nd binder) |  *)
 
-ArrowTree3_all_forall is universe polymorphic
+ArrowTree3_all_forall is universe polymorphic and cumulative
 Arguments ArrowTree3_all_forall A%_type_scope (PA HPA)%_function_scope a
 ArrowTree3_all_forall is transparent
 Expands to: Constant nested_eliminators.UnivPoly.ArrowTree3_all_forall
 Declared in library nested_eliminators, line 361, characters 2-140
-trie_rect@{u u0 u1 u2} =
-fun (A : Type@{u}) (P : trie@{u u0} A -> Type@{u1})
-  (TLeaf : P (TLeaf@{u u0} A))
-  (TNode : forall (a : A) (a0 : array@{u0} (trie@{u u0} A)),
-           array_all@{Type ; u0 u1 u2} (trie@{u u0} A) P a0 ->
-           P (TNode@{u u0} A a a0)) =>
-fix F (t : trie@{u u0} A) : P t :=
+trie_rect@{u u0} =
+fun (A : Type@{u}) (P : trie@{u} A -> Type@{u0}) (TLeaf : P (TLeaf@{u} A))
+  (TNode : forall (a : A) (a0 : array@{u} (trie@{u} A)),
+           array_all@{Type ; u u0} (trie@{u} A) P a0 -> P (TNode@{u} A a a0)) =>
+fix F (t : trie@{u} A) : P t :=
   match t as t0 return P t0 with
   | Array.TLeaf _ => TLeaf
   | Array.TNode _ a a0 =>
-      TNode a a0 (array_all_forall@{Type ; u0 u1 u2} (trie@{u u0} A) P F a0)
+      TNode a a0 (array_all_forall@{Type ; u u0} (trie@{u} A) P F a0)
   end
-     : forall (A : Type@{u}) (P : trie@{u u0} A -> Type@{u1}),
-       P (TLeaf@{u u0} A) ->
-       (forall (a : A) (a0 : array@{u0} (trie@{u u0} A)),
-        array_all@{Type ; u0 u1 u2} (trie@{u u0} A) P a0 ->
-        P (TNode@{u u0} A a a0)) ->
-       forall t : trie@{u u0} A, P t
-(* u u0 u1 u2 | Set <= u2
-                u <= u0
-                u1 <= u2 *)
+     : forall (A : Type@{u}) (P : trie@{u} A -> Type@{u0}),
+       P (TLeaf@{u} A) ->
+       (forall (a : A) (a0 : array@{u} (trie@{u} A)),
+        array_all@{Type ; u u0} (trie@{u} A) P a0 -> P (TNode@{u} A a a0)) ->
+       forall t : trie@{u} A, P t
+(* u(= in 1st binder) u0(= in 2nd binder) |  *)
 
 Arguments trie_rect A%_type_scope P%_function_scope 
   TLeaf TNode%_function_scope t
 Inductive
-trie_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
-  : trie@{u u0} A -> Type@{max(u0,u1,u2)} :=
-    TLeaf_all : trie_all@{α ; u u0 u1 u2} A PA (TLeaf@{u u0} A)
+trie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : trie@{u} A -> Type@{max(u,u0,u1)} :=
+    TLeaf_all : trie_all@{α ; u u0 u1} A PA (TLeaf@{u} A)
   | TNode_all : forall a : A,
                 PA a ->
-                forall a0 : array@{u0} (trie@{u u0} A),
-                array_all@{Type ; u0 u2 u2} (trie@{u u0} A)
-                  (trie_all@{α ; u u0 u1 u2} A PA) a0 ->
-                trie_all@{α ; u u0 u1 u2} A PA (TNode@{u u0} A a a0).
-(* α ; =u =u0 *u1 *u2 | Set <= u2
-                        u <= u0
-                        u0 <= u2
-                        u1 <= u2 *)
+                forall a0 : array@{u} (trie@{u} A),
+                array_all@{Type ; u u1} (trie@{u} A)
+                  (trie_all@{α ; u u0 u1} A PA) a0 ->
+                trie_all@{α ; u u0 u1} A PA (TNode@{u} A a a0).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments trie_all A%_type_scope PA%_function_scope t
 Arguments TLeaf_all A%_type_scope PA%_function_scope
 Arguments TNode_all A%_type_scope PA%_function_scope a _ a _
-ArrowTrie_rect@{u u0 u1 u2} =
-fun (A : Type@{u}) (P : ArrowTrie@{u u0} A -> Type@{u1})
-  (ATLeaf : P (ATLeaf@{u u0} A))
+ArrowTrie_rect@{u u0} =
+fun (A : Type@{u}) (P : ArrowTrie@{u} A -> Type@{u0})
+  (ATLeaf : P (ATLeaf@{u} A))
   (ATNode : forall (a : A)
-              (l : bool -> list@{u0} (array@{u0} (ArrowTrie@{u u0} A))),
+              (l : bool -> list@{u} (array@{u} (ArrowTrie@{u} A))),
             (forall H : bool,
-             list_all@{Type ; u0 u2} (array@{u0} (ArrowTrie@{u u0} A))
-               (array_all@{Type ; u0 u1 u2} (ArrowTrie@{u u0} A) P) 
+             list_all@{Type ; u u0} (array@{u} (ArrowTrie@{u} A))
+               (array_all@{Type ; u u0} (ArrowTrie@{u} A) P) 
                (l H)) ->
-            P (ATNode@{u u0} A a l)) =>
-fix F (a : ArrowTrie@{u u0} A) : P a :=
+            P (ATNode@{u} A a l)) =>
+fix F (a : ArrowTrie@{u} A) : P a :=
   match a as a0 return P a0 with
   | Array.ATLeaf _ => ATLeaf
   | Array.ATNode _ a0 l =>
       ATNode a0 l
         (fun H : bool =>
-         list_all_forall@{Type ; u0 u2} (array@{u0} (ArrowTrie@{u u0} A))
-           (array_all@{Type ; u0 u1 u2} (ArrowTrie@{u u0} A) P)
-           (array_all_forall@{Type ; u0 u1 u2} (ArrowTrie@{u u0} A) P F)
+         list_all_forall@{Type ; u u0} (array@{u} (ArrowTrie@{u} A))
+           (array_all@{Type ; u u0} (ArrowTrie@{u} A) P)
+           (array_all_forall@{Type ; u u0} (ArrowTrie@{u} A) P F) 
            (l H))
   end
-     : forall (A : Type@{u}) (P : ArrowTrie@{u u0} A -> Type@{u1}),
-       P (ATLeaf@{u u0} A) ->
-       (forall (a : A)
-          (l : bool -> list@{u0} (array@{u0} (ArrowTrie@{u u0} A))),
+     : forall (A : Type@{u}) (P : ArrowTrie@{u} A -> Type@{u0}),
+       P (ATLeaf@{u} A) ->
+       (forall (a : A) (l : bool -> list@{u} (array@{u} (ArrowTrie@{u} A))),
         (forall H : bool,
-         list_all@{Type ; u0 u2} (array@{u0} (ArrowTrie@{u u0} A))
-           (array_all@{Type ; u0 u1 u2} (ArrowTrie@{u u0} A) P) 
+         list_all@{Type ; u u0} (array@{u} (ArrowTrie@{u} A))
+           (array_all@{Type ; u u0} (ArrowTrie@{u} A) P) 
            (l H)) ->
-        P (ATNode@{u u0} A a l)) ->
-       forall a : ArrowTrie@{u u0} A, P a
-(* u u0 u1 u2 | Set <= u2
-                u <= u0
-                u1 <= u2 *)
+        P (ATNode@{u} A a l)) ->
+       forall a : ArrowTrie@{u} A, P a
+(* u(= in 1st binder) u0(= in 2nd binder) |  *)
 
 Arguments ArrowTrie_rect A%_type_scope P%_function_scope 
   ATLeaf ATNode%_function_scope a
 Inductive
-ArrowTrie_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
-  : ArrowTrie@{u u0} A -> Type@{max(u0,u1,u2)} :=
-    ATLeaf_all : ArrowTrie_all@{α ; u u0 u1 u2} A PA (ATLeaf@{u u0} A)
+ArrowTrie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : ArrowTrie@{u} A -> Type@{max(u,u0,u1)} :=
+    ATLeaf_all : ArrowTrie_all@{α ; u u0 u1} A PA (ATLeaf@{u} A)
   | ATNode_all : forall a : A,
                  PA a ->
-                 forall
-                   l : bool -> list@{u0} (array@{u0} (ArrowTrie@{u u0} A)),
+                 forall l : bool -> list@{u} (array@{u} (ArrowTrie@{u} A)),
                  (forall H : bool,
-                  list_all@{Type ; u0 u2} (array@{u0} (ArrowTrie@{u u0} A))
-                    (array_all@{Type ; u0 u2 u2} (ArrowTrie@{u u0} A)
-                       (ArrowTrie_all@{α ; u u0 u1 u2} A PA))
+                  list_all@{Type ; u u1} (array@{u} (ArrowTrie@{u} A))
+                    (array_all@{Type ; u u1} (ArrowTrie@{u} A)
+                       (ArrowTrie_all@{α ; u u0 u1} A PA))
                     (l H)) ->
-                 ArrowTrie_all@{α ; u u0 u1 u2} A PA (ATNode@{u u0} A a l).
-(* α ; =u =u0 *u1 *u2 | Set <= u2
-                        u <= u0
-                        u0 <= u2
-                        u1 <= u2 *)
+                 ArrowTrie_all@{α ; u u0 u1} A PA (ATNode@{u} A a l).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments ArrowTrie_all A%_type_scope PA%_function_scope a
 Arguments ATLeaf_all A%_type_scope PA%_function_scope
 Arguments ATNode_all A%_type_scope PA%_function_scope 
   a _ (l _)%_function_scope
-ArrayTrie_rect@{u u0 u1 u2} =
-fun (A : Type@{u}) (P : ArrayTrie@{u u0} A -> Type@{u1})
-  (AyTLeaf : P (AyTLeaf@{u u0} A))
-  (AyTNode : forall (a : A)
-               (a0 : array@{u0} (array@{u0} (ArrayTrie@{u u0} A))),
-             array_all@{Type ; u0 u2 u2} (array@{u0} (ArrayTrie@{u u0} A))
-               (array_all@{Type ; u0 u1 u2} (ArrayTrie@{u u0} A) P) a0 ->
-             P (AyTNode@{u u0} A a a0)) =>
-fix F (a : ArrayTrie@{u u0} A) : P a :=
+ArrayTrie_rect@{u u0} =
+fun (A : Type@{u}) (P : ArrayTrie@{u} A -> Type@{u0})
+  (AyTLeaf : P (AyTLeaf@{u} A))
+  (AyTNode : forall (a : A) (a0 : array@{u} (array@{u} (ArrayTrie@{u} A))),
+             array_all@{Type ; u u0} (array@{u} (ArrayTrie@{u} A))
+               (array_all@{Type ; u u0} (ArrayTrie@{u} A) P) a0 ->
+             P (AyTNode@{u} A a a0)) =>
+fix F (a : ArrayTrie@{u} A) : P a :=
   match a as a0 return P a0 with
   | Array.AyTLeaf _ => AyTLeaf
   | Array.AyTNode _ a0 a1 =>
       AyTNode a0 a1
-        (array_all_forall@{Type ; u0 u2 u2} (array@{u0} (ArrayTrie@{u u0} A))
-           (array_all@{Type ; u0 u1 u2} (ArrayTrie@{u u0} A) P)
-           (array_all_forall@{Type ; u0 u1 u2} (ArrayTrie@{u u0} A) P F) a1)
+        (array_all_forall@{Type ; u u0} (array@{u} (ArrayTrie@{u} A))
+           (array_all@{Type ; u u0} (ArrayTrie@{u} A) P)
+           (array_all_forall@{Type ; u u0} (ArrayTrie@{u} A) P F) a1)
   end
-     : forall (A : Type@{u}) (P : ArrayTrie@{u u0} A -> Type@{u1}),
-       P (AyTLeaf@{u u0} A) ->
-       (forall (a : A) (a0 : array@{u0} (array@{u0} (ArrayTrie@{u u0} A))),
-        array_all@{Type ; u0 u2 u2} (array@{u0} (ArrayTrie@{u u0} A))
-          (array_all@{Type ; u0 u1 u2} (ArrayTrie@{u u0} A) P) a0 ->
-        P (AyTNode@{u u0} A a a0)) ->
-       forall a : ArrayTrie@{u u0} A, P a
-(* u u0 u1 u2 | Set <= u2
-                u <= u0
-                u1 <= u2 *)
+     : forall (A : Type@{u}) (P : ArrayTrie@{u} A -> Type@{u0}),
+       P (AyTLeaf@{u} A) ->
+       (forall (a : A) (a0 : array@{u} (array@{u} (ArrayTrie@{u} A))),
+        array_all@{Type ; u u0} (array@{u} (ArrayTrie@{u} A))
+          (array_all@{Type ; u u0} (ArrayTrie@{u} A) P) a0 ->
+        P (AyTNode@{u} A a a0)) ->
+       forall a : ArrayTrie@{u} A, P a
+(* u(= in 1st binder) u0(= in 2nd binder) |  *)
 
 Arguments ArrayTrie_rect A%_type_scope P%_function_scope 
   AyTLeaf AyTNode%_function_scope a
 Inductive
-ArrayTrie_all@{α ; u u0 u1 u2} (A : Type@{u}) (PA : A -> Univ@{α ; u1})
-  : ArrayTrie@{u u0} A -> Type@{max(u0,u1,u2)} :=
-    AyTLeaf_all : ArrayTrie_all@{α ; u u0 u1 u2} A PA (AyTLeaf@{u u0} A)
+ArrayTrie_all@{α ; u u0 u1} (A : Type@{u}) (PA : A -> Univ@{α ; u0})
+  : ArrayTrie@{u} A -> Type@{max(u,u0,u1)} :=
+    AyTLeaf_all : ArrayTrie_all@{α ; u u0 u1} A PA (AyTLeaf@{u} A)
   | AyTNode_all : forall a : A,
                   PA a ->
-                  forall a0 : array@{u0} (array@{u0} (ArrayTrie@{u u0} A)),
-                  array_all@{Type ; u0 u2 u2}
-                    (array@{u0} (ArrayTrie@{u u0} A))
-                    (array_all@{Type ; u0 u2 u2} (ArrayTrie@{u u0} A)
-                       (ArrayTrie_all@{α ; u u0 u1 u2} A PA))
+                  forall a0 : array@{u} (array@{u} (ArrayTrie@{u} A)),
+                  array_all@{Type ; u u1} (array@{u} (ArrayTrie@{u} A))
+                    (array_all@{Type ; u u1} (ArrayTrie@{u} A)
+                       (ArrayTrie_all@{α ; u u0 u1} A PA))
                     a0 ->
-                  ArrayTrie_all@{α ; u u0 u1 u2} A PA (AyTNode@{u u0} A a a0).
-(* α ; =u =u0 *u1 *u2 | Set <= u2
-                        u <= u0
-                        u0 <= u2
-                        u1 <= u2 *)
+                  ArrayTrie_all@{α ; u u0 u1} A PA (AyTNode@{u} A a a0).
+(* α ; u(= in 1st binder, + in type) u0(= in 2nd binder, + in type) u1*(+ in type) | 
+   u <= u1
+   u0 <= u1 *)
 
 Arguments ArrayTrie_all A%_type_scope PA%_function_scope a
 Arguments AyTLeaf_all A%_type_scope PA%_function_scope
@@ -1726,7 +1661,8 @@ list_all@{α α0 ; u u0 u1} (A : Univ@{α ; u}) (PA : A -> Univ@{α0 ; u1})
                forall l : list@{α ; u u0} A,
                list_all@{α α0 ; u u0 u1} A PA l ->
                list_all@{α α0 ; u u0 u1} A PA (cons@{α ; u u0} A a l).
-(* α α0 ; =u =u0 *u1 | u <= u0 *)
+(* α α0 ; u(= in 1st binder) u0*(+ in type) u1(= in 2nd binder, + in type) | 
+   u <= u0 *)
 
 Arguments list_all A%_type_scope PA%_function_scope l
 Arguments nil_all A%_type_scope PA%_function_scope
@@ -1734,10 +1670,11 @@ Arguments cons_all A%_type_scope PA%_function_scope a _ l _
 list_all_forall@{α α0 ; u u0 u1} :
 forall (A : Univ@{α ; u}) (PA : A -> Univ@{α0 ; u1}),
 (forall a : A, PA a) ->
-forall l : list@{α ; u u0} A, list_all@{α α0 ; u u0 u1} A PA l
-(* α α0 ; u u0 u1 | u <= u0 *)
+forall l : list@{α ; u u0} A, list_all@{α α0 ; u u u1} A PA l
+(* α α0 ; u(= in 1st binder) u0* u1(= in 2nd binder) | 
+   u <= u0 *)
 
-list_all_forall is universe polymorphic
+list_all_forall is universe polymorphic and cumulative
 Arguments list_all_forall A%_type_scope (PA HPA)%_function_scope l
 list_all_forall is transparent
 Expands to: Constant nested_eliminators.SortPoly.list_all_forall
@@ -1757,7 +1694,8 @@ list_all_all@{α α0 α1 ; u u0 u1 u2} (A : Univ@{α ; u})
                    list_all_all@{α α0 α1 ; u u0 u1 u2} A PA PPA
                      (cons@{α ; u u0} A a l)
                      (cons_all@{α α0 ; u u0 u1} A PA a p l l0).
-(* α α0 α1 ; =u =u0 *u1 *u2 | u <= u0 *)
+(* α α0 α1 ; u(= in 1st binder) u0*(+ in type) u1(= in 2nd binder, + in type) u2(= in 3rd binder, + in type) | 
+   u <= u0 *)
 
 Arguments list_all_all A%_type_scope (PA PPA)%_function_scope l l0
 Arguments nil_all_all A%_type_scope (PA PPA)%_function_scope
@@ -1767,34 +1705,34 @@ forall (A : Univ@{α ; u}) (PA : A -> Univ@{α0 ; u1})
   (PPA : forall a : A, PA a -> Univ@{α1 ; u2}),
 (forall (a : A) (p : PA a), PPA a p) ->
 forall (l : list@{α ; u u0} A) (l0 : list_all@{α α0 ; u u0 u1} A PA l),
-list_all_all@{α α0 α1 ; u u0 u1 u2} A PA PPA l l0
-(* α α0 α1 ; u u0 u1 u2 | u <= u0 *)
+list_all_all@{α α0 α1 ; u u u1 u2} A PA PPA l l0
+(* α α0 α1 ; u(= in 1st binder) u0* u1(= in 2nd binder) u2(= in 3rd binder) | 
+   u <= u0 *)
 
-list_all_all_forall is universe polymorphic
+list_all_all_forall is universe polymorphic and cumulative
 Arguments list_all_all_forall A%_type_scope (PA PPA HPPA)%_function_scope 
   l l0
 list_all_all_forall is transparent
 Expands to: Constant nested_eliminators.SortPoly.list_all_all_forall
 Declared in library nested_eliminators, line 420, characters 2-26
-MRT_ind@{} :
+MRT_ind :
 forall P : MRT -> Prop,
-(forall l : list@{Type ; Set Set} MRT,
- list_all@{Type Prop ; Set Set Set} MRT P l -> P (MRTnode l)) ->
+(forall l : list@{Type ; 0 0} MRT,
+ list_all@{Type Prop ; 0 0 0} MRT P l -> P (MRTnode l)) ->
 forall m : MRT, P m
 
-MRT_ind is universe polymorphic
+MRT_ind is not universe polymorphic
 Arguments MRT_ind (P MRTnode)%_function_scope m
 MRT_ind is transparent
 Expands to: Constant nested_eliminators.SortPoly.MRT_ind
 Declared in library nested_eliminators, line 424, characters 2-55
-SRT_sind@{u u0} :
-forall P : SRT@{u} -> SProp,
-(forall l : list@{SProp ; u u} SRT@{u},
- list_all@{SProp SProp ; u u u0} SRT@{u} P l -> P (SRTnode@{u} l)) ->
-forall s : SRT@{u}, P s
-(* u u0 |  *)
+SRT_sind :
+forall P : SRT -> SProp,
+(forall l : list@{SProp ; 0 0} SRT,
+ list_all@{SProp SProp ; 0 0 0} SRT P l -> P (SRTnode l)) ->
+forall s : SRT, P s
 
-SRT_sind is universe polymorphic
+SRT_sind is not universe polymorphic
 Arguments SRT_sind (P SRTnode)%_function_scope s
 SRT_sind is transparent
 Expands to: Constant nested_eliminators.SortPoly.SRT_sind
@@ -1853,9 +1791,9 @@ Nester_all@{α ; u} :
 forall X : unit -> P unit,
 (forall u u0 : unit, X u u0 -> Univ@{α ; u}) ->
 Nester X -> Type@{max(P.u1,u)}
-(* α ; *u |  *)
+(* α ; u(= in 2nd binder, + in type) |  *)
 
-Nester_all is universe polymorphic
+Nester_all is universe polymorphic and cumulative
 Arguments Nester_all (X PX)%_function_scope n
 Expands to: Inductive nested_eliminators.DeepArities.Nester_all
 Declared in library nested_eliminators, line 480, characters 2-24

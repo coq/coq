@@ -43,8 +43,8 @@ Class Category@{o h p | h <= p} : Type@{max(o+1,h+1,p+1)} := {
     where "f ∘ g" := (compose f g);
 
   compose_respects {x y z} :
-    Proper@{h p} (respectful@{h p h p h p} equiv
-                    (respectful@{h p h p h p} equiv equiv))
+    Proper@{h p} (respectful@{h p h p} equiv
+                    (respectful@{h p h p} equiv equiv))
       (@compose x y z);
 
   id_left  {x y} (f : x ~> y) : id ∘ f ≈ f;

@@ -84,7 +84,7 @@ Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv {
 (f x) = ap f (eissect x)
                                              }.
 Arguments eissect {A B}%_type_scope f%_function_scope {_} _.
-Inductive Unit : Type1 := tt : Unit.
+Inductive Unit@{i} : Type1@{i} := tt : Unit.
 Local Open Scope path_scope.
 Definition concat_p_pp {A : Type} {x y z t : A} (p : x = y) (q : y = z) (r : z
 = t) :
@@ -115,7 +115,7 @@ Fixpoint ExtendableAlong@{i j k l}
   := match n with
      | O => Unit@{l}
      | S n => (forall (g : forall a, C (f a)),
-                  ExtensionAlong@{i j k l l} f C g) *
+                  ExtensionAlong@{i j k} f C g) *
               forall (h k : forall b, C b),
                 ExtendableAlong n f (fun b => h b = k b)
      end.
@@ -185,13 +185,13 @@ Module ReflectiveSubuniverses_Theory (Os : ReflectiveSubuniverses).
     Context (O : ReflectiveSubuniverse@{Ou Oa}).
 
     Definition isequiv_to_O_inO@{u a i} (T : Type@{i}) `{In@{u a i} O T} :
-IsEquiv@{i i} (to O T).
+      IsEquiv@{i i} (to O T).
     Proof.
 
-      pose (g := O_rec@{u a i i i i i} idmap).
+      pose (g := O_rec@{u a i i i} idmap).
       refine (isequiv_adjointify (to O T) g _ _).
       -
-        refine (O_indpaths@{u a i i i i i} (to O T o g) idmap _).
+        refine (O_indpaths@{u a i i i} (to O T o g) idmap _).
         intros x.
         apply ap.
         apply O_rec_beta.

@@ -27,19 +27,16 @@ let fail_check state check box = match state with
 | Result.Error None -> raise NotConvertible
 | Result.Error (Some err) -> box.fail err
 
-let convert_instances ~flex u1 u2 (state, check, box) =
-  let state, check = Conversion.convert_instances ~flex u1 u2 (state, check) in
+let convert_inductives env pb ~nargs ind u1 u2 (state, check, box) =
+  let state, check = UCompare.convert_inductives env pb ~nargs ind u1 u2 (state, check) in
   fail_check state check box
 
-let convert_inductives env pb ind u1 u2 ((state, check, box) as cuniv) =
-  match (Environ.lookup_mind ind env).mind_variance with
-  | None -> convert_instances ~flex:false u1 u2 cuniv
-  | Some variances ->
-    let state, check = Conversion.convert_instances_cumul pb variances u1 u2 (state, check) in
-    fail_check state check box
+let convert_constants env pb ~flex ~nargs cst u1 u2 (state, check, box) =
+  let state, check = UCompare.convert_constants env pb ~flex ~nargs cst u1 u2 (state, check) in
+  fail_check state check box
 
-let sort_cmp_universes pb s1 s2 (state, check, box) =
-  let state, check = Conversion.sort_cmp_universes pb s1 s2 (state, check) in
+let sort_cmp_universes env pb s1 s2 (state, check, box) =
+  let state, check = UCompare.sort_cmp_universes env pb s1 s2 (state, check) in
   fail_check state check box
 
 let rec conv_val env pb lvl v1 v2 cu =
@@ -94,12 +91,12 @@ and conv_accu env pb lvl k1 k2 cu =
   let n2 = accu_nargs k2 in
   if not (Int.equal n1 n2) then raise NotConvertible;
   if Int.equal n1 0 then
-    conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu
+    conv_atom env pb ~nargs:(UVars.NumArgs 0) lvl (atom_of_accu k1) (atom_of_accu k2) cu
   else
-    let cu = conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu in
+    let cu = conv_atom env pb ~nargs:(UVars.NumArgs n1) lvl (atom_of_accu k1) (atom_of_accu k2) cu in
     List.fold_right2 (conv_val env CONV lvl) (args_of_accu k1) (args_of_accu k2) cu
 
-and conv_atom env pb lvl a1 a2 cu =
+and conv_atom env pb ~nargs lvl a1 a2 cu =
   if a1 == a2 then cu
   else
     match a1, a2 with
@@ -117,13 +114,14 @@ and conv_atom env pb lvl a1 a2 cu =
            Therefore if the inductive is not fully applied then the
            missing parameters have identical types,
            and we don't need to eta expand to use cumulativity. *)
-        convert_inductives env pb (fst ind1) u1 u2 cu
+        convert_inductives env pb ~nargs ind1 u1 u2 cu
        else raise NotConvertible
     | Aconstant (c1,u1), Aconstant (c2,u2) ->
-       if QConstant.equal env c1 c2 then convert_instances ~flex:true u1 u2 cu
+       if QConstant.equal env c1 c2 then
+        convert_constants env pb ~flex:true ~nargs c1 u1 u2 cu
        else raise NotConvertible
     | Asort s1, Asort s2 ->
-      sort_cmp_universes pb s1 s2 cu
+      sort_cmp_universes env pb s1 s2 cu
     | Avar id1, Avar id2 ->
         if Id.equal id1 id2 then cu else raise NotConvertible
     | Acase(a1,ac1,p1,bs1), Acase(a2,ac2,p2,bs2) ->

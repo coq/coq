@@ -43,7 +43,7 @@ let idents_of_name : Names.Name.t -> Names.Id.t list =
 let stm_allow_nested_proofs_option_name = ["Nested";"Proofs";"Allowed"]
 
 let options_affecting_stm_scheduling =
-  [ Attributes.universe_polymorphism_option_name;
+  [ UnivOptions.universe_polymorphism_option_name;
     stm_allow_nested_proofs_option_name;
     Pvernac.proof_mode_opt_name;
     Attributes.program_mode_option_name;
@@ -95,7 +95,7 @@ let classify_vernac e =
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
     | VernacCheckGuard | VernacValidateProof
-    | VernacGlobalCheck _ | VernacCheckMayEval _ -> VtQuery
+    | VernacGlobalCheck _ | VernacCheckMayEval _ | VernacCheckConstraint _ -> VtQuery
     (* ProofStep *)
     | VernacProof _
     | VernacFocus _ | VernacUnfocus
@@ -172,6 +172,7 @@ let classify_vernac e =
         VtSideff (ids, VtLater)
     | VernacCombinedScheme ({v=id},_) -> VtSideff ([id], VtLater)
     | VernacUniverse _ | VernacSort _ | VernacConstraint _
+    | VernacCumulativityTransparent _
     | VernacCanonical _ | VernacCoercion _ | VernacIdentityCoercion _
     | VernacCreateHintDb _ | VernacRemoveHints _ | VernacHints _
     | VernacArguments _

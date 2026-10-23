@@ -13,6 +13,7 @@ module Detype : sig
     universes : bool;
     (** Should we print hidden sort quality variables? *)
     qualities : bool;
+    variances: bool;
     relevances : bool;
     (** If true, prints full local context of evars *)
     evar_instances : bool;
@@ -114,6 +115,8 @@ val current_ignore_raw : unit -> t
 
 (** The following flag is still accessed directly, but not when printing constr. *)
 val print_universes : bool ref
+
+val print_variances : unit -> bool
 
 module PrintingInductiveMake (_ : sig
     val encode : Environ.env -> Libnames.qualid -> Names.inductive

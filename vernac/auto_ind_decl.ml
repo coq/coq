@@ -35,6 +35,14 @@ exception ConstructorWithNonParametricInductiveType of inductive
 exception DecidabilityIndicesNotSupported
 exception InternalDependencies
 
+let check_appvect c args tac =
+  let open Proofview in
+  let open Proofview.Notations in
+  Goal.enter (fun gl ->
+    let env = Goal.env gl and sigma = Goal.sigma gl in
+    let sigma, ct = Typing.checked_appvect env sigma c args in
+    Unsafe.tclEVARS sigma <*> tac ct)
+
 let named_hd env t na = Namegen.named_hd env (Evd.from_env env) (EConstr.of_constr t) na
 let name_assumption env = function
 | RelDecl.LocalAssum (na,t) -> RelDecl.LocalAssum (Context.map_annot (named_hd env t) na, t)
@@ -667,7 +675,7 @@ let build_beq_scheme env handle kn =
   let mib = Environ.lookup_mind kn env in
 
   (* Setting universes *)
-  let auctx = Declareops.universes_context mib.mind_universes in
+  let auctx = Declareops.(universes_context (inductive_universes mib)) in
   let u, ctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.from_env env in
   let uctx = UState.merge_sort_context_set ~sideff:false UState.univ_rigid ~src:UState.Internal uctx ctx in
@@ -938,17 +946,14 @@ let do_replace_lb handle aavoid narg p q =
     let type_of_pq = Retyping.get_type_of env sigma p in
     let (ind,u as indu),v = destruct_ind env sigma type_of_pq in
     let c = get_scheme handle (!lb_scheme_kind_aux ()) ind in
-    let sigma , lb_type_of_p = Evd.fresh_global env sigma c in
+    let sigma , lb_type_of_p = Evd.fresh_global ~rigid:UnivRigid env sigma c in
        let lb_args = Array.append (Array.append
                           v
                           (Array.Smart.map (fun x -> do_arg env sigma indu x 1) v))
                           (Array.Smart.map (fun x -> do_arg env sigma indu x 2) v)
-        in let app =  if Array.is_empty lb_args
-                       then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
-           in
-           Tacticals.tclTHENLIST [
+        in Tacticals.tclTHENLIST [
              Proofview.Unsafe.tclEVARS sigma;
-             Equality.replace p q ; Tactics.apply app ; Auto.default_auto]
+             Equality.replace p q ; check_appvect lb_type_of_p lb_args Tactics.apply ; Auto.default_auto]
   end
 
 (* used in the bool -> leb side *)
@@ -1002,13 +1007,10 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
                           (Array.Smart.map (fun x -> do_arg env sigma indu x 1) v))
                           (Array.Smart.map (fun x -> do_arg env sigma indu x 2) v )
                 in
-                let app =  if Array.is_empty bl_args
-                           then bl_t1 else mkApp (bl_t1,bl_args)
-                in
                 Tacticals.tclTHENLIST [
                   Proofview.Unsafe.tclEVARS sigma;
                   Equality.replace_by t1 t2
-                    (Tacticals.tclTHEN (Tactics.apply app) (Auto.default_auto)) ;
+                    (Tacticals.tclTHEN (check_appvect bl_t1 bl_args Tactics.apply) (Auto.default_auto)) ;
                   aux q1 q2 ]
               )
         )
@@ -1188,7 +1190,7 @@ let make_bl_scheme env handle mind =
       Pp.(str "Automatic building of boolean->Leibniz lemmas not supported");
 
   (* Setting universes *)
-  let auctx = Declareops.universes_context mib.mind_universes in
+  let auctx = Declareops.(universes_context (inductive_universes mib)) in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.merge_sort_context_set ~sideff:false UState.univ_rigid ~src:UState.Internal (UState.from_env env) uctx in
 
@@ -1198,8 +1200,8 @@ let make_bl_scheme env handle mind =
     Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   let bl_goal = compute_bl_goal env handle (ind,u) lnamesparrec nparrec in
   let bl_goal = EConstr.of_constr bl_goal in
-  let univ_poly = Declareops.inductive_is_polymorphic mib in
-  let poly = PolyFlags.of_univ_poly univ_poly in (* FIXME cumulativity not handled *)
+  let univ_poly, cumulative = Declareops.inductive_is_polymorphic mib, Declareops.inductive_is_cumulative mib in
+  let poly = PolyFlags.make ~univ_poly ~cumulative ~collapse_sort_variables:true in
   let uctx = if univ_poly then Evd.ustate (fst (Typing.sort_of env (Evd.from_ustate uctx) bl_goal)) else uctx in
   let (ans, _, _, uctx) = Subproof.build_by_tactic ~poly env ~uctx ~typ:bl_goal
     (compute_bl_tact handle (ind, EConstr.EInstance.make u) lnamesparrec nparrec)
@@ -1323,7 +1325,7 @@ let make_lb_scheme env handle mind =
   let ind = (mind,0) in
 
   (* Setting universes *)
-  let auctx = Declareops.universes_context mib.mind_universes in
+  let auctx = Declareops.(universes_context (inductive_universes mib)) in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.merge_sort_context_set ~sideff:false UState.univ_rigid ~src:UState.Internal (UState.from_env env) uctx in
 
@@ -1475,7 +1477,7 @@ let compute_dec_tact handle (ind,u) lnamesparrec nparrec =
                     (* left *)
                     Tacticals.tclTHENLIST [
                         simplest_left;
-                        apply (EConstr.mkApp(blI,Array.map EConstr.mkVar xargs));
+                        check_appvect blI (Array.map EConstr.mkVar xargs) apply;
                         Auto.default_auto
                       ]
                   ;
@@ -1491,7 +1493,7 @@ let compute_dec_tact handle (ind,u) lnamesparrec nparrec =
                           assert_by (Name freshH3)
                             (EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
                             (Tacticals.tclTHENLIST [
-                                 apply (EConstr.mkApp(lbI,Array.map EConstr.mkVar xargs));
+                                 check_appvect lbI (Array.map EConstr.mkVar xargs) apply;
                                  Auto.default_auto
                             ]);
                           Equality.general_rewrite ~where:(Some freshH3) ~l2r:true
@@ -1519,7 +1521,7 @@ let make_eq_decidability env handle mind =
   let nparrec = mib.mind_nparams_rec in
 
   (* Setting universes *)
-  let auctx = Declareops.universes_context mib.mind_universes in
+  let auctx = Declareops.(universes_context (inductive_universes mib)) in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.merge_sort_context_set ~sideff:false UState.univ_rigid ~src:UState.Internal (UState.from_env env) uctx in
 

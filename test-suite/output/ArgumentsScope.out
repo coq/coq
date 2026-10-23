@@ -28,7 +28,7 @@ negb is not universe polymorphic
 Arguments negb b%_bool_scope
 negb is transparent
 Expands to: Constant Corelib.Init.Datatypes.negb
-Declared in library Corelib.Init.Datatypes, line 86, characters 11-15
+Declared in library Corelib.Init.Datatypes, line 90, characters 11-15
 a : bool -> bool
 
 a is not universe polymorphic
@@ -43,7 +43,7 @@ negb is not universe polymorphic
 Arguments negb b
 negb is transparent
 Expands to: Constant Corelib.Init.Datatypes.negb
-Declared in library Corelib.Init.Datatypes, line 86, characters 11-15
+Declared in library Corelib.Init.Datatypes, line 90, characters 11-15
 negb' : bool -> bool
 
 negb' is not universe polymorphic
@@ -68,7 +68,7 @@ negb is not universe polymorphic
 Arguments negb b
 negb is transparent
 Expands to: Constant Corelib.Init.Datatypes.negb
-Declared in library Corelib.Init.Datatypes, line 86, characters 11-15
+Declared in library Corelib.Init.Datatypes, line 90, characters 11-15
 negb' : bool -> bool
 
 negb' is not universe polymorphic

@@ -2,7 +2,7 @@ Axiom foo : forall A:Type, A -> Type.
 
 (* this test is about checking when Type in a notation is considered
    to match a term *)
-Notation "! x" := (foo Type x) (at level 2).
+Notation "! x" := (foo Type@{*} x) (at level 2).
 Notation "# x" := (foo Univ x) (at level 2).
 
 (* first with Printing Universes off *)

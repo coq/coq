@@ -1,10 +1,10 @@
-eq_rect :
+eq_rect@{u u0} :
 forall {A : Type} {x : A} (P : A -> Type),
 P x -> forall {y : A}, x = y -> P y
 
-eq_rect is not universe polymorphic
+eq_rect is universe polymorphic and cumulative
 Arguments eq_rect {A}%_type_scope {x} P%_function_scope eq_refl {y} e
   (where some original arguments have been renamed)
 eq_rect is transparent
 Expands to: Constant Corelib.Init.Logic.eq_rect
-Declared in library Corelib.Init.Logic, line 379, characters 0-115
+Declared in library Corelib.Init.Logic, line 381, characters 0-138

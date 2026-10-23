@@ -1,35 +1,86 @@
-UNIVERSES:
- {w v u} | u <= v
-           v <= w
-ALGEBRAIC UNIVERSES:
+UNIVERSE VARIABLES:
+ {w v u}
+RIGID UNIVERSE VARIABLES:
  {}
-FLEXIBLE UNIVERSES:
+DEMOTED (GLOBAL) UNIVERSE VARIABLES:
  
+FLEXIBLE UNIVERSE VARIABLES:
+ {}
+DEFINED LOCAL VARIABLES:
+ 
+UNIVERSES:
+ 0 <= u
+ 0 <= v
+ 0 <= w
+ u <= v
+ v <= w
+ 1 <= sig.u0
+ 1 <= sig2.u0
+ 1 <= sigT.u0
+ 1 <= sigT.u1
+ 1 <= eq.u0
+ 1 <= option.u0
+ 1 <= sigT2.u0
+ 1 <= sigT2.u1
+ 1 <= sigT2.u2
+ 1 <= sum.u0
+ 1 <= sum.u1
+ 1 <= prod.u0
+ 1 <= prod.u1
+ 1 <= list.u0
+ 1 <= sumor.u0
 SORTS:
   |= Prop -> SProp
      Type -> Prop
           -> SProp
      
+
+VARIANCES:
+ ShowUnivs.20
+ ShowUnivs.19
+ ShowUnivs.18
 WEAK CONSTRAINTS:
  
 
 Normalized constraints:
  {w v u} | u <= v
            v <= w
+UNIVERSE VARIABLES:
+ {ShowUnivs.25 ShowUnivs.24 ShowUnivs.23 ShowUnivs.22 ShowUnivs.21}
+RIGID UNIVERSE VARIABLES:
+ {}
+DEMOTED (GLOBAL) UNIVERSE VARIABLES:
+ 
+FLEXIBLE UNIVERSE VARIABLES:
+ {ShowUnivs.25 ShowUnivs.24 ShowUnivs.23 ShowUnivs.21}
+DEFINED LOCAL VARIABLES:
+ 
 UNIVERSES:
- {ShowUnivs.28 ShowUnivs.27 ShowUnivs.26 ShowUnivs.25 ShowUnivs.24} |
-   ShowUnivs.25 < ShowUnivs.26
-   ShowUnivs.26 < ShowUnivs.27
-   ShowUnivs.26 <= ShowUnivs.28
-   ShowUnivs.27 <= ShowUnivs.24
-   ShowUnivs.28 <= ShowUnivs.24
-ALGEBRAIC UNIVERSES:
- {ShowUnivs.28 ShowUnivs.27 ShowUnivs.24}
-FLEXIBLE UNIVERSES:
- ShowUnivs.28
- ShowUnivs.27
- ShowUnivs.26
- ShowUnivs.24
+ 0 <= ShowUnivs.21
+ 0 <= ShowUnivs.22
+ 0 <= ShowUnivs.23
+ 0 <= ShowUnivs.24
+ 0 <= ShowUnivs.25
+ ShowUnivs.23 <= ShowUnivs.21
+ ShowUnivs.24 <= ShowUnivs.21
+ ShowUnivs.25 <= ShowUnivs.24
+ 1 <= sig.u0
+ 1 <= sig2.u0
+ 1 <= sigT.u0
+ 1 <= sigT.u1
+ 1 <= eq.u0
+ 1 <= option.u0
+ 1 <= sigT2.u0
+ 1 <= sigT2.u1
+ 1 <= sigT2.u2
+ 1 <= sum.u0
+ 1 <= sum.u1
+ 1 <= prod.u0
+ 1 <= prod.u1
+ 1 <= list.u0
+ 1 <= sumor.u0
+ ShowUnivs.22+1 <= ShowUnivs.25
+ ShowUnivs.25+1 <= ShowUnivs.23
 SORTS:
  α1 := Type
  α2 := Type
@@ -41,8 +92,15 @@ SORTS:
    Type -> Prop
         -> SProp
    
+
+VARIANCES:
+ ShowUnivs.25: infer: = in term,  predicative
+ ShowUnivs.24
+ ShowUnivs.23
+ ShowUnivs.22: infer: = in term,  predicative
+ ShowUnivs.21
 WEAK CONSTRAINTS:
  
 
 Normalized constraints:
- {ShowUnivs.26 ShowUnivs.25} | ShowUnivs.25 < ShowUnivs.26
+ {ShowUnivs.25 ShowUnivs.22} | ShowUnivs.22+1 <= ShowUnivs.25

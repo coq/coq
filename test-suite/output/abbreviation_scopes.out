@@ -23,4 +23,4 @@ O : nat
 
 O is not universe polymorphic
 Expands to: Constructor Corelib.Init.Datatypes.O
-Declared in library Corelib.Init.Datatypes, line 186, characters 4-5
+Declared in library Corelib.Init.Datatypes, line 191, characters 4-5

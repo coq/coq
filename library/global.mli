@@ -93,6 +93,8 @@ val close_section : Summary.Interp.frozen -> unit
 
 val sections_are_opened : unit -> bool
 
+val section_universes : unit -> Univ.ContextSet.t
+
 (** {6 Section management for discharge } *)
 
 val section_segment_of_constant : Constant.t -> Cooking.cooking_info
@@ -175,7 +177,10 @@ val env_of_context : Environ.named_context_val -> Environ.env
 val is_joined_environment : unit -> bool
 val is_curmod_library : unit -> bool
 
+val universes_of_global : GlobRef.t -> UVars.AbstractContext.t
+
 val is_polymorphic : GlobRef.t -> bool
+val is_cumulative : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool
 val is_type_in_type : GlobRef.t -> bool
 
@@ -198,6 +203,9 @@ val set_unfold_height_heuristic : bool -> unit
 
 val set_VM : bool -> unit
 val set_native_compiler : bool -> unit
+
+(** {6 Cumulativity inference settings } *)
+val set_cumulativity_zeta : bool -> unit
 
 (* Modifies the global state, registering new universes *)
 

@@ -112,6 +112,12 @@ let sections_are_opened () = Safe_typing.sections_are_opened (safe_env())
 
 let sections () = Safe_typing.sections_of_safe_env @@ safe_env ()
 
+let section_universes () = match sections () with
+  | None -> Univ.ContextSet.empty
+  | Some s ->
+    let univs = Section.all_poly_univs s in
+    List.fold_left (fun acc uc -> Univ.ContextSet.union (snd (UVars.UContext.to_context_set uc)) acc) Univ.ContextSet.empty univs
+
 let force_sections () = match sections() with
   | Some s -> s
   | None ->
@@ -193,10 +199,7 @@ let body_of_constant_body access cb =
   | Undef _ | Primitive _ | Symbol _ ->
      None
   | Def c ->
-    let u = match cb.const_universes with
-    | Monomorphic -> Opaqueproof.PrivateMonomorphic ()
-    | Polymorphic auctx -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
-    in
+    let u = Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty in
     Some (c, u, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
     let c, u = force_proof access o in
@@ -225,8 +228,12 @@ let import c t d = globalize (Safe_typing.import c t d)
 let env_of_context hyps =
   Environ.reset_with_named_context hyps (env())
 
-let is_polymorphic r =
-  Environ.is_polymorphic (env()) r
+let universes_of_global r =
+  Environ.universes_of_global (env()) r
+
+let is_polymorphic r = Environ.is_polymorphic (env()) r
+let is_cumulative r =
+  Environ.is_cumulative (env()) r
 
 let is_template_polymorphic r =
   Environ.is_template_polymorphic (env ()) r
@@ -254,6 +261,9 @@ let set_unfold_dep_heuristic b =
 
 let set_unfold_height_heuristic b =
   globalize0 (Safe_typing.set_unfold_height_heuristic b)
+
+let set_cumulativity_zeta b =
+  globalize0 (Safe_typing.set_cumulativity_zeta b)
 
 let set_VM b = globalize0 (Safe_typing.set_VM b)
 let set_native_compiler b = globalize0 (Safe_typing.set_native_compiler b)

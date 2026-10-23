@@ -55,12 +55,7 @@ let mk_clausenv env evd metam metas templval metaset templtyp = {
 }
 
 let merge_fsorts evd clenv =
-  let usubst = Evd.universe_subst evd in
-  (* Hackish check: the level is considered to be already fresh when it is not
-     part of the evarmap substitution. Other heuristics are more broken because
-     some parts of the UState API are not very clear about their invariants and
-     this is relied upon by e.g. Program. *)
-  let filter l = not (UnivFlex.mem l usubst) in
+  let filter l = not (Evd.is_declared_level evd l) in
   let fold accu marg = match marg.marg_templ with
   | None -> accu
   | Some (ctx, l) -> Univ.Level.Set.add l accu
@@ -107,7 +102,7 @@ let get_template env sigma c =
   match EConstr.destRef sigma hd with
   | ConstructRef (ind, i), u when Environ.template_polymorphic_ind ind env ->
     let (mib, mip) = Inductive.lookup_mind_specif env ind in
-    let templ = match mib.Declarations.mind_template with
+    let templ = match Declareops.inductive_template mib with
     | None -> assert false
     | Some t -> t.template_param_arguments
     in
@@ -124,7 +119,7 @@ let get_type_of_with_metas ~metas env sigma c =
 
 let refresh_template_constraints ~metas env sigma ind c =
   let mib = Environ.lookup_mind (fst ind) env in
-  let ctx = (Option.get mib.mind_template).template_context in
+  let ctx = (Option.get (Declareops.inductive_template mib)).template_context in
   let cstrs0 = UVars.UContext.constraints @@ UVars.AbstractContext.repr ctx in
   if PConstraints.is_empty cstrs0 then sigma
   else
@@ -137,7 +132,7 @@ let refresh_template_constraints ~metas env sigma ind c =
 
 let clenv_refresh env sigma ctx clenv =
   match ctx with
-  | Some ctx ->
+  | Some ctx when not (UnivGen.is_empty_sort_context ctx) ->
     let (subst, ctx) = UnivGen.fresh_sort_context_instance ctx in
     let emap c = Vars.subst_univs_level_constr subst c in
     let sigma = Evd.merge_sort_context_set Evd.univ_flexible ~src:UState.Internal sigma ctx in
@@ -146,14 +141,14 @@ let clenv_refresh env sigma ctx clenv =
       (emap clenv.templval)
       clenv.metaset
       (emap (fst clenv.templtyp), snd clenv.templtyp)
-  | None ->
+  | _ ->
     (* We also refresh template arguments. This assumes that callers of
        {!clenv_refresh} use a freshly minted clenv, but this is the case as this
        function is only used by auto-like tactics for hint refresh. *)
     let fold (metas, sigma) marg = match marg.marg_templ with
     | None -> (metas, sigma), marg
     | Some (decls, _) ->
-      let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible_alg sigma in
+      let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible sigma in
       let t = it_mkProd_or_LetIn (mkType (Univ.Universe.make s)) decls in
       let name = Meta.meta_name clenv.metam marg.marg_meta in
       let metas = Meta.meta_declare marg.marg_meta t ~name metas in
@@ -238,7 +233,7 @@ let clenv_environments env sigma template bound t =
           | None :: templ -> sigma, t1, templ, None
           | Some _ :: templ ->
             let decls, _ = Reductionops.dest_arity env sigma t1 in
-            let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible_alg sigma in
+            let sigma, s = Evd.new_univ_level_variable Evd.univ_flexible sigma in
             let t1 = EConstr.it_mkProd_or_LetIn (EConstr.mkType (Univ.Universe.make s)) decls in
             sigma, t1, templ, Some (decls, s)
           in

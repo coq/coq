@@ -17,7 +17,7 @@ Check unit ** bool.
 
 (* "option is template" *)
 About option.
-Set Printing Universes.
+Set Printing Universes. Unset Printing Universe Variances.
 About option.
 (* "option is template on xxx" *)
 

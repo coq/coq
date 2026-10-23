@@ -14,7 +14,7 @@ End BAZ.
 
 Module BAR_FROM_BAZ (baz : BAZ) <: BAR.
 
-  Definition f : Type -> Type.
+  Definition f : Type@{*} -> Type@{*}.
   Proof. exact baz.f. Defined.
 
   Definition h : forall T, f T.

@@ -18,18 +18,19 @@ let fail_check state check box = match state with
 | Result.Error (Some err) -> box.fail err
 
 let convert_instances ~flex u1 u2 (state, check, box) =
-  let state, check = Conversion.convert_instances ~flex u1 u2 (state, check) in
+  let state, check = UCompare.convert_instances ~flex u1 u2 (state, check) in
   fail_check state check box
 
-let convert_inductives pb mib u1 u2 ((state, check, box) as cuniv) =
-  match mib.Declarations.mind_variance with
-  | None -> convert_instances ~flex:false u1 u2 cuniv
-  | Some variances ->
-    let state, check = Conversion.convert_instances_cumul pb variances u1 u2 (state, check) in
-    fail_check state check box
+let convert_inductives env pb ind ~nargs u1 u2 (state, check, box) =
+  let state, check = UCompare.convert_inductives env pb ind ~nargs u1 u2 (state, check) in
+  fail_check state check box
 
-let sort_cmp_universes pb s1 s2 (state, check, box) =
-  let state, check = Conversion.sort_cmp_universes pb s1 s2 (state, check) in
+let convert_constants env pb cst ~flex ~nargs u1 u2 (state, check, box) =
+  let state, check = UCompare.convert_constants env pb cst ~flex ~nargs u1 u2 (state, check) in
+  fail_check state check box
+
+let sort_cmp_universes env pb s1 s2 (state, check, box) =
+  let state, check = UCompare.sort_cmp_universes env pb s1 s2 (state, check) in
   fail_check state check box
 
 let table_key_instance env = function
@@ -144,7 +145,9 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
              Therefore if the inductive is not fully applied then the
              missing parameters have identical types,
              and we don't need to eta expand to use cumulativity. *)
-          let cu = convert_inductives pb mib u1 u2 cu in
+          (* conv_arguments will check that args1 and args2 have the same length *)
+          let nargs = UVars.NumArgs (nargs args1 - 1) in
+          let cu = convert_inductives env pb ind1 ~nargs u1 u2 cu in
           conv_arguments env ~from:1 k args1 args2
             (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
@@ -161,13 +164,18 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           assert (0 < nargs args2);
           let u1 = uni_instance (arg args1 0) in
           let u2 = uni_instance (arg args2 0) in
-          let cu = convert_instances ~flex:false u1 u2 cu in
+          let nargs = UVars.NumArgs (nargs args1 - 1) in
+          let cu =
+            match ik1 with
+            | ConstKey cst -> convert_constants env pb cst ~flex:false ~nargs u1 u2 cu
+            | _ -> convert_instances ~flex:false u1 u2 cu
+          in
           conv_arguments env ~from:1 k args1 args2
             (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
     else raise NotConvertible
   | Asort s1, Asort s2 ->
-    sort_cmp_universes pb s1 s2 cu
+    sort_cmp_universes env pb s1 s2 cu
   | Asort _ , _ | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =

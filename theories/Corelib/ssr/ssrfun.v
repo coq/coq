@@ -12,7 +12,7 @@
 
 (** #<style> .doc { font-family: monospace; white-space: pre; } </style># **)
 
-Require Import ssreflect.
+From Corelib Require Import ssreflect.
 
 
 (**

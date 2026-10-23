@@ -153,7 +153,8 @@ let fresh_instance auctx : _ in_sort_context_set =
       qinst
   in
   let uctx = Array.fold_right Level.Set.add uinst Level.Set.empty in
-  let inst = Instance.of_array (qinst,uinst) in
+  let inst = LevelInstance.of_array (qinst,uinst) in
+  let inst = Instance.of_level_instance inst in
   inst, ((qctx,uctx), AbstractContext.instantiate inst auctx)
 
 let existing_instance ?loc ~gref auctx inst =
@@ -191,7 +192,7 @@ let fresh_constructor_instance env c =
   (c, u), ctx
 
 let fresh_array_instance env =
-  let auctx = CPrimitives.typ_univs CPrimitives.PT_array in
+  let auctx, _variances = CPrimitives.typ_univs CPrimitives.PT_array in
   let u, ctx = fresh_instance_from auctx None in
   u, ctx
 
@@ -200,8 +201,8 @@ let fresh_global_instance ?loc ?names env gr =
   mkRef (gr, u), ctx
 
 let constr_of_monomorphic_global env gr =
-  if not (Environ.is_polymorphic env gr) then
-    fst (fresh_global_instance env gr)
+  let gru, ctx = fresh_global_instance env gr in
+  if is_empty_sort_context ctx then gru
   else CErrors.user_err
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
@@ -219,16 +220,19 @@ let fresh_sort_in_quality =
      let u = fresh_level () in
      sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u), PConstraints.empty)
 
-let fresh_sort_context_instance ((qs, us), csts) =
-  let ufold u (us, usubst) =
+let fresh_sort_context_instance ((qs,us),csts as ctx) =
+  let ufold u (univs',subst) =
     let u' = fresh_level () in
-    (Level.Set.add u' us, Level.Map.add u u' usubst)
+    (Level.Set.add u' univs', Level.Map.add u (Universe.make u') subst)
   in
   let qfold q (qs, qsubst) =
     let q' = fresh_sort_quality () in
     QVar.Set.add q' qs, QVar.Map.add q (Sorts.Quality.QVar q') qsubst
   in
-  let us, usubst = Level.Set.fold ufold us (Level.Set.empty, Level.Map.empty) in
-  let qs, qsubst = QVar.Set.fold qfold qs (QVar.Set.empty, QVar.Map.empty) in
-  let csts = subst_poly_constraints (qsubst, usubst) csts in
-  (qsubst, usubst), ((qs, us), csts)
+  if QVar.Set.is_empty qs && Level.Set.is_empty us then
+    (QVar.Map.empty, Level.Map.empty), ctx
+  else
+    let us, usubst = Level.Set.fold ufold us (Level.Set.empty, Level.Map.empty) in
+    let qs, qsubst = QVar.Set.fold qfold qs (QVar.Set.empty, QVar.Map.empty) in
+    let csts = subst_poly_constraints (qsubst, usubst) csts in
+    (qsubst, usubst), ((qs, us), csts)

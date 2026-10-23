@@ -425,16 +425,6 @@ let check_positivity ~chkpos kn names env_ar_par paramsctxt finite inds =
 (************************************************************************)
 (* Build the inductive packet *)
 
-let fold_inductive_blocks f acc inds =
-  Array.fold_left (fun acc ((arity,lc),_,_,_) ->
-      f (Array.fold_left f acc lc) arity.IndTyping.user_arity)
-    acc inds
-
-let used_section_variables env inds =
-  let fold l c = Id.Set.union (Environ.global_vars_set env c) l in
-  let ids = fold_inductive_blocks fold Id.Set.empty inds in
-  keep_hyps env ids
-
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
 
 (** From a rel context describing the constructor arguments,
@@ -494,13 +484,17 @@ let compute_projections ind ~nparamargs ~nf_lc ~consnrealdecls =
   Array.of_list (List.rev rs),
   Array.of_list (List.rev pbs)
 
-let build_inductive env ~sec_univs names prv univs template variance
+let sec_univs_instance secunivs =
+  let open UVars in
+  List.fold_right (fun uctx acc -> LevelInstance.append acc (UContext.instance uctx)) secunivs LevelInstance.empty
+
+let build_inductive env ~sec_univs ~hyps names prv univs sec_variance
     paramsctxt kn isrecord isfinite inds nmr recargs not_prim_or_has_eta =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
-  let hyps = used_section_variables env inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
-  let u = UVars.make_abstract_instance (universes_context univs) in
+  let univctx = match univs with Template _ -> empty_universes | Polymorphic univs -> univs in
+  let u = UVars.make_abstract_instance (universes_context univctx) in
   let subst = List.init ntypes (fun i -> mkIndU ((kn, ntypes - i - 1), u)) in
   (* Check one inductive *)
   let build_one_packet i (id,cnames) ((arity,lc),(indices,splayed_lc),squashed,relies_on_indices_not_mattering) recarg =
@@ -516,9 +510,9 @@ let build_inductive env ~sec_univs names prv univs template variance
     let consnrealargs =
       Array.map (fun (d,_) -> Context.Rel.nhyps d)
         splayed_lc in
-    let mind_relevance = match template with
-    | None -> Sorts.relevance_of_sort arity.IndTyping.sort
-    | Some templ ->
+    let mind_relevance = match univs with
+    | Polymorphic _ -> Sorts.relevance_of_sort arity.IndTyping.sort
+    | Template templ ->
       match templ.template_concl with
       | Sorts.Prop | Sorts.Set | Sorts.Type _ -> Sorts.Relevant
       | Sorts.SProp -> Sorts.Irrelevant
@@ -580,31 +574,16 @@ let build_inductive env ~sec_univs names prv univs template variance
         mind_reloc_tbl = rtbl;
       } in
   let packets = Array.map3_i build_one_packet names inds recargs in
-  let variance, sec_variance = match variance with
-    | None -> None, None
-    | Some variance -> match sec_univs with
-      | None -> Some variance, None
-      | Some sec_univs ->
-        (* no variance for qualities *)
-        let _nsecq, nsecu = UVars.Instance.length sec_univs in
-        Some (Array.sub variance nsecu (Array.length variance - nsecu)),
-        Some (Array.sub variance 0 nsecu)
-  in
-  let univ_hyps = match sec_univs with
-    | None -> UVars.Instance.empty
-    | Some univs -> univs
-  in
   (* Build the mutual inductive *)
   { mind_finite = isfinite;
     mind_hyps = hyps;
-    mind_univ_hyps = univ_hyps;
+    mind_univ_ctx = sec_univs;
+    mind_univ_hyps = sec_univs_instance sec_univs;
     mind_nparams = nparamargs;
     mind_nparams_rec = nmr;
     mind_params_ctxt = paramsctxt;
     mind_packets = packets;
     mind_universes = univs;
-    mind_template = template;
-    mind_variance = variance;
     mind_sec_variance = sec_variance;
     mind_private = prv;
     mind_typing_flags = Environ.typing_flags env;
@@ -615,7 +594,7 @@ let build_inductive env ~sec_univs names prv univs template variance
 
 let check_inductive env ~sec_univs kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar_par, univs, template, variance, record, not_prim_reason_or_has_eta, paramsctxt, inds) =
+  let (env_ar_par, hyps, sec_univs, univs, sec_variance, record, not_prim_reason_or_has_eta, paramsctxt, inds) =
     IndTyping.typecheck_inductive env ~sec_univs mie
   in
   (* Then check positivity conditions *)
@@ -629,7 +608,8 @@ let check_inductive env ~sec_univs kn mie =
   in
   (* Build the inductive packets *)
   let mib =
-    build_inductive env ~sec_univs names mie.mind_entry_private univs template variance
+    build_inductive env ~sec_univs ~hyps names mie.mind_entry_private
+      univs sec_variance
       paramsctxt kn record mie.mind_entry_finite
       inds nmr recargs not_prim_reason_or_has_eta
   in

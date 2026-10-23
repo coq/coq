@@ -40,7 +40,7 @@ type abstr_info = {
   (** Context over which to generalize (e.g. x:T,z:V(x)) *)
   abstr_auctx : UVars.AbstractContext.t;
   (** Universe context over which to generalize *)
-  abstr_ausubst : Instance.t;
+  abstr_ausubst : LevelInstance.t;
   (** Universe substitution represented as an instance *)
 }
 
@@ -57,7 +57,7 @@ type abstr_info = {
 type abstr_inst_info = {
   abstr_rev_inst : Id.t list;
   (** The variables to reapply (excluding "let"s of the context), in reverse order *)
-  abstr_uinst : UVars.Instance.t;
+  abstr_uinst : UVars.LevelInstance.t;
   (** Abstracted universe variables to reapply *)
 }
 
@@ -90,9 +90,11 @@ let empty_cooking_info = {
   abstr_info = {
       abstr_ctx = [];
       abstr_auctx = AbstractContext.empty;
-      abstr_ausubst = Instance.empty;
+      abstr_ausubst = LevelInstance.empty;
     };
 }
+
+let named_context_of_cooking_info info = info.abstr_info.abstr_ctx
 
 (*s Cooking the constants. *)
 
@@ -117,7 +119,7 @@ struct
 end
 
 module RefTable = Hashtbl.Make(RefHash)
-type internal_abstr_inst_info = UVars.Instance.t * int list * int
+type internal_abstr_inst_info = UVars.LevelInstance.t * int list * int
 
 type cooking_cache = {
   cache : internal_abstr_inst_info RefTable.t;
@@ -167,7 +169,7 @@ let make_inst k abstr_inst_rel =
 
 let share_univs cache top_abst_subst k r u l =
   let (abstr_uinst,abstr_inst_rel,_) = share cache top_abst_subst r l in
-  mkApp (instantiate_my_gr r (Instance.append abstr_uinst u), make_inst k abstr_inst_rel)
+  mkApp (instantiate_my_gr r (Instance.append (Instance.of_level_instance abstr_uinst) u), make_inst k abstr_inst_rel)
 
 let discharge_proj_repr r p = (* To merge with discharge_proj *)
   let nnewpars = List.count NamedDecl.is_local_assum r.abstr_info.abstr_ctx in
@@ -188,7 +190,7 @@ let expand_constr cache modlist top_abst_subst c =
       | Case (ci, u, pms, p, iv, t, br) ->
         begin match share cache top_abst_subst (IndRef ci.ci_ind) modlist with
         | (abstr_uinst, abstr_inst_rel, abstr_inst_length) ->
-          let u = Instance.append abstr_uinst u in
+          let u = Instance.append (Instance.of_level_instance abstr_uinst) u in
           let pms = Array.append (make_inst k abstr_inst_rel) pms in
           let ci = { ci with ci_npar = ci.ci_npar + abstr_inst_length } in
           Constr.map_with_binders succ substrec k (mkCase (ci,u,pms,p,iv,t,br))
@@ -307,7 +309,7 @@ let create_cache info =
     of judgment into a [cooking_info] *)
 let make_cooking_info ~recursive expand_info hyps uctx =
   let abstr_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
-  let abstr_ausubst, abstr_auctx = abstract_universes uctx in
+  let abstr_ausubst, abstr_auctx = UVars.abstract_universes uctx in
   let abstr_info = { abstr_ctx = hyps; abstr_auctx; abstr_ausubst } in
   let abstr_inst_info = {
     abstr_rev_inst = abstr_rev_inst;
@@ -356,8 +358,8 @@ let discharge_abstract_universe_context abstr auctx =
     abstr, n, AbstractContext.union abstr.abstr_auctx auctx
   else
     let subst = abstr.abstr_ausubst in
-    let suff = UVars.make_abstract_instance auctx in
-    let ainst = Instance.append subst suff in
+    let suff = UVars.make_abstract_level_instance auctx in
+    let ainst = LevelInstance.append subst suff in
     let substf = make_instance_subst ainst in
     let auctx = UVars.subst_univs_level_abstract_universe_context substf auctx in
     let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
@@ -384,7 +386,7 @@ let lift_poly_univs info auctx =
 
 let lift_private_mono_univs info a =
   let () = assert (AbstractContext.is_empty info.abstr_info.abstr_auctx) in
-  let () = assert (Instance.is_empty info.abstr_info.abstr_ausubst) in
+  let () = assert (LevelInstance.is_empty info.abstr_info.abstr_ausubst) in
   a
 
 let lift_private_poly_univs info (inst, cstrs) =

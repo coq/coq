@@ -10,9 +10,9 @@ Qed.
 
 Require Import Corelib.Array.PrimArray.
 
-
+Universe glob.
 Axiom P : forall A t i (a:A), get t i = a.
-Axiom Q : forall A a i, @length@{length.u0} A a = i.
+Axiom Q : forall A a i, @length@{glob} A a = i.
 
 Lemma test : forall A a i, @length@{P.u0} A a = i.
 Proof.
@@ -22,7 +22,7 @@ Proof.
   eapply Q.
 Qed.
 
-(* future work: make this succeed *)
-Fail Definition should_work@{u v|} : length@{u} [| | 0 |] = length@{v} [| | 0 |]
+(* With irrelevance, this succeeds *)
+Definition should_work@{u v|} : length@{u} [| | 0 |] = length@{v} [| | 0 |]
   := eq_refl.
 (* Universe constraints are not implied by the ones declared: u = v *)

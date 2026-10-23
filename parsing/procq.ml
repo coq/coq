@@ -351,6 +351,7 @@ module Constr =
     let lconstr = Entry.make "lconstr"
     let ident = Entry.make "ident"
     let global = Entry.make "global"
+    let universe = Entry.make "universe"
     let universe_name = Entry.make "universe_name"
     let sort = Entry.make "sort"
     let sort_quality_or_set = Entry.make "sort_quality_or_set"

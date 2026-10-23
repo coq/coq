@@ -41,7 +41,7 @@ type hint_ast =
   | Unfold_nth of Evaluable.t (* Hint Unfold *)
   | Extern of Pattern.constr_pattern option * Gentactic.glob_generic_tactic (* Hint Extern *)
 
-val hint_as_term : hint -> UnivGen.sort_context_set option * constr
+val hint_as_term : hint -> UnivGen.sort_context_set * constr
 
 type 'a hints_path_atom_gen =
   | PathHints of 'a list

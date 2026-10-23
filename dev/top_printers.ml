@@ -297,11 +297,11 @@ let prquality q = UnivNames.pr_quality_with_global_universes q
 let ppqvarset l = pp (hov 1 (str "{" ++ prlist_with_sep spc prqvar (QVar.Set.elements l) ++ str "}"))
 let ppqset qs = pp (hov 1 (str "{" ++ prlist_with_sep spc prquality (Quality.Set.elements qs) ++ str "}"))
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
+let ppuniverse_level_instance l = pp (LevelInstance.pr sprinter l)
 let ppuniverse_instance l = pp (Instance.pr sprinter l)
 let ppuniverse_einstance l = ppuniverse_instance (EConstr.Unsafe.to_instance l)
 let ppuniverse_context l = pp (UVars.UContext.pr sprinter l)
 let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst Level.raw_pr l)
-let ppuniverse_opt_subst l = pp (UnivFlex.pr Level.raw_pr l)
 let ppqvar_subst l = pp (UVars.pr_quality_level_subst Quality.raw_printer l)
 let ppuniverse_level_subst l = pp (UVars.pr_universe_level_subst Level.raw_pr l)
 let pppoly_flags f = pp (PolyFlags.pr f)
@@ -315,6 +315,13 @@ let ppuniverse_context_future c =
 let ppuniverses u = pp (UGraph.pr_universes Level.raw_pr (UGraph.repr u))
 let ppqualities q = pp (QGraph.pr_qualities Quality.raw_printer q)
 let ppelim_constraints cstrs = pp (Sorts.ElimConstraints.pr qprinter cstrs)
+let ppvariance (v : UVars.Variance.t) = pp (UVars.Variance.pr v)
+let ppvariance_pair (v : UVars.VariancePair.t) = pp (UVars.VariancePair.pr v)
+let ppvariance_pos (v : UVars.VariancePos.t) = pp (UVars.VariancePos.pr v)
+let ppvariance_occurrence (v : UVars.VarianceOccurrence.t) = pp (UVars.VarianceOccurrence.pr v)
+let ppvariances (v : UVars.Variances.t) = pp (UVars.Variances.pr v)
+let ppinf_status (v : InferCumulativity.Inf.status) = pp (InferCumulativity.Inf.pr Level.raw_pr v)
+let ppinferred_variances (v : InferCumulativity.variances) = pp (InferCumulativity.pr_variances Level.raw_pr v)
 let ppnamedcontextval e =
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -428,9 +435,6 @@ let constr_display csr =
   and quality_display q =
     incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Sorts.Quality.raw_pr q ++ fnl ())
 
-  and level_display u =
-    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Level.raw_pr u ++ fnl ())
-
   and sort_display = function
     | SProp -> "SProp"
     | Set -> "Set"
@@ -448,7 +452,7 @@ let constr_display csr =
         (if not(i="") then (" "^i) else ""))
         qs ""
     in
-    Array.fold_right (fun x i -> level_display x; (string_of_int !cnt)^(if not(i="")
+    Array.fold_right (fun x i -> univ_display x; (string_of_int !cnt)^(if not(i="")
         then (" "^i) else "")) us (if qs = "" then "" else (qs^" | "))
 
   and name_display x = match x.binder_name with
@@ -592,7 +596,7 @@ let print_pure_constr csr =
   and universes_display u =
     let qs, us = Instance.to_array u in
     Array.iter (fun u -> print_space (); pp (Sorts.Quality.raw_pr u)) qs;
-    Array.iter (fun u -> print_space (); pp (Level.raw_pr u)) us
+    Array.iter (fun u -> print_space (); pp (Universe.raw_pr u)) us
 
   and sort_display = function
     | SProp -> print_string "SProp"

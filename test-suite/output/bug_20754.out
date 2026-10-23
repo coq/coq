@@ -5,4 +5,4 @@ prod : Type -> Type -> Type
 prod is template universe polymorphic
 Arguments prod (A B)%_type_scope
 Expands to: Inductive Corelib.Init.Datatypes.prod
-Declared in library Corelib.Init.Datatypes, line 255, characters 10-14
+Declared in library Corelib.Init.Datatypes, line 260, characters 10-14

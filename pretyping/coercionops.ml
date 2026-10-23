@@ -349,8 +349,8 @@ let different_class_params env ci =
   if (class_info ci).cl_param > 0 then true
   else
     match ci with
-    | CL_IND i -> Environ.is_polymorphic env (GlobRef.IndRef i)
-    | CL_CONST c -> Environ.is_polymorphic env (GlobRef.ConstRef c)
+    | CL_IND i -> not (UVars.AbstractContext.is_empty @@ Environ.universes_of_global env (GlobRef.IndRef i))
+    | CL_CONST c -> not (UVars.AbstractContext.is_empty @@ Environ.universes_of_global env (GlobRef.ConstRef c))
     | _ -> false
 
 let add_coercion_in_graph env sigma ?(update=false) ic =

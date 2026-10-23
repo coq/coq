@@ -23,7 +23,7 @@ eq_refl is template universe polymorphic
 Arguments eq_refl {B}%_type_scope {y}, [_] _
   (where some original arguments have been renamed)
 Expands to: Constructor Corelib.Init.Logic.eq_refl
-Declared in library Corelib.Init.Logic, line 380, characters 4-11
+Declared in library Corelib.Init.Logic, line 383, characters 4-11
 Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x.
 
 Arguments myEq B%_type_scope x _

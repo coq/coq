@@ -97,9 +97,6 @@ let () =
 
 (* Util *)
 let define ~poly ?loc name sigma c types =
-  let poly =
-    PolyFlags.of_univ_poly poly (* FIXME sortpoly and cumulative not supported *)
-  in
   let info = Declare.Info.make ~poly () in
   let cinfo = Declare.CInfo.make ~name ~typ:types () in
   let fth_ref = Declare.declare_definition ~info:info ~cinfo:cinfo ~opaque:false ~body:c sigma in
@@ -108,7 +105,8 @@ let define ~poly ?loc name sigma c types =
 (* Boolean equality *)
 
 let declare_beq_scheme_gen ?locmap names kn =
-  ignore (define_mutual_scheme ?locmap beq_scheme_kind names kn)
+  let poly = UnivOptions.poly_for_ind (Global.lookup_mind kn) in
+  ignore (define_mutual_scheme ?locmap ~poly beq_scheme_kind names kn)
 
 let debug = CDebug.create ~name:"indschemes" ()
 
@@ -213,8 +211,9 @@ let declare_one_case_analysis_scheme ?loc ind =
       Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
   in
   let kelim = Inductiveops.elim_sort (mib,mip) in
+  let poly = UnivOptions.poly_for_ind mib in
   if Inductive.raw_eliminates_to (UnivGen.QualityOrSet.quality kelim) Sorts.Quality.qtype then
-    define_individual_scheme ?loc dep id ind
+    define_individual_scheme ?loc ~poly dep id ind
 
 (* Induction/recursion schemes *)
 
@@ -255,7 +254,7 @@ let declare_one_induction_scheme ?loc ind =
           (* the auto generated eliminator may be called "rect" instead of eg "rect_dep" *)
           Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
       in
-      define_individual_scheme ?loc kind id ind)
+      define_individual_scheme ?loc ~poly:(UnivOptions.poly_for_ind mib) kind id ind)
          elims
 
 let declare_induction_schemes ?(locmap=Locmap.default None) kn =
@@ -272,7 +271,8 @@ let declare_induction_schemes ?(locmap=Locmap.default None) kn =
 let declare_eq_decidability_gen ?locmap names kn =
   let mib = Global.lookup_mind kn in
   if mib.mind_finite <> Declarations.CoFinite then
-    define_mutual_scheme ?locmap eq_dec_scheme_kind names kn
+    let poly = UnivOptions.poly_for_ind mib in
+    define_mutual_scheme ?locmap ~poly eq_dec_scheme_kind names kn
 
 let eq_dec_scheme_msg ind = (* TODO: mutual inductive case *)
   str "Decidable equality on " ++ quote (Printer.pr_inductive (Global.env()) ind)
@@ -293,19 +293,20 @@ let ignore_error f x =
 let declare_rewriting_schemes ?loc ind =
   if Hipattern.is_inductive_equality (Global.env ()) ind then begin
     (* Expect the equality to be symmetric *)
-    ignore_error (define_individual_scheme ?loc sym_scheme_kind None) ind;
-    define_individual_scheme ?loc rew_r2l_scheme_kind None ind;
-    define_individual_scheme ?loc rew_r2l_dep_scheme_kind None ind;
-    define_individual_scheme ?loc rew_r2l_forward_dep_scheme_kind None ind;
+    let poly = UnivOptions.poly_for_ind (Global.lookup_mind (fst ind)) in
+    ignore_error (define_individual_scheme ?loc ~poly sym_scheme_kind None) ind;
+    define_individual_scheme ?loc ~poly rew_r2l_scheme_kind None ind;
+    define_individual_scheme ?loc ~poly rew_r2l_dep_scheme_kind None ind;
+    define_individual_scheme ?loc ~poly rew_r2l_forward_dep_scheme_kind None ind;
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
-    ignore_error (define_individual_scheme rew_l2r_scheme_kind None) ind;
+    ignore_error (define_individual_scheme ~poly rew_l2r_scheme_kind None) ind;
     ignore_error
-      (define_individual_scheme ?loc sym_involutive_scheme_kind None) ind;
+      (define_individual_scheme ?loc ~poly sym_involutive_scheme_kind None) ind;
     ignore_error
-      (define_individual_scheme ?loc rew_l2r_dep_scheme_kind None) ind;
+      (define_individual_scheme ?loc ~poly rew_l2r_dep_scheme_kind None) ind;
     ignore_error
-      (define_individual_scheme ?loc rew_l2r_forward_dep_scheme_kind None) ind
+      (define_individual_scheme ?loc ~poly rew_l2r_forward_dep_scheme_kind None) ind
   end
 
 let warn_cannot_build_congruence =
@@ -317,7 +318,9 @@ let declare_congr_scheme ?loc ind =
   let env = Global.env () in
   if Hipattern.is_inductive_equality env ind then begin
     match Rocqlib.lib_ref_opt "core.eq.type" with
-    | Some _ -> define_individual_scheme ?loc congr_scheme_kind None ind
+    | Some _ ->
+      let poly = UnivOptions.poly_for_ind (Global.lookup_mind (fst ind)) in
+      define_individual_scheme ?loc ~poly congr_scheme_kind None ind
     | None -> warn_cannot_build_congruence ()
   end
 
@@ -400,7 +403,7 @@ let do_mutual_induction_scheme ~register ?(force_mutual=false) env ?(isrec=true)
     (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
        (force_mutual is about the generated schemes) *)
     let _,_,ind,_ = List.hd l in
-    Global.is_polymorphic (Names.GlobRef.IndRef ind)
+    UnivOptions.poly_for_ind (Global.lookup_mind (fst ind))
   in
   let is_mutual = isrec && List.length listdecl > 1 in
   let declare decl ({CAst.v=fi; loc},dep,ind, sort) =
@@ -537,7 +540,14 @@ let do_combined_scheme name csts =
      polymorphism of the inductive block). In that case if they want
      some other polymorphism they can also manually define the
      combined scheme. *)
-  let poly = Global.is_polymorphic (Names.GlobRef.ConstRef (List.hd csts)) in
+  let gr = Names.GlobRef.ConstRef (List.hd csts) in
+  let poly = Global.is_polymorphic gr in
+  let cumulative = Global.is_cumulative gr in
+  let poly =
+    PolyFlags.make ~univ_poly:poly
+      ~collapse_sort_variables:true (* FIXME sort_poly not supported *)
+      ~cumulative
+  in
   ignore (define ~poly ?loc:name.loc name.v sigma body (Some typ));
   Declare.fixpoint_message None [name.v]
 
@@ -567,10 +577,11 @@ let do_scheme_all_theorem kn mib kn_nested focus strpos sAllThm keyAllThm =
   let sigma, (_, u) = Evd.fresh_inductive_instance ~sort_rigid:true ~rigid:UState.univ_rigid env sigma (kn,focus) in
   let (sigma, thm) = AllScheme.generate_all_theorem env sigma kn kn_nested focus u mib strpos in
   (* universe *)
+  let sigma = UnivVariances.register_universe_variances_of env sigma thm in
   let uctx = Evd.ustate sigma in
   let uctx = UState.collapse_sort_variables ~only_above_prop:true uctx in
   let uctx = UState.normalize_variables uctx in
-  let uctx = UState.minimize uctx in
+  let uctx = UState.minimize ~partial:false uctx in
   let sigma = Evd.set_ustate sigma uctx in
   let thm = UState.nf_universes uctx (EConstr.to_constr sigma thm) in
   let uctx = UState.restrict uctx (Vars.universes_of_constr thm) in

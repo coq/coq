@@ -108,7 +108,7 @@ let new_evar env sigma ?src ?rrpat ?(naming = Namegen.IntroAnonymous) ?relevance
   (sigma, mkEvar (evk, instance))
 
 let new_type_evar env sigma ~src =
-  let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
+  let sigma, s = Evd.new_sort_variable Evd.univ_flexible sigma in
   new_evar env sigma ~src (EConstr.mkSort s) ~relevance:ERelevance.relevant
 
 let hide_variable env id =

@@ -318,6 +318,9 @@ sig
   (** Return the number of {e local declarations} in a given named-context. *)
   val length : ('c, 't, 'r) pt -> int
 
+  (** Return the number of {e local assumptions} in a given named-context. *)
+  val nhyps : ('c, 't, 'r) pt -> int
+
   (** Return a declaration designated by an identifier of the variable bound in that declaration.
       @raise Not_found if the designated identifier is not bound in a given named-context. *)
   val lookup : Id.t -> ('c, 't, 'r) pt -> ('c, 't, 'r) Declaration.pt

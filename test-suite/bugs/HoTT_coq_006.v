@@ -39,7 +39,6 @@ Module SecondIssue.
   Set Implicit Arguments.
 
   Set Printing Universes.
-
   Polymorphic Record Cat (obj : Type) :=
     {
       Object :> _ := obj;

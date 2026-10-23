@@ -5,7 +5,6 @@
     from commit 391bb5e196901a3a9426295125b8d1c700ab6992
  *)
 
-
 Require Export Corelib.Init.Notations.
 Require Export Corelib.Init.Ltac.
 Notation "'∏'  x .. y , P" := (forall x, .. (forall y, P) ..)
@@ -113,7 +112,7 @@ Proof.
 Defined.
 
 Definition transportf@{i} {X : Type@{i}} (P : X -> Type@{i}) {x x' : X}
-           (e : x = x') : P x -> P x' := pr1 (constr1 P e).
+           (e : @paths@{i} _ x x') : P x -> P x' := pr1 (constr1 P e).
 
 Lemma two_arg_paths_f@{i} {A : Type@{i}} {B : A -> Type@{i}} {C:Type@{i}} {f : ∏ a, B a -> C} {a1 b1 a2 b2}
       (p : a1 = a2) (q : transportf B p b1 = b2) : f a1 b1 = f a2 b2.
@@ -218,7 +217,7 @@ Section isweqcontrtounit.
   Proof.
     intros. intro y. induction y.
     induction isc as [c h].
-    split with (hfiberpair@{i i i} _ c (idpath tt)).
+    split with (hfiberpair@{i i} _ c (idpath tt)).
     intros ha.
     induction ha as [x e].
     simple refine (two_arg_paths_f (h x) _).

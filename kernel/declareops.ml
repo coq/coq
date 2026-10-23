@@ -32,6 +32,7 @@ let safe_flags oracle = {
   share_reduction = true;
   unfold_dep_heuristic = false;
   unfold_height_heuristic = false;
+  cumulativity_zeta = false;
   enable_VM = Coq_config.bytecode_compiler;
   enable_native_compiler = configure_enabled_native;
   indices_matter = true;
@@ -45,27 +46,35 @@ let safe_flags oracle = {
 let hcons_template_universe ar =
   { template_param_arguments = List.Smart.map (Option.Smart.map (noh Sorts.hcons)) ar.template_param_arguments;
     template_concl = noh Sorts.hcons ar.template_concl;
-    template_context = noh UVars.AbstractContext.hcons ar.template_context;
-    template_defaults = noh UVars.Instance.hcons ar.template_defaults;
+    template_context = noh UVars.hcons_abstract_universe_context ar.template_context;
+    template_defaults = noh UVars.LevelInstance.hcons ar.template_defaults;
   }
 
-let universes_context = function
-  | Monomorphic -> UVars.AbstractContext.empty
-  | Polymorphic ctx -> ctx
+let empty_universes = (UVars.AbstractContext.empty, None)
+let is_empty_universes (ctx, variance as univs) =
+  univs == empty_universes || (UVars.AbstractContext.is_empty ctx && variance == None)
+let universes_context (ctx, _) = ctx
 
 let abstract_universes = function
   | Entries.Monomorphic_entry ->
-    Monomorphic
-  | Entries.Polymorphic_entry auctx ->
-    Polymorphic auctx
+    empty_universes
+  | Entries.Polymorphic_entry (auctx, variances) ->
+    let variances = match variances with None | Some Infer_variances -> None | Some (Check_variances v) -> Some v in
+    (auctx, variances)
+
+let has_cumulative_variance = function
+  | Some v -> UVars.Variances.cumulative v
+  | None -> false
 
 (** {6 Constants } *)
 
-let constant_is_polymorphic cb =
-  match cb.const_universes with
-  | Monomorphic -> false
-  | Polymorphic _ -> true
+let constant_is_polymorphic cb = 
+  let (univs, _) = cb.const_universes in 
+  not (UVars.AbstractContext.is_empty @@ univs)
 
+let constant_is_cumulative cb =
+  let  (_, variances) = cb.const_universes in
+  has_cumulative_variance variances
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ | Primitive _ | Symbol _ -> false
@@ -73,6 +82,8 @@ let constant_has_body cb = match cb.const_body with
 
 let constant_polymorphic_context cb =
   universes_context cb.const_universes
+
+let universes_variances (_, variance) = variance
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
@@ -98,7 +109,7 @@ let subst_const_def subst def = match def with
 
 let subst_const_body subst cb =
   (* we're outside sections *)
-  assert (List.is_empty cb.const_hyps && UVars.Instance.is_empty cb.const_univ_hyps);
+  assert (List.is_empty cb.const_hyps && UVars.LevelInstance.is_empty cb.const_univ_hyps);
   if is_empty_subst subst then cb
   else
     let body' = subst_const_def subst cb.const_body in
@@ -107,11 +118,13 @@ let subst_const_body subst cb =
     then cb
     else
       { const_hyps = [];
-        const_univ_hyps = UVars.Instance.empty;
+        const_univ_ctx = [];
+        const_univ_hyps = UVars.LevelInstance.empty;
         const_body = body';
         const_type = type';
         const_body_code = Vmemitcodes.subst_body_code subst cb.const_body_code;
         const_universes = cb.const_universes;
+        const_sec_variance = cb.const_sec_variance;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
         const_typing_flags = cb.const_typing_flags;
@@ -137,11 +150,9 @@ let hcons_const_def ?(hbody=noh Constr.hcons) = function
     Def (hbody l_constr)
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
-let hcons_universes cbu =
-  match cbu with
-  | Monomorphic -> Monomorphic
-  | Polymorphic ctx ->
-    Polymorphic (noh UVars.AbstractContext.hcons ctx)
+let hcons_universes (ctx, variances) =
+  (* FIXME hashcons variances? *)
+  (noh UVars.hcons_abstract_universe_context ctx, variances)
 
 let hcons_const_body ?hbody cb =
   { cb with
@@ -246,18 +257,18 @@ let subst_mind_packet subst mbp =
 
 let subst_mind_body subst mib =
   (* we're outside sections *)
-  assert (List.is_empty mib.mind_hyps && UVars.Instance.is_empty mib.mind_univ_hyps);
+  assert (List.is_empty mib.mind_hyps && List.is_empty mib.mind_univ_ctx
+    && UVars.LevelInstance.is_empty mib.mind_univ_hyps);
   { mind_finite = mib.mind_finite ;
     mind_hyps = [];
-    mind_univ_hyps = UVars.Instance.empty;
+    mind_univ_ctx = [];
+    mind_univ_hyps = UVars.LevelInstance.empty;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
       Context.Rel.map (subst_mps subst) mib.mind_params_ctxt;
     mind_packets = Array.Smart.map (subst_mind_packet subst) mib.mind_packets ;
     mind_universes = mib.mind_universes;
-    mind_template = mib.mind_template;
-    mind_variance = mib.mind_variance;
     mind_sec_variance = mib.mind_sec_variance;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;
@@ -266,15 +277,40 @@ let subst_mind_body subst mib =
 let mind_ntypes mib = Array.length mib.mind_packets
 
 let inductive_polymorphic_context mib =
-  universes_context mib.mind_universes
+  match mib.mind_universes with
+  | Template _ -> UVars.AbstractContext.empty
+  | Polymorphic (univs, _) -> univs
 
 let inductive_is_polymorphic mib =
   match mib.mind_universes with
-  | Monomorphic -> false
-  | Polymorphic _ctx -> true
+  | Template _ -> false
+  | Polymorphic (univs, _) -> not (UVars.AbstractContext.is_empty @@ univs)
+
+let inductive_is_template mib =
+  match mib.mind_universes with
+  | Template _ -> true
+  | Polymorphic _ -> false
+
+let inductive_universes mib =
+  match mib.mind_universes with
+  | Template _ -> empty_universes
+  | Polymorphic univs -> univs
 
 let inductive_is_cumulative mib =
-  Option.has_some mib.mind_variance
+  match mib.mind_universes with
+  | Template _ -> false
+  | Polymorphic univs -> has_cumulative_variance (universes_variances univs)
+
+let inductive_variances mib =
+  match mib.mind_universes with
+  | Template _ -> None
+  | Polymorphic univs -> universes_variances univs
+
+let inductive_template mib =
+  match mib.mind_universes with
+  | Template templ -> Some templ
+  | Polymorphic _ -> None
+
 
 let inductive_make_projection ind mib ~proj_arg =
   match mib.mind_packets.(snd ind).mind_record with
@@ -338,12 +374,16 @@ let hcons_mind_packet oib =
     mind_user_lc = user;
     mind_nf_lc = nf }
 
+let hcons_ind_universes univs =
+  match univs with
+  | Template templ -> Template (hcons_template_universe templ)
+  | Polymorphic poly -> Polymorphic (hcons_universes poly)
+
 let hcons_mind mib =
   { mib with
     mind_packets = Array.Smart.map hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
-    mind_template = Option.Smart.map hcons_template_universe mib.mind_template;
-    mind_universes = hcons_universes mib.mind_universes }
+    mind_universes = hcons_ind_universes mib.mind_universes }
 
 let subst_rewrite_rules subst ({ rewrules_rules } as rules) =
   let body' = List.Smart.map (fun (name, ({ rhs; _ } as rule) as orig) ->

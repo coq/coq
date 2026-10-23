@@ -86,8 +86,10 @@ let rec check_with_def : type a.
          any implementations of parameters and opaque terms,
          as long as they have the right type *)
       let (univs, typ), ctx' =
-        match cb.const_universes, wth.w_univs with
-        | Monomorphic, Monomorphic ->
+        let (uctx, _variances) = cb.const_universes and
+            (ctx, _variances') = wth.w_univs (* FIXME check variances *) in
+        match UVars.AbstractContext.is_empty uctx, UVars.AbstractContext.is_empty ctx with
+        | true, true ->
           let error_univ_mismatch env t1 t2 = function
             | Conversion.Univ err -> error (WithSignatureMismatch (IncompatibleUniverses { err; env; t1; t2 }))
             | Conversion.Qual err -> error (WithSignatureMismatch (IncompatibleQualities { err; env; t1; t2 }))
@@ -110,7 +112,7 @@ let rec check_with_def : type a.
           | Primitive _ -> error WithCannotConstrainPrimitive
           | Symbol _ -> error WithCannotConstrainSymbol
           end
-        | Polymorphic uctx, Polymorphic ctx ->
+        | false, false ->
           let () =
             if not (Subtyping.check_polymorphic_universes env uctx ctx) then
               error (WithSignatureMismatch (IncompatibleUnivConstraints { env; got = ctx; expect = uctx }))
@@ -139,8 +141,8 @@ let rec check_with_def : type a.
             | Symbol _ -> error WithCannotConstrainSymbol
           in
           (cb.const_universes, cb.const_type), cst
-        | Monomorphic, Polymorphic _ -> error (WithSignatureMismatch (PolymorphicStatusExpected true))
-        | Polymorphic _, Monomorphic -> error (WithSignatureMismatch (PolymorphicStatusExpected false))
+        | true, false -> error (WithSignatureMismatch (PolymorphicStatusExpected true))
+        | false, true -> error (WithSignatureMismatch (PolymorphicStatusExpected false))
       in
       (* Here we have two choices for the type of the constant: either pick the
          type T from module constant or the type U from the with Definition
@@ -250,7 +252,7 @@ type 'a vm_state = 'a * 'a vm_handler
 let check_with ustate vmstate env mp (sign,reso,cst,vm) = function
   | WithDef(idl, (c, ctx)) ->
     let struc = destr_nofunctor mp sign in
-    let univs = match ctx with None -> Monomorphic | Some uctx -> Polymorphic uctx in
+    let univs = (ctx, None) in (* FIXME no variance *)
     let vm, bcode = vmstate.vm_handler env univs c vm in
     let body = { w_def = c; w_univs = univs; w_bytecode = bcode } in
     let struc', cst = check_with_def (cst, ustate) env struc (idl, body) mp reso in
