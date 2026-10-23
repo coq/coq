@@ -137,13 +137,22 @@ type 'a term =
   | Constructor of cinfo (* constructor arity + nhyps *)
 
 let rec eq_constr_nounivs m n =
-  m == n || Constr.compare_head_gen_leq_with Constr.kind Constr.kind
-    (fun _ _ _ -> true) (fun _ _ -> true) eq_evars eq_constr_nounivs0 eq_constr_nounivs0 0 m n
+  m == n || Constr.compare_head_gen_leq_with eq_constr_cmp 0 m n
 
 and eq_evars (evk1, args1) (evk2, args2) =
   Evar.equal evk1 evk2 && SList.equal eq_constr_nounivs args1 args2
 
 and eq_constr_nounivs0 _ m n = eq_constr_nounivs m n
+
+and eq_constr_cmp = {
+  Constr.cmp_kind1 = Constr.kind;
+  cmp_kind2 = Constr.kind;
+  cmp_inst = (fun _ _ _ -> true);
+  cmp_sort = (fun _ _ -> true);
+  cmp_evar = eq_evars;
+  cmp_conv = eq_constr_nounivs0;
+  cmp_cumul = eq_constr_nounivs0;
+}
 
 (* terms with eagerly cached constr and hash *)
 module ATerm :

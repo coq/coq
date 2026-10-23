@@ -553,15 +553,18 @@ type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
 type 'univs instance_compare_fn = (GlobRef.t * int) option ->
   'univs -> 'univs -> bool
 
+type ('v, 'sort, 'univs, 'r) comparison = {
+  cmp_kind1 : 'v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term;
+  cmp_kind2 : 'v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term;
+  cmp_inst : 'univs instance_compare_fn;
+  cmp_sort : ('sort -> 'sort -> bool);
+  cmp_evar : ('v pexistential -> 'v pexistential -> bool);
+  cmp_conv : 'v constr_compare_fn;
+  cmp_cumul : 'v constr_compare_fn;
+}
+
 val compare_head_gen_leq_with :
-  ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term) ->
-  ('v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term) ->
-  'univs instance_compare_fn ->
-  ('sort -> 'sort -> bool) ->
-  ('v pexistential -> 'v pexistential -> bool) ->
-  'v constr_compare_fn ->
-  'v constr_compare_fn ->
-  'v constr_compare_fn
+  ('v, 'sort, 'univs, 'r) comparison -> 'v constr_compare_fn
 
 val eq_invert : ('a -> 'a -> bool)
   -> 'a pcase_invert -> 'a pcase_invert -> bool

@@ -898,8 +898,18 @@ let eq_invert eq iv1 iv2 =
 let eq_under_context eq (_nas1, p1) (_nas2, p2) =
   eq p1 p2
 
-let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq leq nargs t1 t2 =
-  match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
+type ('v, 'sort, 'univs, 'r) comparison = {
+  cmp_kind1 : 'v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term;
+  cmp_kind2 : 'v -> ('v, 'v, 'sort, 'univs, 'r) kind_of_term;
+  cmp_inst : 'univs instance_compare_fn;
+  cmp_sort : ('sort -> 'sort -> bool);
+  cmp_evar : ('v pexistential -> 'v pexistential -> bool);
+  cmp_conv : 'v constr_compare_fn;
+  cmp_cumul : 'v constr_compare_fn;
+}
+
+let[@inline] compare_head_gen_leq_with self nargs t1 t2 =
+  match kind_nocast_gen self.cmp_kind1 t1, kind_nocast_gen self.cmp_kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
@@ -907,54 +917,42 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
   | String s1, String s2 -> Pstring.equal s1 s2
-  | Sort s1, Sort s2 -> leq_sorts s1 s2
-  | Prod (_,t1,c1), Prod (_,t2,c2) -> eq 0 t1 t2 && leq 0 c1 c2
-  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq 0 t1 t2 && eq 0 c1 c2
-  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq 0 b1 b2 && eq 0 t1 t2 && leq nargs c1 c2
+  | Sort s1, Sort s2 -> self.cmp_sort s1 s2
+  | Prod (_,t1,c1), Prod (_,t2,c2) -> self.cmp_conv 0 t1 t2 && self.cmp_cumul 0 c1 c2
+  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> self.cmp_conv 0 t1 t2 && self.cmp_conv 0 c1 c2
+  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> self.cmp_conv 0 b1 b2 && self.cmp_conv 0 t1 t2 && self.cmp_cumul nargs c1 c2
   | App (c1, l1), App (c2, l2) ->
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
-    leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
+    self.cmp_cumul (nargs+len) c1 c2 && Array.equal_norefl (self.cmp_conv 0) l1 l2
   | Proj (p1,_,c1), Proj (p2,_,c2) ->
-    Projection.CanOrd.equal p1 p2 && eq 0 c1 c2
-  | Evar (e1,l1), Evar (e2,l2) -> eq_evars (e1, l1) (e2, l2)
+    Projection.CanOrd.equal p1 p2 && self.cmp_conv 0 c1 c2
+  | Evar (e1,l1), Evar (e2,l2) -> self.cmp_evar (e1, l1) (e2, l2)
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
-    Constant.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstRef c1, nargs)) u1 u2
-  | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.IndRef c1, nargs)) u1 u2
+    Constant.CanOrd.equal c1 c2 && self.cmp_inst (Some (GlobRef.ConstRef c1, nargs)) u1 u2
+  | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && self.cmp_inst (Some (GlobRef.IndRef c1, nargs)) u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
-    Construct.CanOrd.equal c1 c2 && leq_universes (Some (GlobRef.ConstructRef c1, nargs)) u1 u2
+    Construct.CanOrd.equal c1 c2 && self.cmp_inst (Some (GlobRef.ConstructRef c1, nargs)) u1 u2
   | Case (ci1,u1,pms1,(p1,_r1),iv1,c1,bl1), Case (ci2,u2,pms2,(p2,_r2),iv2,c2,bl2) ->
     (* Ignore _r1/_r2: implied by comparing p1/p2 *)
     (** FIXME: what are we doing with u1 = u2 ? *)
-    Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind && leq_universes (Some (GlobRef.IndRef ci1.ci_ind, 0)) u1 u2 &&
-    Array.equal (eq 0) pms1 pms2 && eq_under_context (eq 0) p1 p2 &&
-    eq_invert (eq 0) iv1 iv2 &&
-    eq 0 c1 c2 && Array.equal (eq_under_context (eq 0)) bl1 bl2
+    Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind && self.cmp_inst (Some (GlobRef.IndRef ci1.ci_ind, 0)) u1 u2 &&
+    Array.equal (self.cmp_conv 0) pms1 pms2 && eq_under_context (self.cmp_conv 0) p1 p2 &&
+    eq_invert (self.cmp_conv 0) iv1 iv2 &&
+    self.cmp_conv 0 c1 c2 && Array.equal (eq_under_context (self.cmp_conv 0)) bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
     Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
-    && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
+    && Array.equal_norefl (self.cmp_conv 0) tl1 tl2 && Array.equal_norefl (self.cmp_conv 0) bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-    Int.equal ln1 ln2 && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
+    Int.equal ln1 ln2 && Array.equal_norefl (self.cmp_conv 0) tl1 tl2 && Array.equal_norefl (self.cmp_conv 0) bl1 bl2
   | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
-    leq_universes None u1 u2 &&
-    Array.equal_norefl (eq 0) t1 t2 &&
-    eq 0 def1 def2 && eq 0 ty1 ty2
+    self.cmp_inst None u1 u2 &&
+    Array.equal_norefl (self.cmp_conv 0) t1 t2 &&
+    self.cmp_conv 0 def1 def2 && self.cmp_conv 0 ty1 ty2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
     | CoFix _ | Int _ | Float _ | String _ | Array _), _ -> false
-
-(* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to
-   compare the immediate subterms of [c1] of [c2] if needed, [u] to
-   compare universe instances and [s] to compare sorts; Cast's,
-   application associativity, binders name and Cases annotations are
-   not taken into account.
-
-   [compare_head_gen_with] is a variant taking kind-of-term functions,
-   to expose subterms of [c1] and [c2], as arguments. *)
-
-let compare_head_gen eq_universes eq_sorts eq_evars eq t1 t2 =
-  compare_head_gen_leq_with kind kind eq_universes eq_sorts eq_evars eq eq t1 t2
 
 (*******************************)
 (*  alpha conversion functions *)
@@ -966,7 +964,20 @@ let eq_existential eq (evk1, args1) (evk2, args2) =
   Evar.equal evk1 evk2 && SList.equal eq args1 args2
 
 let rec eq_constr nargs m n =
-  (m == n) || compare_head_gen (fun _ -> Instance.equal) Sorts.equal (eq_existential (eq_constr 0)) eq_constr nargs m n
+  (m == n) || compare_head_gen_leq_with eq_constr_cmp nargs m n
+
+and eq_evar ev1 ev2 =
+  eq_existential (fun m n -> eq_constr 0 m n) ev1 ev2
+
+and eq_constr_cmp = {
+  cmp_kind1 = kind;
+  cmp_kind2 = kind;
+  cmp_inst = (fun _ -> Instance.equal);
+  cmp_sort = Sorts.equal;
+  cmp_evar = eq_evar;
+  cmp_conv = eq_constr;
+  cmp_cumul = eq_constr;
+}
 
 let equal n m = eq_constr 0 m n (* to avoid tracing a recursive fun *)
 
@@ -976,8 +987,20 @@ let eq_constr_univs univs m n =
     let eq_universes _ = UGraph.check_eq_instances Sorts.Quality.equal univs in
     let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq_sort Sorts.Quality.equal univs s1 s2 in
     let rec eq_constr' nargs m n =
-      m == n ||	compare_head_gen eq_universes eq_sorts (eq_existential (eq_constr' 0)) eq_constr' nargs m n
-    in compare_head_gen eq_universes eq_sorts (eq_existential (eq_constr' 0)) eq_constr' 0 m n
+      m == n || compare_head_gen_leq_with eq_constr'_cmp nargs m n
+    and eq_existential' ev1 ev2 =
+      eq_existential (fun m n -> eq_constr' 0 m n) ev1 ev2
+    and eq_constr'_cmp = {
+      cmp_kind1 = kind;
+      cmp_kind2 = kind;
+      cmp_inst = eq_universes;
+      cmp_sort = eq_sorts;
+      cmp_evar = eq_existential';
+      cmp_conv = eq_constr';
+      cmp_cumul = eq_constr';
+    }
+    in
+    compare_head_gen_leq_with eq_constr'_cmp 0 m n
 
 let leq_constr_univs univs m n =
   if m == n then true
@@ -988,11 +1011,34 @@ let leq_constr_univs univs m n =
     let leq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_leq_sort Sorts.Quality.equal univs s1 s2 in
     let rec eq_constr' nargs m n =
-      m == n || compare_head_gen eq_universes eq_sorts (eq_existential (eq_constr' 0)) eq_constr' nargs m n
+      m == n || compare_head_gen_leq_with eq_constr'_cmp nargs m n
+    and eq_existential' ev1 ev2 =
+      eq_existential (fun m n -> eq_constr' 0 m n) ev1 ev2
+    and eq_constr'_cmp = {
+      cmp_kind1 = kind;
+      cmp_kind2 = kind;
+      cmp_inst = eq_universes;
+      cmp_sort = eq_sorts;
+      cmp_evar = eq_existential';
+      cmp_conv = eq_constr';
+      cmp_cumul = eq_constr';
+    }
     in
     let rec compare_leq nargs m n =
-      compare_head_gen_leq_with kind kind eq_universes leq_sorts (eq_existential (eq_constr' 0)) eq_constr' leq_constr' nargs m n
-    and leq_constr' nargs m n = m == n || compare_leq nargs m n in
+      compare_head_gen_leq_with compare_leq_cmp nargs m n
+    and leq_constr' nargs m n = m == n || compare_leq nargs m n
+    and eq_existential' ev1 ev2 =
+      eq_existential (fun m n -> eq_constr' 0 m n) ev1 ev2
+    and compare_leq_cmp = {
+      cmp_kind1 = kind;
+      cmp_kind2 = kind;
+      cmp_inst = eq_universes;
+      cmp_sort = leq_sorts;
+      cmp_evar = eq_existential';
+      cmp_conv = eq_constr';
+      cmp_cumul = leq_constr';
+    }
+    in
     compare_leq 0 m n
 
 (*******************)

@@ -755,8 +755,8 @@ let fold_with_binders sigma g f e acc c =
     List.fold_left (fun acc c -> f e acc c) acc args
   | _ -> Constr.fold_constr_with_binders g f e acc c
 
-let compare_gen k eq_inst eq_sort eq_evars eq_constr nargs c1 c2 =
-  (c1 == c2) || Constr.compare_head_gen_leq_with k k eq_inst eq_sort eq_evars eq_constr eq_constr nargs c1 c2
+let[@inline] compare_gen cmp nargs c1 c2 =
+  (c1 == c2) || Constr.compare_head_gen_leq_with cmp nargs c1 c2
 
 let eq_existential sigma eq (evk1, args1) (evk2, args2) =
   if Evar.equal evk1 evk2 then
@@ -769,27 +769,54 @@ let eq_constr sigma c1 c2 =
   let kind c = kind sigma c in
   let eq_inst _ i1 i2 = EInstance.equal sigma i1 i2 in
   let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
-  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
   let rec eq_constr nargs c1 c2 =
-    compare_gen kind eq_inst eq_sorts (eq_existential eq_constr) eq_constr nargs c1 c2
-  in
+    compare_gen cmp nargs c1 c2
+  and eq_evar e1 e2 =
+    eq_existential sigma (fun c1 c2 -> eq_constr 0 c1 c2) e1 e2
+  and cmp = {
+    Constr.cmp_kind1 = kind;
+    cmp_kind2 = kind;
+    cmp_inst = eq_inst;
+    cmp_sort = eq_sorts;
+    cmp_evar = eq_evar;
+    cmp_conv = eq_constr;
+    cmp_cumul = eq_constr;
+  } in
   eq_constr 0 c1 c2
 
 let eq_constr_nounivs sigma c1 c2 =
   let kind c = kind sigma c in
-  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
   let rec eq_constr nargs c1 c2 =
-    compare_gen kind (fun _ _ _ -> true) (fun _ _ -> true) (eq_existential eq_constr) eq_constr nargs c1 c2
-  in
+    compare_gen cmp nargs c1 c2
+  and eq_evar e1 e2 =
+    eq_existential sigma (fun c1 c2 -> eq_constr 0 c1 c2) e1 e2
+  and cmp = {
+    Constr.cmp_kind1 = kind;
+    cmp_kind2 = kind;
+    cmp_inst = (fun _ _ _ -> true);
+    cmp_sort = (fun _ _ -> true);
+    cmp_evar = eq_evar;
+    cmp_conv = eq_constr;
+    cmp_cumul = eq_constr;
+  } in
   eq_constr 0 c1 c2
 
 let compare_constr sigma cmp c1 c2 =
   let kind c = kind sigma c in
   let eq_inst _ i1 i2 = EInstance.equal sigma i1 i2 in
   let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
-  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
+  let eq_evar e1 e2 = eq_existential sigma cmp e1 e2 in
   let cmp nargs c1 c2 = cmp c1 c2 in
-  compare_gen kind eq_inst eq_sorts (eq_existential cmp) cmp 0 c1 c2
+  let sub = {
+    Constr.cmp_kind1 = kind;
+    cmp_kind2 = kind;
+    cmp_inst = eq_inst;
+    cmp_sort = eq_sorts;
+    cmp_evar = eq_evar;
+    cmp_conv = cmp;
+    cmp_cumul = cmp;
+  } in
+  compare_gen sub 0 c1 c2
 
 let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
@@ -865,16 +892,47 @@ let test_constr_universes env sigma leq ?(nargs=0) m n =
          true)
     in
     let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
-    let rec eq_constr' nargs m n = compare_gen kind eq_universes eq_sorts (eq_existential eq_constr') eq_constr' nargs m n in
+    let rec eq_constr' nargs m n = compare_gen cmp nargs m n
+    and eq_evar e1 e2 =
+      eq_existential eq_constr' e1 e2
+    and cmp = {
+      Constr.cmp_kind1 = kind;
+      cmp_kind2 = kind;
+      cmp_inst = eq_universes;
+      cmp_sort = eq_sorts;
+      cmp_evar = eq_evar;
+      cmp_conv = eq_constr';
+      cmp_cumul = eq_constr';
+    } in
     let res =
       if leq then
         let rec compare_leq nargs m n =
-          Constr.compare_head_gen_leq_with kind kind leq_universes leq_sorts (eq_existential eq_constr')
-            eq_constr' leq_constr' nargs m n
-        and leq_constr' nargs m n = m == n || compare_leq nargs m n in
+          Constr.compare_head_gen_leq_with cmp nargs m n
+        and leq_constr' nargs m n = m == n || compare_leq nargs m n
+        and eq_evar e1 e2 =
+          eq_existential eq_constr' e1 e2
+        and cmp = {
+          Constr.cmp_kind1 = kind;
+          cmp_kind2 = kind;
+          cmp_inst = leq_universes;
+          cmp_sort = leq_sorts;
+          cmp_evar = eq_evar;
+          cmp_conv = eq_constr';
+          cmp_cumul = leq_constr';
+        }
+        in
         compare_leq nargs m n
       else
-        Constr.compare_head_gen_leq_with kind kind eq_universes eq_sorts (eq_existential eq_constr') eq_constr' eq_constr' nargs m n
+        let cmp = {
+          Constr.cmp_kind1 = kind;
+          Constr.cmp_kind2 = kind;
+          cmp_inst = eq_universes;
+          cmp_sort = eq_sorts;
+          cmp_evar = eq_evar;
+          cmp_conv = eq_constr';
+          cmp_cumul = eq_constr';
+        } in
+        Constr.compare_head_gen_leq_with cmp nargs m n
     in
     if res then Some !cstrs else None
 
@@ -883,7 +941,7 @@ let eq_constr_universes env sigma ?nargs m n =
 let leq_constr_universes env sigma ?nargs m n =
   test_constr_universes env sigma true ?nargs m n
 
-let compare_head_gen_proj env sigma equ eqs eqev eqc' nargs m n =
+let compare_head_gen_proj cmp env sigma nargs m n =
   let kind c = kind sigma c in
   match kind m, kind n with
   | Proj (p, _, c), App (f, args)
@@ -892,15 +950,16 @@ let compare_head_gen_proj env sigma equ eqs eqev eqc' nargs m n =
       | Const (p', u) when Environ.QConstant.equal env (Environ.projection_repr_constant env (Projection.repr p)) p' ->
           let npars = Projection.npars p in
           if Array.length args == npars + 1 then
-            eqc' 0 c args.(npars)
+            cmp.cmp_conv 0 c args.(npars)
           else false
       | _ -> false)
-  | _ -> Constr.compare_head_gen_leq_with kind kind equ eqs eqev eqc' eqc' nargs m n
+  | _ -> Constr.compare_head_gen_leq_with cmp nargs m n
 
 let eq_constr_universes_proj env sigma m n =
   let open UnivProblem in
   if m == n then Some Set.empty
   else
+    let kind c = kind sigma c in
     let cstrs = ref Set.empty in
     let eq_universes ref l l' = eq_universes env sigma cstrs Conversion.CONV ref l l' in
     let eq_sorts s1 s2 =
@@ -912,10 +971,19 @@ let eq_constr_universes_proj env sigma m n =
            (UEq (s1, s2)) !cstrs;
          true)
     in
-    let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
     let rec eq_constr' nargs m n =
-      m == n || compare_head_gen_proj env sigma eq_universes eq_sorts (eq_existential eq_constr') eq_constr' nargs m n
-    in
+      m == n || compare_head_gen_proj cmp env sigma nargs m n
+    and eq_evar e1 e2 =
+      eq_existential sigma (fun c1 c2 -> eq_constr' 0 c1 c2) e1 e2
+    and cmp = {
+      Constr.cmp_kind1 = kind;
+      cmp_kind2 = kind;
+      cmp_inst = eq_universes;
+      cmp_sort = eq_sorts;
+      cmp_evar = eq_evar;
+      cmp_conv = eq_constr';
+      cmp_cumul = eq_constr';
+    } in
     let res = eq_constr' 0 m n in
     if res then Some !cstrs else None
 
