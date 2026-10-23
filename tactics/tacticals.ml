@@ -338,7 +338,7 @@ let rec tclDO n t =
   else if n = 1 then t
   else
     (* Thunk to avoid stack overflow with large n *)
-    tclTHEN t (tclUNIT () >>= fun () -> (tclDO (n-1) t))
+    tclTHEN t (tclUNIT () >>= fun () -> tclCHECKINTERRUPT <*> (tclDO (n-1) t))
 
 let rec tclREPEAT0 t =
   tclINDEPENDENT begin
@@ -350,7 +350,7 @@ let tclREPEAT t =
   tclREPEAT0 (tclPROGRESS t)
 let rec tclREPEAT_MAIN0 t =
   Proofview.tclIFCATCH t
-    (fun () -> tclTRYFOCUS 1 1 (tclREPEAT_MAIN0 t))
+    (fun () -> tclCHECKINTERRUPT <*> tclTRYFOCUS 1 1 (tclREPEAT_MAIN0 t))
     (fun e -> catch_failerror e <*> tclUNIT ())
 let tclREPEAT_MAIN t =
   tclREPEAT_MAIN0 (tclPROGRESS t)

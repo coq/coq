@@ -89,7 +89,7 @@ Ltac2 Notation t(thunk(self)) ">" "[" l(dispatch) "]" : 4 := dispatch0 t l.
 Ltac2 do0 n t :=
   let rec aux n t := match Int.equal n 0 with
   | true => ()
-  | false => t (); aux (Int.sub n 1) t
+  | false => t (); Control.check_interrupt (); aux (Int.sub n 1) t
   end in
   aux (n ()) t.
 
