@@ -82,7 +82,9 @@ Section Well_founded.
   Variable F : forall x:A, (forall y:A, R y x -> P y) -> P x.
 
   Fixpoint Fix_F (x:A) (a:Acc x) : P x :=
-    F (fun (y:A) (h:R y x) => Fix_F (Acc_inv a h)).
+    match a with
+    | Acc_intro h => F (fun (y:A) (p:R y x) => Fix_F (h y p))
+    end.
 
   Scheme Acc_inv_dep := Induction for Acc Sort Prop.
 
@@ -155,9 +157,11 @@ Section Well_founded_2.
         (forall (y:A) (y':B), R (y, y') (x, x') -> P y y') -> P x x'.
 
   Fixpoint Fix_F_2 (x:A) (x':B) (a:Acc R (x, x')) : P x x' :=
-    F
-      (fun (y:A) (y':B) (h:R (y, y') (x, x')) =>
-         Fix_F_2 (x:=y) (x':=y') (Acc_inv a (y,y') h)).
+    match a with
+    | Acc_intro _ h =>
+      F (fun (y:A) (y':B) (p:R (y, y') (x, x')) =>
+         Fix_F_2 (x:=y) (x':=y') (h (y,y') p))
+    end.
 
   End FixPoint_2.
 
