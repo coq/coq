@@ -53,6 +53,7 @@ let spawn_args (opts:Coqargs.t) =
      Flags.output_directory
      Flags.test_mode
      native output dir, native includes
+     Opaques.skip_qed_typecheck
 
      Coqargs whose effect is used before the summary is installed and matter for workers:
 
@@ -67,6 +68,7 @@ let spawn_args (opts:Coqargs.t) =
     | Some dir -> ["-output-directory";dir]
   in
   let test_mode = if opts.config.test_mode then ["-test-mode"] else [] in
+  let skip_qed_typecheck = if opts.config.skip_qed_typecheck then ["-skip-qed-typecheck"] else [] in
   let native_output = ["-native-output-dir"; opts.config.native_output_dir] in
   let native_include ni = ["-nI";ni] in
   let native_includes = CList.concat_map native_include opts.config.native_include_dirs in
@@ -76,6 +78,7 @@ let spawn_args (opts:Coqargs.t) =
   List.concat [
     output_dir;
     test_mode;
+    skip_qed_typecheck;
     native_output;
     native_includes;
     ml_includes;

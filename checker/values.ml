@@ -642,6 +642,6 @@ let v_lib =
 let v_delayed_universes =
   v_sum_c ("delayed_universes", 0, [| [| v_unit |]; [| v_univ_context_set |] |])
 
-let v_opaquetable = v_array (v_opt (v_pair v_constr v_delayed_universes))
+let v_opaquetable = v_array (v_opt (v_pair (v_pair v_constr v_delayed_universes) v_bool))
 
 let v_vmlib = v_tuple "vmlibrary" [|v_dp; v_array v_vm_to_patch|]

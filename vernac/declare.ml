@@ -693,10 +693,12 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
     | None -> ()
     | Some (body, feedback_id) ->
       let open Declarations in
-      match (Global.lookup_constant kn).const_body with
+      let cb = Global.lookup_constant kn in
+      match cb.const_body with
       | OpaqueDef o ->
         let (_, _, _, i) = Opaqueproof.repr o in
-        Opaques.declare_defined_opaque ?feedback_id i body
+        let poly = Declareops.constant_is_polymorphic cb in
+        Opaques.declare_defined_opaque ?feedback_id ~poly i body
       | Def _ | Undef _ | Primitive _ | Symbol _ -> assert false
   in
   let () = check_exists name in

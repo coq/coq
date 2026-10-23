@@ -218,13 +218,26 @@ let access_opaque_table o =
   in
   match ans with
   | None -> None
-  | Some (c, ctx) ->
+  | Some ((c, ctx), _) ->
     let (c, ctx) = Discharge.cook_opaque_proofterm ci (c, ctx) in
     let c = Mod_subst.subst_mps_list sub c in
     Some (c, ctx)
 
+let access_opaque_unchecked o =
+  let (_, _, dp, i) = Opaqueproof.repr o in
+  let ans =
+    if DirPath.equal dp (Global.current_dirpath ()) then
+      Opaques.get_current_opaque i
+    else
+      access_table "opaque proofs" opaque_tables dp i
+  in
+  match ans with
+  | None -> false
+  | Some (_, unchecked) -> unchecked
+
 let indirect_accessor = {
   Global.access_proof = access_opaque_table;
+  Global.access_unchecked = access_opaque_unchecked;
 }
 
 (************************************************************************)

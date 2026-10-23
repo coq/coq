@@ -466,6 +466,10 @@ Requests to the environment
       The body of :n:`@qualid` could not be read, so the assumptions it
       relies on are not part of the reported ones.
 
+   An opaque constant whose proof was not typechecked by the kernel, because
+   its library was compiled with ``-skip-qed-typecheck``, is reported under
+   "Axioms" as :n:`@qualid has an opaque proof not checked by the kernel.`
+
 .. flag:: Printing All Assumptions
 
    Turn this :term:`flag` on to make :cmd:`Print Assumptions` report

@@ -520,6 +520,21 @@ and ``rocq repl``, unless stated otherwise:
 :-type-in-type: Collapse the universe hierarchy of Rocq.
 
   .. warning:: This makes the logic inconsistent.
+:-skip-qed-typecheck: Do not let the kernel typecheck the proof of an opaque
+  constant (one closed with :cmd:`Qed`) when it is declared. The proof term,
+  its universe constraints and its section variables are computed and stored
+  exactly as without this option, so libraries that depend on this one see
+  the same library; only the table of opaque proofs records which proofs were
+  not typechecked. This is meant for builds
+  whose :file:`.vo` files are all checked afterwards by ``rocqchk``, which
+  typechecks every opaque proof regardless of this option.
+  :cmd:`Print Assumptions` reports each constant whose proof was not
+  typechecked. Subproofs declared by :tacn:`abstract` are still typechecked
+  when the tactic runs.
+
+  .. warning:: A library compiled with this option can contain an ill-typed
+     proof, for instance one built with ``exact_no_check``, until ``rocqchk``
+     has checked it.
 :-mangle-names *ident*: *Experimental.* Do not depend on this option. Replace
   Rocq's auto-generated name scheme with names of the form *ident0*, *ident1*,
   etc. Within Rocq, the :flag:`Mangle Names` flag turns this behavior on,
