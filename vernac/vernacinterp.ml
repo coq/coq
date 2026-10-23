@@ -24,7 +24,6 @@ let with_interp_state ~unfreeze_transient st =
   let with_local_state synterp_st f =
     unfreeze_transient synterp_st;
     let v = f () in
-    Vernacstate.Interp.invalidate_cache ();
     Vernacstate.unfreeze_full_state st;
     (), v
   in
@@ -160,7 +159,6 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
   with exn ->
     let exn = Exninfo.capture exn in
     let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
-    Vernacstate.Interp.invalidate_cache ();
     Exninfo.iraise exn
 
 (* Regular interp *)

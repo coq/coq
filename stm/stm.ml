@@ -843,10 +843,6 @@ module State : sig
 
   val assign : Stateid.t -> partial_state -> unit
 
-  (* Handlers for initial state, prior to document creation. *)
-  val register_root_state : unit -> unit
-  val restore_root_state : unit -> unit
-
   val purify : ('a -> 'b) -> 'a -> 'b
 
 end = struct (* {{{ *)
@@ -984,26 +980,15 @@ end = struct (* {{{ *)
       !Hooks.unreachable_state ~doc id ie;
       Exninfo.iraise ie
 
-  let init_state = ref None
-
-  let register_root_state () =
-    init_state := Some (Vernacstate.freeze_full_state ())
-
-  let restore_root_state () =
-    cur_id := Stateid.dummy;
-    Vernacstate.unfreeze_full_state (Option.get !init_state)
-
   (* Protect against state changes *)
   let purify f x =
     let st = freeze () in
     try
       let res = f x in
-      Vernacstate.Interp.invalidate_cache ();
       unfreeze st;
       res
     with e ->
       let e = Exninfo.capture e in
-      Vernacstate.Interp.invalidate_cache ();
       unfreeze st;
       Exninfo.iraise e
 
@@ -2234,13 +2219,12 @@ let init_process stm_flags =
   if !Flags.async_proofs_worker_id = "master" && (cur_opt()).async_proofs_n_tacworkers > 0 then
     Partac.enable_par ~spawn_args:stm_flags.spawn_args ~nworkers:(cur_opt()).async_proofs_n_tacworkers
 
-let init_core () =
-  State.register_root_state ()
+let has_doc = ref false
 
 let new_doc { doc_type ; injections } =
 
-  (* We must reset the whole state before creating a document! *)
-  State.restore_root_state ();
+  assert (not !has_doc);
+  has_doc := true;
 
   let doc =
     let ps = Procq.freeze () in

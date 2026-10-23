@@ -70,6 +70,24 @@ let declare_summary_tag sumname ?make_marshallable decl =
 let declare_summary sumname ?make_marshallable decl =
   ignore(declare_summary_tag sumname ?make_marshallable decl)
 
+let disable_summary sumname =
+  match Dyn.name (mangle sumname) with
+  | None -> CErrors.anomaly Pp.(str "Unknown dyn for disable_dummary: " ++ str sumname)
+  | Some (Any tag) ->
+    let map =
+      if DynMap.mem tag !sum_map_interp then sum_map_interp
+      else if DynMap.mem tag !sum_map_synterp then sum_map_synterp
+      else assert false
+    in
+    let disable_decl d = {
+      stage = d.stage;
+      freeze_function = d.freeze_function;
+      unfreeze_function = (fun _ -> ());
+      init_function = (fun () -> ());
+    }
+    in
+    map := DynMap.modify tag disable_decl !map
+
 module ID = struct type 'a t = 'a end
 module Frozen = Dyn.Map(ID)
 module HMap = Dyn.HMap(Decl)(ID)

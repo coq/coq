@@ -64,8 +64,6 @@ let init_toplevel { parse_extra; init_extra; usage; initial_args } args =
   Stm.init_process (snd customopts);
   let () = Coqinit.init_runtime ~usage opts in
   let () = Coqinit.init_document opts in
-  (* This state will be shared by all the documents *)
-  Stm.init_core ();
   let customstate = init_extra ~opts customopts (Coqargs.injection_commands opts) in
   opts, customopts, customstate
 

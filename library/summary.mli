@@ -176,3 +176,6 @@ module MakeObservable
 
 (** {6 Debug} *)
 val dump : unit -> (int * string) list
+
+(** For rocqide *)
+val disable_summary : string -> unit
