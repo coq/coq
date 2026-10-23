@@ -495,12 +495,11 @@ let run senv =
 
 let main () =
   let senv = init() in
-  let senv, opac = run senv in
-  let opac =
+  let senv, axioms = run senv in
+  let axioms =
     if !output_context then
-      let env = Safe_typing.env_of_safe_env senv in
-      Some (Mod_checking.constants_of_opaques env opac)
+      Some (Mod_checking.constants_of_axioms axioms)
     else None
   in
-  Check_stat.stats (Safe_typing.env_of_safe_env senv) opac;
+  Check_stat.stats (Safe_typing.env_of_safe_env senv) axioms;
   exit 0

@@ -125,15 +125,13 @@ let check_one_lib ~output_context admit senv (dir,m) =
       (Flags.if_verbose Feedback.msg_notice
          (str "Admitting library: " ++ pr_dirpath dir);
        let imported = Safe_checking.unsafe_import (fst senv) md dig in
-       let opac =
+       let axioms =
          if not output_context then snd senv
          else
-           let env = Safe_typing.env_of_safe_env
-             (Safe_typing.check_flags_for_library md (fst senv)) in
-           Mod_checking.collect_module_opaques env (snd senv)
+           Mod_checking.collect_module_axioms (snd senv)
              (ModPath.MPfile dir) (Safe_typing.module_of_library md)
        in
-       imported, opac)
+       imported, axioms)
     else
       (Flags.if_verbose Feedback.msg_notice
          (str "Checking library: " ++ pr_dirpath dir);
@@ -457,6 +455,6 @@ let recheck_library ?(output_context=false) senv ~norec ~admit ~check =
   Flags.if_verbose Feedback.msg_notice (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
-  let senv = List.fold_left (check_one_lib ~output_context nochk) (senv, Mod_checking.empty_opaques) needed in
+  let senv = List.fold_left (check_one_lib ~output_context nochk) (senv, Mod_checking.empty_axioms) needed in
   Flags.if_verbose Feedback.msg_notice (str"Modules were successfully checked");
   senv

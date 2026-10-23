@@ -36,8 +36,8 @@ let pr_assumptions ass axs =
   else
     hv 2 (str ass ++ str ":" ++ fnl() ++ prlist_with_sep fnl str axs)
 
-let pr_axioms env opac =
-  let csts = List.map Constant.to_string opac in
+let pr_axioms env axioms =
+  let csts = List.map KerName.to_string axioms in
   pr_assumptions "Axioms" csts
 
 let pr_type_in_type env =
@@ -62,22 +62,22 @@ let pr_indices_matter env =
     else acc) env [] in
   pr_assumptions "Inductives relying on indices not mattering" inds
 
-let print_context env opac = match opac with
+let print_context env axioms = match axioms with
 | None -> ()
-| Some opac ->
+| Some axioms ->
   Feedback.msg_notice
     (hov 0
     (fnl() ++ str"CONTEXT SUMMARY" ++ fnl() ++
     str"===============" ++ fnl() ++ fnl() ++
     str "* " ++ hov 0 (pr_impredicative_set env ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_rewrite_rules env ++ fnl()) ++ fnl() ++
-    str "* " ++ hov 0 (pr_axioms env opac ++ fnl()) ++ fnl() ++
+    str "* " ++ hov 0 (pr_axioms env axioms ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_type_in_type env ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_unguarded env ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_nonpositive env ++ fnl()) ++ fnl() ++
     str "* " ++ hov 0 (pr_indices_matter env ++ fnl()))
     )
 
-let stats env opac =
-  print_context env opac;
+let stats env axioms =
+  print_context env axioms;
   print_memory_stat ()

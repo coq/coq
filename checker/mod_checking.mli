@@ -8,16 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type opaques
+type axioms
 
 val set_indirect_accessor : (Opaqueproof.opaque -> Opaqueproof.opaque_proofterm) -> unit
 
-val check_module : Environ.env -> opaques -> Retroknowledge.action list -> Names.ModPath.t -> Mod_declarations.module_body -> opaques
+val check_module : Environ.env -> axioms -> Retroknowledge.action list -> Names.ModPath.t -> Mod_declarations.module_body -> axioms
 
 exception BadConstant of Names.Constant.t * Pp.t
 
-val constants_of_opaques : Environ.env -> opaques -> Names.Constant.t list
-val empty_opaques : opaques
+val constants_of_axioms : axioms -> Names.KerName.t list
+val empty_axioms : axioms
 
 (** Record assumptions hidden by module signatures without type checking. *)
-val collect_module_opaques : Environ.env -> opaques -> Names.ModPath.t -> Mod_declarations.module_body -> opaques
+val collect_module_axioms : axioms -> Names.ModPath.t -> Mod_declarations.module_body -> axioms

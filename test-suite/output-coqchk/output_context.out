@@ -1,0 +1,23 @@
+
+CONTEXT SUMMARY
+===============
+
+* Theory: Set is predicative
+  
+* Theory: Rewrite rules are not allowed
+  
+* Axioms:
+    output_context.Declared.param
+    output_context.F.in_f
+    output_context.EmptyM.in_empty
+  
+* Constants/Inductives relying on type-in-type: <none>
+  
+* Constants/Inductives relying on unsafe (co)fixpoints: <none>
+  
+* Inductives whose positivity is assumed: <none>
+  
+* Inductives relying on indices not mattering:
+    Corelib.Init.Datatypes.eq_true
+    Corelib.Init.Logic.eq
+  
