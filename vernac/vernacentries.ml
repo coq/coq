@@ -473,10 +473,11 @@ let universe_subgraph kept univ =
         CErrors.user_err ?loc:q.loc Pp.(str "Undeclared universe " ++ pr_qualid q ++ str".")
       end
     | RawUniv { CAst.v = s; loc } ->
-      let parts = String.split_on_char '.' s in
-      let () = if CList.is_empty parts then CErrors.user_err ?loc Pp.(str "Invalid raw universe.") in
-      let i, dp = List.sep_last parts in
-      let dp = Libnames.dirpath_of_string (String.concat "." dp) in
+      let dp, i = match String.split_on_char ':' s with
+        | [dp; i] -> dp, i
+        | _ -> CErrors.user_err ?loc Pp.(str "Invalid raw universe.")
+      in
+      let dp = Libnames.dirpath_of_string dp in
       let i = match int_of_string_opt i with
         | Some i -> i
         | None -> CErrors.user_err ?loc Pp.(str "Invalid raw universe.")

@@ -218,11 +218,11 @@ block).
 foo@{i} = Type@{M.i} -> Type@{i}
      : Type@{max(M.i+1,i+1)}
 (* i |  *)
-Type@{u0} -> Type@{UnivBinders.86}
-     : Type@{max(u0+1,UnivBinders.86+1)}
-(* {UnivBinders.86} | 
+Type@{u0} -> Type@{UnivBinders:86}
+     : Type@{max(u0+1,UnivBinders:86+1)}
+(* {UnivBinders:86} | 
 Normalized constraints:
- {UnivBinders.86} |  *)
+ {UnivBinders:86} |  *)
 bind_univs.mono = Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}
 bind_univs.poly@{u} = Type@{u}

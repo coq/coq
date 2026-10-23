@@ -2,23 +2,23 @@
      : array nat
 [| 1; 2; 3 | 0 : nat |]
      : array nat
-[| | 0 : nat |]@{prim_array.26}
-     : array@{prim_array.26} nat
-(* {prim_array.26 prim_array.25} | Set <= prim_array.25
-                                   Set <= prim_array.26
+[| | 0 : nat |]@{prim_array:26}
+     : array@{prim_array:26} nat
+(* {prim_array:26 prim_array:25} | Set <= prim_array:25
+                                   Set <= prim_array:26
 Minimized universes:
- prim_array.26 := Set
- prim_array.25 := Set
+ prim_array:26 := Set
+ prim_array:25 := Set
 Normalized constraints:
   *)
-[| bool; list nat | nat : Set |]@{prim_array.29}
-     : array@{prim_array.29} Set
-(* {prim_array.29 prim_array.28 prim_array.27} |
-     Set < prim_array.27
-     Set < prim_array.29
-     Set <= prim_array.28
+[| bool; list nat | nat : Set |]@{prim_array:29}
+     : array@{prim_array:29} Set
+(* {prim_array:29 prim_array:28 prim_array:27} |
+     Set < prim_array:27
+     Set < prim_array:29
+     Set <= prim_array:28
 Minimized universes:
- prim_array.28 := Set
- prim_array.27 := Set+1
+ prim_array:28 := Set
+ prim_array:27 := Set+1
 Normalized constraints:
- {prim_array.29} | Set < prim_array.29 *)
+ {prim_array:29} | Set < prim_array:29 *)

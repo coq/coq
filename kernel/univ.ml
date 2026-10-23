@@ -63,7 +63,7 @@ module UGlobal = struct
   let to_string { library = d; process = s; uid = n } =
     DirPath.to_string d ^
     (if CString.is_empty s then "" else "." ^ s) ^
-    "." ^ string_of_int n
+    ":" ^ string_of_int n
 
 end
 

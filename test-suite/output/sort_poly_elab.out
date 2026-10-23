@@ -12,45 +12,45 @@ qsort' is universe polymorphic
 qsort' is transparent
 Expands to: Constant sort_poly_elab.Reduction.qsort'
 Declared in library sort_poly_elab, line 14, characters 13-19
-@eq_refl Type@{sort_poly_elab.26} q1
+@eq_refl Type@{sort_poly_elab:26} q1
 :
-@eq Type@{sort_poly_elab.26} q1 tU@{Type ; }
-     : @eq Type@{sort_poly_elab.26} q1 tU@{Type ; }
-(* {sort_poly_elab.27 sort_poly_elab.26 sort_poly_elab.25} |
-     U < sort_poly_elab.26
-     sort_poly_elab.26 < sort_poly_elab.25
-     sort_poly_elab.26 < sort_poly_elab.27
+@eq Type@{sort_poly_elab:26} q1 tU@{Type ; }
+     : @eq Type@{sort_poly_elab:26} q1 tU@{Type ; }
+(* {sort_poly_elab:27 sort_poly_elab:26 sort_poly_elab:25} |
+     U < sort_poly_elab:26
+     sort_poly_elab:26 < sort_poly_elab:25
+     sort_poly_elab:26 < sort_poly_elab:27
 Minimized universes:
- sort_poly_elab.27 := sort_poly_elab.26+1
- sort_poly_elab.25 := sort_poly_elab.26+1
+ sort_poly_elab:27 := sort_poly_elab:26+1
+ sort_poly_elab:25 := sort_poly_elab:26+1
 Normalized constraints:
- {sort_poly_elab.26} | U < sort_poly_elab.26 *)
-@eq_refl Type@{sort_poly_elab.29} q2
+ {sort_poly_elab:26} | U < sort_poly_elab:26 *)
+@eq_refl Type@{sort_poly_elab:29} q2
 :
-@eq Type@{sort_poly_elab.29} q2 tU@{Type ; }
-     : @eq Type@{sort_poly_elab.29} q2 tU@{Type ; }
-(* {sort_poly_elab.30 sort_poly_elab.29 sort_poly_elab.28} |
-     U < sort_poly_elab.29
-     sort_poly_elab.29 < sort_poly_elab.28
-     sort_poly_elab.29 < sort_poly_elab.30
+@eq Type@{sort_poly_elab:29} q2 tU@{Type ; }
+     : @eq Type@{sort_poly_elab:29} q2 tU@{Type ; }
+(* {sort_poly_elab:30 sort_poly_elab:29 sort_poly_elab:28} |
+     U < sort_poly_elab:29
+     sort_poly_elab:29 < sort_poly_elab:28
+     sort_poly_elab:29 < sort_poly_elab:30
 Minimized universes:
- sort_poly_elab.30 := sort_poly_elab.29+1
- sort_poly_elab.28 := sort_poly_elab.29+1
+ sort_poly_elab:30 := sort_poly_elab:29+1
+ sort_poly_elab:28 := sort_poly_elab:29+1
 Normalized constraints:
- {sort_poly_elab.29} | U < sort_poly_elab.29 *)
-@eq_refl Type@{sort_poly_elab.32} q3
+ {sort_poly_elab:29} | U < sort_poly_elab:29 *)
+@eq_refl Type@{sort_poly_elab:32} q3
 :
-@eq Type@{sort_poly_elab.32} q3 tU@{Type ; }
-     : @eq Type@{sort_poly_elab.32} q3 tU@{Type ; }
-(* {sort_poly_elab.33 sort_poly_elab.32 sort_poly_elab.31} |
-     U < sort_poly_elab.32
-     sort_poly_elab.32 < sort_poly_elab.31
-     sort_poly_elab.32 < sort_poly_elab.33
+@eq Type@{sort_poly_elab:32} q3 tU@{Type ; }
+     : @eq Type@{sort_poly_elab:32} q3 tU@{Type ; }
+(* {sort_poly_elab:33 sort_poly_elab:32 sort_poly_elab:31} |
+     U < sort_poly_elab:32
+     sort_poly_elab:32 < sort_poly_elab:31
+     sort_poly_elab:32 < sort_poly_elab:33
 Minimized universes:
- sort_poly_elab.33 := sort_poly_elab.32+1
- sort_poly_elab.31 := sort_poly_elab.32+1
+ sort_poly_elab:33 := sort_poly_elab:32+1
+ sort_poly_elab:31 := sort_poly_elab:32+1
 Normalized constraints:
- {sort_poly_elab.32} | U < sort_poly_elab.32 *)
+ {sort_poly_elab:32} | U < sort_poly_elab:32 *)
 exfalso@{α ; u} : forall (A : Univ@{α ; u}) (_ : False), A
 (* α ; u |  *)
 
@@ -118,79 +118,79 @@ File "./output/sort_poly_elab.v", line 73, characters 13-20:
 The command has indeed failed with message:
 The term
  "@eq_refl
-    (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab.54} nat)
-    (t1@{Type Type ; sort_poly_elab.54} nat)"
+    (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab:54} nat)
+    (t1@{Type Type ; sort_poly_elab:54} nat)"
 has type
- "@eq (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab.54} nat)
-    (t1@{Type Type ; sort_poly_elab.54} nat)
-    (t1@{Type Type ; sort_poly_elab.54} nat)"
+ "@eq (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab:54} nat)
+    (t1@{Type Type ; sort_poly_elab:54} nat)
+    (t1@{Type Type ; sort_poly_elab:54} nat)"
 while it is expected to have type
- "@eq (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab.54} nat)
-    (t1@{Type Type ; sort_poly_elab.54} nat)
-    (t2@{Type Type ; sort_poly_elab.54} nat)"
-(cannot unify "t1@{Type Type ; sort_poly_elab.54} nat" and
-"t2@{Type Type ; sort_poly_elab.54} nat").
+ "@eq (forall (_ : nat) (_ : nat), Box@{Type Type ; sort_poly_elab:54} nat)
+    (t1@{Type Type ; sort_poly_elab:54} nat)
+    (t2@{Type Type ; sort_poly_elab:54} nat)"
+(cannot unify "t1@{Type Type ; sort_poly_elab:54} nat" and
+"t2@{Type Type ; sort_poly_elab:54} nat").
 File "./output/sort_poly_elab.v", line 74, characters 13-20:
 The command has indeed failed with message:
 The term
  "@eq_refl (forall (_ : nat) (_ : nat), nat)
-    (t1'@{Type ; sort_poly_elab.58} nat)"
+    (t1'@{Type ; sort_poly_elab:58} nat)"
 has type
- "@eq (forall (_ : nat) (_ : nat), nat) (t1'@{Type ; sort_poly_elab.58} nat)
-    (t1'@{Type ; sort_poly_elab.58} nat)"
+ "@eq (forall (_ : nat) (_ : nat), nat) (t1'@{Type ; sort_poly_elab:58} nat)
+    (t1'@{Type ; sort_poly_elab:58} nat)"
 while it is expected to have type
- "@eq (forall (_ : nat) (_ : nat), nat) (t1'@{Type ; sort_poly_elab.58} nat)
-    (t2'@{Type ; sort_poly_elab.59} nat)"
-(cannot unify "t1'@{Type ; sort_poly_elab.58} nat" and
-"t2'@{Type ; sort_poly_elab.59} nat").
+ "@eq (forall (_ : nat) (_ : nat), nat) (t1'@{Type ; sort_poly_elab:58} nat)
+    (t2'@{Type ; sort_poly_elab:59} nat)"
+(cannot unify "t1'@{Type ; sort_poly_elab:58} nat" and
+"t2'@{Type ; sort_poly_elab:59} nat").
 fun A : SProp =>
-@eq_refl (forall (_ : A) (_ : A), Box@{SProp Type ; sort_poly_elab.62} A)
-  (t1@{SProp Type ; sort_poly_elab.62} A)
+@eq_refl (forall (_ : A) (_ : A), Box@{SProp Type ; sort_poly_elab:62} A)
+  (t1@{SProp Type ; sort_poly_elab:62} A)
 :
-@eq (forall (_ : A) (_ : A), Box@{SProp Type ; sort_poly_elab.62} A)
-  (t1@{SProp Type ; sort_poly_elab.62} A)
-  (t2@{SProp Type ; sort_poly_elab.62} A)
+@eq (forall (_ : A) (_ : A), Box@{SProp Type ; sort_poly_elab:62} A)
+  (t1@{SProp Type ; sort_poly_elab:62} A)
+  (t2@{SProp Type ; sort_poly_elab:62} A)
      : forall A : SProp,
-       @eq (forall (_ : A) (_ : A), Box@{SProp Type ; sort_poly_elab.62} A)
-         (t1@{SProp Type ; sort_poly_elab.62} A)
-         (t2@{SProp Type ; sort_poly_elab.62} A)
-(* {sort_poly_elab.64 sort_poly_elab.63 sort_poly_elab.62 sort_poly_elab.61} |
-     sort_poly_elab.62 <= sort_poly_elab.61
-     sort_poly_elab.62 <= sort_poly_elab.64
-     sort_poly_elab.63 = sort_poly_elab.62
+       @eq (forall (_ : A) (_ : A), Box@{SProp Type ; sort_poly_elab:62} A)
+         (t1@{SProp Type ; sort_poly_elab:62} A)
+         (t2@{SProp Type ; sort_poly_elab:62} A)
+(* {sort_poly_elab:64 sort_poly_elab:63 sort_poly_elab:62 sort_poly_elab:61} |
+     sort_poly_elab:62 <= sort_poly_elab:61
+     sort_poly_elab:62 <= sort_poly_elab:64
+     sort_poly_elab:63 = sort_poly_elab:62
 Minimized universes:
- sort_poly_elab.64 := sort_poly_elab.62
- sort_poly_elab.63 := sort_poly_elab.62
- sort_poly_elab.61 := sort_poly_elab.62
+ sort_poly_elab:64 := sort_poly_elab:62
+ sort_poly_elab:63 := sort_poly_elab:62
+ sort_poly_elab:61 := sort_poly_elab:62
 Normalized constraints:
- {sort_poly_elab.62} |  *)
+ {sort_poly_elab:62} |  *)
 fun A : SProp =>
-@eq_refl (Box@{SProp Type ; sort_poly_elab.66} (forall (_ : A) (_ : A), A))
-  (box@{SProp Type ; sort_poly_elab.66} (forall (_ : A) (_ : A), A)
-     (t1'@{SProp ; sort_poly_elab.67} A))
+@eq_refl (Box@{SProp Type ; sort_poly_elab:66} (forall (_ : A) (_ : A), A))
+  (box@{SProp Type ; sort_poly_elab:66} (forall (_ : A) (_ : A), A)
+     (t1'@{SProp ; sort_poly_elab:67} A))
 :
-@eq (Box@{SProp Type ; sort_poly_elab.66} (forall (_ : A) (_ : A), A))
-  (box@{SProp Type ; sort_poly_elab.66} (forall (_ : A) (_ : A), A)
-     (t1'@{SProp ; sort_poly_elab.67} A))
-  (box@{SProp Type ; sort_poly_elab.66} (forall (_ : A) (_ : A), A)
-     (t2'@{SProp ; sort_poly_elab.69} A))
+@eq (Box@{SProp Type ; sort_poly_elab:66} (forall (_ : A) (_ : A), A))
+  (box@{SProp Type ; sort_poly_elab:66} (forall (_ : A) (_ : A), A)
+     (t1'@{SProp ; sort_poly_elab:67} A))
+  (box@{SProp Type ; sort_poly_elab:66} (forall (_ : A) (_ : A), A)
+     (t2'@{SProp ; sort_poly_elab:69} A))
      : forall A : SProp,
-       @eq (Box@{SProp Type ; sort_poly_elab.66} (forall (_ : A) (_ : A), A))
-         (box@{SProp Type ; sort_poly_elab.66} (forall (_ : A) (_ : A), A)
-            (t1'@{SProp ; sort_poly_elab.67} A))
-         (box@{SProp Type ; sort_poly_elab.66} (forall (_ : A) (_ : A), A)
-            (t2'@{SProp ; sort_poly_elab.69} A))
-(* {sort_poly_elab.70 sort_poly_elab.69 sort_poly_elab.68 sort_poly_elab.67
-    sort_poly_elab.66 sort_poly_elab.65} |
-     sort_poly_elab.66 <= sort_poly_elab.65
-     sort_poly_elab.66 <= sort_poly_elab.70
-     sort_poly_elab.68 = sort_poly_elab.66
+       @eq (Box@{SProp Type ; sort_poly_elab:66} (forall (_ : A) (_ : A), A))
+         (box@{SProp Type ; sort_poly_elab:66} (forall (_ : A) (_ : A), A)
+            (t1'@{SProp ; sort_poly_elab:67} A))
+         (box@{SProp Type ; sort_poly_elab:66} (forall (_ : A) (_ : A), A)
+            (t2'@{SProp ; sort_poly_elab:69} A))
+(* {sort_poly_elab:70 sort_poly_elab:69 sort_poly_elab:68 sort_poly_elab:67
+    sort_poly_elab:66 sort_poly_elab:65} |
+     sort_poly_elab:66 <= sort_poly_elab:65
+     sort_poly_elab:66 <= sort_poly_elab:70
+     sort_poly_elab:68 = sort_poly_elab:66
 Minimized universes:
- sort_poly_elab.70 := sort_poly_elab.66
- sort_poly_elab.68 := sort_poly_elab.66
- sort_poly_elab.65 := sort_poly_elab.66
+ sort_poly_elab:70 := sort_poly_elab:66
+ sort_poly_elab:68 := sort_poly_elab:66
+ sort_poly_elab:65 := sort_poly_elab:66
 Normalized constraints:
- {sort_poly_elab.69 sort_poly_elab.67 sort_poly_elab.66} |  *)
+ {sort_poly_elab:69 sort_poly_elab:67 sort_poly_elab:66} |  *)
 ignore@{α ; u} : forall {A : Univ@{α ; u}} (_ : A), unit
 (* α ; u |  *)
 
@@ -232,29 +232,29 @@ Declared in library sort_poly_elab, line 108, characters 8-9
 File "./output/sort_poly_elab.v", line 110, characters 50-51:
 The command has indeed failed with message:
 In environment
-P : forall _ : nat, Univ@{α57 ; sort_poly_elab.85}
-x : P (v@{Type ; sort_poly_elab.84} nat true)
-The term "x" has type "P (v@{Type ; sort_poly_elab.84} nat true)"
+P : forall _ : nat, Univ@{α57 ; sort_poly_elab:85}
+x : P (v@{Type ; sort_poly_elab:84} nat true)
+The term "x" has type "P (v@{Type ; sort_poly_elab:84} nat true)"
 while it is expected to have type
- "P (v@{Type ; sort_poly_elab.86} nat false)".
-fun (A : SProp) (P : forall _ : A, Univ@{α63 ; sort_poly_elab.91})
-  (x : P (v@{SProp ; sort_poly_elab.90} A true)) =>
-x : P (v@{SProp ; sort_poly_elab.92} A false)
-     : forall (A : SProp) (P : forall _ : A, Univ@{α63 ; sort_poly_elab.91})
-         (_ : P (v@{SProp ; sort_poly_elab.90} A true)),
-       P (v@{SProp ; sort_poly_elab.92} A false)
-(* {α63}; {sort_poly_elab.92 sort_poly_elab.91 sort_poly_elab.90
-           sort_poly_elab.89 sort_poly_elab.88 sort_poly_elab.87} |
-     sort_poly_elab.91 < sort_poly_elab.89
-     sort_poly_elab.88 <= sort_poly_elab.87
-     sort_poly_elab.89 <= sort_poly_elab.87
+ "P (v@{Type ; sort_poly_elab:86} nat false)".
+fun (A : SProp) (P : forall _ : A, Univ@{α63 ; sort_poly_elab:91})
+  (x : P (v@{SProp ; sort_poly_elab:90} A true)) =>
+x : P (v@{SProp ; sort_poly_elab:92} A false)
+     : forall (A : SProp) (P : forall _ : A, Univ@{α63 ; sort_poly_elab:91})
+         (_ : P (v@{SProp ; sort_poly_elab:90} A true)),
+       P (v@{SProp ; sort_poly_elab:92} A false)
+(* {α63}; {sort_poly_elab:92 sort_poly_elab:91 sort_poly_elab:90
+           sort_poly_elab:89 sort_poly_elab:88 sort_poly_elab:87} |
+     sort_poly_elab:91 < sort_poly_elab:89
+     sort_poly_elab:88 <= sort_poly_elab:87
+     sort_poly_elab:89 <= sort_poly_elab:87
 Collapsed sorts:
  α63 := Type
 Minimized universes:
- sort_poly_elab.89 := sort_poly_elab.91+1
- sort_poly_elab.87 := max(sort_poly_elab.88, sort_poly_elab.91+1)
+ sort_poly_elab:89 := sort_poly_elab:91+1
+ sort_poly_elab:87 := max(sort_poly_elab:88, sort_poly_elab:91+1)
 Normalized constraints:
- {sort_poly_elab.92 sort_poly_elab.91 sort_poly_elab.90 sort_poly_elab.88} |  *)
+ {sort_poly_elab:92 sort_poly_elab:91 sort_poly_elab:90 sort_poly_elab:88} |  *)
 zog@{α ; u} : forall _ : Univ@{α ; u}, Univ@{α ; u}
 (* α ; u |  *)
 
@@ -783,21 +783,21 @@ The command has indeed failed with message:
 The term "tt" has type "unit" while it is expected to have type
  "?P@{b:=true@{Test ; }}"
 (unable to find a well-typed instantiation for "?P": cannot ensure that 
-"Set" is a subtype of "Univ@{Test ; sort_poly_elab.350}").
+"Set" is a subtype of "Univ@{Test ; sort_poly_elab:350}").
 File "./output/sort_poly_elab.v", line 510, characters 58-66:
 The command has indeed failed with message:
 The term "testctor" has type "testind" while it is expected to have type
  "?P@{b:=true@{Test ; }}"
 (unable to find a well-typed instantiation for "?P": cannot ensure that
-"Univ@{Test2 ; Set}" is a subtype of "Univ@{Test ; sort_poly_elab.352}").
+"Univ@{Test2 ; Set}" is a subtype of "Univ@{Test ; sort_poly_elab:352}").
 match true@{Test ; } return testind'@{Test ; } with
 | true => testctor'@{Test ; }
 | false => testctor'@{Test ; }
 end
      : testind'@{Test ; }
-(* {sort_poly_elab.354} | Set <= sort_poly_elab.354
+(* {sort_poly_elab:354} | Set <= sort_poly_elab:354
 Minimized universes:
- sort_poly_elab.354 := Set
+ sort_poly_elab:354 := Set
 Normalized constraints:
   *)
 unit@{α ; u} : Univ@{α ; u}
@@ -891,27 +891,27 @@ Arguments R6 A%_type_scope
 Expands to: Inductive sort_poly_elab.Records.R6
 Declared in library sort_poly_elab, line 571, characters 9-11
 fun (A : SProp) (x y : R6@{SProp ; } A) =>
-@eq_refl (Conversion.Box@{SProp Type ; sort_poly_elab.365} A)
-  (Conversion.box@{SProp Type ; sort_poly_elab.365} A (R6f1 _ x))
+@eq_refl (Conversion.Box@{SProp Type ; sort_poly_elab:365} A)
+  (Conversion.box@{SProp Type ; sort_poly_elab:365} A (R6f1 _ x))
 :
-@eq (Conversion.Box@{SProp Type ; sort_poly_elab.365} A)
-  (Conversion.box@{SProp Type ; sort_poly_elab.365} A (R6f1 _ x))
-  (Conversion.box@{SProp Type ; sort_poly_elab.365} A (R6f1 _ y))
+@eq (Conversion.Box@{SProp Type ; sort_poly_elab:365} A)
+  (Conversion.box@{SProp Type ; sort_poly_elab:365} A (R6f1 _ x))
+  (Conversion.box@{SProp Type ; sort_poly_elab:365} A (R6f1 _ y))
      : forall (A : SProp) (x y : R6@{SProp ; } A),
-       @eq (Conversion.Box@{SProp Type ; sort_poly_elab.365} A)
-         (Conversion.box@{SProp Type ; sort_poly_elab.365} A (R6f1 _ x))
-         (Conversion.box@{SProp Type ; sort_poly_elab.365} A (R6f1 _ y))
-(* {sort_poly_elab.367 sort_poly_elab.366 sort_poly_elab.365
-    sort_poly_elab.364} |
-     sort_poly_elab.365 <= sort_poly_elab.364
-     sort_poly_elab.365 <= sort_poly_elab.367
-     sort_poly_elab.366 = sort_poly_elab.365
+       @eq (Conversion.Box@{SProp Type ; sort_poly_elab:365} A)
+         (Conversion.box@{SProp Type ; sort_poly_elab:365} A (R6f1 _ x))
+         (Conversion.box@{SProp Type ; sort_poly_elab:365} A (R6f1 _ y))
+(* {sort_poly_elab:367 sort_poly_elab:366 sort_poly_elab:365
+    sort_poly_elab:364} |
+     sort_poly_elab:365 <= sort_poly_elab:364
+     sort_poly_elab:365 <= sort_poly_elab:367
+     sort_poly_elab:366 = sort_poly_elab:365
 Minimized universes:
- sort_poly_elab.367 := sort_poly_elab.365
- sort_poly_elab.366 := sort_poly_elab.365
- sort_poly_elab.364 := sort_poly_elab.365
+ sort_poly_elab:367 := sort_poly_elab:365
+ sort_poly_elab:366 := sort_poly_elab:365
+ sort_poly_elab:364 := sort_poly_elab:365
 Normalized constraints:
- {sort_poly_elab.365} |  *)
+ {sort_poly_elab:365} |  *)
 File "./output/sort_poly_elab.v", line 577, characters 10-17:
 The command has indeed failed with message:
 In environment
@@ -919,18 +919,18 @@ A : Prop
 x : R6@{α383 ; } A
 y : R6@{α386 ; } A
 The term
- "@eq_refl (Conversion.Box@{α381 Type ; sort_poly_elab.369} A)
-    (Conversion.box@{α381 Type ; sort_poly_elab.369} A (R6f1 _ x))"
+ "@eq_refl (Conversion.Box@{α381 Type ; sort_poly_elab:369} A)
+    (Conversion.box@{α381 Type ; sort_poly_elab:369} A (R6f1 _ x))"
 has type
- "@eq (Conversion.Box@{α381 Type ; sort_poly_elab.369} A)
-    (Conversion.box@{α381 Type ; sort_poly_elab.369} A (R6f1 _ x))
-    (Conversion.box@{α381 Type ; sort_poly_elab.369} A (R6f1 _ x))"
+ "@eq (Conversion.Box@{α381 Type ; sort_poly_elab:369} A)
+    (Conversion.box@{α381 Type ; sort_poly_elab:369} A (R6f1 _ x))
+    (Conversion.box@{α381 Type ; sort_poly_elab:369} A (R6f1 _ x))"
 while it is expected to have type
- "@eq (Conversion.Box@{α381 Type ; sort_poly_elab.369} A)
-    (Conversion.box@{α381 Type ; sort_poly_elab.369} A (R6f1 _ x))
-    (Conversion.box@{α381 Type ; sort_poly_elab.369} A (R6f1 _ y))"
-(cannot unify "Conversion.box@{α381 Type ; sort_poly_elab.369} A (R6f1 _ x)"
-and "Conversion.box@{α381 Type ; sort_poly_elab.369} A (R6f1 _ y)").
+ "@eq (Conversion.Box@{α381 Type ; sort_poly_elab:369} A)
+    (Conversion.box@{α381 Type ; sort_poly_elab:369} A (R6f1 _ x))
+    (Conversion.box@{α381 Type ; sort_poly_elab:369} A (R6f1 _ y))"
+(cannot unify "Conversion.box@{α381 Type ; sort_poly_elab:369} A (R6f1 _ x)"
+and "Conversion.box@{α381 Type ; sort_poly_elab:369} A (R6f1 _ y)").
 File "./output/sort_poly_elab.v", line 579, characters 10-17:
 The command has indeed failed with message:
 In environment
@@ -938,18 +938,18 @@ A : SProp
 x : R6@{SProp ; } A
 y : R6@{SProp ; } A
 The term
- "@eq_refl (Conversion.Box@{Type Type ; sort_poly_elab.373} nat)
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x))"
+ "@eq_refl (Conversion.Box@{Type Type ; sort_poly_elab:373} nat)
+    (Conversion.box@{Type Type ; sort_poly_elab:373} nat (R6f2 _ x))"
 has type
- "@eq (Conversion.Box@{Type Type ; sort_poly_elab.373} nat)
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x))
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x))"
+ "@eq (Conversion.Box@{Type Type ; sort_poly_elab:373} nat)
+    (Conversion.box@{Type Type ; sort_poly_elab:373} nat (R6f2 _ x))
+    (Conversion.box@{Type Type ; sort_poly_elab:373} nat (R6f2 _ x))"
 while it is expected to have type
- "@eq (Conversion.Box@{Type Type ; sort_poly_elab.373} nat)
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x))
-    (Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ y))"
-(cannot unify "Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ x)"
-and "Conversion.box@{Type Type ; sort_poly_elab.373} nat (R6f2 _ y)").
+ "@eq (Conversion.Box@{Type Type ; sort_poly_elab:373} nat)
+    (Conversion.box@{Type Type ; sort_poly_elab:373} nat (R6f2 _ x))
+    (Conversion.box@{Type Type ; sort_poly_elab:373} nat (R6f2 _ y))"
+(cannot unify "Conversion.box@{Type Type ; sort_poly_elab:373} nat (R6f2 _ x)"
+and "Conversion.box@{Type Type ; sort_poly_elab:373} nat (R6f2 _ y)").
 R7@{α α0 ; u} :
 forall _ : Univ@{α ; u}, Univ@{α0 ; max(Set,u)}
 (* α α0 ; u |  *)
@@ -1016,17 +1016,17 @@ sexists@{α ; u} may only be eliminated to produce values whose type is SProp or
 Arguments sexists A%_type_scope B%_function_scope
 Expands to: Inductive sort_poly_elab.Records.sexists
 Declared in library sort_poly_elab, line 612, characters 12-19
-sexists_ind@{α411 ; sort_poly_elab.396}
-     : forall (A : Univ@{α411 ; sort_poly_elab.396}) 
+sexists_ind@{α411 ; sort_poly_elab:396}
+     : forall (A : Univ@{α411 ; sort_poly_elab:396}) 
          (B : forall _ : A, Prop) (P : Prop)
          (_ : forall (a : A) (_ : B a), P)
-         (_ : sexists@{α411 ; sort_poly_elab.396} A B),
+         (_ : sexists@{α411 ; sort_poly_elab:396} A B),
        P
-(* {α411}; {sort_poly_elab.396} | 
+(* {α411}; {sort_poly_elab:396} | 
 Collapsed sorts:
  α411 := Type
 Normalized constraints:
- {sort_poly_elab.396} |  *)
+ {sort_poly_elab:396} |  *)
 R8@{α α0 ; u} : Univ@{α ; u+1}
 (* α α0 ; u |  *)
 

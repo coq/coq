@@ -5,21 +5,21 @@ A : Univ@{s ; _}
 The term "A" has type "Univ@{s ; _}" while it is expected to have type
  "Univ@{s' ; _}"
 (universe inconsistency: Cannot enforce Type@{s; Set} <=
-Type@{s'; DeclareSort.21}).
+Type@{s'; DeclareSort:21}).
 File "./output/DeclareSort.v", line 6, characters 35-36:
 The command has indeed failed with message:
 In environment
 A : Univ@{s ; _}
 The term "A" has type "Univ@{s ; _}" while it is expected to have type 
 "Type" (universe inconsistency: Cannot enforce Type@{s; Set} <=
-DeclareSort.22).
+DeclareSort:22).
 File "./output/DeclareSort.v", line 8, characters 26-27:
 The command has indeed failed with message:
 In environment
 A : Set
 The term "A" has type "Set" while it is expected to have type 
 "Univ@{s ; _}" (universe inconsistency: Cannot enforce Set <=
-Type@{s; DeclareSort.23}).
+Type@{s; DeclareSort:23}).
 fun A : Univ@{s ; _} => A : Univ@{s ; _}
      : Univ@{s ; _} -> Univ@{s ; _}
 File "./output/DeclareSort.v", line 15, characters 2-15:
@@ -42,16 +42,16 @@ Expands to: Constant DeclareSort.foo
 Declared in library DeclareSort, line 19, characters 8-11
 foo@{SProp ; } : Univ@{S1 ; Set} -> SProp
      : Univ@{S1 ; Set} -> SProp
-(* {DeclareSort.25} | Set < DeclareSort.25
+(* {DeclareSort:25} | Set < DeclareSort:25
 Minimized universes:
- DeclareSort.25 := Set+1
+ DeclareSort:25 := Set+1
 Normalized constraints:
   *)
 foo@{Type ; } : Univ@{S1 ; Set} -> Set
      : Univ@{S1 ; Set} -> Set
-(* {DeclareSort.26} | Set < DeclareSort.26
+(* {DeclareSort:26} | Set < DeclareSort:26
 Minimized universes:
- DeclareSort.26 := Set+1
+ DeclareSort:26 := Set+1
 Normalized constraints:
   *)
 File "./output/DeclareSort.v", line 30, characters 11-14:

@@ -26,8 +26,8 @@ Warning: The printed form of this term could not be re-parsed and
 re-elaborated to an equal term (up to
 conversion modulo universe unification), even with all printing options
 turned on. [reversible-printing,default]
-Type@{ReversiblePrinting.47}
-     : Type@{ReversiblePrinting.47+1}
+Type@{ReversiblePrinting:47}
+     : Type@{ReversiblePrinting:47+1}
 pid
      : forall A : Type, A -> A
 idT@{Prop ; Set}
@@ -58,5 +58,5 @@ File "./output/ReversiblePrinting.v", line 106, characters 0-11:
 Warning: The printed form of this term could not be re-parsed and
 re-elaborated to an equal term (up to conversion), even with all printing
 options turned on. [reversible-printing,default]
-Type@{ReversiblePrinting.88}
-     : Type@{ReversiblePrinting.88+1}
+Type@{ReversiblePrinting:88}
+     : Type@{ReversiblePrinting:88+1}

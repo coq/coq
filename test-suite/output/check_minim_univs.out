@@ -1,7 +1,7 @@
-abc@{α4 ; check_minim_univs.24}
-     : Type@{check_minim_univs.24+1}
-(* {α4}; {check_minim_univs.24} | 
+abc@{α4 ; check_minim_univs:24}
+     : Type@{check_minim_univs:24+1}
+(* {α4}; {check_minim_univs:24} | 
 Collapsed sorts:
  α4 := Type
 Normalized constraints:
- {check_minim_univs.24} |  *)
+ {check_minim_univs:24} |  *)
