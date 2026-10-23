@@ -550,3 +550,12 @@ Module EarlyMonoUniverseDeclarationCheck.
   Next Obligation. Show. Admitted.
 
 End EarlyMonoUniverseDeclarationCheck.
+
+Module AbovePropBelowType.
+
+  Polymorphic Definition t@{s;u} := Type@{s;u} -> Type@{s;u}.
+
+  Check fun (f:t) =>
+          (f True : Set (* s <= Type *),
+           f True : Prop (* s = Prop *)).
+End AbovePropBelowType.

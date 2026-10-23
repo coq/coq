@@ -1,10 +1,10 @@
 File "./output/bug_12887.v", line 5, characters 25-26:
 The command has indeed failed with message:
-Cannot infer this placeholder of type "Type" in
+Cannot infer this placeholder of type "Univ" in
 environment:
-Functor : (Type -> Type) -> Univ
-F : Type -> Type
-fmap : forall A B : Type, (A -> B) -> F A -> F B
+Functor : (Univ -> Univ) -> Univ
+F : Univ -> Univ
+fmap : forall A B : Univ, (A -> B) -> F A -> F B
 File "./output/bug_12887.v", line 8, characters 0-53:
 The command has indeed failed with message:
 Cannot infer an existential variable of type "nat" in
