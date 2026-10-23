@@ -59,8 +59,11 @@ let sort_expr_eq (q1, l1) (q2, l2) =
       && Int.equal m n))
     l1 l2
 
-let instance_expr_eq (q1,u1) (q2,u2) =
-  List.equal quality_expr_eq q1 q2 && List.equal univ_level_expr_eq u1 u2
+let instance_expr_eq i1 i2 =
+  List.equal quality_expr_eq i1.univannot_qualities i2.univannot_qualities
+  && List.equal univ_level_expr_eq i1.univannot_levels i2.univannot_levels
+  && Bool.equal i1.univannot_extensible_qualities i2.univannot_extensible_qualities
+  && Bool.equal i1.univannot_extensible_levels i2.univannot_extensible_levels
 
 (***********************)
 (* For binders parsing *)

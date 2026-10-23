@@ -22,7 +22,12 @@ val empty_binders : universe_binders
 
 val empty_rev_binders : rev_binders
 
-type univ_name_list = lname list * lname list
+type univ_name_list = {
+  qualities : lname list;
+  ext_ql : bool;
+  univlevels : lname list;
+  ext_ul : bool;
+}
 
 val pr_level_with_global_universes : ?binders:universe_binders -> Level.t -> Pp.t
 val qualid_of_level : universe_binders -> Level.t -> Libnames.qualid option

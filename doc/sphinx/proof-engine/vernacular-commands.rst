@@ -16,10 +16,10 @@ Displaying
    .. insertprodn univ_name_list univ_name_list
 
    .. prodn::
-      univ_name_list ::= @%{ {* @name } {? ; {* @name } } %}
+      univ_name_list ::= @%{ {* @name } {? + } {? ; {* @name } {? + } } %}
 
    Displays definitions of terms, including opaque terms, for one or more object :n:`@reference`\s.
-   When multiple comma-separted :n: `@reference`\s are given, their information is printed
+   When multiple comma-separated :n:`@reference`\s are given, their information is printed
    in order with a blank line between each.
 
    * :n:`Term` - a syntactic marker to allow printing a term
@@ -29,7 +29,9 @@ Displaying
 
    * :n:`@univ_name_list` - locally renames the
      polymorphic universes of :n:`@reference`.
-     The name `_` means the usual name is printed.
+     The name :g:`_` means the usual name is printed. When :g:`+` is appended,
+     the remaining qualities or universe levels keep their usual names,
+     as if :g:`_` had been specified for each of them.
 
    .. exn:: @qualid not a defined object.
       :undocumented:

@@ -516,28 +516,40 @@ let pretype_id pretype loc env sigma id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let instance ?loc evd (ql,ul) =
+let instance ?loc evd i auctx =
+  let expected_nqualities, expected_nuniverses = UVars.AbstractContext.size auctx in
+  let ql = i.qualities in
+  let ul = i.univlevels in
+  let q_anon = GLocalQVar (CAst.make ?loc Name.Anonymous) in
+  let u_anon =  UAnonymous {rigid = univ_flexible} in
+  let ql_extended = if i.extensible_qualities then
+    let n = max (expected_nqualities - List.length ql) 0 in
+      ql@(List.init n (fun _ -> q_anon)) else ql in
+  let ul_extended = if i.extensible_univlevels then
+    let n = max (expected_nuniverses - List.length ul) 0 in
+      ul@(List.init n (fun _ -> u_anon)) else ul in
   let evd, ql' =
     List.fold_left
       (fun (evd, quals) l ->
          let evd, l = glob_quality ?loc evd l in
          (evd, l :: quals)) (evd, [])
-      ql
+      ql_extended
   in
   let evd, ul' =
     List.fold_left
       (fun (evd, univs) l ->
          let evd, l = glob_level ?loc evd l in
          (evd, l :: univs)) (evd, [])
-      ul
+      ul_extended
   in
   evd, Some (EInstance.make (UVars.Instance.of_array (Array.rev_of_list ql', Array.rev_of_list ul')))
 
 let pretype_global ?loc rigid env evd gr us =
+  let auctx = Evd.get_abstract !!env evd gr in
   let evd, instance =
     match us with
     | None -> evd, None
-    | Some l -> instance ?loc evd l
+    | Some l -> instance ?loc evd l auctx
   in
   Evd.fresh_global ?loc ?names:instance !!env evd gr
 
@@ -548,8 +560,8 @@ let pretype_ref ?loc sigma env ref us =
     (try
        let ty = NamedDecl.get_type (lookup_named id !!env) in
        (match us with
-        | None | Some ([],[]) -> ()
-        | Some (qs,us) ->
+        | None | Some {qualities = []; univlevels = []} -> ()
+        | Some {qualities = qs; univlevels = us} ->
             let open UnivGen in
             Loc.raise ?loc (UniverseLengthMismatch {
               gref = ref;
@@ -1617,10 +1629,13 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     in
     let sigma, u = match u with
       | None -> sigma, None
-      | Some ([],[u]) ->
+      | Some {qualities = []; univlevels = []; extensible_univlevels = true} ->
+        let u = UAnonymous {rigid = UnivFlexible false} in
+          let sigma, u = glob_level ?loc sigma u in sigma, Some u
+      | Some {qualities = []; univlevels = [u]} ->
         let sigma, u = glob_level ?loc sigma u in
         sigma, Some u
-      | Some (qs,us) ->
+      | Some {qualities = qs; univlevels = us} ->
         let open UnivGen in
           Loc.raise ?loc (UniverseLengthMismatch {
             gref = ConstRef array_kn;

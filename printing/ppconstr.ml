@@ -269,7 +269,9 @@ let pr_id = Id.print
 let pr_qualid = pr_qualid
 let pr_patvar = pr_id
 
-let pr_inside_universe_instance (ql,ul) =
+let pr_inside_universe_instance i =
+  let ql = i.univannot_qualities in
+  let ul = i.univannot_levels in
   (if List.is_empty ql then mt()
    else prlist_with_sep spc pr_quality_expr ql ++ strbrk " ; ")
   ++ prlist_with_sep spc pr_univ_level_expr ul

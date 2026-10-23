@@ -203,7 +203,7 @@ evar_instance: [
 ]
 
 univ_annot: [
-| "@{" LIST0 univ_level_or_quality OPT [ ";" LIST0 univ_level_or_quality ] "}"
+| "@{" LIST0 univ_level_or_quality OPT "+" OPT [ ";" LIST0 univ_level_or_quality OPT "+" ] "}"
 |
 ]
 
@@ -1575,7 +1575,7 @@ search_queries: [
 ]
 
 univ_name_list: [
-| "@{" LIST0 name OPT [ ";" LIST0 name ] "}"
+| "@{" LIST0 name OPT "+" OPT [ ";" LIST0 name OPT "+" ] "}"
 ]
 
 syntax: [

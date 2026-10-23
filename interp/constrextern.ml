@@ -835,10 +835,15 @@ let extern_glob_sort uvars (q, l) =
   map_glob_sort_gen (List.map (on_fst (extern_glob_sort_name uvars))) l
 
 let extern_instance uvars = function
-  | Some (ql,ul) ->
-    let ql = List.map (extern_glob_quality uvars) ql in
-    let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) ul in
-    Some (ql,ul)
+  | Some i ->
+    let ql = List.map (extern_glob_quality uvars) i.qualities in
+    let ul = List.map (map_glob_sort_gen (extern_glob_sort_name uvars)) i.univlevels in
+      Some  {
+        univannot_qualities = ql;
+        univannot_extensible_qualities = i.extensible_qualities;
+        univannot_levels = ul;
+        univannot_extensible_levels = i.extensible_univlevels;
+      }
   | None -> None
 
 let extern_ref {vars; uvars} ref us =

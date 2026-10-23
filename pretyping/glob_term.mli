@@ -50,7 +50,12 @@ type 'a glob_sort_gen =
 (** levels, occurring in universe instances *)
 type glob_level = glob_sort_name glob_sort_gen
 
-type glob_instance = glob_quality list * glob_level list
+type glob_instance = {
+  qualities : glob_quality list;
+  extensible_qualities : bool;
+  univlevels : glob_level list;
+  extensible_univlevels : bool;
+}
 
 (** sort expressions *)
 type glob_sort = (glob_quality option * (glob_sort_name * int) list glob_sort_gen)

@@ -1297,7 +1297,29 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   univ_name_list:
-    [ [  "@{" ; l = LIST0 name; l' = OPT [ ";" ; l = LIST0 name -> { l } ] ; "}" -> { match l' with None -> [], l | Some l' -> l, l' } ] ]
+    [ [  "@{" ; l = LIST0 name;
+                ext = OPT [ "+" -> { () } ];
+                optional_snd_instance = OPT [ ";" ;
+                  l' = LIST0 name;
+                  ext' = OPT [ "+" -> { () } ] ->
+                { l', ext' } ] ; "}" ->
+    { let open UnivNames in
+      match optional_snd_instance with
+      | None ->
+        {
+          qualities = [];
+          ext_ql = false;
+          univlevels = l;
+          ext_ul = Option.has_some ext;
+        }
+      | Some (l', ext') ->
+          {
+            qualities = l;
+            ext_ql = Option.has_some ext;
+            univlevels = l';
+            ext_ul = Option.has_some ext';
+          }
+    } ] ]
   ;
 END
 

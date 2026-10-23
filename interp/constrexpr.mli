@@ -35,7 +35,12 @@ type relevance_info_expr = relevance_expr option
 
 type sort_expr = (quality_expr option * (sort_name_expr * int) list Glob_term.glob_sort_gen)
 
-type instance_expr = quality_expr list * univ_level_expr list
+type instance_expr = {
+  univannot_qualities : quality_expr list;
+  univannot_extensible_qualities : bool;
+  univannot_levels : univ_level_expr list;
+  univannot_extensible_levels : bool;
+}
 
 (** UnivConstraints don't have anonymous universes *)
 type univ_constraint_expr = sort_name_expr * Univ.UnivConstraint.kind * sort_name_expr

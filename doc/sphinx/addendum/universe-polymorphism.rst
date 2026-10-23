@@ -530,7 +530,7 @@ Explicit Universes
    universe_name ::= @qualid
    | Set
    | Prop
-   univ_annot ::= @%{ {* @univ_level_or_quality } {? ; {* @univ_level_or_quality } } %}
+   univ_annot ::= @%{ {* @univ_level_or_quality } {? + } {? ; {* @univ_level_or_quality } {? + } } %}
    univ_level_or_quality ::= 0
    | Set
    | SProp
@@ -549,6 +549,12 @@ Explicit Universes
 
 The syntax has been extended to allow users to explicitly bind names
 to universes and explicitly instantiate polymorphic definitions.
+
+In :n:`@univ_decl` or in :n:`@cumul_univ_decl`, the :g:`+` sign allows
+Rocq to declare additional sorts or universe levels if needed for
+the object being declared.
+In :n:`@univ_annot`, the :g:`+` sign lets Rocq fill out the rest of the
+instance annotation with underscores.
 
 .. cmd:: Universe {+ @ident }
          Universes {+ @ident }
@@ -696,10 +702,11 @@ instance:
    Monomorphic Universes k l.
    Check (le@{k l}).
 
-User-named universes and the anonymous universe implicitly attached to
-an explicit :g:`Type` are considered rigid for unification and are never
-minimized. Flexible anonymous universes can be produced with an
-underscore or by omitting the annotation to a polymorphic definition.
+User-named universes, as well as the anonymous universe implicitly
+induced by an explicit :g:Type, are rigid during unification
+and are never minimized. Flexible anonymous universes can be introduced with an
+underscore, using the sign :g:`+` (which is equivalent to a list of underscores),
+or by omitting the annotation to a polymorphic definition.
 
 .. rocqtop:: all
 
@@ -707,6 +714,7 @@ underscore or by omitting the annotation to a polymorphic definition.
    Check (fun x => x) : Type -> Type@{_}.
 
    Check le@{k _}.
+   Check le@{+}.
    Check le.
 
 .. flag:: Strict Universe Declaration

@@ -356,15 +356,25 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   univ_annot:
-    [ [ "@{"; l = LIST0 univ_level_or_quality;
-              l' = OPT [ ";"; l' = LIST0 univ_level_or_quality -> { l' } ]; "}" ->
+    [ [ "@{";
+            l = LIST0 univ_level_or_quality;
+            ext = OPT [ "+" -> { () } ];
+            optional_snd_instance = OPT [ ";";
+              l' = LIST0 univ_level_or_quality ;
+              ext' = OPT [ "+" -> { () } ] -> { l', ext' } ];
+          "}" ->
         {
-          let l, l' = match l' with
-            | None -> [], List.map (force_univ_level ~loc) l
-            | Some l' ->
-              List.map (force_quality ~loc) l, List.map (force_univ_level ~loc) l'
+          let (qual_list, qual_ext), (univ_list, univ_ext) = match optional_snd_instance with
+            | None -> ([], None), (List.map (force_univ_level ~loc) l, ext)
+            | Some (l', ext') ->
+              (List.map (force_quality ~loc) l, ext), (List.map (force_univ_level ~loc) l', ext')
           in
-          Some (l,l')
+          Some  {
+            univannot_qualities = qual_list;
+            univannot_extensible_qualities = Option.has_some qual_ext;
+            univannot_levels = univ_list;
+            univannot_extensible_levels = Option.has_some univ_ext
+          }
         }
       | -> { None } ] ]
   ;

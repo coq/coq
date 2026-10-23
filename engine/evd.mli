@@ -670,6 +670,8 @@ val update_sigma_univs : UGraph.t -> evar_map -> evar_map
 
 (** Polymorphic universes *)
 
+val get_abstract : env -> evar_map -> GlobRef.t -> UVars.AbstractContext.t
+
 val fresh_sort_in_quality : ?loc:Loc.t -> ?rigid:rigid
   -> evar_map -> UnivGen.QualityOrSet.t -> evar_map * esorts
 val fresh_constant_instance : ?loc:Loc.t -> ?rigid:rigid

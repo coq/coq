@@ -104,9 +104,11 @@ let fresh_glob_sort_in_quality sigma s =
 let glob_level_eq u1 u2 =
   glob_sort_gen_eq glob_sort_name_eq u1 u2
 
-let instance_eq (q1,u1) (q2,u2) =
-  List.equal glob_quality_eq q1 q2
-  && List.equal glob_level_eq u1 u2
+let instance_eq i1 i2 =
+  List.equal glob_quality_eq i1.qualities i2.qualities
+  && List.equal glob_level_eq i1.univlevels i2.univlevels
+  && Bool.equal i1.extensible_qualities i2.extensible_qualities
+  && Bool.equal i1.extensible_univlevels i2.extensible_univlevels
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Explicit, Explicit -> true
