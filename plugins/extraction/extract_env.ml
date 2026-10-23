@@ -114,19 +114,19 @@ module Visit : VISIT = struct
     spec_iter_references (fun r -> add_ref v r) (fun r -> add_ref v r) (fun r -> add_ref v r) spec
 end
 
-let get_mono_inst_univs = function
+let get_mono_inst_univs env = function
 | Monomorphic -> [InfvInst.empty]
-| Polymorphic uctx -> InfvInst.generate uctx
+| Polymorphic uctx -> InfvInst.generate env uctx
 
-let get_mono_inst = function
-| SFBconst cb -> get_mono_inst_univs cb.const_universes
-| SFBmind mib -> get_mono_inst_univs mib.mind_universes
+let get_mono_inst env = function
+| SFBconst cb -> get_mono_inst_univs env cb.const_universes
+| SFBmind mib -> get_mono_inst_univs env mib.mind_universes
 | SFBrules _ -> [InfvInst.empty]
 | SFBmodule _ | SFBmodtype _ -> assert false
 
 let add_field_label venv mp = function
   | (lab, (SFBconst _|SFBmind _ | SFBrules _  as f)) ->
-    let insts = get_mono_inst f in
+    let insts = get_mono_inst (Global.env ()) f in
     List.iter (fun inst -> Visit.add_kn venv (KerName.make mp lab) inst) insts
   | (lab, (SFBmodule _|SFBmodtype _)) -> Visit.add_mp_all venv (MPdot (mp,lab))
 
@@ -244,7 +244,7 @@ let rec extract_structure_spec : type a.
   fun table venv env mp reso -> function
   | [] -> []
   | (l, SFBconst cb) :: msig ->
-    let insts = get_mono_inst_univs cb.const_universes in
+    let insts = get_mono_inst_univs env cb.const_universes in
     let c = make_cst reso mp l in
     let map inst = extract_constant_spec table env c inst cb in
     let consts = List.map map insts in
@@ -257,7 +257,7 @@ let rec extract_structure_spec : type a.
     in
     List.fold_right fold consts specs
   | (l, SFBmind mib) :: msig ->
-    let insts = get_mono_inst_univs mib.mind_universes in
+    let insts = get_mono_inst_univs env mib.mind_universes in
     let mind = make_mind reso mp l in
     let map inst = Sind (extract_inductive table env mind inst) in
     let minds = List.map map insts in
@@ -364,7 +364,7 @@ let rec extract_structure table access venv env mp reso ~all = function
     | exception Impossible -> None, struc
     in
     let ms = extract_structure table access venv env mp reso ~all struc in
-    let insts = get_mono_inst_univs cb.const_universes in
+    let insts = get_mono_inst_univs env cb.const_universes in
     let c = make_cst reso mp l in
     let map inst = match fix with
     | None ->
@@ -391,7 +391,7 @@ let rec extract_structure table access venv env mp reso ~all = function
     consts @ ms
   | (l, SFBmind mib) :: struc ->
     let ms = extract_structure table access venv env mp reso ~all struc in
-    let insts = get_mono_inst_univs mib.mind_universes in
+    let insts = get_mono_inst_univs env mib.mind_universes in
     let mind = make_mind reso mp l in
     let map inst =
       let b = Visit.needed_ind venv mind inst in
@@ -685,8 +685,9 @@ let locate_ref qid =
   and ro =
     try
       let gr = Smartlocate.global_with_alias qid in
-      let inst = Environ.universes_of_global (Global.env ()) gr in
-      Some (List.map (fun inst -> { glob = gr; inst }) (InfvInst.generate inst))
+      let env = Global.env () in
+      let inst = Environ.universes_of_global env gr in
+      Some (List.map (fun inst -> { glob = gr; inst }) (InfvInst.generate env inst))
     with Nametab.GlobalizationError _ | UserError _ -> None
   in
   match mpo, ro with

@@ -792,8 +792,9 @@ let callback_extraction : string option * global -> obj =
 
 let mono_global_with_alias qid =
   let gr = Smartlocate.global_with_alias qid in
-  let inst = Environ.universes_of_global (Global.env ()) gr in
-  List.map (fun inst -> { glob = gr; inst }) (InfvInst.generate inst)
+  let env = Global.env () in
+  let inst = Environ.universes_of_global env gr in
+  List.map (fun inst -> { glob = gr; inst }) (InfvInst.generate env inst)
 
 let extraction_inline b l =
   let refs = List.map_append mono_global_with_alias l in

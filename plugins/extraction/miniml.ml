@@ -14,61 +14,81 @@ open Names
 
 module InfvInst =
 struct
-  type t = bool array (* true if informative *)
+  (* Is informative + memoized corresponding sort *)
+  type t = (bool * Sorts.Quality.t) array
   let empty = [||]
-  let compare i1 i2 = CArray.compare Bool.compare i1 i2
+  let compare i1 i2 = CArray.compare (fun (b1, _) (b2, _) -> compare b1 b2) i1 i2
   let equal i1 i2 = Int.equal (compare i1 i2) 0
 
-  let generate actx =
-    let names = UVars.AbstractContext.names actx in
-    let quals = Array.length names.UVars.quals in
-    let init n =
-      let ans = Array.make quals true in
-      let n = ref n in
-      for i = 0 to quals - 1 do
-        let b = !n mod 2 = 0 in
-        ans.(i) <- b;
-        n := !n / 2
-      done;
-      ans
+  let generate env actx =
+    let init_option_downfrom n f =
+      let rec aux acc i f =
+        if i < 0 then acc
+        else
+          match f i with
+          | Some a -> aux (a :: acc) (i-1) f
+          | None -> aux acc (i-1) f
+      in aux [] (n - 1) f
     in
-    List.init (1 lsl quals) init
-
-  let default actx =
     let names = UVars.AbstractContext.names actx in
-    let quals = Array.length names.UVars.quals in
-    Array.make quals true
+    let univs = names.UVars.univs in
+    let idusubst = Array.init (Array.length univs) Univ.Level.var in
+    let quals = names.UVars.quals in
+    let numquals = Array.length quals in
+    let init n =
+      try
+        let subst = Array.init numquals (fun i -> Sorts.Quality.var i) in
+        let infvs = Array.make numquals true in
+        let n = ref n in
+        for i = numquals - 1 downto 0 do
+          let try_qual q otherwise =
+            subst.(i) <- q;
+            let inst = UVars.Instance.of_array (subst, idusubst) in
+            let pcstr = UVars.AbstractContext.instantiate inst actx in
+            let (quals, _) = CArray.chop i quals in
+            let uctx = UVars.UContext.make {quals; univs} (UVars.Instance.abstract_instance (i, Array.length univs), pcstr) in
+            try
+              let _ = Environ.push_context uctx env in ()
+            with QGraph.EliminationError _ -> otherwise ()
+          in
+          let relevant = !n mod 2 = 0 in
+          infvs.(i) <- relevant;
+          if relevant then begin
+              try_qual Sorts.Quality.qtype (fun () -> raise Exit)
+            end
+          else
+            try_qual Sorts.Quality.qsprop
+              (fun () -> try_qual Sorts.Quality.qprop (fun () -> raise Exit));
+          n := !n / 2
+        done;
+        Some (Array.map2 (fun a b -> (a, b)) infvs subst)
+      with Exit ->
+        None
+    in
+    init_option_downfrom (1 lsl numquals) init
 
   let ground inst =
     let qvars, _ = UVars.Instance.to_array inst in
-    let map q = match q with
-    | Sorts.Quality.QConstant (QProp | QSProp) -> false
-    | Sorts.Quality.QConstant QType -> true
-    | QGlobal _ -> true
-    | Sorts.Quality.QVar qv ->
-      match Sorts.QVar.repr qv with
-      | Var _ -> CErrors.anomaly (Pp.str "Non-ground instance")
-      | Unif _ | Secvar _ -> true (* informative by default *)
-    in
+    let map q = Sorts.Quality.is_qtype q, q in
     Array.map map qvars
 
   let instantiate actx inst =
-    let u = UVars.make_abstract_instance actx in
-    let fl l = l in
-    let fq q = match Sorts.QVar.var_index q with
-    | None -> assert false
-    | Some i ->
-      if inst.(i) then Sorts.Quality.qtype
-      else Sorts.Quality.qsprop
-    in
-    UVars.Instance.subst_fn (fq, fl) u
+    let names = UVars.AbstractContext.names actx in
+    let numunivs = Array.length names.UVars.univs in
+    let univs = Array.init numunivs Univ.Level.var in
+    let inst = Array.map snd inst in
+    UVars.Instance.of_array (inst, univs)
 
   let encode inst =
-    if Array.for_all (fun b -> b) inst then None
+    if Array.for_all fst inst then None
     else
       let len = Array.length inst in
-      Some (String.init len (fun i -> if inst.(i) then 'X' else 'O'))
-
+      let map i =
+        match fst (inst.(i)) with
+        | true -> 'K'
+        | false -> 'E'
+      in
+      Some (String.init len map)
 end
 
 type global = { glob : GlobRef.t; inst : InfvInst.t }
