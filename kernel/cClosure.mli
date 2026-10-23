@@ -112,6 +112,33 @@ val mk_clos_vect : usubs -> constr array -> fconstr array
 val zip : fconstr -> stack -> fconstr
 
 val fterm_of : fconstr -> fterm
+
+(** Conversion result cache, recording the outcome (success or failure)
+    of comparing a pair of cells at a given lift pair and conversion
+    problem. Within one conversion session the same pair of cells is
+    typically compared many times over, because beta-substitution shares
+    payload cells across all the occurrences of a variable. Pairs are
+    identified by stable cell identities, assigned on demand: an identity
+    survives the in-place [update] performed during reduction, and a copy
+    of a cell gets a fresh one. The identity bookkeeping is internal to
+    this module. Only sound for checked conversion, where results are
+    deterministic and no universe constraints are accumulated. *)
+module ConvCache : sig
+  type t
+
+  val create : unit -> t option
+  (** [None] when the cache is disabled ([ROCQ_CONV_CACHE=0]). *)
+
+  val probe : t -> cumul:bool -> lift -> fconstr -> lift -> fconstr -> bool option
+  (** Looks up the outcome of comparing the two cells (which may still
+      carry [FLIFT]s) at the given lifts, for conversion ([cumul:false])
+      or cumulativity ([cumul:true]). *)
+
+  val record : t -> cumul:bool -> lift -> fconstr -> lift -> fconstr -> bool -> unit
+  (** Records an outcome for a pair on which [probe] returned [None].
+      No-op once the [ROCQ_CONV_CACHE_MAX] cap is reached. *)
+end
+
 val term_of_fconstr : fconstr -> constr
 val term_of_process : fconstr -> stack -> constr
 val destFLambda :
