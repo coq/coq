@@ -183,15 +183,15 @@ Section Defs.
 
   (** Leibniz equality. *)
   Section Leibniz.
-    Global Instance eq_Reflexive : Reflexive (@eq A) := @eq_refl A.
-    Global Instance eq_Symmetric : Symmetric (@eq A) := @eq_sym A.
-    Global Instance eq_Transitive : Transitive (@eq A) := @eq_trans A.
+    Global Instance eq_Reflexive@{r} : Reflexive@{r} (@eq A) := @eq_refl A.
+    Global Instance eq_Symmetric@{r} : Symmetric@{r} (@eq A) := @eq_sym A.
+    Global Instance eq_Transitive@{r} : Transitive@{r} (@eq A) := @eq_trans A.
     
     (** Leibinz equality [eq] is an equivalence crelation.
         The instance has low priority as it is always applicable
         if only the type is constrained. *)
     
-    Global Program Instance eq_equivalence : Equivalence (@eq A) | 10.
+    Global Program Instance eq_equivalence@{r} : Equivalence@{r} (@eq A) | 10.
   End Leibniz.
   
 End Defs.
@@ -288,23 +288,23 @@ Local Obligation Tactic := simpl_crelation.
 (** Logical implication. *)
 
 #[global]
-Program Instance impl_Reflexive : Reflexive impl.
+Program Instance impl_Reflexive@{u r} : Reflexive@{u r} impl.
 #[global]
-Program Instance impl_Transitive : Transitive impl.
+Program Instance impl_Transitive@{u r} : Transitive@{u r} impl.
 
 (** Logical equivalence. *)
 
 #[global]
-Instance iff_Reflexive : Reflexive iff := iff_refl.
+Instance iff_Reflexive@{u r} : Reflexive@{u r} iff := iff_refl.
 #[global]
-Instance iff_Symmetric : Symmetric iff := iff_sym.
+Instance iff_Symmetric@{u r} : Symmetric@{u r} iff := iff_sym.
 #[global]
-Instance iff_Transitive : Transitive iff := iff_trans.
+Instance iff_Transitive@{u r} : Transitive@{u r} iff := iff_trans.
 
 (** Logical equivalence [iff] is an equivalence crelation. *)
 
 #[global]
-Program Instance iff_equivalence : Equivalence iff. 
+Program Instance iff_equivalence@{u r} : Equivalence@{u r} iff.
 #[global]
 Program Instance arrow_Reflexive : Reflexive arrow.
 #[global]

@@ -51,7 +51,7 @@ Section Proper.
   Class ProperProxy (R : crelation A) (m : A) :=
     proper_proxy : R m m.
 
-  Lemma eq_proper_proxy (x : A) : ProperProxy (@eq A) x.
+  Lemma eq_proper_proxy@{r} (x : A) : ProperProxy@{r} (@eq A) x.
   Proof. firstorder. Qed.
   
   Lemma reflexive_proper_proxy `(Reflexive A R) (x : A) : ProperProxy R x.
@@ -247,11 +247,11 @@ Hint Extern 5 (@Proper _ ?H _) => proper_subrelation : typeclass_instances.
 (** Essential subrelation instances for [iff], [impl] and [pointwise_relation]. *)
 
 #[global]
-Instance iff_impl_subrelation : subrelation iff impl | 2.
+Instance iff_impl_subrelation@{u r r'} : subrelation@{u r r'} iff impl | 2.
 Proof. firstorder. Qed.
 
 #[global]
-Instance iff_flip_impl_subrelation : subrelation iff (flip impl) | 2.
+Instance iff_flip_impl_subrelation@{u r r'} : subrelation@{u r r'} iff (flip impl) | 2.
 Proof. firstorder. Qed.
 
 (** Essential subrelation instances for [iffT] and [arrow]. *)
@@ -459,7 +459,7 @@ Section GenericInstances.
   
   (** That's if and only if *)
   
-  Lemma eq_subrelation `(Reflexive A R) : subrelation (@eq A) R.
+  Lemma eq_subrelation@{u r r'} {A : Type@{u}} {R : crelation@{u r'} A} `(Reflexive A R) : subrelation@{u r r'} (@eq A) R.
   Proof. simpl_crelation. Qed.
 
   (** Once we have normalized, we will apply this instance to simplify the problem. *)
@@ -472,7 +472,7 @@ Section GenericInstances.
   Lemma reflexive_proper `{Reflexive A R} (x : A) : Proper R x.
   Proof. firstorder. Qed.
   
-  Lemma proper_eq {A} (x : A) : Proper (@eq A) x.
+  Lemma proper_eq@{u r} {A : Type@{u}} (x : A) : Proper@{u r} (@eq A) x.
   Proof. intros. apply reflexive_proper. Qed.
   
 End GenericInstances.
