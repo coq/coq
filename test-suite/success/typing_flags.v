@@ -48,6 +48,11 @@ Fail Inductive f_att_Cor :=
 (* Part using Set/Unset *)
 Print Typing Flags.
 Unset Guard Checking.
+
+(* Recursive calls in binder annotations are allowed when guard checking is disabled. *)
+Fixpoint annotation_loop : nat -> nat :=
+  fun n : (let unused := annotation_loop 0 in nat) => n.
+
 Fixpoint f' (n : nat) : nat := f' n.
 
 Fixpoint f (n : nat) : nat.
@@ -60,6 +65,10 @@ Fixpoint bla (A:Type) (n:nat) := match n with 0 =>0 | S n => n end.
 Print Typing Flags.
 
 Set Guard Checking.
+
+(* The same annotation must produce a guard error when checking is enabled. *)
+Fail Fixpoint annotation_loop_checked : nat -> nat :=
+  fun n : (let unused := annotation_loop_checked 0 in nat) => n.
 
 Print Assumptions f.
 
