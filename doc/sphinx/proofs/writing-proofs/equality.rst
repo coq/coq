@@ -90,10 +90,10 @@ Tactics for simple equalities
    `R` is a transitive relation registered with the `Equivalence` or `Transitivity`
    typeclasses.  See :cmd:`Class` and :cmd:`Instance`.
 
-   .. tacn:: etransitivity
+   .. tacn:: etransitivity {? @one_term }
 
-      This tactic behaves like :tacn:`transitivity`, using a fresh evar instead of
-      a concrete :token:`one_term`.
+      This tactic behaves like :tacn:`transitivity`, using the provided
+      open :token:`one_term` or a fresh evar if none is given.
 
    .. exn:: The relation @ident is not a declared transitive relation. Maybe you need to require the Stdlib.Classes.RelationClasses library
       :undocumented:

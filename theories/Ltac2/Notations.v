@@ -518,7 +518,8 @@ Ltac2 Abbreviation assumption := Std.assumption ().
 
 Ltac2 Abbreviation eassumption := Std.eassumption ().
 
-Ltac2 Abbreviation etransitivity := Std.etransitivity ().
+Ltac2 Notation "etransitivity" c(opt(open_constr)) := Std.etransitivity c.
+Ltac2 Abbreviation etransitivity := etransitivity.
 
 Ltac2 Abbreviation admit := Std.admit ().
 

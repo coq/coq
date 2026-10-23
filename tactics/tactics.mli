@@ -564,15 +564,17 @@ val setoid_symmetry_in : (Id.t -> unit Proofview.tactic) Hook.t
     Actual occurences contained in [clause] are not used: only the hypotheses names are relevant. *)
 val intros_symmetry : clause -> unit Proofview.tactic
 
+type transitivity_arg = Closed of constr | Open of constr option
+
 (** Hook to the [setoid_transitivity] tactic, set at runtime. *)
-val setoid_transitivity : (constr option -> unit Proofview.tactic) Hook.t
+val setoid_transitivity : (transitivity_arg -> unit Proofview.tactic) Hook.t
 
 (** [transitivity_red reduce t] checks the goal is of the form [x = y] and changes it to [x = t] and [t = y].
     - [reduce]: if [true] we weak-head normalize the goal before checking it is
       indeed an equality.
-    - [t]: if [Some] then we use [apply eq_trans with t] to perform transitivity.
-      If [None] we use [eapply eq_trans] instead. *)
-val transitivity_red : bool -> constr option -> unit Proofview.tactic
+    - [t]: if [Closed] then we use [apply eq_trans with t] to perform transitivity.
+      If [Open o] we use [eapply eq_trans with t] (if o is Some t, otherwise without binding) instead. *)
+val transitivity_red : bool -> transitivity_arg -> unit Proofview.tactic
 
 (** Variant of [transitivity_red] which does not perform reduction,
     uses [apply eq_trans with t],
@@ -582,11 +584,11 @@ val transitivity : constr -> unit Proofview.tactic
 (** Variant of [transitivity_red] which does not perform reduction,
     uses [eapply eq_trans],
     and falls back to [setoid_transitivity] in case of failure. *)
-val etransitivity : unit Proofview.tactic
+val etransitivity : constr option -> unit Proofview.tactic
 
 (** [intros_transitivity t] performs [intros] followed by [transitivity t] or [etransivity t]
-    (depending on whether [t] is [Some] or [None]). *)
-val intros_transitivity : constr option -> unit Proofview.tactic
+    (depending on whether [t] is [Closed] or [Open]). *)
+val intros_transitivity : transitivity_arg -> unit Proofview.tactic
 
 (** {6 Forward reasoning tactics. } *)
 

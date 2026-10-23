@@ -1413,7 +1413,7 @@ simple_tactic: [
 | "reflexivity"
 | "exact" one_term
 | "assumption"
-| "etransitivity"
+| "etransitivity" OPT one_term
 | "cut" one_type
 | "exact_no_check" one_term
 | "vm_cast_no_check" one_term
@@ -1570,7 +1570,7 @@ simple_tactic: [
 | "setoid_symmetry" OPT ( "in" ident )
 | "setoid_reflexivity"
 | "setoid_transitivity" one_term
-| "setoid_etransitivity"
+| "setoid_etransitivity" OPT one_term
 | "intros" LIST0 intropattern
 | "eintros" LIST0 intropattern
 | "decide" "equality"
