@@ -902,7 +902,7 @@ let from_ustate uctx = { empty with universes = uctx }
 
 let from_ctx = from_ustate
 
-let from_auctx e names = { empty with universes = UState.from_auctx e names }
+let from_auctx ?of_template e names = { empty with universes = UState.from_auctx ?of_template e names }
 
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 

@@ -1,6 +1,6 @@
 Notation "x * y" := (prod x y)
 
-prod : Type -> Type -> Type
+prod : Univ -> Univ -> Univ
 
 prod is template universe polymorphic
 Arguments prod (A B)%_type_scope

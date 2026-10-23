@@ -1543,12 +1543,18 @@ let from_env env =
     sort_variables = QState.of_elims (Environ.qualities env);
   }
 
-let from_auctx env auctx =
+let from_auctx ?(of_template=false) env auctx =
   let ustate = from_env env in
   let names = AbstractContext.names auctx in
   let name_to_option = function Name id -> Some id | Anonymous -> None in
   (* Inlined call to [AbstractContext.repr] to know what qvars, levels and constraints to add *)
-  let ustate = Array.fold_left_i (fun i ustate name -> add_quality_variable ~rigid:true ~name:(name_to_option name) ustate (QVar.make_var i)) ustate names.quals in
+  let add_qvar i ustate name =
+    let q = QVar.make_var i in
+    let ustate = add_quality_variable ~rigid:(not of_template) ~name:(name_to_option name) ustate q in
+    if not of_template then ustate
+    else set_above_prop q BelowType ustate
+  in
+  let ustate = Array.fold_left_i add_qvar ustate names.quals in
   let ustate = Array.fold_left_i (fun i ustate name -> add_universe (name_to_option name) false ustate (Level.var i)) ustate names.univs in
   let ustate = add_poly_constraints ustate (AbstractContext.constraints auctx) in
   ustate

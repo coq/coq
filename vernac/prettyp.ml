@@ -53,11 +53,26 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 
 let print_basename cst = pr_global (GlobRef.ConstRef cst)
 
+let type_of_global_for_print env ref =
+  if not @@ Environ.is_template_polymorphic env ref then Typeops.type_of_global_in_context env ref
+  else match ref with
+    | ConstRef _ | VarRef _ -> assert false
+    | IndRef ind ->
+      let mib, mip = Inductive.lookup_mind_specif env ind in
+      let ty = mip.mind_user_arity in
+      ty, (Option.get mib.mind_template).template_context
+    | ConstructRef (ind,ctor) ->
+      let mib, mip = Inductive.lookup_mind_specif env ind in
+      let ty = mip.mind_user_lc.(ctor-1) in
+      ty, (Option.get mib.mind_template).template_context
+
 let print_ref env reduce ref udecl =
-  let typ, univs = Typeops.type_of_global_in_context env ref in
+  let typ, univs = type_of_global_for_print env ref in
   let inst = UVars.make_abstract_instance univs in
   let udecl = Option.map (fun x -> ref, x) udecl in
-  let sigma = Evd.from_auctx env (Printer.fill_names ?user_names:udecl univs) in
+  let sigma = Evd.from_auctx ~of_template:(Environ.is_template_polymorphic env ref)
+      env (Printer.fill_names ?user_names:udecl univs)
+  in
   let typ =
     if reduce then
       let ctx,ccl = Reductionops.whd_decompose_prod_decls env sigma (EConstr.of_constr typ)
@@ -198,35 +213,27 @@ let template_poly_variables env ind =
   let mib, mip = Inductive.lookup_mind_specif env ind in
   match mib.mind_template with
   | None -> assert false
-  | Some { template_defaults; template_concl } ->
-    let pseudo_poly = match template_concl with
-      | VSort (q, _) when Option.has_some (Sorts.QVar.var_index q) -> true
-      | _ -> false
-    in
-    let _, vars = UVars.Instance.levels template_defaults in
-    Univ.Level.Set.elements vars, pseudo_poly
+  | Some templ -> templ
 
 let get_template_poly_variables env = function
   | GlobRef.IndRef ind | ConstructRef (ind,_) -> template_poly_variables env ind
   | VarRef _ | ConstRef _ -> assert false
 
 let pr_template_variables env ref =
-  let vars, pseudo_sort_poly = get_template_poly_variables env ref in
-  str " on " ++ prlist_with_sep spc UnivNames.pr_level_with_global_universes vars
-  ++ spc() ++
-  (if pseudo_sort_poly
-   then str "(can be instantiated to Prop)"
-   else str "(cannot be instantiated to Prop)")
+  let templ = get_template_poly_variables env ref in
+  str "default instance:" ++ spc() ++
+  str "{" ++ UVars.Instance.pr UnivNames.(sort_printer empty_binders) templ.template_defaults ++ str "}"
 
 let print_polymorphism env ref =
   let poly = Environ.is_polymorphic env ref in
   let template_poly = Environ.is_template_polymorphic env ref in
-  [ pr_global ref ++ str " is " ++
-      (if poly then str "universe polymorphic"
-       else if template_poly then
-         str "template universe polymorphic"
-         ++ if !PrintingFlags.print_universes then h (pr_template_variables env ref) else mt()
-       else str "not universe polymorphic") ]
+  hov 2
+    (pr_global ref ++ str " is " ++
+     (if poly then str "universe polymorphic"
+      else if template_poly then
+        str "template universe polymorphic"
+        ++ if !PrintingFlags.print_universes then spc() ++ surround (pr_template_variables env ref) else mt()
+      else str "not universe polymorphic"))
 
 let print_squash env ref udecl = match ref with
   | GlobRef.IndRef ind ->
@@ -1053,7 +1060,7 @@ let print_notation env sigma entry raw_ntn =
 let print_about_global_reference ?loc env ref udecl =
   pr_infos_list
    (print_ref env false ref udecl :: blankline ::
-    print_polymorphism env ref @
+    [print_polymorphism env ref] @
     print_squash env ref udecl @
     print_name_infos env ref @
     print_reduction_behaviour ref @
