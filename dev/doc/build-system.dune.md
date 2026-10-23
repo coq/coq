@@ -206,16 +206,19 @@ the right libraries already loaded.
 You can use [ocamldebug](https://ocaml.org/learn/tutorials/debug.html#The-OCaml-debugger) with Dune; after a build, do:
 
 ```
-dune exec -- dev/dune-dbg coqc foo.v
+dune exec --no-build -- dev/dune-dbg coqc foo.v
 (ocd) source db
 ```
 
 to start `coqc.byte foo.v`, other targets are `{checker,rocqide,coqtop}`:
 
 ```
-dune exec -- dev/dune-dbg checker foo.vo
+dune exec --no-build -- dev/dune-dbg checker foo.vo
 (ocd) source db
 ```
+
+If you want to debug code present in plugins, you can add "-I _build_ci/plugin" (or other paths)
+between `dune-dbg` and its further arguments.
 
 More info in the [wiki](https://github.com/rocq-prover/rocq/wiki/OCamldebug).
 

@@ -92,8 +92,16 @@ Note that this function is executed before _Coqproject is read if it exists."
       (setq-local coq-prog-name (concat dir "_build/install/default/bin/coqtop")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
-(defvar coqdev-ocamldebug-command "dune exec -- dev/dune-dbg -emacs coqc /tmp/foo.v"
+(defvar coqdev-ci-projects '("equations" "elpi")
+  "projects imported in `coqdev-ocamldebug`")
+
+(defvar coqdev-ocamldebug-command nil
   "Command run by `coqdev-ocamldebug'")
+
+(defun coqdev-ocamldebug-default-command ()
+  "Generates the default value for `coqdev-ocamldebug-command` using `coqdev-ci-projects`"
+  (let ((includes (mapconcat (lambda (x) (concat " -I _build_ci/" x)) coqdev-ci-projects)))
+  (concat "dune exec --no-build -- dev/dune-dbg" includes " -emacs coqc /tmp/foo.v")))
 
 (declare-function comint-check-proc "comint")
 (declare-function tuareg--split-args "tuareg")
@@ -114,7 +122,7 @@ Note that this function is executed before _Coqproject is read if it exists."
       (setq default-directory dir)
       (setq coqdev-ocamldebug-command
             (read-from-minibuffer "Command to run: "
-                                  coqdev-ocamldebug-command))
+                                  (or coqdev-ocamldebug-command (coqdev-ocamldebug-default-command))))
       (let* ((cmdlist (tuareg--split-args coqdev-ocamldebug-command))
              (cmdlist (mapcar #'substitute-in-file-name cmdlist)))
         (apply #'make-comint name
