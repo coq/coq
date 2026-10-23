@@ -206,7 +206,7 @@ Other tokens
 
     ! # #[ % %_ & ' ( () ) * + , - ->
     . .( .. / : :: ::> := :> ; < <+ <- <:
-    <<: <= = => > >-> ? @ @{ [ ] _
+    <<: <= = => > >-> ? @ @{ [ [: ] _
     `( `[ `{ { {| | |- }
 
   The following character sequences are tokens defined in notations or plugins

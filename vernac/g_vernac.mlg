@@ -166,13 +166,22 @@ GRAMMAR EXTEND Gram
   noedit_mode: [ [ c = query_command -> { VernacSynPure (c None) } ] ]
   ;
 
+  subprf_abstract_args: [
+    [ transp = OPT [ IDENT "transparent" -> { () } ];
+      IDENT "abstract"; using = OPT [ IDENT "using"; id = ident -> { id } ] ->
+      { { Proof.transparent = Option.has_some transp; using } }
+    ] ]
+  ;
+
   subprf:
   [ [ s = BULLET -> { VernacBullet (make_bullet s) }
     | "}" -> { VernacEndSubproof }
+    | "["; ":"; args = subprf_abstract_args; "]"; ":"; "{" ->
+      { VernacSubproof (AbstractSubproof args) }
     ] ]
   ;
   subprf_with_selector:
-  [ [ "{" -> { fun g -> VernacSubproof g }
+  [ [ "{" -> { fun g -> VernacSubproof (GoalSubproof g) }
     (* query_command needs to be here to factor with VernacSubproof *)
     | c = query_command -> { c }
     ] ]

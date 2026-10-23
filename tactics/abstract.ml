@@ -93,3 +93,6 @@ let { Goptions.get = get_inline_abstract_subproof } =
     ~key:["Inline"; "Abstract"; "Subproof"]
     ~value:false
     ()
+
+let () = Hook.set Proof.abstract_hook
+    (fun { transparent; using } tac -> tclABSTRACT ~opaque:(not transparent) using tac)

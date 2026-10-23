@@ -896,9 +896,14 @@ noedit_mode: [
 | query_command
 ]
 
+subprf_abstract_args: [
+| OPT "transparent" "abstract" OPT [ "using" ident ]
+]
+
 subprf: [
 | BULLET
 | "}"
+| "[" ":" subprf_abstract_args "]" ":" "{"
 ]
 
 subprf_with_selector: [
