@@ -96,8 +96,9 @@ This file recollects knowledge about critical bugs found in Coq since version 8.
     - [Side-effects](#side-effects)
       - [polymorphic side-effects inside monomorphic definitions incorrectly handled as not inlined](#polymorphic-side-effects-inside-monomorphic-definitions-incorrectly-handled-as-not-inlined)
       - [Section variables used in side effects not checked by Proof using](#section-variables-used-in-side-effects-not-checked-by-proof-using)
-    - [Forgetting unsafe flags](#forgetting-unsafe-flags)
+    - [Forgetting axioms or unsafe flags](#forgetting-axioms-or-unsafe-flags)
       - [unsafe typing flags used inside a section would not be reported by Print Assumptions after closing the section](#unsafe-typing-flags-used-inside-a-section-would-not-be-reported-by-print-assumptions-after-closing-the-section)
+      - [roqchk --output-context did not report axioms used through inductives sealed in a module](#roqchk-output-context-did-not-report-axioms-used-through-inductives-sealed-in-a-module)
     - [Conflicts with axioms in library](#conflicts-with-axioms-in-library)
       - [axiom of description and decidability of equality on real numbers in library Reals was inconsistent with impredicative Set](#axiom-of-description-and-decidability-of-equality-on-real-numbers-in-library-reals-was-inconsistent-with-impredicative-set)
       - [guard condition was unknown to be inconsistent with propositional extensionality in library Sets](#guard-condition-was-unknown-to-be-inconsistent-with-propositional-extensionality-in-library-sets)
@@ -1114,7 +1115,7 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - GH issue number: rocq-prover/rocq#19861
 - risk: requires incorrect `Proof using` and no use of coqchk
 
-### Forgetting unsafe flags
+### Forgetting axioms or unsafe flags
 
 #### unsafe typing flags used inside a section would not be reported by Print Assumptions after closing the section
 
@@ -1125,6 +1126,19 @@ For instance `α` and `__U03b1_` were the same in the native compiler.
 - found by: Anton Trunov
 - GH issue number: rocq-prover/rocq#14317
 - risk: low as it needs the use of explicit unsafe flags
+
+#### roqchk --output-context did not report axioms used through inductives sealed in a module
+
+- component: checker, modules
+- introduced: V8.12 (known exploit only works since V8.14)
+- impacted rocqchk versions: V8.12 to V9.4
+- fixed in: V9.4
+- found by: Gaëtan Gilbert
+- issue and exploit: [rocq-prover/rocq#22618](https://github.com/rocq-prover/rocq/issues/22618)
+- risk: the bug needs the sealed module to expose constants
+  which only refer to the axiom through the inductive (itself not exposed).
+  The known exploit additionally needs the inductive to use the axiom
+  through a let-in in a constructor (`Inductive TT :Prop := tt (y:=x).` where `x` is the axiom).
 
 ### Conflicts with axioms in library
 
