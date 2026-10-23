@@ -365,6 +365,7 @@ and ``rocq repl``, unless stated otherwise:
   and ``_darcs`` are excluded.
 :-nois, -noinit: Start from an empty state instead of loading the `Init.Prelude`
   module.
+:-boot: don't automatically setup Corelib and ocamlfind paths (see :ref:`system_config`)
 :-init-file *file*: Load *file* as the resource file instead of
   loading the default resource file from the standard configuration
   directories.
