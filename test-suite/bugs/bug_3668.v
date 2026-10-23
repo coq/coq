@@ -10,7 +10,7 @@ Record Equiv A B := { equiv_fun :> A -> B ; equiv_isequiv :> IsEquiv equiv_fun }
 Notation "A <~> B" := (Equiv A B) (at level 85).
 Axiom IsHProp : Type -> Type.
 Inductive Bool := true | false.
-Definition negb (b : Bool) := if b then false else true.
+Definition negb (b : Bool) := if b is true then false else true.
 Axiom LEM : forall A : Type, IsHProp A -> A + (A -> False).
 Axiom cheat : forall {A},A.
 Module NonPrim.

@@ -219,3 +219,6 @@ val default_pretyper : pretyper
 (** Rocq vanilla pretyper. *)
 
 val eval_pretyper : pretyper -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment
+
+(** Option OldIfWOBoolCoercion *)
+val old_if_wo_bool_coercion : unit -> bool

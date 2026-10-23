@@ -153,7 +153,7 @@ Defined.
   End guest.
 
 Definition cpu_sts (is_guest : guestT) : Sts.t.
-exact (if is_guest
+exact (if is_guest is guest
     then Sts.Build_t guest.sts
     else Sts.Build_t guest.sts).
 Defined.

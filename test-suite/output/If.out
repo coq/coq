@@ -58,3 +58,7 @@ if left I is left _ then 1 else 0
      : nat
 if inleft 3 is inleft _ then 1 else 0
      : nat
+if 4 then 1 else 0
+     : nat
+if is_S 4 then 1 else 0
+     : nat
