@@ -323,6 +323,38 @@ type ('q, 'u) instance_mask = ('q, 'u) UVars.Instance.mask
 type ('q, 'u) sort_pattern = ('q, 'u) Sorts.pattern =
   | PSProp | PSSProp | PSSet | PSType of 'u | PSGlobal of Sorts.QGlobal.t * 'u | PSQSort of 'q * 'u
 
+type sort_annot = Sorts.QVar.t * Univ.Level.t
+type evar_annot = Evar.t * Sorts.QVar.t * Univ.Level.t
+type ind_annot = Sorts.QVar.t array * Univ.Level.t array * Evar.t array
+type 'arg name_annotated = Name.t array * 'arg
+
+type pattern =
+  | PRel     of int
+  | PSort    of (int, int) sort_pattern
+  | PSymbol  of Constant.t * (int, int) instance_mask
+  | PInd     of inductive * (int, int) instance_mask
+  | PConstr  of constructor * (int, int) instance_mask
+  | PInt     of Uint63.t
+  | PFloat   of Float64.t
+  | PString  of Pstring.t
+  | PLambda  of Name.t * arg_pattern * pattern
+  | PProd    of Name.t * arg_pattern * arg_pattern
+  | PApp     of pattern * arg_pattern
+  | PCase    of pattern * inductive * arg_pattern name_annotated * arg_pattern name_annotated array
+  | PProj    of pattern * Projection.Repr.t
+
+and arg_pattern =
+  | PVar of int
+  | Pat of pattern
+
+type rewrite_rule = {
+  rr_uctx: UVars.bound_names;
+  rr_evars: Name.t array;
+  esubst: int Evar.Map.t;
+  pattern: pattern;
+  replacement: constr;
+}
+
 (** Patterns are internally represented as pairs of a head-pattern and a list of eliminations
     Eliminations correspond to elements of the stack in a reduction machine,
     they represent a pattern with a hole, to be filled with the head-pattern
@@ -361,7 +393,8 @@ type machine_rewrite_rule = {
 
 (** [(c, { lhs_pat = (u, elims); rhs })] in this list stands for [(PHSymbol (c,u), elims) ==> rhs] *)
 type rewrite_rules_body = {
-  rewrules_rules : (Constant.t * machine_rewrite_rule) list;
+  rewrules_rules : rewrite_rule list;
+  rewrules_machine : (Constant.t * machine_rewrite_rule) list;
 }
 
 (** {6 Module declarations } *)

@@ -243,6 +243,8 @@ val fix_undefined_variables : t -> t
 (** Universe minimization *)
 val minimize : t -> t
 
+val freeze_sort_variables : t -> t
+
 val collapse_sort_variables : ?except:QVar.Set.t -> only_above_prop:bool -> t -> t
 
 type ('a, 'b, 'c, 'd) gen_universe_decl = {
@@ -279,6 +281,12 @@ val check_mono_univ_decl : t -> universe_decl -> Univ.ContextSet.t
 val check_template_univ_decl : t -> template_qvars:QVar.Set.t -> universe_decl -> Univ.ContextSet.t
 
 val check_mono_sort_constraints : t -> Univ.ContextSet.t
+
+(** [disable_checks ustate] enables type-in-type and ignore-elimination-constraints,
+    thus allowing any check failure while doing best-effort unification.
+    Useful to elaborate a term without checking universes immediately.
+    To be used cautiously. *)
+val disable_checks : t -> t
 
 (** {5 TODO: Document me} *)
 

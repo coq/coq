@@ -107,6 +107,7 @@ module QState : sig
   val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val undefined : t -> QVar.Set.t
   val collapse : ?except:QVar.Set.t -> only_above_prop:bool -> t -> t
+  val freeze : t -> t
   val pr : Sorts.Quality.printer -> (QVar.t -> Id.t option) -> t -> Pp.t
   val of_elims : QGraph.t -> t
   val elims : t -> QGraph.t
@@ -371,6 +372,10 @@ let collapse ?(except=QSet.empty) ~only_above_prop m =
           | Some AboveProp -> Option.get (set q qprop m)
           | None -> if not only_above_prop then Option.get (set q qtype m) else m)
     m.qmap m
+
+let freeze m =
+  { m with qmap =
+    QMap.map (function Canonical { rigid=_ } -> Canonical { rigid=true } | r -> r) m.qmap }
 
 let pr prqvar local_name ({ qmap; elims } as m) =
   let open Pp in
@@ -1586,6 +1591,9 @@ let normalize_variables uctx =
 let fix_undefined_variables uctx =
   { uctx with univ_variables = UnivFlex.fix_undefined_variables uctx.univ_variables }
 
+let freeze_sort_variables uctx =
+  { uctx with sort_variables = QState.freeze uctx.sort_variables }
+
 let collapse_sort_variables ?except ~only_above_prop uctx =
   let sorts = QState.collapse ?except ~only_above_prop uctx.sort_variables in
   normalize_quality_variables { uctx with sort_variables = sorts }
@@ -1670,6 +1678,11 @@ let check_uctx_impl ~fail uctx uctx' =
   in
   ()
 
+let disable_checks ustate =
+  let ug = UGraph.set_type_in_type true ustate.universes in
+  let qstate = ustate.sort_variables in
+  let qg = QGraph.set_ignore_constraints true (QState.elims qstate) in
+  { ustate with universes = ug; sort_variables = QState.set_elims qg qstate }
 
 (* XXX print above_prop too *)
 let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak; above_prop}} =

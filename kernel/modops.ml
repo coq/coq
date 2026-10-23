@@ -188,7 +188,7 @@ let rec add_structure : type a. _ -> _ -> a delta_resolver -> _ -> _ -> _ =
       Environ.add_mind_key mind mib linkinfo env
     | SFBmodule mb -> add_module (MPdot (mp, l)) mb linkinfo env (* adds components as well *)
     | SFBmodtype mtb -> Environ.add_modtype (MPdot (mp, l)) mtb env
-    | SFBrules r -> Environ.add_rewrite_rules r.rewrules_rules env
+    | SFBrules r -> Environ.add_rewrite_rules r.rewrules_machine env
   in
   List.fold_left add_field env sign
 
@@ -257,7 +257,7 @@ let rec compile_structure env vmtab mp res struc =
     let vmtab, mtb = compile_module_bytecode env vmtab mp mtb in
     Environ.add_modtype mp mtb env, vmtab, (lab, SFBmodtype mtb) :: accu
   | SFBrules rrb ->
-    Environ.add_rewrite_rules rrb.rewrules_rules env, vmtab, (lab, sfb) :: accu
+    Environ.add_rewrite_rules rrb.rewrules_machine env, vmtab, (lab, sfb) :: accu
   in
   let (_ : env), vmtab, accu = List.fold_left fold (env, vmtab, []) struc in
   vmtab, List.rev accu

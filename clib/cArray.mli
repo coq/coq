@@ -124,6 +124,9 @@ val fold_left2_map_i :
 val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
 (** Same with two arrays, folding on the right *)
 
+val init_fold : int -> (int -> 'acc -> 'acc * 'elt) -> 'acc -> 'acc * 'elt array
+(** Initialize an array folding an accumulator *)
+
 val distinct : 'a array -> bool
 (** Return [true] if every element of the array is unique (for default
     equality). *)

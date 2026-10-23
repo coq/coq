@@ -238,4 +238,6 @@ val raw_pr : t -> Pp.t
 type ('q, 'u) pattern =
   | PSProp | PSSProp | PSSet | PSType of 'u | PSGlobal of QGlobal.t * 'u | PSQSort of 'q * 'u
 
+val make_pattern : 'q Quality.pattern -> 'u -> ('q, 'u) pattern
+
 val pattern_match : (int option, int option) pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option

@@ -18,7 +18,7 @@ let make (m, n, p) =
   (WriteOnceArray.make m, WriteOnceArray.make n, WriteOnceArray.make p)
 
 let add_term i t tqus : ('t, 'q, 'u) t =
-  on_pi1 (WriteOnceArray.add (i-1) t) tqus
+  on_pi1 (WriteOnceArray.add i t) tqus
 
 let maybe_add_term io t tqus : ('t, 'q, 'u) t =
   Option.fold_right (fun i -> add_term i t) io tqus

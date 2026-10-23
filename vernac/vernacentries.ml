@@ -2889,8 +2889,8 @@ let translate_pure_vernac ?loc ~atts v = let open Vernactypes in match v with
 
   | VernacAddRewRule (id, c) ->
     vtdefault (fun () ->
-        let collapse_sort_variables = Option.default true @@ Attributes.(parse collapse_sort_variables) atts in
-        ComRewriteRule.do_rules ~collapse_sort_variables id.v c)
+        unsupported_attributes atts;
+        ComRewriteRule.do_rules id.v c)
 
   (* Gallina extensions *)
 
