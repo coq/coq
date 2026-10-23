@@ -56,6 +56,8 @@ val whd_decompose_lambda_decls : ?evars:evar_handler -> env -> constr -> Constr.
     index + 1 *)
 val whd_decompose_lambda_n_assum : ?evars:evar_handler -> env -> int -> constr -> Constr.rel_context * constr
 
+val whd_decompose_lambda_n_assum_opt : ?evars:evar_handler -> env -> int -> constr -> (Constr.rel_context * constr) option
+
 exception NotArity
 
 val dest_arity : ?evars:evar_handler -> env -> types -> Term.arity (* raises NotArity if not an arity *)

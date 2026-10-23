@@ -1786,6 +1786,197 @@ let check_one_fix ?evars renv recpos trees def =
   | NeedReduce (env,err) -> raise (FixGuardError (env,err))
   | NoNeedReduce -> ()
 
+
+let iter_with_full_binders env g f n c =
+  let open Context.Rel.Declaration in
+  match kind c with
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+    | Construct _ | Int _ | Float _ | String _) -> ()
+  | Cast (c,_,t) -> f n c; f n t
+  | Prod (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
+  | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
+  | LetIn (na,b,t,c) -> f n b; f n t; f (g (LocalDef (na, b, t)) n) c
+  | App (c,l) -> f n c; Array.Fun1.iter f n l
+  | Evar (_, l) ->
+    List.iter (Option.iter (fun c -> f n c)) (SList.to_list l)
+  | Case (ci,u,pms,(p,_),iv,c,bl) ->
+    let specif = lookup_mind_specif env ci.ci_ind in
+    let pctx = expand_arity specif (ci.ci_ind, u) pms (fst p) in
+    let brctx = expand_branch_contexts specif u pms bl in
+    let f_ctx ctx (_, c) = f (List.fold_right g ctx n) c in
+    Array.Fun1.iter f n pms; f_ctx pctx p; iter_invert (f n) iv; f n c; Array.iter2 f_ctx brctx bl
+  | Proj (_,_,c) -> f n c
+  | Fix (_,(lna,tl,bl)) ->
+    Array.iter (f n) tl;
+    let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na, lift i t)) n) n lna tl in
+    Array.iter (f n') bl
+  | CoFix (_,(lna,tl,bl)) ->
+    Array.iter (f n) tl;
+    let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na,lift i t)) n) n lna tl in
+    Array.iter (f n') bl
+  | Array (_u,t,def,ty) -> Array.Fun1.iter f n t; f n def; f n ty
+
+(* Check if [def] is a guarded fixpoint body with decreasing arg.
+   given [recpos], the decreasing arguments of each mutually defined
+   fixpoint. *)
+
+let check_one_fix_minimal ~strict renv recpos def =
+  let nfi = Array.length recpos in
+  let push decl (env, renv, depth) = (push_rel decl env, None :: renv, 1+depth) in
+  let to_subterm = let open Subterm in function None -> not_subterm | Some (Large, tree) -> structural tree | Some (Strict, tree) -> strict_subterm tree in
+  let of_subterm = let open Subterm in function NotSubterm -> None | Subterm (size, tree, _) -> Some (size, tree) | _ -> assert false in
+  let rec align_subterms ctx l = match ctx, l with [], [] -> [] | LocalDef _ :: ctx, l -> None :: align_subterms ctx l | LocalAssum _ :: ctx, s :: l -> s :: align_subterms ctx l | _ -> assert false in
+
+  let rec subterm_specif (env, renv, depth as acc) t =
+    let hd, args = decompose_app t in
+    match kind hd with
+    | Rel zn when zn <= depth -> List.nth renv (zn-1)
+    | Proj (p, _, c) ->
+      let c_spec = subterm_specif acc c in
+      let p_spec = Subterm.on_projection (to_subterm c_spec) (Projection.arg p) in
+      of_subterm p_spec
+
+    | Const c ->
+      begin match Environ.constant_value_in env c with
+      | _ -> None
+      | exception NotEvaluableConst (IsPrimitive (_u,op)) when Array.length args >= CPrimitives.arity op ->
+        let open CPrimitives in
+        begin match op with
+        | Arrayget | Arraydefault ->
+          (* t.[i] and default t can be seen as strict subterms of t, with a
+            potentially nested rectree. *)
+          let arg = Array.get args 1 in (* the result is a strict subterm of the second argument *)
+          let subt = subterm_specif acc arg in
+          let p_spec = Subterm.on_array (to_subterm subt) in
+          of_subterm p_spec
+        | _ -> None
+        end
+      | exception NotEvaluableConst _ -> None
+      end
+    | _ -> None
+  in
+
+  let rec check_rec_call (env, renv, depth as acc) t =
+    let hd, args = decompose_app t in
+    match kind hd with
+    | Rel p when depth < p && p <= depth+nfi ->
+      let glob = depth+nfi-p in
+      (* the decreasing arg of the rec call: *)
+      let np = recpos.(glob) in
+      if Array.length args <= np then
+        raise (FixGuardError (env, NotEnoughArgumentsForFixCall glob));
+      let z = Array.get args np in
+      begin match subterm_specif acc z with
+      | None | Some (Subterm.Large, _) ->
+        let vars = lazy (List.fold_left_i (fun i (le,lt) -> function
+          | None -> (le,lt)
+          | Some (Subterm.Large, _) -> (i :: le, lt)
+          | Some (Subterm.Strict, _) -> (le, i :: lt))
+          1 ([],[]) renv)
+        in
+        raise (FixGuardError (env, RecursionOnIllegalTerm (glob, (env, z), vars)))
+      | Some (Subterm.Strict, _) -> ()
+      end;
+      Array.Fun1.iter check_rec_call acc args
+
+    | Fix ((recindxs, i), (names, typarray, bodies)) ->
+      let np = recindxs.(i) in
+      if Array.length args <= np then
+        iter_with_full_binders env push check_rec_call acc t
+      else
+      let z = Array.get args np in
+      begin match subterm_specif acc z with
+      | None -> iter_with_full_binders env push check_rec_call acc t
+      | Some s ->
+
+      Array.iter (check_rec_call acc) typarray;
+      let acc' = Array.fold_left2_i (fun i n na t -> push (LocalAssum (na,lift i t)) n) acc names typarray in
+
+      Array.iter2 (fun recindx body ->
+        match Term.decompose_lambda_n_decls_opt (1+recindx) body with
+        | None -> check_rec_call acc' body
+        | Some (ctx', _) when Context.Rel.nhyps ctx' != 1 + recindx -> check_rec_call acc' body
+        | Some (ctx', body) ->
+          let env, renv, depth = acc' in
+          let acc'' = (push_rel_context ctx' env, Some s :: List.make recindx None @ renv, 1 + recindx + depth) in
+          let _ = Context.Rel.fold_outside (fun decl acc -> Context.Rel.Declaration.iter_constr (check_rec_call acc) decl; push decl acc) ~init:acc' ctx' in
+          check_rec_call acc'' body
+        ) recindxs bodies;
+
+      Array.iter (check_rec_call acc) args
+      end
+
+
+    (* Nonminimal parts *)
+    | Const cst when not strict && not (Array.is_empty args) ->
+      (* Allow a constant whose argument is a not-applied-enough recursive call *)
+      let (let*) a f = match a with
+        (* Worst case: forget the situation we're in and check as normal *)
+        | None -> iter_with_full_binders env push check_rec_call acc t
+        | Some a -> f a
+      in
+      let* n = CArray.findi (fun _ t -> not (noccur_with_meta (depth+1) nfi t)) args in
+      let* () =
+        let hd, args = decompose_app args.(n) in
+        match kind hd with
+        | Rel p when depth < p && p <= depth+nfi
+          && Array.length args < recpos.(depth+nfi-p)
+          && Array.for_all (noccur_between (depth+1) nfi) args
+          -> Some ()
+          (* We only accept arguments of shape [rec args] with too few arguments to reach the structural one *)
+        | _ -> None
+      in
+      let* def = constant_opt_value_in env cst in
+      let* ctx, def = whd_decompose_lambda_n_assum_opt env (1+n) def in
+      let inst, args = Array.chop (n + 1) args in
+      let subs = subst_of_rel_context_instance ctx inst in
+      let t = mkApp (Vars.substl subs def, args) in
+      check_rec_call acc t
+
+    | Lambda (na, t, b) when not strict && not (Array.is_empty args) ->
+      (* Necessary for deep fixpoints substitutions *)
+      check_rec_call acc t;
+      let z = Array.get args 0 in
+      check_rec_call (push (LocalAssum (na, t)) acc) z;
+      let b = subst1 z b in
+      check_rec_call acc (mkApp (b, (Array.sub args 1 (Array.length args - 1))))
+
+    (* Global separator for things that need arguments and things that don't *)
+    | _ when not (Array.is_empty args) -> iter_with_full_binders env push check_rec_call acc t
+
+    | LetIn (na, def, t, b) when not strict ->
+      (* Necessary for primitive projections eliminator *)
+      check_rec_call acc def;
+      check_rec_call acc t;
+      let acc' = (push_rel (LocalDef (na, b, t)) env, subterm_specif acc def :: renv, 1+depth) in
+      check_rec_call acc' b
+
+    (* End of nonminimal parts *)
+
+    | Case (ci, u, pms, (ret, _), iv, c, br) ->
+      let specif = lookup_mind_specif env ci.ci_ind in
+      let pctx = expand_arity specif (ci.ci_ind, u) pms (fst ret) in
+      let brctx = expand_branch_contexts specif u pms br in
+      let f_ctx ctx (_, c) = check_rec_call (List.fold_right push ctx acc) c in
+
+      let c_spec = subterm_specif acc c in
+      let case_spec = Subterm.on_branches env ci.ci_ind (lazy (to_subterm c_spec)) in
+
+      Array.Fun1.iter check_rec_call acc pms;
+      f_ctx pctx ret;
+      iter_invert (check_rec_call acc) iv;
+      check_rec_call acc c;
+      Array.iter2_i (fun k ctx (_, br) ->
+        let acc' = (push_rel_context ctx env, (align_subterms ctx (List.rev_map (Lazy.force %> of_subterm) (case_spec k))) @ renv, List.length ctx + depth) in
+        check_rec_call acc' br) brctx br
+
+    | _ -> iter_with_full_binders env push check_rec_call acc t
+  in
+  check_rec_call renv def
+
+
+
+
 let raise_fix_guard_err_fn env recdef names =
   let fixenv = push_rec_types recdef env in
   let vdefj = judgment_of_fixpoint recdef in
@@ -1862,6 +2053,7 @@ let sorts_of_mutfix env minds names =
         (ind_sort, out_sort) :: sorts
       ) [] minds)
 
+let use_regular_guard = true
 
 let check_fix_pre_sorts ?evars env ((nvect, _), (names, _, bodies as recdef) as fix) =
 (* For elaboration of elimination constraints, we need to update the evar_map with
@@ -1879,7 +2071,12 @@ let check_fix_pre_sorts ?evars env ((nvect, _), (names, _, bodies as recdef) as 
       for i = 0 to Array.length bodies - 1 do
         let (fenv, body) = rdef.(i) in
         let renv = make_renv fenv nvect.(i) trees.(i) in
-        try check_one_fix ?evars renv nvect trees body
+        let renv_minimal = (fenv, Some (Subterm.Large, trees.(i)) :: List.make nvect.(i) None, nvect.(i)+1) in
+        try
+          if use_regular_guard then
+            check_one_fix ?evars renv nvect trees body
+          else
+            check_one_fix_minimal ~strict:false renv_minimal nvect body
         with FixGuardError (err_env, err) -> raise_err err_env i err
       done
   in
