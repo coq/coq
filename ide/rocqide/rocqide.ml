@@ -105,7 +105,17 @@ let make_rocqtop_args fname =
         | Some proj ->
           Minilib.log ("About to read project file " ^ proj);
           let warning_fn x = Feedback.msg_warning Pp.(str x) in
-          proj, coqtop_args_from_project (read_project_file ~warning_fn proj) @ base_args
+          let proj, args = match read_project_file ~warning_fn proj with
+            | args -> proj, coqtop_args_from_project args
+            | exception CoqProject_file.Parsing_error msg ->
+              let _ = GToolbox.question_box
+                  ~title:(Printf.sprintf "Could not parse project file %s" proj)
+                  ~buttons:["Ok"] ~icon:(warn_image())#coerce
+                  msg
+              in
+              "", []
+          in
+          proj, args @ base_args
   in
   let args = match fname with
     | None -> args
@@ -1828,7 +1838,11 @@ let read_rocqide_args argv =
         (output_string stderr "Error: multiple -f options"; exit 1);
       let d = CUnix.canonical_path_name (Filename.dirname file) in
       let warning_fn x = Format.eprintf "%s@\n%!" x in
-      let p = CoqProject_file.read_project_file ~warning_fn file in
+      let p = try CoqProject_file.read_project_file ~warning_fn file
+        with CoqProject_file.Parsing_error msg ->
+          Printf.eprintf "Error while parsing project file %s:\n%s\n%!" file msg;
+          exit 1
+      in
       filter_rocqtop rocqtop (Some (d,p)) bindings_files out args
     |"-f" :: [] ->
       output_string stderr "Error: missing project file name"; exit 1

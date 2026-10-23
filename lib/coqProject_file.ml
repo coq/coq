@@ -228,7 +228,7 @@ let process_cmd_line ~warning_fn orig_dir parse_extra proj args =
   let sourced x = { thing = x; source = if !parsing_project_file then ProjectFile else CmdLine } in
   let orig_dir = (* avoids turning foo.v in ./foo.v *)
     if orig_dir = "." then "" else orig_dir in
-  let error s = (Format.eprintf "Error: @[%s@].@\n%!" s; exit 1) in
+  let error s = raise (Parsing_error s) in
   let mk_path d =
     let p = CUnix.correct_path d orig_dir in
     { path = CUnix.remove_path_dot (post_canonize p);
