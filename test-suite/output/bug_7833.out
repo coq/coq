@@ -1,0 +1,12 @@
+File "./output/bug_7833.v", line 7, characters 2-45:
+The command has indeed failed with message:
+Destructing let on term "p" of type "point2d"
+expects 2 variables, but 3 were given.
+File "./output/bug_7833.v", line 10, characters 2-19:
+The command has indeed failed with message:
+Destructing let on term "p" of type "point2d"
+expects 2 variables, but 1 was given.
+File "./output/bug_7833.v", line 15, characters 2-22:
+The command has indeed failed with message:
+Destructing let on term "b" of type "box"
+expects 1 variable, but 2 were given.

@@ -41,6 +41,8 @@ let of_type_error = map_ptype_error ERelevance.make EConstr.of_constr
 type pretype_error =
   (* Old Case *)
   | CantFindCaseType of constr
+  (* Destructuring let *)
+  | LetTupleArity of unsafe_judgment * int * int
   (* Type inference unification *)
   | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (* Tactic unification *)
@@ -111,6 +113,9 @@ let error_number_branches ?loc env sigma cj expn =
 
 let error_case_not_inductive ?loc env sigma cj =
   raise_type_error ?loc (env, sigma, CaseNotInductive cj)
+
+let error_lettuple_arity ?loc env sigma cj expn given =
+  raise_pretype_error ?loc (env, sigma, LetTupleArity (cj, expn, given))
 
 let error_ill_typed_rec_body ?loc env sigma i na jl tys =
   raise_type_error ?loc (env, sigma, IllTypedRecBody (i, na, jl, tys))
