@@ -17,3 +17,88 @@ Closed under the global context
 Closed under the global context
 Closed under the global context
 Closed under the global context
+Axioms:
+b : nat
+a : nat
+first:
+Axioms:
+a : nat
+
+b:
+Axioms:
+b : nat
+
+closed:
+Closed under the global context
+
+second:
+Axioms:
+a : nat
+
+first:
+Axioms:
+a : nat
+TYPES.foo:
+Axioms:
+TYPES.ax : nat
+
+M.bar:
+Axioms:
+foo : nat
+
+P.bar:
+Axioms:
+foo : nat
+Axioms:
+a : nat
+first:
+Transparent constants:
+first :
+nat
+Axioms:
+a : nat
+Opaque constants:
+shared :
+nat
+
+second:
+Transparent constants:
+second :
+nat
+Axioms:
+a : nat
+Opaque constants:
+shared :
+nat
+with_x:
+Section Variables:
+x
+: nat
+
+closed:
+Closed under the global context
+with_x:
+Closed under the global context
+
+closed:
+Closed under the global context
+absurd_nat:
+Axioms:
+absurd : False
+used in absurd_nat to prove
+ nat
+
+absurd_bool:
+Axioms:
+absurd : False
+used in absurd_bool to prove
+ bool
+unguarded:
+Axioms:
+unguarded is assumed to be guarded.
+
+closed:
+Closed under the global context
+Axioms:
+b : nat
+a : nat

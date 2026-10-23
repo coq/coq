@@ -226,7 +226,7 @@ let rec traverse access (current:GlobRef.t) ctx accu t =
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object access accu body (VarRef id)
 | Const (kn, _) ->
-  let body () = get_constant_body access kn in
+  let body () = access kn in
   traverse_object access accu body (ConstRef kn)
 | Ind ((mind, _) as ind, _) ->
   traverse_inductive access accu mind (IndRef ind)
@@ -357,13 +357,16 @@ and traverse_context access current ctx accu ctxt =
           let ctx = Context.Rel.add decl ctx in
            ctx, accu) ctxt ~init:(ctx, accu))
 
-let traverse access grs =
+let traverse_with_body get_body grs =
   let () = modcache := ModPath.Map.empty in
   let env = Global.env () in
   List.fold_left (fun accu gr ->
     let t, _ = UnivGen.fresh_global_instance env gr in
-    traverse access gr Context.Rel.empty accu t
+    traverse get_body gr Context.Rel.empty accu t
   ) (GlobRef.Set.empty, GlobRef.Map.empty, GlobRef.Map.empty) grs
+
+let traverse access grs =
+  traverse_with_body (get_constant_body access) grs
 
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when
@@ -378,10 +381,8 @@ let uses_uip mib =
       && List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt)
     mib.mind_packets
 
-let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
+let assumptions_of_graph ?(add_opaque=false) ?(add_transparent=false) st (_, graph, ax2ty) =
   let open Printer in
-  (* Only keep the transitive dependencies *)
-  let (_, graph, ax2ty) = traverse access grs in
   let open GlobRef in
   let has_impredicative_set = ref false in
   let has_rewrite_rules = ref false in
@@ -487,3 +488,22 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) access st grs =
     has_type_in_type = !has_type_in_type;
   } in
   (theory, map)
+
+let assumptions ?add_opaque ?add_transparent access st grs =
+  assumptions_of_graph ?add_opaque ?add_transparent st (traverse access grs)
+
+let assumptions_per_reference ?add_opaque ?add_transparent access st grs =
+  (* Reuse loaded bodies only during this command. Each reference keeps its own
+     dependency graph, assumption annotations and typing flags. *)
+  let bodies = ref Cmap.empty in
+  let get_body kn =
+    match Cmap.find_opt kn !bodies with
+    | Some body -> Some body
+    | None ->
+      match get_constant_body access kn with
+      | None -> None
+      | Some body -> bodies := Cmap.add kn body !bodies; Some body
+  in
+  List.map_left (fun gr ->
+    gr, assumptions_of_graph ?add_opaque ?add_transparent st
+      (traverse_with_body get_body [gr])) grs

@@ -33,3 +33,10 @@ val assumptions :
   ?add_opaque:bool -> ?add_transparent:bool -> Global.indirect_accessor ->
   TransparentState.t -> GlobRef.t list ->
   theory_assumptions * types ContextObjectMap.t
+
+(** Reports each reference separately, sharing loaded constant bodies only
+    within this call. The warning on {!traverse} also applies. *)
+val assumptions_per_reference :
+  ?add_opaque:bool -> ?add_transparent:bool -> Global.indirect_accessor ->
+  TransparentState.t -> GlobRef.t list ->
+  (GlobRef.t * (theory_assumptions * types ContextObjectMap.t)) list

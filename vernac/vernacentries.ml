@@ -2301,6 +2301,12 @@ let vernac_print_debug_delta qid =
   in
   Mod_subst.debug_pr_delta prc delta
 
+let { Goptions.get = print_assumptions_per_reference } =
+  Goptions.declare_bool_option_and_ref
+    ~key:["Printing"; "Assumptions"; "Per"; "Reference"]
+    ~value:false
+    ()
+
 let vernac_print =
   let no_state f =
     Vernactypes.(typed_vernac_gen ignore_state (fun _ -> no_state, f ()))
@@ -2395,9 +2401,17 @@ let vernac_print =
     (* Prints all the axioms and section variables used by a term *)
     let st = Conv_oracle.get_transp_state (Environ.oracle env) in
     let grs = List.map smart_global rs in
-    let (theory, nassums) =
-      Assumptions.assumptions opaque_access st ~add_opaque:o ~add_transparent:t grs in
-    Printer.pr_assumptionset env sigma theory nassums
+    if print_assumptions_per_reference () && List.length grs > 1 then
+      let pp_one (gr, (theory, nassums)) =
+        Nametab.pr_global_env Id.Set.empty gr ++ str ":" ++ fnl () ++
+        Printer.pr_assumptionset env sigma theory nassums
+      in
+      prlist_with_sep (fun () -> fnl () ++ fnl ()) pp_one
+        (Assumptions.assumptions_per_reference opaque_access st ~add_opaque:o ~add_transparent:t grs)
+    else
+      let (theory, nassums) =
+        Assumptions.assumptions opaque_access st ~add_opaque:o ~add_transparent:t grs in
+      Printer.pr_assumptionset env sigma theory nassums
   | PrintStrategy r -> no_state @@ fun () -> print_strategy r
   | PrintHeight r -> no_state @@ fun () -> print_height r
   | PrintRegistered -> no_state print_registered
