@@ -29,6 +29,7 @@
 
 #define Is_double(v) (Tag_val(v) == Double_tag)
 #define Is_tailrec_switch(v) (Field(v,1) == Val_true)
+#define Is_neutral_id_atom(v) (Tag_val(v) == ATOM_ID_TAG)
 
 /* rocq values for primitive operations */
 #define rocq_tag_C1 2

@@ -101,6 +101,8 @@ GRAMMAR EXTEND Gram
       | IDENT "lazy"; s = strategy_flag -> { Lazy s }
       | IDENT "compute"; delta = delta_flag -> { Cbv (all_with ~head:false delta) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }
+      | IDENT "vm_compute_no_stuck"; po = OPT ref_or_pattern_occ -> { CbvVmNoStuck po }
+      | IDENT "vm_compute_whnf"; po = OPT ref_or_pattern_occ -> { CbvVmWhnf po }
       | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> { CbvNative po }
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> { Unfold ul }
       | IDENT "fold"; cl = LIST1 constr -> { Fold cl }

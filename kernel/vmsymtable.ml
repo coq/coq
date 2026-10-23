@@ -29,7 +29,7 @@ module RelDecl = Context.Rel.Declaration
 type vm_global = values array
 
 (* interpreter *)
-external rocq_interprete : tcode -> values -> atom array -> vm_global -> Vmvalues.vm_env -> int -> values =
+external rocq_interprete : tcode -> values -> atom array -> vm_global -> Vmvalues.vm_env -> int -> bool -> values =
   "rocq_interprete_byte" "rocq_interprete_ml"
 
 (* table for structured constants and switch annotations *)
@@ -285,7 +285,7 @@ let rec slot_for_getglobal env sigma kn envcache table =
     | BCdefined (_, index, patches) ->
       let code = index () in
       let code = (code, patches) in
-      let v = eval_to_patch env sigma code envcache table in
+      let v = eval_to_patch ~lossy:false env sigma code envcache table in
       set_global v table
     | BCalias kn' -> slot_for_getglobal env sigma kn' envcache table
     | BCconstant -> set_global (val_of_constant kn) table
@@ -296,7 +296,7 @@ let rec slot_for_getglobal env sigma kn envcache table =
     rk := Some (CEphemeron.create pos);
     pos
 
-and slot_for_fv env sigma fv envcache table =
+and slot_for_fv ~lossy env sigma fv envcache table =
   let val_of_rel i = val_of_rel (nb_rel env - i) in
   match fv with
   | FVnamed id ->
@@ -305,7 +305,7 @@ and slot_for_fv env sigma fv envcache table =
       | None ->
         let v = match env |> lookup_named id |> NamedDecl.get_value with
           | None -> assert false (* handled specifically in Vmbytegen *)
-          | Some c -> val_of_constr env sigma c envcache table
+          | Some c -> val_of_constr ~lossy env sigma c envcache table
         in
         cache_named envcache id v; v
       | Some v -> v
@@ -316,13 +316,13 @@ and slot_for_fv env sigma fv envcache table =
       | None ->
         let v = match env |> lookup_rel i |> RelDecl.get_value with
           | None -> val_of_rel i
-          | Some c -> val_of_constr (env_of_rel i env) sigma c (envcache_of_rel i envcache) table
+          | Some c -> val_of_constr ~lossy (env_of_rel i env) sigma c (envcache_of_rel i envcache) table
         in
         cache_rel envcache i v; v
       | Some v -> v
       end
 
-and eval_to_patch env sigma code envcache table =
+and eval_to_patch ~lossy env sigma code envcache table =
   let slots = function
     | Reloc_annot a -> slot_for_annot a table
     | Reloc_const sc -> slot_for_str_cst sc table
@@ -335,19 +335,18 @@ and eval_to_patch env sigma code envcache table =
     let a = Array.make (Array.length fv + 2) crazy_val in
     a.(1) <- Obj.magic 2;
     let iter i fv =
-      let v = slot_for_fv env sigma fv envcache table in
+      let v = slot_for_fv ~lossy env sigma fv envcache table in
       a.(i + 2) <- v
     in
     let () = Array.iteri iter fv in
     a
   in
   let global = get_global_data !table in
-  let v = rocq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 in
-  v
+  rocq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 lossy
 
-and val_of_constr env sigma c envcache table =
+and val_of_constr ~lossy env sigma c envcache table =
   match compile ~fail_on_error:true env sigma c with
-  | Some (_, code, patch) -> eval_to_patch env sigma (code, patch) envcache table
+  | Some (_, code, patch) -> eval_to_patch ~lossy env sigma (code, patch) envcache table
   | None -> assert false
 
 let global_table =
@@ -366,9 +365,9 @@ let fresh_envcache () = {
   rel_adjust = 0;
 }
 
-let val_of_constr env sigma c =
-  let v = val_of_constr env sigma c (fresh_envcache ()) global_table in
+let val_of_constr ?(lossy=false) env sigma c =
+  let v = val_of_constr ~lossy env sigma c (fresh_envcache ()) global_table in
   v
 
-let vm_interp code v env k =
-  rocq_interprete code v (get_atom_rel ()) (get_global_data !global_table) env k
+let vm_interp ?(lossy=false) code v env k =
+  rocq_interprete code v (get_atom_rel ()) (get_global_data !global_table) env k lossy

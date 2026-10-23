@@ -168,7 +168,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
     else raise NotConvertible
   | Asort s1, Asort s2 ->
     sort_cmp_universes pb s1 s2 cu
-  | Asort _ , _ | Aind _, _ | Aid _, _ -> raise NotConvertible
+  | Asort _ , _ | Aind _, _ | Aid _, _ | Ahole, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =
   match stk1, stk2 with

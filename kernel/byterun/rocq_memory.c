@@ -98,7 +98,7 @@ value init_rocq_vm(value unit) /* ML */
 
   /* Initialize the interpreter */
   rocq_sp = rocq_stack_high;
-  rocq_interprete(NULL, Val_unit, Atom(0), Atom(0), Val_unit, 0);
+  rocq_interprete(NULL, Val_unit, Atom(0), Atom(0), Val_unit, 0, 0);
 
   /* Initialize GC */
   if (rocq_prev_scan_roots_hook == NULL)

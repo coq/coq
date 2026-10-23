@@ -43,18 +43,18 @@ let interprete = Vmsymtable.vm_interp
 (* Functions over arguments *)
 
 (* Apply a value to arguments contained in [vargs] *)
-let apply_arguments vf vargs =
+let apply_arguments ?(lossy=false) vf vargs =
   let n = nargs vargs in
   if Int.equal n 0 then fun_val vf
   else
    begin
      push_ra stop;
      push_arguments vargs;
-     interprete (fun_code vf) (fun_val vf) (fun_env vf) (n - 1)
+     interprete ~lossy (fun_code vf) (fun_val vf) (fun_env vf) (n - 1)
    end
 
 (* Apply value [vf] to an array of argument values [varray] *)
-let apply_varray vf varray =
+let apply_varray ?(lossy=false) vf varray =
   let n = Array.length varray in
   if Int.equal n 0 then fun_val vf
   else
@@ -63,16 +63,16 @@ let apply_varray vf varray =
       (* The fun code of [vf] will make sure we have enough stack, so we put 0
          here. *)
       push_vstack varray 0;
-      interprete (fun_code vf) (fun_val vf) (fun_env vf) (n - 1)
+      interprete ~lossy (fun_code vf) (fun_val vf) (fun_env vf) (n - 1)
     end
 
 let mkrel_vstack k arity =
   let max = k + arity - 1 in
   Array.init arity (fun i -> val_of_rel (max - i))
 
-let reduce_fun k vf =
+let reduce_fun ?(lossy=false) k vf =
   let vargs = mkrel_vstack k 1 in
-  apply_varray vf vargs
+  apply_varray ~lossy vf vargs
 
 let decompose_vfun2 k vf1 vf2 =
   let arity = min (closure_arity vf1) (closure_arity vf2) in
@@ -84,7 +84,7 @@ let decompose_vfun2 k vf1 vf2 =
 
 (* Functions over vfix *)
 
-let reduce_fix k vf =
+let reduce_fix ?(lossy=false) k vf =
   let fb = first_fix vf in
   (* computing types *)
   let fc_typ = fix_types fb in
@@ -92,50 +92,51 @@ let reduce_fix k vf =
   let et = fix_env fb in
   let ftyp =
     Array.map
-      (fun c -> interprete c crazy_val et 0) fc_typ in
+      (fun c -> interprete ~lossy c crazy_val et 0) fc_typ in
   (* Construction of the environment of fix bodies *)
   (mk_fix_body k ndef fb, ftyp)
 
-let reduce_cofix k vcf =
+let reduce_cofix ?(lossy=false) k vcf =
   let fc_typ = cofix_types vcf in
   let ndef = Array.length fc_typ in
   let ftyp =
     (* Evaluate types *)
-    Array.map (fun c -> interprete c crazy_val (cofix_env vcf) 0) fc_typ in
+    Array.map (fun c -> interprete ~lossy c crazy_val (cofix_env vcf) 0) fc_typ in
 
   (* Construction of the environment of cofix bodies *)
-  (mk_cofix_body apply_varray k ndef vcf, ftyp)
+  (mk_cofix_body (apply_varray ~lossy) k ndef vcf, ftyp)
 
-let type_of_switch sw =
+let type_of_switch ?(lossy=false) sw =
   (* The fun code of types will make sure we have enough stack, so we put 0
   here. *)
   push_vstack sw.sw_stk 0;
-  interprete sw.sw_type_code crazy_val sw.sw_env 0
+  interprete ~lossy sw.sw_type_code crazy_val sw.sw_env 0
 
-let apply_switch sw arg =
+let apply_switch ?(lossy=false) sw arg =
   let tc = sw.sw_annot.tailcall in
   if tc then
     (push_ra stop;push_vstack sw.sw_stk sw.sw_annot.max_stack_size)
   else
     (push_vstack sw.sw_stk sw.sw_annot.max_stack_size;
      push_ra (popstop_code (Array.length sw.sw_stk)));
-  interprete sw.sw_code arg sw.sw_env 0
+  interprete ~lossy sw.sw_code arg sw.sw_env 0
 
-let branch_of_switch k sw =
+let branch_of_switch ?(lossy=false) k sw =
   let eval_branch (_,arity as ta) =
     let arg = branch_arg k ta in
-    let v = apply_switch sw arg in
+    let v = apply_switch ~lossy sw arg in
     (arity, v)
   in
   Array.map eval_branch sw.sw_annot.rtbl
 
 (* Apply the term represented by a under stack stk to argument v *)
 (* t = a stk --> t v *)
-let rec apply_stack a stk v =
+let rec apply_stack ~lossy a stk v =
   match stk with
-  | [] -> apply_varray (fun_of_val a) [|v|]
-  | Zapp args :: stk -> apply_stack (apply_arguments (fun_of_val a) args) stk v
-  | Zproj kn :: stk -> apply_stack (val_of_proj kn a) stk v
+  | [] -> apply_varray ~lossy (fun_of_val a) [|v|]
+  | Zapp args :: stk ->
+      apply_stack ~lossy (apply_arguments ~lossy (fun_of_val a) args) stk v
+  | Zproj kn :: stk -> apply_stack ~lossy (val_of_proj kn a) stk v
   | Zfix(f,args) :: stk ->
       let a,stk =
         match stk with
@@ -145,7 +146,7 @@ let rec apply_stack a stk v =
             push_val a;
             push_arguments args;
             let a =
-              interprete (fix_code f) (fix_val f) (fix_env f)
+              interprete ~lossy (fix_code f) (fix_val f) (fix_env f)
                 (nargs args+ nargs args') in
             a, stk
         | _ ->
@@ -153,32 +154,32 @@ let rec apply_stack a stk v =
             push_val a;
             push_arguments args;
             let a =
-              interprete (fix_code f) (fix_val f) (fix_env f)
+              interprete ~lossy (fix_code f) (fix_val f) (fix_env f)
                 (nargs args) in
             a, stk in
-      apply_stack a stk v
+      apply_stack ~lossy a stk v
   | Zswitch sw :: stk ->
-      apply_stack (apply_switch sw a) stk v
+      apply_stack ~lossy (apply_switch ~lossy sw a) stk v
 
-let apply_whd k whd =
+let apply_whd ?(lossy=false) k whd =
   let v = val_of_rel k in
   match whd with
   | Vprod _ | Vconst _ | Vblock _ | Vint64 _ | Vfloat64 _ | Vstring _ | Varray _ ->
      assert false
-  | Vfun f -> reduce_fun k f
+  | Vfun f -> reduce_fun ~lossy k f
   | Vfix(f, None) ->
       push_ra stop;
       push_val v;
-      interprete (fix_code f) (fix_val f) (fix_env f) 0
+      interprete ~lossy (fix_code f) (fix_val f) (fix_env f) 0
   | Vfix(f, Some args) ->
       push_ra stop;
       push_val v;
       push_arguments args;
-      interprete (fix_code f) (fix_val f) (fix_env f) (nargs args)
+      interprete ~lossy (fix_code f) (fix_val f) (fix_env f) (nargs args)
   | Vcofix(_,to_up,_) ->
       push_ra stop;
       push_val v;
-      interprete (cofix_upd_code to_up) (cofix_upd_val to_up) (cofix_upd_env to_up) 0
+      interprete ~lossy (cofix_upd_code to_up) (cofix_upd_val to_up) (cofix_upd_env to_up) 0
   | Vaccu (a, stk) ->
-      apply_stack (val_of_atom a) stk v
+      apply_stack ~lossy (val_of_atom a) stk v
 

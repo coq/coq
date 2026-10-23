@@ -68,6 +68,7 @@ and ppatom a =
       print_string (MutInd.to_string sp);
       print_string ","; print_int i;
       print_string ")"
+  | Ahole -> print_string "?"
 
 and ppwhd whd =
   match whd with

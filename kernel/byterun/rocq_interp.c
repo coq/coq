@@ -285,7 +285,7 @@ value rocq_subst_instance(value arg, value tosubst)
 /* The interpreter itself */
 
 value rocq_interprete
-(code_t rocq_pc, value rocq_accu, value rocq_atom_tbl, value rocq_global_data, value rocq_env, long rocq_extra_args)
+(code_t rocq_pc, value rocq_accu, value rocq_atom_tbl, value rocq_global_data, value rocq_env, long rocq_extra_args, int lossy)
 {
   /* rocq_accu is not allocated on the OCaml heap */
   CAMLparam2(rocq_atom_tbl, rocq_global_data);
@@ -784,10 +784,17 @@ value rocq_interprete
             Field(accu, 2) = rocq_env;
             for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
             sp += num_args;
-            pc = LoadRA(sp[0]);
-            rocq_env = sp[1];
-            rocq_extra_args = Long_val(sp[2]);
-            sp += 3;
+          } else if (!Is_block(Field(sp[rec_pos], 2))) {
+            /* The recursive argument is a hole; propagate it. */
+            accu = sp[rec_pos];
+            sp += 1 + rocq_extra_args;
+          } else if (lossy && Is_neutral_id_atom(Field(sp[rec_pos], 2))) {
+            /* The recursive argument is neutral, so reduction is blocked. */
+            sp += 1 + rocq_extra_args;
+            Rocq_alloc_small(accu, 3, Closure_tag);
+            Code_val(accu) = accumulate;
+            Field(accu, 1) = Val_int(2);
+            Field(accu, 2) = Val_unit;
           } else {
             /* The recursive argument is an accumulator */
             mlsize_t num_args, sz, i;
@@ -820,11 +827,11 @@ value rocq_interprete
             Code_val(block) = accumulate;
             Field(block, 1) = Val_int(2);
             accu = block;
-            pc = LoadRA(sp[0]);
-            rocq_env = sp[1];
-            rocq_extra_args = Long_val(sp[2]);
-            sp += 3;
           }
+          pc = LoadRA(sp[0]);
+          rocq_env = sp[1];
+          rocq_extra_args = Long_val(sp[2]);
+          sp += 3;
         }
         Next;
       }
@@ -1108,6 +1115,12 @@ value rocq_interprete
         if (Is_accu (accu)) {
           *--sp = accu; // Save matched block on stack
           accu = Field(accu, 2); // Save atom to accu register
+          if (!Is_block(accu)) {
+            // The matched block is a hole; propagate it.
+            accu = *sp++;
+            pc++;
+            Next;
+          }
           switch (Tag_val(accu)) {
           case ATOM_COFIX_TAG: // We are forcing a cofix
             {
@@ -1135,6 +1148,18 @@ value rocq_interprete
               ++sp;
               goto do_proj;
             }
+          case ATOM_ID_TAG:
+            if (lossy) {
+              // A projection from a neutral value is blocked; turn it into a hole.
+              ++sp;
+              Rocq_alloc_small(accu, 3, Closure_tag);
+              Code_val(accu) = accumulate;
+              Field(accu, 1) = Val_int(2);
+              Field(accu, 2) = Val_unit;
+              ++pc;
+              Next;
+            }
+            // fallthrough
           default:
             {
               value block;
@@ -1209,7 +1234,11 @@ value rocq_interprete
         print_instr("ACCUMULATE");
         size = Wosize_val(rocq_env);
         sz = size + rocq_extra_args + 1;
-        if (sz <= Max_young_wosize) {
+        if (!Is_block(Field(rocq_env, 2))) {
+          // The current accumulator is a hole; propagate it.
+          accu = rocq_env;
+          sp += rocq_extra_args + 1;
+        } else if (sz <= Max_young_wosize) {
           Rocq_alloc_small(accu, sz, Closure_tag);
           for (i = 0; i < size; ++i)
             Field(accu, i) = Field(rocq_env, i);
@@ -1232,6 +1261,12 @@ value rocq_interprete
         print_instr("MAKESWITCHBLOCK");
         *--sp = accu; // Save matched block on stack
         accu = Field(accu, 2); // Save atom to accu register
+        if (!Is_block(accu)) {
+          // The matched block is a hole; propagate it.
+          pc += 4;
+          accu = *sp++;
+          Next;
+        }
         switch (Tag_val(accu)) {
         case ATOM_COFIX_TAG: // We are forcing a cofix
           {
@@ -1265,6 +1300,18 @@ value rocq_interprete
             sp++;
             Next;
           }
+        case ATOM_ID_TAG:
+          if (lossy) {
+            // A match on a neutral value is blocked; turn it into a hole.
+            ++sp;
+            Rocq_alloc_small(accu, 3, Closure_tag);
+            Code_val(accu) = accumulate;
+            Field(accu, 1) = Val_int(2);
+            Field(accu, 2) = Val_unit;
+            pc += 4;
+            Next;
+          }
+          // fallthrough
         default:
           {
             mlsize_t sz;
@@ -2091,15 +2138,15 @@ value rocq_push_vstack(value stk, value max_stack_size) {
   return Val_unit;
 }
 
-value  rocq_interprete_ml(value tcode, value a, value t, value g, value e, value ea) {
+value  rocq_interprete_ml(value tcode, value a, value t, value g, value e, value ea, value l) {
   // Registering the other arguments w.r.t. the OCaml GC is done by rocq_interprete
   CAMLparam1(tcode);
   print_instr("rocq_interprete");
-  value res = rocq_interprete(Code_val(tcode), a, t, g, e, Long_val(ea));
+  value res = rocq_interprete(Code_val(tcode), a, t, g, e, Long_val(ea), Bool_val(l));
   print_instr("end rocq_interprete");
   CAMLreturn(res);
 }
 
 value rocq_interprete_byte(value* argv, int argn){
-  return rocq_interprete_ml(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+  return rocq_interprete_ml(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 }

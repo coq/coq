@@ -14,6 +14,6 @@ open Constr
 open Environ
 open Vmvalues
 
-val val_of_constr : env -> Genlambda.evars -> constr -> Vmvalues.values
+val val_of_constr : ?lossy:bool -> env -> Genlambda.evars -> constr -> Vmvalues.values
 
-val vm_interp : tcode -> values -> vm_env -> int -> values
+val vm_interp : ?lossy:bool -> tcode -> values -> vm_env -> int -> values

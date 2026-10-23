@@ -855,7 +855,7 @@ let reduce redexp cl =
     if is_local_flag env flags then LocalHypConv else StableHypConv
   | Unfold flags ->
     if is_local_unfold env flags then LocalHypConv else StableHypConv
-  | Red | Hnf | CbvVm _ | CbvNative _ -> StableHypConv
+  | Red | Hnf | CbvVm _ | CbvVmNoStuck _ | CbvVmWhnf _ | CbvNative _ -> StableHypConv
   | ExtraRedExpr _ -> StableHypConv (* Should we be that lenient ?*)
   | UserRed _ -> AnyHypConv (* TODO: ask it in the API *)
   in

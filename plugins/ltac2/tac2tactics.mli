@@ -92,6 +92,10 @@ val pattern : (constr * occurrences) list -> Redexpr.red_expr
 
 val vm : Tac2types.red_context -> Redexpr.red_expr
 
+val vm_no_stuck : Tac2types.red_context -> Redexpr.red_expr
+
+val vm_whnf : Tac2types.red_context -> Redexpr.red_expr
+
 val native : Tac2types.red_context -> Redexpr.red_expr
 
 val discriminate : evars_flag -> destruction_arg option -> unit tactic

@@ -261,7 +261,7 @@ let reduce_in red cl =
   Tactics.reduce red cl
 
 let reduce_constr red c =
-  Tac2core.pf_apply begin fun env sigma ->
+  Tac2core.pf_apply ~catch_exceptions:true begin fun env sigma ->
     let (redfun, _) = Redexpr.reduction_of_red_expr env red in
     let (sigma, ans) = redfun env sigma c in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
@@ -306,6 +306,14 @@ let pattern where =
 let vm where =
   let where = Option.map map_pattern_with_occs where in
   CbvVm where
+
+let vm_no_stuck where =
+  let where = Option.map map_pattern_with_occs where in
+  CbvVmNoStuck where
+
+let vm_whnf where =
+  let where = Option.map map_pattern_with_occs where in
+  CbvVmWhnf where
 
 let native where =
   let where = Option.map map_pattern_with_occs where in

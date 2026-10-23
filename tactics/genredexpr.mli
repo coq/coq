@@ -54,6 +54,8 @@ type ('a, 'b, 'c, 'occvar, 'flags, 'usr) red_expr_gen0 =
   | Pattern of ('occvar Locus.occurrences_gen * 'a) list
   | ExtraRedExpr of string
   | CbvVm of ('b, 'c, 'occvar) red_context
+  | CbvVmNoStuck of ('b, 'c, 'occvar) red_context
+  | CbvVmWhnf of ('b, 'c, 'occvar) red_context
   | CbvNative of ('b, 'c, 'occvar) red_context
   | UserRed of 'usr
 

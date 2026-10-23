@@ -403,6 +403,14 @@ Ltac2 Notation "vm_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :
   Std.vm pl (default_on_concl cl).
 Ltac2 Abbreviation vm_compute := vm_compute.
 
+Ltac2 Notation "vm_compute_no_stuck" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
+  Std.vm_no_stuck pl (default_on_concl cl).
+Ltac2 Abbreviation vm_compute_no_stuck := vm_compute_no_stuck.
+
+Ltac2 Notation "vm_compute_whnf" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
+  Std.vm_whnf pl (default_on_concl cl).
+Ltac2 Abbreviation vm_compute_whnf := vm_compute_whnf.
+
 Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
   Std.native pl (default_on_concl cl).
 Ltac2 Abbreviation native_compute := native_compute.
@@ -436,6 +444,12 @@ Ltac2 Notation "eval" "pattern" pl(list1(seq(constr, occurrences), ",")) "in" c(
 
 Ltac2 Notation "eval" "vm_compute" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
   Std.eval_vm pl c.
+
+Ltac2 Notation "eval" "vm_compute_no_stuck" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
+  Std.eval_vm_no_stuck pl c.
+
+Ltac2 Notation "eval" "vm_compute_whnf" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
+  Std.eval_vm_whnf pl c.
 
 Ltac2 Notation "eval" "native_compute" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
   Std.eval_native pl c.

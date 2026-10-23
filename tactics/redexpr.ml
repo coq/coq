@@ -23,7 +23,7 @@ open RedFlags
 let warn_vm_disabled =
   CWarnings.create ~name:"vm-compute-disabled" ~category:CWarnings.CoreCategories.bytecode_compiler
   (fun () ->
-   strbrk "vm_compute disabled at configure time; falling back to cbv.")
+   strbrk "VM computation disabled at configure time; falling back to kernel reduction.")
 
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env sigma c =
@@ -47,6 +47,89 @@ let cbv_native env sigma c =
   else
     (warn_native_compute_disabled ();
      cbv_vm env sigma c)
+
+let vm_readback_is_stuck env whd =
+  let stuck_stack =
+    List.exists (function
+      | Vmvalues.Zfix _ | Vmvalues.Zswitch _ | Vmvalues.Zproj _ -> true
+      | Vmvalues.Zapp _ -> false)
+  in
+  let fully_applied_primitive atom stack = match atom, stack with
+  | Vmvalues.Aid (Vmvalues.ConstKey cst), Vmvalues.Zapp args :: _ ->
+    begin match Environ.get_primitive env cst with
+    | None -> false
+    | Some op ->
+      (* A nonempty universe instance occupies one VM argument. *)
+      let nunivs =
+        if UVars.AbstractContext.is_empty (CPrimitives.univs op) then 0 else 1
+      in
+      CPrimitives.arity op + nunivs <= Vmvalues.nargs args
+    end
+  | Vmvalues.Aid (Vmvalues.ConstKey _ | Vmvalues.VarKey _ | Vmvalues.RelKey _ |
+      Vmvalues.EvarKey _), _
+  | Vmvalues.Aind _, _ | Vmvalues.Asort _, _ | Vmvalues.Ahole, _ -> false
+  in
+  match whd with
+  | Values.Vfix _ | Values.Vcofix _ -> true
+  | Values.Vaccu (Vmvalues.Ahole, _) -> true
+  | Values.Vaccu (atom, stack) ->
+    stuck_stack stack || fully_applied_primitive atom stack
+  | Values.Vfun _ | Values.Vprod _ | Values.Vconst _ | Values.Vblock _
+  | Values.Vint64 _ | Values.Vfloat64 _ | Values.Vstring _ | Values.Varray _ -> false
+
+let vm_compute_no_stuck_readback_check _ env _ _ whd =
+  if vm_readback_is_stuck env whd then
+    user_err (str "vm_compute_no_stuck reduction encountered a stuck term.")
+
+let vm_compute_whnf_check _ env _ _ whd =
+  if vm_readback_is_stuck env whd then
+    user_err (str "vm_compute_whnf reduction did not reach weak head normal form.")
+
+let whnf_is_stuck env sigma c =
+  let fully_applied_primitive cst args =
+    match Environ.get_primitive env cst with
+    | None -> false
+    | Some op -> CPrimitives.arity op <= Array.length args
+  in
+  match EConstr.kind sigma c with
+  | Fix _ | CoFix _ | Case _ -> true
+  | App (hd, args) ->
+    begin match EConstr.kind sigma hd with
+    | Fix _ | CoFix _ | Case _ -> true
+    | Const (cst, _) -> fully_applied_primitive cst args
+    | Rel _ | Var _ | Evar _ | Sort _ | Cast _ | Prod _ | Lambda _
+    | LetIn _ | App _ | Ind _ | Construct _ | Proj _ | Int _ | Float _
+    | String _ | Array _ | Meta _ -> false
+    end
+  | Rel _ | Var _ | Evar _ | Sort _ | Cast _ | Prod _ | Lambda _
+  | LetIn _ | Const _ | Ind _ | Construct _ | Proj _ | Int _
+  | Float _ | String _ | Array _ | Meta _ -> false
+
+let cbv_vm_no_stuck env sigma c =
+  if (Environ.typing_flags env).enable_VM then
+    let ctyp = Retyping.get_type_of env sigma c in
+    Vnorm.cbv_vm ~lossy:true ~readback_check:vm_compute_no_stuck_readback_check env sigma c ctyp
+  else begin
+    warn_vm_disabled ();
+    compute env sigma c
+  end
+
+let vm_compute_whnf env sigma c =
+  let vm_enabled = (Environ.typing_flags env).enable_VM in
+  if vm_enabled then begin
+    let ctyp = Retyping.get_type_of env sigma c in
+    (* Run the VM through its outer weak-head value, but stop before recursive
+       readback can normalize lambda bodies or constructor arguments. *)
+    Vnorm.check_vm vm_compute_whnf_check env sigma c ctyp
+  end
+  else
+    warn_vm_disabled ();
+  (* VM values do not retain the source syntax of unevaluated subterms. Recover
+     that syntax with shallow reduction after the VM has validated the root. *)
+  let c = clos_whd_flags RedFlags.all env sigma c in
+  if not vm_enabled && whnf_is_stuck env sigma c then
+    user_err (str "vm_compute_whnf reduction did not reach weak head normal form.");
+  c
 
 let { Goptions.get = simplIsCbn } =
   Goptions.declare_bool_option_and_ref
@@ -318,7 +401,8 @@ let rec eval_red_expr env = function
   | e -> eval_red_expr env e
   | exception Not_found -> ExtraRedExpr s (* delay to runtime interpretation *)
   end
-| (Red | Hnf | Unfold _ | Fold _ | Pattern _ | CbvVm _ | CbvNative _ | UserRed _) as e -> e
+| (Red | Hnf | Unfold _ | Fold _ | Pattern _ | CbvVm _ | CbvVmNoStuck _
+  | CbvVmWhnf _ | CbvNative _ | UserRed _) as e -> e
 
 let red_product_exn env sigma c = match red_product env sigma c with
   | None -> user_err Pp.(str "No head constant to reduce.")
@@ -356,6 +440,8 @@ let reduction_of_red_expr_val = function
            user_err
              (str "Unknown user-defined reduction \"" ++ str s ++ str "\"."))
   | CbvVm o -> (contextualize cbv_vm o, VMcast)
+  | CbvVmNoStuck o -> (contextualize cbv_vm_no_stuck o, VMcast)
+  | CbvVmWhnf o -> (contextualize vm_compute_whnf o, VMcast)
   | CbvNative o -> (contextualize cbv_native o, NATIVEcast)
   | UserRed usr -> eval_user_red_expr usr
 
@@ -415,13 +501,24 @@ let bind_red_expr_occurrences occs nbcl redexp =
           error_illegal_clause ()
         else
           CbvVm (Some (occs,c))
+    | CbvVmNoStuck (Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          CbvVmNoStuck (Some (occs,c))
+    | CbvVmWhnf (Some (occl,c)) ->
+        if occl != AllOccurrences then
+          error_illegal_clause ()
+        else
+          CbvVmWhnf (Some (occs,c))
     | CbvNative (Some (occl,c)) ->
         if occl != AllOccurrences then
           error_illegal_clause ()
         else
           CbvNative (Some (occs,c))
     | Red | Hnf | Cbv _ | Lazy _ | Cbn _
-    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None | UserRed _ ->
+    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None
+    | CbvVmNoStuck None | CbvVmWhnf None | CbvNative None | UserRed _ ->
         error_at_in_occurrences_not_supported ()
     | Unfold [] | Pattern [] ->
         assert false
@@ -576,6 +673,8 @@ module Intern = struct
       Simpl (intern_flag ist f,
              Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
     | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+    | CbvVmNoStuck o -> CbvVmNoStuck (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+    | CbvVmWhnf o -> CbvVmWhnf (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
     | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
     | (Red | Hnf | ExtraRedExpr _ as r ) -> r
     | UserRed usr -> UserRed (intern_user_red_expr ist.ltac_sign usr)
@@ -657,6 +756,10 @@ module Interp = struct
                      Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
     | CbvVm o ->
       sigma , CbvVm (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
+    | CbvVmNoStuck o ->
+      sigma , CbvVmNoStuck (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
+    | CbvVmWhnf o ->
+      sigma , CbvVmWhnf (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
     | CbvNative o ->
       sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
     | (Red |  Hnf | ExtraRedExpr _  | UserRed _ as r) -> sigma , r

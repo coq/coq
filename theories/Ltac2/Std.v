@@ -234,6 +234,12 @@ Module Red.
   tactics. *)
   Ltac2 @external vm : (pattern * occurrences) option -> t := "rocq-runtime.plugins.ltac2" "vm".
 
+  Ltac2 @external vm_no_stuck : (pattern * occurrences) option -> t :=
+    "rocq-runtime.plugins.ltac2" "vm_no_stuck".
+
+  Ltac2 @external vm_whnf : (pattern * occurrences) option -> t :=
+    "rocq-runtime.plugins.ltac2" "vm_whnf".
+
   (** Evaluates the goal by compilation to OCaml. Depending on the
   configuration, it can either default to [vm], recompile dependencies or fail
   due to some missing precompiled dependencies. See the [native-compiler] option
@@ -265,6 +271,12 @@ Ltac2 pattern (occs : (constr * occurrences) list) (c : clause) : unit := eval_i
 
 Ltac2 vm (ctx : (pattern * occurrences) option) (c : clause) : unit := eval_in (Red.vm ctx) c.
 
+Ltac2 vm_no_stuck (ctx : (pattern * occurrences) option) (c : clause) : unit :=
+  eval_in (Red.vm_no_stuck ctx) c.
+
+Ltac2 vm_whnf (ctx : (pattern * occurrences) option) (c : clause) : unit :=
+  eval_in (Red.vm_whnf ctx) c.
+
 Ltac2 native (ctx : (pattern * occurrences) option) (c : clause) : unit := eval_in (Red.native ctx) c.
 
 (** Constr reduction/expansion functions *)
@@ -290,6 +302,12 @@ Ltac2 eval_fold (cs : constr list) (c : constr) : constr := eval (Red.fold cs) c
 Ltac2 eval_pattern (occs : (constr * occurrences) list) (c : constr) : constr := eval (Red.pattern occs) c.
 
 Ltac2 eval_vm (ctx : (pattern * occurrences) option) (c : constr) : constr := eval (Red.vm ctx) c.
+
+Ltac2 eval_vm_no_stuck (ctx : (pattern * occurrences) option) (c : constr) : constr :=
+  eval (Red.vm_no_stuck ctx) c.
+
+Ltac2 eval_vm_whnf (ctx : (pattern * occurrences) option) (c : constr) : constr :=
+  eval (Red.vm_whnf ctx) c.
 
 Ltac2 eval_native (ctx : (pattern * occurrences) option) (c : constr) : constr := eval (Red.native ctx) c.
 

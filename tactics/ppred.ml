@@ -74,6 +74,10 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern,prvar,pruser) keyword = 
     str s
   | CbvVm o ->
     keyword "vm_compute" ++ pr_opt (pr_with_occurrences prvar (pr_union pr_ref pr_pattern) keyword) o
+  | CbvVmNoStuck o ->
+    keyword "vm_compute_no_stuck" ++ pr_opt (pr_with_occurrences prvar (pr_union pr_ref pr_pattern) keyword) o
+  | CbvVmWhnf o ->
+    keyword "vm_compute_whnf" ++ pr_opt (pr_with_occurrences prvar (pr_union pr_ref pr_pattern) keyword) o
   | CbvNative o ->
     keyword "native_compute" ++ pr_opt (pr_with_occurrences prvar (pr_union pr_ref pr_pattern) keyword) o
   | UserRed usr -> pruser usr

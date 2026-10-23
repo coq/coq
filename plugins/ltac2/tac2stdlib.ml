@@ -410,6 +410,16 @@ let () =
     Tac2tactics.vm
 
 let () =
+  define "vm_no_stuck"
+    (red_context @-> ret reduction)
+    Tac2tactics.vm_no_stuck
+
+let () =
+  define "vm_whnf"
+    (red_context @-> ret reduction)
+    Tac2tactics.vm_whnf
+
+let () =
   define "native"
     (red_context @-> ret reduction)
     Tac2tactics.native
