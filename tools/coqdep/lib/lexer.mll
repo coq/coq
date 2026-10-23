@@ -98,6 +98,8 @@ let dot = '.' ( space+ | eof)
 rule coq_action = parse
   | "Require" space+
       { require_modifiers None lexbuf }
+  | "Require" space* "(" space* "safe" space* ")" space*
+      { require_modifiers None lexbuf }
   | "Local" space+ "Declare" space+ "ML" space+ "Module" space+
       { modules [] lexbuf }
   | "Declare" space+ "ML" space+ "Module" space+
@@ -177,6 +179,8 @@ and consume_require_or_extradeps only_extra_dep from = parse
   | space+
       { consume_require_or_extradeps only_extra_dep from lexbuf }
   | "Require" space+
+      { if only_extra_dep then syntax_error lexbuf; require_modifiers from lexbuf }
+  | "Require" space* "(" space* "safe" space* ")" space*
       { if only_extra_dep then syntax_error lexbuf; require_modifiers from lexbuf }
   | "Extra" space+ "Dependency" space+
       { match from with

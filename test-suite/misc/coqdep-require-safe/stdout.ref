@@ -1,0 +1,5 @@
+Foo.vo Foo.glob Foo.v.beautified Foo.required_vo: Foo.v @ROCQWORKER@
+bare.vo bare.glob bare.v.beautified bare.required_vo: bare.v Foo.vo @ROCQWORKER@
+frombare.vo frombare.glob frombare.v.beautified frombare.required_vo: frombare.v Foo.vo @ROCQWORKER@
+fromsafe.vo fromsafe.glob fromsafe.v.beautified fromsafe.required_vo: fromsafe.v Foo.vo @ROCQWORKER@
+safe.vo safe.glob safe.v.beautified safe.required_vo: safe.v Foo.vo @ROCQWORKER@

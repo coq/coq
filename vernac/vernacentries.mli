@@ -32,7 +32,7 @@ val vernac_require
 
 (** Interp phase of the require command *)
 val vernac_require_interp
-  : Library.library_t list
+  : Library.interp_data
   -> Names.DirPath.t list
   -> Vernacexpr.export_with_cats option
   -> (Libnames.qualid * Vernacexpr.import_filter_expr) list

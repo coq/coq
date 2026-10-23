@@ -73,7 +73,7 @@ let classify_vernac e =
     (* These commands alter the parser *)
     | VernacDeclareCustomEntry _
     | VernacNotation _ | VernacReservedNotation _
-    | VernacRequire _ | VernacImport _ | VernacInclude _
+    | VernacSafeRequire _ | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _ -> VtSideff ([], VtNow)
     | VernacProofMode pm ->
       (match Pvernac.lookup_proof_mode pm with

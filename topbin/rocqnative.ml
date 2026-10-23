@@ -112,9 +112,11 @@ type library_disk = {
 
 type library_info
 
+type load_status
+
 type summary_disk = {
   md_name : compilation_unit_name;
-  md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+  md_deps : (load_status * compilation_unit_name * Safe_typing.vodigest) array;
   md_ocaml : string;
   md_info : library_info;
 }
@@ -123,7 +125,7 @@ type library_t = {
   library_name : compilation_unit_name;
   library_file : string;
   library_data : Safe_typing.compiled_library;
-  library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
+  library_deps : (load_status * compilation_unit_name * Safe_typing.vodigest) array;
   library_digests : Safe_typing.vodigest;
   library_vm : Vmlibrary.on_disk;
 }
@@ -178,7 +180,7 @@ let rec intern_library (needed, contents) dir =
 and intern_library_deps libs dir m from =
   Array.fold_left (intern_mandatory_library dir from) libs m.library_deps
 
-and intern_mandatory_library caller from libs (dir,d) =
+and intern_mandatory_library caller from libs (_,dir,d) =
   let digest, libs = intern_library libs dir in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     user_err (str "Compiled library " ++ DirPath.print caller ++

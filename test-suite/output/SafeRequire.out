@@ -1,0 +1,57 @@
+CRelationClasses.flip
+     : forall A B C : Type, (A -> B -> C) -> B -> A -> C
+CRelationClasses.flip@{u u0 u1} :
+forall A B C : Type, (A -> B -> C) -> B -> A -> C
+
+CRelationClasses.flip is universe polymorphic
+Arguments CRelationClasses.flip A B C f x y
+CRelationClasses.flip is transparent
+Expands to: Constant Corelib.Classes.CRelationClasses.flip
+CRelationClasses.flip@{u u0 u1} =
+fun (A B C : Type) (f : A -> B -> C) (x : B) (y : A) => f y x
+     : forall A B C : Type, (A -> B -> C) -> B -> A -> C
+
+Arguments CRelationClasses.flip A B C f x y
+CRelationClasses.flip
+     : forall A B C : Set, (A -> B -> C) -> B -> A -> C
+CRelationClasses.arrow
+     : Type -> Type -> Type
+CRelationClasses.arrow nat nat
+     : Type
+Closed under the global context
+File "./output/SafeRequire.v", line 25, characters 11-19:
+The command has indeed failed with message:
+The reference positive was not found in the current environment.
+BinNums.positive
+     : Set
+BinNums.xI : BinNums.positive -> BinNums.positive
+
+BinNums.xI is not universe polymorphic
+Expands to: Constructor Corelib.Numbers.BinNums.xI
+Inductive Corelib.Numbers.BinNums.positive
+Constructor Corelib.Numbers.BinNums.xH
+fun p : BinNums.positive =>
+match p with
+| BinNums.xI q | BinNums.xO q => q
+| BinNums.xH => BinNums.xH
+end
+     : BinNums.positive -> BinNums.positive
+PosDef.Pos.mask
+     : Set
+PosDef.Pos.IsPos : BinNums.positive -> PosDef.Pos.mask
+
+PosDef.Pos.IsPos is not universe polymorphic
+Expands to: Constructor Corelib.BinNums.PosDef.Pos.IsPos
+PosDef.Pos.succ
+     : BinNums.positive -> BinNums.positive
+Module Corelib.BinNums.PosDef.Pos
+  (shorter name to refer to it in current context is PosDef.Pos)
+Module PosDef.Pos
+Module Type Corelib.ssr.ssrunder.UNDER_REL
+  (shorter name to refer to it in current context is ssrunder.UNDER_REL)
+Module Corelib.ssr.ssrunder.Under_rel
+  (shorter name to refer to it in current context is ssrunder.Under_rel)
+File "./output/SafeRequire.v", line 59, characters 0-27:
+The command has indeed failed with message:
+Cannot unsafe-require library Corelib.Classes.CRelationClasses
+because it was previously required with (safe).
