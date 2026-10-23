@@ -8,6 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module Reify : sig
+  (** [register k] registers Rocqlib key [k] as a reference that [zify] should
+      traverse. It returns a thunk that produces the reference [k] as an
+      [EConstr.t]. *)
+  val register : string -> (unit -> EConstr.t)
+
+  (** Fold over registered references whose defining libraries are loaded. *)
+  val fold : (Names.GlobRef.t -> 'a -> 'a) -> 'a -> 'a
+end
+
 val zify_register_locality : Hints.hint_locality Attributes.attribute
 
 module type S = sig

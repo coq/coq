@@ -12,7 +12,7 @@
  (modules (:standard \ micromega numCompat mutils sos_types sos_lib sos csdpcert g_zify zify))
  (flags :standard -open Micromega_core_plugin)
  (synopsis "Rocq's micromega plugin")
- (libraries rocq-runtime.plugins.ltac rocq-runtime.plugins.micromega_core))
+ (libraries rocq-runtime.plugins.ltac rocq-runtime.plugins.micromega_core rocq-runtime.plugins.zify))
 
 (executable
  (name csdpcert)
