@@ -27,6 +27,19 @@ Ltac2 Type uint63.
 Ltac2 Type float.
 Ltac2 Type pstring.
 
+(** Type of terms. "Safe" APIs using this type typically assume 1 or 0
+    focused goals such that the term are well typed in the current
+    goal environment (in the global environment when no goals are focused). *)
+Ltac2 Type constr.
+
+(** Type of preterms (term syntax which has not been typechecked, cf
+    "type inference" glossary item in the refman). *)
+Ltac2 Type preterm.
+
+(** Type of environments. Environments contain named and local variables
+    (respectively Var and Ral in Constr.Unsafe). *)
+Ltac2 Type env.
+
 (** Constr-specific built-in types *)
 Ltac2 Type meta.
 Ltac2 Type evar.
@@ -38,8 +51,6 @@ Ltac2 Type inductive.
 Ltac2 Type constructor.
 Ltac2 Type projection.
 Ltac2 Type pattern.
-Ltac2 Type constr.
-Ltac2 Type preterm.
 Ltac2 Type binder.
 
 Ltac2 Type message.

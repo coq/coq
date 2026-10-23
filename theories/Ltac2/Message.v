@@ -81,6 +81,12 @@ Ltac2 @external hovbox : int -> message -> message := "rocq-runtime.plugins.ltac
     on the line (see "Printing Width" option). The [int] is added to
     the indentation when splitting the line. *)
 
+Module UnsafeEnv.
+  (** Print the given term in the given environment (does not print the environment). *)
+  Ltac2 @external message_of_constr_in_env : env -> constr -> message
+    := "rocq-runtime.plugins.ltac2" "message_of_constr_in_env".
+End UnsafeEnv.
+
 Module Format.
 
 (** Only for internal use. *)
