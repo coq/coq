@@ -565,8 +565,10 @@ let [_v_hpattern;v_elimination;_v_head_elim;_v_patarg] : _ Vector.t =
   in
   [v_hpattern;v_elimination;v_head_elim;v_patarg])
 
+let v_rewrule_test = v_tuple "rewrite_rule_test"
+  [| v_nctxt; v_constr; v_constr |]
 let v_rewrule = v_tuple "rewrite_rule"
-  [| v_tuple "nvars" [| v_int; v_int; v_int |]; v_pair v_instance_mask (v_list v_elimination); v_constr |]
+  [| v_tuple "nvars" [| v_int; v_int; v_int |]; v_pair v_instance_mask (v_list v_elimination); v_constr; v_rewrule_test |]
 let v_rrb = v_tuple "rewrite_rules_body"
   [| v_list (v_pair v_cst v_rewrule) |]
 

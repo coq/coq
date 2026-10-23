@@ -497,6 +497,53 @@ let interp_rule ~collapse_sort_variables (udecl, lhs, rhs: Constrexpr.universe_d
   let () = UState.check_uctx_impl ~fail (Evd.ustate evd) (Evd.ustate evd') in
   let evd = evd' in
 
+  let originals =
+    let rec evar_subst evmap evd t =
+      match EConstr.kind evd t with
+      | Evar (evk, inst) -> begin
+        match Evar.Map.find_opt evk evmap with
+        | None -> t
+        | Some def ->
+            let Evd.EvarInfo evi = Evd.find evd evk in
+            let inst = inst |> SList.Smart.map (evar_subst evmap evd) in
+            Evd.instantiate_evar_array evd evi def inst
+        end
+      | _ -> EConstr.map evd (evar_subst evmap evd) t
+    in
+    let ctx, esubst =
+      let cnt = ref 0 in
+      Evar.Map.fold_left_map (fun evk evi ctx ->
+        let evctx = Evd.evar_hyps evi |> EConstr.named_context_of_val in
+        let vars = Context.Named.instance EConstr.mkVar evctx in
+        let id =
+          Id.of_string_soft @@ "?" ^ Id.to_string @@
+          match snd (Evd.evar_source evi) with
+          | Evar_kinds.RewriteRulePattern (Name id) -> id
+          | _ -> Nameops.add_suffix (match Evd.evar_ident evk evd with
+          | None -> Termops.evar_suggested_name env evd evk
+          | Some id -> Libnames.basename id (* XXX: is this reasonable? *)) ("_" ^ string_of_int (incr cnt; !cnt))
+        in
+        let ty = Evd.evar_concl evi in
+        let ty = EConstr.it_mkNamedProd_or_LetIn evd ty evctx in
+        let decl = Context.Named.Declaration.LocalAssum (Context.make_annot id (Evd.evar_relevance evi), ty) in
+        Context.Named.add decl ctx,
+        (EConstr.mkApp (EConstr.mkVar id, vars))
+      ) (Evd.undefined_map evd) Context.Named.empty
+    in
+    let ctx = Context.Named.map_het
+      (fun r -> EConstr.ERelevance.kind evd r)
+      (fun t -> EConstr.to_constr evd (evar_subst esubst evd t))
+      ctx
+    in
+    let lhs = evar_subst esubst evd lhs in
+    let lhs = EConstr.to_constr evd lhs in
+    let lhs = Vars.subst_univs_level_constr usubst lhs in
+    let rhs = evar_subst esubst evd rhs in
+    let rhs = EConstr.to_constr evd rhs in
+    let rhs = Vars.subst_univs_level_constr usubst rhs in
+    ctx, lhs, rhs
+  in
+
   let rhs =
     let rhs' = evar_subst invtbl evd 0 rhs in
     match EConstr.to_constr_opt evd rhs' with
@@ -557,7 +604,7 @@ let interp_rule ~collapse_sort_variables (udecl, lhs, rhs: Constrexpr.universe_d
     Univ.Level.Set.iter test_level us
   in
 
-  head_symbol, { nvars = (nvars' - 1, nvarqs', nvarus'); lhs_pat = head_umask, elims; rhs }
+  head_symbol, { nvars = (nvars' - 1, nvarqs', nvarus'); lhs_pat = head_umask, elims; rhs; test = originals }
 
 let do_rules ?(collapse_sort_variables = true) id rules =
   let env = Global.env () in

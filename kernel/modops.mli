@@ -135,7 +135,7 @@ type signature_mismatch_error =
   | IncompatiblePolymorphism of env * types * types
   | IncompatibleUnivConstraints of { env : env; got : UVars.AbstractContext.t; expect : UVars.AbstractContext.t }
   | IncompatibleVariance
-  | NoRewriteRulesSubtyping
+  | NotConvertibleRewriteRule of env * constr * constr
 
 type with_constraint_error =
   | WithSignatureMismatch of signature_mismatch_error
