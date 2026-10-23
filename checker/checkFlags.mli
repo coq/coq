@@ -13,3 +13,8 @@ val set_local_flags : Declarations.typing_flags -> Environ.env -> Environ.env
 
 (** Whether the user asked for the VM, i.e. the value of -bytecode-compiler. *)
 val enable_vm : bool ref
+
+(** Whether axioms and unsafe typing flags must be rejected (-axiom-free). *)
+val axiom_free : bool ref
+
+val is_axiom_free : Environ.env -> Names.Constant.t list -> bool
