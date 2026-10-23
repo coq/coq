@@ -820,7 +820,7 @@ val dead_code : t
 val not_subterm : t
 
 val internal : int -> t
-val make_internal : int -> t lazy_t -> t lazy_t
+val make_internal : int -> (unit -> bool) -> t lazy_t -> t lazy_t
 
 type check_result =
   | InvalidSubterm
@@ -887,9 +887,9 @@ let internal n =
 let dead_code = DeadCode
 let not_subterm = NotSubterm
 
-let make_internal n spec =
+let make_internal n can_reduce spec =
   lazy begin match Lazy.force spec with
-  | NotSubterm -> internal n
+  | NotSubterm -> if can_reduce () then internal n else NotSubterm
   | spec -> spec
   end
 
@@ -1480,7 +1480,18 @@ let filter_fix_stack_domain ?evars nr decrarg stack nuniformparams =
       let uniform, nuniformparams = if nuniformparams = 0 then false, 0 else true, nuniformparams -1 in
       let a =
         if uniform then a
-        else if Int.equal i decrarg then SArg (stack_element_specif ?evars a)
+        else if Int.equal i decrarg then
+          let can_reduce () = match a with
+            | SArg _ -> false
+            | SClosure (_, renv, _, c) ->
+              let hd, _ = decompose_app (whd_all ?evars renv.env c) in
+              match kind hd with Construct _ -> true | _ -> false
+          in
+          (* A constructed argument need not itself be a subterm, but this
+             nested fixpoint can contract and expose its subterm fields.
+             Keep that obligation on the nested fixpoint's own redex level. *)
+          SArg (Subterm.make_internal (nr + 1) can_reduce
+            (stack_element_specif ?evars a))
         (* We forget the needreduce status of the structural argument here,
            since it's checked in [non_absorbed_stack]. *)
         else
@@ -1572,7 +1583,16 @@ let check_one_fix ?evars renv recpos trees def =
             (* compute the recarg info for the arguments of each branch *)
             let rs' = NoNeedReduce::rs in
             let nr = redex_level rs' in
-            let c_spec = Subterm.make_internal nr (lazy_subterm_specif ?evars renv [] c_0) in
+            (* A stuck match on an unrelated argument cannot justify a
+               recursive call by being erased in an enclosing redex.
+               Only a match that can contract gets a fresh owner. Existing
+               dependencies on outer binders remain available for rechecking. *)
+            let can_reduce () =
+              let hd, _ = reduce_and_contract_cofix ?evars renv.env c_0 in
+              match kind hd with Construct _ -> true | _ -> false
+            in
+            let c_spec = Subterm.make_internal nr can_reduce
+              (lazy_subterm_specif ?evars renv [] c_0) in
             let case_spec = Subterm.on_branches renv.env ci.ci_ind c_spec in
             let stack' = filter_stack_domain stack_element_specif (Lazy.from_val (Subterm.internal nr)) ?evars renv.env p stack in
             let rs' =
