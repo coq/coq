@@ -326,6 +326,20 @@ let map2 f l1 l2 = match l1, l2 with
     cast c
   | _ -> invalid_arg "List.map2"
 
+let rec zip_with_loop f p l1 l2 = match l1, l2 with
+  | [], _ | _, [] -> ()
+  | x :: l1, y :: l2 ->
+    let c = { head = f x y; tail = [] } in
+    p.tail <- cast c;
+    zip_with_loop f c l1 l2
+
+let zip_with f l1 l2 = match l1, l2 with
+  | [], _ | _, [] -> []
+  | x :: l1, y :: l2 ->
+    let c = { head = f x y; tail = [] } in
+    zip_with_loop f c l1 l2;
+    cast c
+
 (* remove when requiring OCaml >= 5.1.0 *)
 let rec concat_map_loop f p = function
   | [] -> ()

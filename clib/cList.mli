@@ -109,6 +109,9 @@ val map : ('a -> 'b) -> 'a list -> 'b list
 val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** Like OCaml [List.map2] but tail-recursive *)
 
+val zip_with : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+(** Like OCaml [List.map2] but stops when either list runs out *)
+
 val map_left : ('a -> 'b) -> 'a list -> 'b list
 (** As [map] but ensures the left-to-right order of evaluation. *)
 
