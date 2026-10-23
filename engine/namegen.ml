@@ -501,16 +501,23 @@ let next_name_for_display gen env sigma flags na avoid =
   | RenamingForGoal -> next_name_away_in_goal gen env na avoid
   | RenamingElsewhereFor env_t -> next_name_away_for_default_printing gen sigma env_t na avoid
 
+let { Goptions.get = print_all_names } = Goptions.declare_bool_option_and_ref ~key:["Printing";"All";"Names"] ~value:false ()
+
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
 let compute_displayed_name_in_gen_poly gen noccurn_fun env sigma flags avoid na c =
-  let noccurs =
+  let noccurs = not (print_all_names()) &&
     try noccurn_fun sigma 1 c
     with _ when !Flags.in_debugger -> false
   in
   if noccurs then Anonymous, avoid
   else
     let fresh_id, avoid = next_name_for_display gen env sigma flags na avoid in
-    Name fresh_id, avoid
+    let id = if print_all_names() then
+        let na = match na with Anonymous -> "_" | Name id -> Id.to_string id in
+        Id.(of_string_soft (to_string fresh_id ^ " (* " ^ na ^ " *)"))
+      else fresh_id
+    in
+    Name id, avoid
 
 let compute_displayed_name_in gen = compute_displayed_name_in_gen_poly gen noccurn
 
